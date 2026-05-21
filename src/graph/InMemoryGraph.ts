@@ -204,10 +204,15 @@ export class InMemoryGraph {
 
     for (const node of this.nodesById.values()) {
       if (node.type === "document") {
+        if (node.outputPattern) {
+          continue;
+        }
         const isPerDomainInstance =
           typeof node.output === "string" &&
-          !node.outputPattern &&
-          (node.perDomain === "useCase" || node.perDomain === "feature");
+          (node.perDomain === "useCase" ||
+            node.perDomain === "feature" ||
+            node.perDomain === "apiDetail" ||
+            node.perDomain === "screenDetail");
         if (isPerDomainInstance) {
           continue;
         }

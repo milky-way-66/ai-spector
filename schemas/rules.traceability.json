@@ -19,7 +19,7 @@
     {
       "id": "DOC-SECTION-COVERAGE",
       "severity": "error",
-      "description": "Each document contains at least one section"
+      "description": "Each concrete document (output path, not outputPattern template) contains at least one section"
     },
     {
       "id": "DOMAIN-ANCHORED",

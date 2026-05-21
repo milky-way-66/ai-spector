@@ -171,6 +171,26 @@ describe("InMemoryGraph.validateStructure", () => {
     expect(issues.some((i) => i.ruleId === "DOC-SECTION-COVERAGE")).toBe(true);
   });
 
+  it("allows template documents with outputPattern and no sections", () => {
+    const g = InMemoryGraph.from(
+      graph(
+        [
+          node("doc.bd.detail-api", "document", {
+            outputPattern: "docs/basic-design/api/",
+            perDomain: "apiDetail",
+          }),
+          node("doc.bd.api-F-01", "document", {
+            output: "docs/basic-design/api/f-01-auth.md",
+            perDomain: "apiDetail",
+          }),
+        ],
+        [{ type: "partOf", from: "doc.bd.api-F-01", to: "doc.bd.detail-api" }],
+      ),
+    );
+    const issues = g.validateStructure().filter((i) => i.ruleId === "DOC-SECTION-COVERAGE");
+    expect(issues).toHaveLength(0);
+  });
+
   it("allows per-domain instance documents without template sections", () => {
     const g = InMemoryGraph.from(
       graph(
