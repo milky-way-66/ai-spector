@@ -7,7 +7,8 @@
     "satisfies": { "direction": "in", "depth": 1 },
     "dependsOn": { "direction": "out", "depth": "unbounded" },
     "definedIn": { "direction": "in", "depth": 1 },
-    "listedIn": { "direction": "in", "depth": 1 }
+    "listedIn": { "direction": "in", "depth": 1 },
+    "derivedFrom": { "direction": "out", "depth": 1 }
   },
   "buckets": {
     "regenerate": ["section", "document"],

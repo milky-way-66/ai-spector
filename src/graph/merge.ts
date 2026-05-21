@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode, NodeType } from "../types.js";
+import { isPathTargetEdge } from "./path-target-edges.js";
 import { isPerDomainInstanceDocument } from "./detail-sections.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
@@ -92,15 +93,28 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
 function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
   const from = graph.nodesById.get(edge.from);
 
-  // rendersTo: document/section/domain -> repo-relative file path (to is not a node id)
-  if (edge.type === "rendersTo") {
+  if (isPathTargetEdge(edge.type)) {
     if (!from) {
-      throw new Error(`rendersTo missing source node: ${edge.from}`);
+      throw new Error(`${edge.type} missing source node: ${edge.from}`);
     }
-    if (from.type === "document" || from.type === "section" || DOMAIN_TYPES.has(from.type)) {
+    if (edge.type === "rendersTo") {
+      if (
+        from.type === "document" ||
+        from.type === "section" ||
+        DOMAIN_TYPES.has(from.type)
+      ) {
+        return;
+      }
+      throw new Error(
+        `rendersTo source must be document, section, or domain node: ${edge.from}`,
+      );
+    }
+    if (edge.type === "derivedFrom" && DOMAIN_TYPES.has(from.type)) {
       return;
     }
-    throw new Error(`rendersTo source must be document, section, or domain node: ${edge.from}`);
+    throw new Error(
+      `${edge.type} source must be a domain node (or document/section for rendersTo): ${edge.from}`,
+    );
   }
 
   const to = graph.nodesById.get(edge.to);

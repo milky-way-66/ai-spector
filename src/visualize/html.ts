@@ -198,6 +198,8 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
   const NODE_COLORS = {
     document: "#3b82f6",
     file: "#38bdf8",
+    source: "#14b8a6",
+    graphify: "#2dd4bf",
     section: "#64748b",
     table: "#475569",
     diagram: "#475569",
@@ -337,16 +339,37 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       filtered.filter((n) => DOMAIN_TYPES.has(n.type)).map((n) => n.id),
     );
     const linked = domainLinkedStructureIds(domainIds);
+    const sourceLinked = domainLinkedSourceIds(domainIds);
     return filtered.filter(
       (n) =>
         DOMAIN_TYPES.has(n.type) ||
         linked.has(n.id) ||
+        sourceLinked.has(n.id) ||
         (n.type === "document" && linked.has(n.id)),
     );
   }
 
   function fileNodeId(path) {
     return "file:" + path;
+  }
+
+  function sourceNodeId(path) {
+    return "source:" + path;
+  }
+
+  function domainLinkedSourceIds(domainIds) {
+    const linked = new Set();
+    for (const e of P.graph.edges) {
+      if (e.type !== "derivedFrom" || !domainIds.has(e.from)) {
+        continue;
+      }
+      if (e.to.startsWith("graphify:")) {
+        linked.add(e.to);
+      } else {
+        linked.add(sourceNodeId(e.to));
+      }
+    }
+    return linked;
   }
 
   function buildVisData(viewMode, search) {
@@ -358,7 +381,35 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
         .map((n) => n.output),
     );
     const fileNodes = new Map();
+    const sourceNodes = new Map();
+    const graphifyNodes = new Map();
     for (const e of P.graph.edges) {
+      if (e.type === "derivedFrom" && ids.has(e.from)) {
+        if (e.to.startsWith("graphify:")) {
+          const gid = e.to;
+          if (!graphifyNodes.has(gid)) {
+            const label = gid.slice("graphify:".length);
+            graphifyNodes.set(gid, {
+              id: gid,
+              type: "graphify",
+              title: label,
+              graphifyId: label,
+            });
+          }
+        } else {
+          const sid = sourceNodeId(e.to);
+          if (!sourceNodes.has(sid)) {
+            const base = e.to.split("/").pop() || e.to;
+            sourceNodes.set(sid, {
+              id: sid,
+              type: "source",
+              title: base,
+              output: e.to,
+            });
+          }
+        }
+        continue;
+      }
       if (e.type !== "rendersTo" || !ids.has(e.from)) {
         continue;
       }
@@ -385,7 +436,11 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
         pathToDocId.set(n.output, n.id);
       }
     }
-    const allNodes = nodes.concat([...fileNodes.values()]);
+    const allNodes = nodes.concat(
+      [...fileNodes.values()],
+      [...sourceNodes.values()],
+      [...graphifyNodes.values()],
+    );
     const allIds = new Set(allNodes.map((n) => n.id));
     function resolveEdgeTarget(to) {
       if (allIds.has(to)) {
@@ -398,6 +453,12 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       if (fileNodes.has(fileNodeId(to))) {
         return fileNodeId(to);
       }
+      if (sourceNodes.has(sourceNodeId(to))) {
+        return sourceNodeId(to);
+      }
+      if (graphifyNodes.has(to)) {
+        return to;
+      }
       return null;
     }
     const visNodes = allNodes.map((n) => ({
@@ -406,8 +467,8 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       title: "<pre style=\\"margin:0;font-size:11px\\">" + escapeHtml(JSON.stringify(n, null, 2)) + "</pre>",
       color: NODE_COLORS[n.type] || "#94a3b8",
       font: { color: "#e7ecf3", size: 11 },
-      shape: n.type === "document" || n.type === "file" ? "box" : "dot",
-      size: n.type === "section" ? 10 : STRUCTURE.has(n.type) ? 12 : n.type === "file" ? 14 : 18,
+      shape: n.type === "document" || n.type === "file" || n.type === "source" || n.type === "graphify" ? "box" : "dot",
+      size: n.type === "section" ? 10 : STRUCTURE.has(n.type) ? 12 : n.type === "file" || n.type === "source" || n.type === "graphify" ? 14 : 18,
     }));
     const visEdges = P.graph.edges
       .map((e) => ({ e, to: resolveEdgeTarget(e.to) }))
@@ -418,7 +479,10 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
         to,
         label: e.type,
         font: { size: 9, color: "#8b9cb3", strokeWidth: 0 },
-        color: { color: "#4b5563", highlight: "#60a5fa" },
+        color: {
+          color: e.type === "derivedFrom" ? "#14b8a6" : "#4b5563",
+          highlight: e.type === "derivedFrom" ? "#2dd4bf" : "#60a5fa",
+        },
         arrows: "to",
       }));
     return { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
@@ -453,9 +517,20 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
           P.graph.nodes.find((n) => n.id === id) ||
           (id.startsWith("file:")
             ? { id, type: "file", output: id.slice(5) }
-            : null);
-        const out = P.graph.edges.filter((e) => e.from === id || (id.startsWith("file:") && e.to === id.slice(5)));
-        const inc = P.graph.edges.filter((e) => e.to === id || (id.startsWith("file:") && e.type === "rendersTo" && e.to === id.slice(5)));
+            : id.startsWith("source:")
+              ? { id, type: "source", output: id.slice(7) }
+              : id.startsWith("graphify:")
+                ? { id, type: "graphify", graphifyId: id.slice(9) }
+                : null);
+        const pathTail = id.startsWith("file:") ? id.slice(5) : id.startsWith("source:") ? id.slice(7) : null;
+        const out = P.graph.edges.filter(
+          (e) => e.from === id || (pathTail && (e.to === pathTail || e.to === id)),
+        );
+        const inc = P.graph.edges.filter(
+          (e) =>
+            e.to === id ||
+            (pathTail && (e.type === "rendersTo" || e.type === "derivedFrom") && e.to === pathTail),
+        );
         detail.textContent =
           JSON.stringify(node, null, 2) +
           "\\n\\n--- outgoing (" + out.length + ") ---\\n" +

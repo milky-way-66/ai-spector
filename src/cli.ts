@@ -14,6 +14,7 @@ import { runGraphMerge } from "./commands/graph-merge.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
 import { runGraphifyUpdate } from "./commands/graphify-update.js";
 import { runIndex } from "./commands/index.js";
+import { runProvenanceLink } from "./graph/provenance.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -221,6 +222,24 @@ graph
       validate: !opts.noValidate,
       dryRun: opts.dryRun,
     });
+  });
+
+graph
+  .command("link-sources")
+  .description(
+    "Add derivedFrom edges from domain nodes to docs/data-source paths (and Graphify symbols when matched)",
+  )
+  .option("-g, --graph <path>", "Graph path")
+  .action(async (_opts, cmd) => {
+    const paths = await getPaths(cmd);
+    const result = await runProvenanceLink({
+      projectRoot: paths.root,
+      graphPath: _opts.graph ?? paths.graph,
+    });
+    console.log(result.detail);
+    if (!result.merged) {
+      process.exitCode = 0;
+    }
   });
 
 graph

@@ -134,6 +134,48 @@ describe("mergePatch", () => {
     ).toBe(true);
   });
 
+  it("allows derivedFrom from a use case to a data-source path", () => {
+    const g = loadGraph([node("UC-01", "useCase")], []);
+
+    mergePatch(g, {
+      version: 1,
+      nodes: [],
+      edges: [
+        {
+          type: "derivedFrom",
+          from: "UC-01",
+          to: "docs/data-source/spec.ts",
+        },
+      ],
+    });
+
+    expect(
+      g.hasEdge({
+        type: "derivedFrom",
+        from: "UC-01",
+        to: "docs/data-source/spec.ts",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects derivedFrom from non-domain nodes", () => {
+    const g = loadGraph([node("doc", "document")], []);
+
+    expect(() =>
+      mergePatch(g, {
+        version: 1,
+        nodes: [],
+        edges: [
+          {
+            type: "derivedFrom",
+            from: "doc",
+            to: "docs/data-source/x.ts",
+          },
+        ],
+      }),
+    ).toThrow(/domain node/);
+  });
+
   it("rejects edges that target structure nodes with disallowed types", () => {
     const g = loadGraph(
       [node("doc.srs", "document"), node("sec.a", "section")],

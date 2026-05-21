@@ -5,6 +5,7 @@ import { bootstrapFromRegistry } from "./bootstrap.js";
 import { validateGraph, formatIssues } from "./validate.js";
 import { runGraphMerge } from "./graph-merge.js";
 import { runGraphifyUpdate } from "./graphify-update.js";
+import { runProvenanceLink } from "../graph/provenance.js";
 import {
   knowledgeStaleWarning,
   runDocSemanticMerge,
@@ -237,6 +238,10 @@ export async function runIndex(
           gf.sourcesEmptySkipped.length > 0
             ? `; empty (skipped): ${gf.sourcesEmptySkipped.join(", ")}`
             : "";
+        const noCodeDetail =
+          gf.sourcesNoCodeSkipped.length > 0
+            ? `; no code files (skipped): ${gf.sourcesNoCodeSkipped.join(", ")}`
+            : "";
         const skipDetail =
           gf.sourcesSkipped.length > 0
             ? `; unchanged: ${gf.sourcesSkipped.join(", ")}`
@@ -245,7 +250,7 @@ export async function runIndex(
           id: "graphify-storage",
           label: "Graphify index & graph.json",
           status: "ok",
-          detail: `${runDetail}${emptyDetail}${skipDetail}`,
+          detail: `${runDetail}${emptyDetail}${noCodeDetail}${skipDetail}`,
         });
       } catch (err) {
         record({
@@ -264,6 +269,31 @@ export async function runIndex(
         status: "skipped",
         detail: opts.skipGraphify ? "--skip-graphify" : "graph-only / docs-only",
       });
+    }
+
+    if (!failed) {
+      try {
+        const prov = await runProvenanceLink({
+          projectRoot,
+          graphPath: paths.graph,
+        });
+        if (prov.merged) {
+          graphJson = await readJson<TraceabilityGraph>(paths.graph);
+        }
+        record({
+          id: "provenance-link",
+          label: "Data-source provenance (derivedFrom)",
+          status: prov.merged ? "ok" : "skipped",
+          detail: prov.detail,
+        });
+      } catch (err) {
+        record({
+          id: "provenance-link",
+          label: "Data-source provenance (derivedFrom)",
+          status: "failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
 
     if (!opts.skipValidate && !failed) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  dataSourcePathsForNode,
   projectionPathForNode,
   querySubgraph,
   resolveDocumentForNode,
@@ -65,6 +66,20 @@ describe("projectionPathForNode", () => {
     expect(projectionPathForNode(g, "sec.intro")).toBe("docs/srs/{slug}.md");
   });
 
+  it("collects derivedFrom data-source paths", () => {
+    const g = loadGraph([node("UC-01", "useCase")], [
+      {
+        type: "derivedFrom",
+        from: "UC-01",
+        to: "docs/data-source/interviews/a.md",
+      },
+    ]);
+
+    expect(dataSourcePathsForNode(g, "UC-01")).toEqual([
+      "docs/data-source/interviews/a.md",
+    ]);
+  });
+
   it("uses rendersTo target for domain nodes", () => {
     const g = loadGraph([node("feat.x", "feature")], [
       { type: "rendersTo", from: "feat.x", to: "docs/features/x.md" },
@@ -126,5 +141,26 @@ describe("querySubgraph", () => {
     const result = querySubgraph(g, "sec.intro", { depth: 1 });
 
     expect(result.projectionPaths).toEqual([]);
+  });
+
+  it("includes derivedFrom paths in projectionPaths", () => {
+    const g = loadGraph(
+      [node("UC-01", "useCase"), node("sec", "section")],
+      [
+        { type: "listedIn", from: "UC-01", to: "sec" },
+        {
+          type: "derivedFrom",
+          from: "UC-01",
+          to: "docs/data-source/spec.ts",
+        },
+      ],
+    );
+
+    const result = querySubgraph(g, "UC-01", {
+      depth: 1,
+      edgeTypes: ["derivedFrom", "listedIn"],
+    });
+
+    expect(result.projectionPaths).toContain("docs/data-source/spec.ts");
   });
 });

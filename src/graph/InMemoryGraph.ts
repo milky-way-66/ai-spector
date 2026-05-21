@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode, TraceabilityGraph, ValidationIssue } from "../types.js";
+import { isPathTargetEdge } from "./path-target-edges.js";
 
 export class InMemoryGraph {
   readonly nodesById = new Map<string, GraphNode>();
@@ -14,7 +15,7 @@ export class InMemoryGraph {
       if (!g.nodesById.has(edge.from)) {
         throw new Error(`Edge references missing node: ${edge.from} -> ${edge.to}`);
       }
-      if (edge.type !== "rendersTo" && !g.nodesById.has(edge.to)) {
+      if (!isPathTargetEdge(edge.type) && !g.nodesById.has(edge.to)) {
         throw new Error(`Edge references missing node: ${edge.from} -> ${edge.to}`);
       }
       g.addEdge(edge);
@@ -96,7 +97,7 @@ export class InMemoryGraph {
     const inbound = this.inEdges.get(edge.to);
     if (inbound) {
       inbound.push(edge);
-    } else if (edge.type !== "rendersTo") {
+    } else if (!isPathTargetEdge(edge.type)) {
       throw new Error(`Edge references missing target node: ${edge.from} -> ${edge.to}`);
     }
   }
@@ -108,8 +109,7 @@ export class InMemoryGraph {
     if (!this.nodesById.has(edge.from)) {
       throw new Error(`Edge references missing source node: ${edge.from}`);
     }
-    // rendersTo targets a markdown path, not a graph node id
-    if (edge.type !== "rendersTo" && !this.nodesById.has(edge.to)) {
+    if (!isPathTargetEdge(edge.type) && !this.nodesById.has(edge.to)) {
       throw new Error(`Edge references missing target node: ${edge.from} -> ${edge.to}`);
     }
     this.addEdge(edge);

@@ -1,0 +1,1960 @@
+{
+    "version": 1,
+    "nodes": [
+      {
+        "id": "doc.srs.1-introduction",
+        "type": "document",
+        "template": "1-introduction.md",
+        "output": "docs/srs/1-introduction.md"
+      },
+      {
+        "id": "sec.srs.1-introduction.l2.1.1-introduction",
+        "type": "section",
+        "documentId": "doc.srs.1-introduction",
+        "heading": "1. Introduction",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.1-introduction.l3.2.11-document-purpose",
+        "type": "section",
+        "documentId": "doc.srs.1-introduction",
+        "heading": "1.1 Document Purpose",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.1-introduction.l3.3.12-document-conventions",
+        "type": "section",
+        "documentId": "doc.srs.1-introduction",
+        "heading": "1.2 Document Conventions",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.1-introduction.l3.4.13-project-scope",
+        "type": "section",
+        "documentId": "doc.srs.1-introduction",
+        "heading": "1.3 Project Scope",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.1-introduction.l3.5.14-references",
+        "type": "section",
+        "documentId": "doc.srs.1-introduction",
+        "heading": "1.4 References",
+        "level": 3,
+        "order": 5
+      },
+      {
+        "id": "doc.srs.2-overall-description",
+        "type": "document",
+        "template": "2-overall-description.md",
+        "output": "docs/srs/2-overall-description.md"
+      },
+      {
+        "id": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2. Overall Description",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.2-overall-description.l3.2.21-product-perspective",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2.1 Product Perspective",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2.2 User Classes and Characteristics",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.2-overall-description.l3.4.23-operating-environment",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2.3 Operating Environment",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2.4 Design and Implementation Constraints",
+        "level": 3,
+        "order": 5
+      },
+      {
+        "id": "sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies",
+        "type": "section",
+        "documentId": "doc.srs.2-overall-description",
+        "heading": "2.5 Assumptions and Dependencies",
+        "level": 3,
+        "order": 6
+      },
+      {
+        "id": "doc.srs.3-use-cases",
+        "type": "document",
+        "template": "3-use-cases.md",
+        "output": "docs/srs/3-use-cases.md"
+      },
+      {
+        "id": "sec.srs.3-use-cases.l2.1.3-use-cases",
+        "type": "section",
+        "documentId": "doc.srs.3-use-cases",
+        "heading": "3. Use Cases",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.3-use-cases.l3.2.31-use-case-diagrams",
+        "type": "section",
+        "documentId": "doc.srs.3-use-cases",
+        "heading": "3.1 Use Case Diagrams",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.3-use-cases.l3.3.32-list-use-case",
+        "type": "section",
+        "documentId": "doc.srs.3-use-cases",
+        "heading": "3.2 List Use Case",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "doc.srs.4-system-features",
+        "type": "document",
+        "template": "4-system-features-list-template.md",
+        "output": "docs/srs/4-system-features.md"
+      },
+      {
+        "id": "sec.srs.4-system-features.l2.1.4-system-features",
+        "type": "section",
+        "documentId": "doc.srs.4-system-features",
+        "heading": "4. System Features",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.4-system-features.l3.2.41-feature-diagram-optional",
+        "type": "section",
+        "documentId": "doc.srs.4-system-features",
+        "heading": "4.1 Feature Diagram (Optional)",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.4-system-features.l3.3.42-list-of-system-features",
+        "type": "section",
+        "documentId": "doc.srs.4-system-features",
+        "heading": "4.2 List of System Features",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.4-system-features.l3.4.43-feature-relationships-optional",
+        "type": "section",
+        "documentId": "doc.srs.4-system-features",
+        "heading": "4.3 Feature Relationships (Optional)",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "doc.srs.5-data-requirements",
+        "type": "document",
+        "template": "5-data-requirements.md",
+        "output": "docs/srs/5-data-requirements.md"
+      },
+      {
+        "id": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "type": "section",
+        "documentId": "doc.srs.5-data-requirements",
+        "heading": "5. Data Requirements",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.5-data-requirements.l3.2.51-logical-data-model",
+        "type": "section",
+        "documentId": "doc.srs.5-data-requirements",
+        "heading": "5.1 Logical Data Model",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.5-data-requirements.l3.3.52-data-dictionary",
+        "type": "section",
+        "documentId": "doc.srs.5-data-requirements",
+        "heading": "5.2 Data Dictionary",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.5-data-requirements.l3.4.53-reports",
+        "type": "section",
+        "documentId": "doc.srs.5-data-requirements",
+        "heading": "5.3 Reports",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal",
+        "type": "section",
+        "documentId": "doc.srs.5-data-requirements",
+        "heading": "5.4 Data Acquisition, Integrity, Retention, and Disposal",
+        "level": 3,
+        "order": 5
+      },
+      {
+        "id": "doc.srs.6-external-interfaces",
+        "type": "document",
+        "template": "6-external-interfaces.md",
+        "output": "docs/srs/6-external-interfaces.md"
+      },
+      {
+        "id": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "type": "section",
+        "documentId": "doc.srs.6-external-interfaces",
+        "heading": "6. External Interface Requirements",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.6-external-interfaces.l3.2.61-user-interfaces",
+        "type": "section",
+        "documentId": "doc.srs.6-external-interfaces",
+        "heading": "6.1 User Interfaces",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.6-external-interfaces.l3.3.62-software-interfaces",
+        "type": "section",
+        "documentId": "doc.srs.6-external-interfaces",
+        "heading": "6.2 Software Interfaces",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces",
+        "type": "section",
+        "documentId": "doc.srs.6-external-interfaces",
+        "heading": "6.3 Hardware Interfaces",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.6-external-interfaces.l3.5.64-communications-interfaces",
+        "type": "section",
+        "documentId": "doc.srs.6-external-interfaces",
+        "heading": "6.4 Communications Interfaces",
+        "level": 3,
+        "order": 5
+      },
+      {
+        "id": "doc.srs.7-quality-attributes",
+        "type": "document",
+        "template": "7-quality-attributes.md",
+        "output": "docs/srs/7-quality-attributes.md"
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7. Non-Functional Requirements (Quality Attributes)",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l3.2.71-usability",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7.1 Usability",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l3.3.72-performance",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7.2 Performance",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l3.4.73-security",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7.3 Security",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l3.5.74-safety",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7.4 Safety",
+        "level": 3,
+        "order": 5
+      },
+      {
+        "id": "sec.srs.7-quality-attributes.l3.6.75-others-as-relevant",
+        "type": "section",
+        "documentId": "doc.srs.7-quality-attributes",
+        "heading": "7.5 Others as relevant",
+        "level": 3,
+        "order": 6
+      },
+      {
+        "id": "doc.srs.8-internationalization",
+        "type": "document",
+        "template": "8-internationalization.md",
+        "output": "docs/srs/8-internationalization.md"
+      },
+      {
+        "id": "sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements",
+        "type": "section",
+        "documentId": "doc.srs.8-internationalization",
+        "heading": "8. Internationalization and Localization Requirements",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "doc.srs.9-other-requirements",
+        "type": "document",
+        "template": "9-other-requirements.md",
+        "output": "docs/srs/9-other-requirements.md"
+      },
+      {
+        "id": "sec.srs.9-other-requirements.l2.1.9-other-requirements",
+        "type": "section",
+        "documentId": "doc.srs.9-other-requirements",
+        "heading": "9. Other Requirements",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance",
+        "type": "section",
+        "documentId": "doc.srs.9-other-requirements",
+        "heading": "9.1 Legal and Regulatory Compliance",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.9-other-requirements.l3.3.92-installation-and-configuration",
+        "type": "section",
+        "documentId": "doc.srs.9-other-requirements",
+        "heading": "9.2 Installation and Configuration",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring",
+        "type": "section",
+        "documentId": "doc.srs.9-other-requirements",
+        "heading": "9.3 Logging and Monitoring",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "doc.srs.uc-detail",
+        "type": "document",
+        "template": "3-use-case-detail-template.md",
+        "outputPattern": "docs/srs/03-use-cases/uc-{nn}-{slug}.md",
+        "perDomain": "useCase"
+      },
+      {
+        "id": "sec.srs.uc-detail.l2.1.use-case",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "Use Case:",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.2.1-use-case-overview",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "1. Use Case Overview",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "2. Main Success Scenario (Basic Flow)",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.4.3-alternative-flows",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "3. Alternative Flows",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "sec.srs.uc-detail.l4.5.31-alternative-flow-a",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "3.1 Alternative Flow A:",
+        "level": 4,
+        "order": 5
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.6.4-exception-flows-error-handling",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "4. Exception Flows (Error Handling)",
+        "level": 3,
+        "order": 6
+      },
+      {
+        "id": "sec.srs.uc-detail.l4.7.41-exception-a",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "4.1 Exception A:",
+        "level": 4,
+        "order": 7
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.8.5-business-rules",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "5. Business Rules",
+        "level": 3,
+        "order": 8
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.9.6-functional-requirements",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "6. Functional Requirements",
+        "level": 3,
+        "order": 9
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.10.7-data-requirements",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "7. Data Requirements",
+        "level": 3,
+        "order": 10
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.11.8-user-interface-requirements",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "8. User Interface Requirements",
+        "level": 3,
+        "order": 11
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.12.9-related-use-cases",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "9. Related Use Cases",
+        "level": 3,
+        "order": 12
+      },
+      {
+        "id": "sec.srs.uc-detail.l3.13.10-notes",
+        "type": "section",
+        "documentId": "doc.srs.uc-detail",
+        "heading": "10. Notes",
+        "level": 3,
+        "order": 13
+      },
+      {
+        "id": "doc.srs.feature-detail",
+        "type": "document",
+        "template": "4-system-feature-detail-template.md",
+        "outputPattern": "docs/srs/04-system-features/f-{nn}-{slug}.md",
+        "perDomain": "feature"
+      },
+      {
+        "id": "sec.srs.feature-detail.l2.1.feature",
+        "type": "section",
+        "documentId": "doc.srs.feature-detail",
+        "heading": "Feature:",
+        "level": 2,
+        "order": 1
+      },
+      {
+        "id": "sec.srs.feature-detail.l3.2.1-description",
+        "type": "section",
+        "documentId": "doc.srs.feature-detail",
+        "heading": "1. Description",
+        "level": 3,
+        "order": 2
+      },
+      {
+        "id": "sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences",
+        "type": "section",
+        "documentId": "doc.srs.feature-detail",
+        "heading": "2. Stimulus/Response Sequences",
+        "level": 3,
+        "order": 3
+      },
+      {
+        "id": "sec.srs.feature-detail.l3.4.3-functional-requirements",
+        "type": "section",
+        "documentId": "doc.srs.feature-detail",
+        "heading": "3. Functional Requirements",
+        "level": 3,
+        "order": 4
+      },
+      {
+        "id": "actor.master-admin",
+        "type": "actor",
+        "name": "Master Account (SAKUSEN TOKYO Admin)",
+        "description": "Full access across contracted organizations and individual users; manages questionnaire content, AI programs, recommendation logic, and training content."
+      },
+      {
+        "id": "actor.sales",
+        "type": "actor",
+        "name": "Sales Account (SAKUSEN TOKYO Sales)",
+        "description": "Read-only access to contracted company information."
+      },
+      {
+        "id": "actor.company-admin",
+        "type": "actor",
+        "name": "Company Admin Account (HR)",
+        "description": "User issuance, assessment scheduling/invitations/reminders, employee status monitoring, org dashboards, bulk CSV/Excel import."
+      },
+      {
+        "id": "actor.partial-admin",
+        "type": "actor",
+        "name": "Partial Admin Account",
+        "description": "View and manage only assigned departments or scoped users."
+      },
+      {
+        "id": "actor.employee",
+        "type": "actor",
+        "name": "Employee Account",
+        "description": "Takes assessments (self and other-rating), views results, participates in LMS training."
+      },
+      {
+        "id": "actor.individual",
+        "type": "actor",
+        "name": "Individual Account (B2C)",
+        "description": "B2C user with employee-like features plus payment; first quantitative assessment and simple report free."
+      },
+      {
+        "id": "UC-01",
+        "type": "useCase",
+        "title": "Complete end-to-end B2B leadership assessment cycle",
+        "priority": "high",
+        "description": "HR admin issues accounts and invitations; employee completes quantitative assessment, 360 feedback, accepts interim report, qualitative interview (human or AI), receives final integrated report and training recommendations, then completes LMS training.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §1-4"
+      },
+      {
+        "id": "UC-02",
+        "type": "useCase",
+        "title": "Company admin manages users and assessment operations",
+        "priority": "high",
+        "description": "Bulk import/update users, schedule assessments, send invitations and reminders, monitor results and training progress, view organization analytics, delegate via partial admins, handle leaver offboarding.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §2-3"
+      },
+      {
+        "id": "UC-03",
+        "type": "useCase",
+        "title": "Employee takes assessment, reviews results, and training",
+        "priority": "high",
+        "description": "Employee dashboard: assessment taking, result review (history, trends, benchmarks, skill gaps), and LMS training participation with gamification.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §2-4, §3"
+      },
+      {
+        "id": "UC-04",
+        "type": "useCase",
+        "title": "Individual (B2C) registers and uses paid assessment path",
+        "priority": "medium",
+        "description": "Individual account creation with free first quantitative assessment; subsequent assessments and interviews paid with human interview priced higher than AI interview.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §6"
+      },
+      {
+        "id": "UC-05",
+        "type": "useCase",
+        "title": "Service provider configures platform content and logic",
+        "priority": "high",
+        "description": "Master admin edits questionnaire content, AI programs, recommendation logic, and training catalog; sales has read-only company visibility.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §2-1"
+      },
+      {
+        "id": "UC-06",
+        "type": "useCase",
+        "title": "Phase 0 PoC validates AI interview and feedback quality",
+        "priority": "high",
+        "description": "Prototype AI interview engine, coaching methodology embedding, transcription quality, and 4-level role dialogue before broader frontend development.",
+        "sourceRef": "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §7 Phase 0"
+      },
+      {
+        "id": "F-01",
+        "type": "feature",
+        "title": "Quantitative assessment (64-question questionnaire)",
+        "description": "8 categories × 8 questions, 5-point scale, self and other ratings with 4 role-based patterns (executive, department manager, section manager, general employee)."
+      },
+      {
+        "id": "F-02",
+        "type": "feature",
+        "title": "360-degree feedback collection",
+        "description": "Same 64-question structure for raters; reliability-aware design including Cronbach alpha considerations."
+      },
+      {
+        "id": "F-03",
+        "type": "feature",
+        "title": "Quantitative assessment engine",
+        "description": "Category scoring, self/other/gap computation, radar charts, AI-generated comments, interim report disclosure with 2-week retake restriction after acceptance."
+      },
+      {
+        "id": "F-04",
+        "type": "feature",
+        "title": "Qualitative assessment (human interview and AI chat)",
+        "description": "Human: live session, recording, transcription, AI-assisted feedback. AI: async resumable role-aware coaching chat with history analysis."
+      },
+      {
+        "id": "F-05",
+        "type": "feature",
+        "title": "Qualitative assessment engine and final integrated report",
+        "description": "Merges quantitative and qualitative outputs into final report; 2-week retake restriction after user acceptance completes the cycle."
+      },
+      {
+        "id": "F-06",
+        "type": "feature",
+        "title": "Assessment result review and benchmarking",
+        "description": "Attempt history, trends, internal comparison (hidden if group < 10), external anonymous benchmarking, skill-gap vs target role, training recommendations."
+      },
+      {
+        "id": "F-07",
+        "type": "feature",
+        "title": "Training LMS with recommendations",
+        "description": "HD video streaming, post-video quizzes, progress/gamification (badges/ranks), recommendations linked from assessment gaps; content managed by master account."
+      },
+      {
+        "id": "F-08",
+        "type": "feature",
+        "title": "Account management and role-based access control",
+        "description": "Six account types with hierarchical permissions; leaver deactivation with anonymized statistical archive."
+      },
+      {
+        "id": "F-09",
+        "type": "feature",
+        "title": "Company admin dashboard and organization analytics",
+        "description": "User management, assessment operations, result/training monitoring, analytics by category/role/department, partial admin delegation."
+      },
+      {
+        "id": "F-10",
+        "type": "feature",
+        "title": "Billing and payment (individual and team plans)",
+        "description": "Enterprise, Team, and Individual plans with tiered pricing; Stripe-style payment API for B2C paid assessments and interviews."
+      },
+      {
+        "id": "F-11",
+        "type": "feature",
+        "title": "External notifications and integration hooks",
+        "description": "Slack, Teams, and email notifications via webhooks; SSO-ready architecture for future SAML 2.0."
+      },
+      {
+        "id": "REQ-01",
+        "type": "requirement",
+        "title": "Support bulk user and organization import via CSV/Excel"
+      },
+      {
+        "id": "REQ-02",
+        "type": "requirement",
+        "title": "Issue assessment invitations and automated reminders"
+      },
+      {
+        "id": "REQ-03",
+        "type": "requirement",
+        "title": "Restrict interim quantitative report retake for 2 weeks after user acceptance"
+      },
+      {
+        "id": "REQ-04",
+        "type": "requirement",
+        "title": "Hide internal anonymous comparison when comparison group has fewer than 10 users"
+      },
+      {
+        "id": "REQ-05",
+        "type": "requirement",
+        "title": "Retain multi-year assessment history per user for trend analysis"
+      },
+      {
+        "id": "REQ-06",
+        "type": "requirement",
+        "title": "Provide first quantitative assessment and simple report free for individual accounts"
+      },
+      {
+        "id": "NFR-01",
+        "type": "requirement",
+        "title": "Encrypt data in transit and at rest",
+        "description": "TLS 1.2+ in transit; AES-256 or equivalent at rest for sensitive data."
+      },
+      {
+        "id": "NFR-02",
+        "type": "requirement",
+        "title": "Privacy-law-compliant data handling (Japan APPI, GDPR-ready)",
+        "description": "Prefer domestic/Japan-region data hosting; role-based access controls, access logging, and auditing."
+      },
+      {
+        "id": "NFR-03",
+        "type": "requirement",
+        "title": "Browser and OS compatibility for PC and mobile",
+        "description": "Windows 10/11, macOS (latest + 2 prior majors), Chrome/Edge/Safari latest; iOS/Android responsive web or PWA."
+      },
+      {
+        "id": "NFR-04",
+        "type": "requirement",
+        "title": "Network bandwidth for HD video and AI workloads",
+        "description": "Stable connectivity with ~5 Mbps downlink recommended; firewall allowlisting for service domain, video CDN, and GCP AI APIs."
+      },
+      {
+        "id": "NFR-05",
+        "type": "requirement",
+        "title": "SSO-ready authentication architecture",
+        "description": "ID/password initially; SAML 2.0 SSO planned for Phase 3."
+      },
+      {
+        "id": "ENT-UserAccount",
+        "type": "dataEntity",
+        "name": "User Account",
+        "description": "Master, sales, company admin, partial admin, employee, or individual account with role-based permissions.",
+        "title": "User Account"
+      },
+      {
+        "id": "ENT-Organization",
+        "type": "dataEntity",
+        "name": "Organization",
+        "description": "Contracted B2B company with departments, employees, and analytics scope.",
+        "title": "Organization"
+      },
+      {
+        "id": "ENT-Assessment",
+        "type": "dataEntity",
+        "name": "Assessment",
+        "description": "End-to-end assessment attempt tying quantitative, 360, qualitative steps, and reports to a user.",
+        "title": "Assessment"
+      },
+      {
+        "id": "ENT-QuestionnaireResponse",
+        "type": "dataEntity",
+        "name": "Questionnaire Response",
+        "description": "64-question self or other-rating responses with category scores.",
+        "title": "Questionnaire Response"
+      },
+      {
+        "id": "ENT-AssessmentReport",
+        "type": "dataEntity",
+        "name": "Assessment Report",
+        "description": "Interim quantitative report and final integrated quantitative+qualitative report with acceptance state.",
+        "title": "Assessment Report"
+      },
+      {
+        "id": "ENT-InterviewRecord",
+        "type": "dataEntity",
+        "name": "Interview Record",
+        "description": "Human interview recording/transcript or AI chat history used for qualitative feedback.",
+        "title": "Interview Record"
+      },
+      {
+        "id": "ENT-TrainingCourse",
+        "type": "dataEntity",
+        "name": "Training Course",
+        "description": "LMS course with video, quiz, completion status, badges, and recommendation linkage.",
+        "title": "Training Course"
+      },
+      {
+        "id": "ENT-BenchmarkComparison",
+        "type": "dataEntity",
+        "name": "Benchmark Comparison",
+        "description": "Internal or external anonymous comparison dataset with anonymity thresholds.",
+        "title": "Benchmark Comparison"
+      }
+    ],
+    "edges": [
+      {
+        "type": "contains",
+        "from": "doc.srs.1-introduction",
+        "to": "sec.srs.1-introduction.l2.1.1-introduction"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.1-introduction.l2.1.1-introduction",
+        "to": "doc.srs.1-introduction"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.1-introduction.l2.1.1-introduction",
+        "to": "sec.srs.1-introduction.l3.2.11-document-purpose"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.1-introduction.l2.1.1-introduction",
+        "to": "sec.srs.1-introduction.l3.3.12-document-conventions"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.1-introduction.l2.1.1-introduction",
+        "to": "sec.srs.1-introduction.l3.4.13-project-scope"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.1-introduction.l2.1.1-introduction",
+        "to": "sec.srs.1-introduction.l3.5.14-references"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.1-introduction.l3.2.11-document-purpose",
+        "to": "sec.srs.1-introduction.l2.1.1-introduction"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.1-introduction.l3.2.11-document-purpose",
+        "to": "sec.srs.1-introduction.l3.3.12-document-conventions"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.1-introduction.l3.3.12-document-conventions",
+        "to": "sec.srs.1-introduction.l2.1.1-introduction"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.1-introduction.l3.3.12-document-conventions",
+        "to": "sec.srs.1-introduction.l3.4.13-project-scope"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.1-introduction.l3.4.13-project-scope",
+        "to": "sec.srs.1-introduction.l2.1.1-introduction"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.1-introduction.l3.4.13-project-scope",
+        "to": "sec.srs.1-introduction.l3.5.14-references"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.1-introduction.l3.5.14-references",
+        "to": "sec.srs.1-introduction.l2.1.1-introduction"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.2-overall-description",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "doc.srs.2-overall-description"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "sec.srs.2-overall-description.l3.2.21-product-perspective"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "sec.srs.2-overall-description.l3.4.23-operating-environment"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.2-overall-description.l2.1.2-overall-description",
+        "to": "sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l3.2.21-product-perspective",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.2-overall-description.l3.2.21-product-perspective",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics",
+        "to": "sec.srs.2-overall-description.l3.4.23-operating-environment"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l3.4.23-operating-environment",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.2-overall-description.l3.4.23-operating-environment",
+        "to": "sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints",
+        "to": "sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies",
+        "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.3-use-cases",
+        "to": "sec.srs.3-use-cases.l2.1.3-use-cases"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.3-use-cases.l2.1.3-use-cases",
+        "to": "doc.srs.3-use-cases"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.3-use-cases.l2.1.3-use-cases",
+        "to": "sec.srs.3-use-cases.l3.2.31-use-case-diagrams"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.3-use-cases.l2.1.3-use-cases",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.3-use-cases.l3.2.31-use-case-diagrams",
+        "to": "sec.srs.3-use-cases.l2.1.3-use-cases"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.3-use-cases.l3.2.31-use-case-diagrams",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.3-use-cases.l3.3.32-list-use-case",
+        "to": "sec.srs.3-use-cases.l2.1.3-use-cases"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.4-system-features",
+        "to": "sec.srs.4-system-features.l2.1.4-system-features"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.4-system-features.l2.1.4-system-features",
+        "to": "doc.srs.4-system-features"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.4-system-features.l2.1.4-system-features",
+        "to": "sec.srs.4-system-features.l3.2.41-feature-diagram-optional"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.4-system-features.l2.1.4-system-features",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.4-system-features.l2.1.4-system-features",
+        "to": "sec.srs.4-system-features.l3.4.43-feature-relationships-optional"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.4-system-features.l3.2.41-feature-diagram-optional",
+        "to": "sec.srs.4-system-features.l2.1.4-system-features"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.4-system-features.l3.2.41-feature-diagram-optional",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.4-system-features.l3.3.42-list-of-system-features",
+        "to": "sec.srs.4-system-features.l2.1.4-system-features"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.4-system-features.l3.3.42-list-of-system-features",
+        "to": "sec.srs.4-system-features.l3.4.43-feature-relationships-optional"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.4-system-features.l3.4.43-feature-relationships-optional",
+        "to": "sec.srs.4-system-features.l2.1.4-system-features"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.5-data-requirements",
+        "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "to": "doc.srs.5-data-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "to": "sec.srs.5-data-requirements.l3.3.52-data-dictionary"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "to": "sec.srs.5-data-requirements.l3.4.53-reports"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.5-data-requirements.l2.1.5-data-requirements",
+        "to": "sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.5-data-requirements.l3.2.51-logical-data-model",
+        "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.5-data-requirements.l3.2.51-logical-data-model",
+        "to": "sec.srs.5-data-requirements.l3.3.52-data-dictionary"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.5-data-requirements.l3.3.52-data-dictionary",
+        "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.5-data-requirements.l3.3.52-data-dictionary",
+        "to": "sec.srs.5-data-requirements.l3.4.53-reports"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.5-data-requirements.l3.4.53-reports",
+        "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.5-data-requirements.l3.4.53-reports",
+        "to": "sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal",
+        "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.6-external-interfaces",
+        "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "to": "doc.srs.6-external-interfaces"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "to": "sec.srs.6-external-interfaces.l3.2.61-user-interfaces"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "to": "sec.srs.6-external-interfaces.l3.3.62-software-interfaces"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "to": "sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
+        "to": "sec.srs.6-external-interfaces.l3.5.64-communications-interfaces"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.6-external-interfaces.l3.2.61-user-interfaces",
+        "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.6-external-interfaces.l3.2.61-user-interfaces",
+        "to": "sec.srs.6-external-interfaces.l3.3.62-software-interfaces"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.6-external-interfaces.l3.3.62-software-interfaces",
+        "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.6-external-interfaces.l3.3.62-software-interfaces",
+        "to": "sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces",
+        "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces",
+        "to": "sec.srs.6-external-interfaces.l3.5.64-communications-interfaces"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.6-external-interfaces.l3.5.64-communications-interfaces",
+        "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.7-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "doc.srs.7-quality-attributes"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l3.2.71-usability"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l3.3.72-performance"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l3.4.73-security"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l3.5.74-safety"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
+        "to": "sec.srs.7-quality-attributes.l3.6.75-others-as-relevant"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l3.2.71-usability",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.7-quality-attributes.l3.2.71-usability",
+        "to": "sec.srs.7-quality-attributes.l3.3.72-performance"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l3.3.72-performance",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.7-quality-attributes.l3.3.72-performance",
+        "to": "sec.srs.7-quality-attributes.l3.4.73-security"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l3.4.73-security",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.7-quality-attributes.l3.4.73-security",
+        "to": "sec.srs.7-quality-attributes.l3.5.74-safety"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l3.5.74-safety",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.7-quality-attributes.l3.5.74-safety",
+        "to": "sec.srs.7-quality-attributes.l3.6.75-others-as-relevant"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.7-quality-attributes.l3.6.75-others-as-relevant",
+        "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.8-internationalization",
+        "to": "sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements",
+        "to": "doc.srs.8-internationalization"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.9-other-requirements",
+        "to": "sec.srs.9-other-requirements.l2.1.9-other-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.9-other-requirements.l2.1.9-other-requirements",
+        "to": "doc.srs.9-other-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.9-other-requirements.l2.1.9-other-requirements",
+        "to": "sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.9-other-requirements.l2.1.9-other-requirements",
+        "to": "sec.srs.9-other-requirements.l3.3.92-installation-and-configuration"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.9-other-requirements.l2.1.9-other-requirements",
+        "to": "sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance",
+        "to": "sec.srs.9-other-requirements.l2.1.9-other-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance",
+        "to": "sec.srs.9-other-requirements.l3.3.92-installation-and-configuration"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.9-other-requirements.l3.3.92-installation-and-configuration",
+        "to": "sec.srs.9-other-requirements.l2.1.9-other-requirements"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.9-other-requirements.l3.3.92-installation-and-configuration",
+        "to": "sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring",
+        "to": "sec.srs.9-other-requirements.l2.1.9-other-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.uc-detail",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "doc.srs.uc-detail"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.2.1-use-case-overview"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.4.3-alternative-flows"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.6.4-exception-flows-error-handling"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.8.5-business-rules"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.9.6-functional-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.10.7-data-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.11.8-user-interface-requirements"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.12.9-related-use-cases"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l2.1.use-case",
+        "to": "sec.srs.uc-detail.l3.13.10-notes"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.2.1-use-case-overview",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.2.1-use-case-overview",
+        "to": "sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow",
+        "to": "sec.srs.uc-detail.l3.4.3-alternative-flows"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.4.3-alternative-flows",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l3.4.3-alternative-flows",
+        "to": "sec.srs.uc-detail.l4.5.31-alternative-flow-a"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l4.5.31-alternative-flow-a",
+        "to": "sec.srs.uc-detail.l3.4.3-alternative-flows"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.6.4-exception-flows-error-handling",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.uc-detail.l3.6.4-exception-flows-error-handling",
+        "to": "sec.srs.uc-detail.l4.7.41-exception-a"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l4.7.41-exception-a",
+        "to": "sec.srs.uc-detail.l3.6.4-exception-flows-error-handling"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.8.5-business-rules",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.8.5-business-rules",
+        "to": "sec.srs.uc-detail.l3.9.6-functional-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.9.6-functional-requirements",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.9.6-functional-requirements",
+        "to": "sec.srs.uc-detail.l3.10.7-data-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.10.7-data-requirements",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.10.7-data-requirements",
+        "to": "sec.srs.uc-detail.l3.11.8-user-interface-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.11.8-user-interface-requirements",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.11.8-user-interface-requirements",
+        "to": "sec.srs.uc-detail.l3.12.9-related-use-cases"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.12.9-related-use-cases",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.uc-detail.l3.12.9-related-use-cases",
+        "to": "sec.srs.uc-detail.l3.13.10-notes"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.uc-detail.l3.13.10-notes",
+        "to": "sec.srs.uc-detail.l2.1.use-case"
+      },
+      {
+        "type": "contains",
+        "from": "doc.srs.feature-detail",
+        "to": "sec.srs.feature-detail.l2.1.feature"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.feature-detail.l2.1.feature",
+        "to": "doc.srs.feature-detail"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.feature-detail.l2.1.feature",
+        "to": "sec.srs.feature-detail.l3.2.1-description"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.feature-detail.l2.1.feature",
+        "to": "sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences"
+      },
+      {
+        "type": "contains",
+        "from": "sec.srs.feature-detail.l2.1.feature",
+        "to": "sec.srs.feature-detail.l3.4.3-functional-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.feature-detail.l3.2.1-description",
+        "to": "sec.srs.feature-detail.l2.1.feature"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.feature-detail.l3.2.1-description",
+        "to": "sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences",
+        "to": "sec.srs.feature-detail.l2.1.feature"
+      },
+      {
+        "type": "follows",
+        "from": "sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences",
+        "to": "sec.srs.feature-detail.l3.4.3-functional-requirements"
+      },
+      {
+        "type": "partOf",
+        "from": "sec.srs.feature-detail.l3.4.3-functional-requirements",
+        "to": "sec.srs.feature-detail.l2.1.feature"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.master-admin",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.sales",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.company-admin",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.partial-admin",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.employee",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "describedIn",
+        "from": "actor.individual",
+        "to": "sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-01",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "rendersTo",
+        "from": "UC-01",
+        "to": "docs/srs/03-use-cases/uc-01-assessment-cycle.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-02",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "rendersTo",
+        "from": "UC-02",
+        "to": "docs/srs/03-use-cases/uc-02-hr-operations.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-03",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "rendersTo",
+        "from": "UC-03",
+        "to": "docs/srs/03-use-cases/uc-03-employee-dashboard.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-04",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "rendersTo",
+        "from": "UC-04",
+        "to": "docs/srs/03-use-cases/uc-04-individual-b2c.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-05",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "rendersTo",
+        "from": "UC-05",
+        "to": "docs/srs/03-use-cases/uc-05-provider-configuration.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "UC-06",
+        "to": "sec.srs.3-use-cases.l3.3.32-list-use-case"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-01",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-01",
+        "to": "UC-01"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-01",
+        "to": "UC-03"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-01",
+        "to": "docs/srs/04-system-features/f-01-quantitative-assessment.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-02",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-02",
+        "to": "UC-01"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-02",
+        "to": "docs/srs/04-system-features/f-02-360-feedback.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-03",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-03",
+        "to": "UC-01"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-03",
+        "to": "UC-03"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-03",
+        "to": "docs/srs/04-system-features/f-03-quantitative-engine.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-04",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-04",
+        "to": "UC-01"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-04",
+        "to": "UC-03"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-04",
+        "to": "UC-06"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-04",
+        "to": "docs/srs/04-system-features/f-04-qualitative-assessment.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-05",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-05",
+        "to": "UC-01"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-05",
+        "to": "docs/srs/04-system-features/f-05-qualitative-engine.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-06",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-06",
+        "to": "UC-01"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-06",
+        "to": "UC-03"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-06",
+        "to": "docs/srs/04-system-features/f-06-results-benchmarking.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-07",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-07",
+        "to": "UC-01"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-07",
+        "to": "UC-03"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-07",
+        "to": "docs/srs/04-system-features/f-07-lms-training.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-08",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-08",
+        "to": "UC-02"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-08",
+        "to": "UC-05"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-08",
+        "to": "docs/srs/04-system-features/f-08-rbac-accounts.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-09",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-09",
+        "to": "UC-02"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-09",
+        "to": "docs/srs/04-system-features/f-09-hr-dashboard.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-10",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-10",
+        "to": "UC-04"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-10",
+        "to": "docs/srs/04-system-features/f-10-billing.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "F-11",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "satisfies",
+        "from": "F-11",
+        "to": "UC-02"
+      },
+      {
+        "type": "rendersTo",
+        "from": "F-11",
+        "to": "docs/srs/04-system-features/f-11-notifications.md"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-01",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-01",
+        "to": "F-08"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-01",
+        "to": "F-09"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-02",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-02",
+        "to": "F-09"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-02",
+        "to": "F-11"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-03",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-03",
+        "to": "F-03"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-04",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-04",
+        "to": "F-06"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-05",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-05",
+        "to": "F-03"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-05",
+        "to": "F-06"
+      },
+      {
+        "type": "listedIn",
+        "from": "REQ-06",
+        "to": "sec.srs.4-system-features.l3.3.42-list-of-system-features"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-06",
+        "to": "F-10"
+      },
+      {
+        "type": "tracesTo",
+        "from": "REQ-06",
+        "to": "UC-04"
+      },
+      {
+        "type": "describedIn",
+        "from": "NFR-01",
+        "to": "sec.srs.7-quality-attributes.l3.4.73-security"
+      },
+      {
+        "type": "tracesTo",
+        "from": "NFR-01",
+        "to": "F-08"
+      },
+      {
+        "type": "describedIn",
+        "from": "NFR-02",
+        "to": "sec.srs.7-quality-attributes.l3.4.73-security"
+      },
+      {
+        "type": "describedIn",
+        "from": "NFR-03",
+        "to": "sec.srs.2-overall-description.l3.4.23-operating-environment"
+      },
+      {
+        "type": "tracesTo",
+        "from": "NFR-03",
+        "to": "F-07"
+      },
+      {
+        "type": "describedIn",
+        "from": "NFR-04",
+        "to": "sec.srs.7-quality-attributes.l3.3.72-performance"
+      },
+      {
+        "type": "tracesTo",
+        "from": "NFR-04",
+        "to": "F-04"
+      },
+      {
+        "type": "tracesTo",
+        "from": "NFR-04",
+        "to": "F-07"
+      },
+      {
+        "type": "describedIn",
+        "from": "NFR-05",
+        "to": "sec.srs.7-quality-attributes.l3.4.73-security"
+      },
+      {
+        "type": "tracesTo",
+        "from": "NFR-05",
+        "to": "F-11"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-UserAccount",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-Organization",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-Assessment",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-QuestionnaireResponse",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-AssessmentReport",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-InterviewRecord",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-TrainingCourse",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      },
+      {
+        "type": "definedIn",
+        "from": "ENT-BenchmarkComparison",
+        "to": "sec.srs.5-data-requirements.l3.2.51-logical-data-model"
+      }
+    ]
+  }
+  

@@ -1,0 +1,39 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "auth.ts",
+      "file_type": "code",
+      "source_file": "auth.ts",
+      "source_location": "L1",
+      "id": "auth_ts",
+      "community": 0,
+      "norm_label": "auth.ts"
+    },
+    {
+      "label": "login()",
+      "file_type": "code",
+      "source_file": "auth.ts",
+      "source_location": "L1",
+      "id": "src_auth_login",
+      "community": 0,
+      "norm_label": "login()"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "auth.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "auth_ts",
+      "target": "src_auth_login",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "a9491b3df8094893ad63b7816c8e57d4f1ef26ce"
+}

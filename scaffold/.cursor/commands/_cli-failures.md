@@ -100,10 +100,10 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 - **Means:** Agent used `graphify update <path> --graph <file>`. The `update` subcommand does **not** accept `--graph` (only `query`, `explain`, `path`, `cluster-only` do).
 - **Fix:** Run **`ai-spector graphify update`** (sets absolute `GRAPHIFY_OUT` and project-root cwd). Do not pass `--graph` on `update`.
 
-### `graphify update` — `No code files found` (exit 1) on empty `docs/srs` / `docs/basic-design`
+### `graphify update` — `No code files found` (exit 1) on `docs/srs` / `docs/basic-design`
 
-- **Means:** Graphify was invoked on an empty doc folder (no files to index).
-- **Fix:** **`ai-spector index`** / **`ai-spector graphify update`** skip empty sources automatically. Add SRS/basic-design markdown when you want Graphify storage for those paths.
+- **Means:** Those paths are empty or markdown-only; Graphify `update` AST-indexes **code** extensions (`.py`, `.ts`, `.js`, …), not SRS markdown alone.
+- **Fix:** **`ai-spector index`** / **`ai-spector graphify update`** skip empty and markdown-only sources automatically (success, not failure). Use **`docs/data-source`** for code Graphify indexing; SRS/basic-design semantics come from index doc-extract, not `graphify update`.
 
 ### `graphify update` — output under `docs/data-source/.ai-spector/...`
 

@@ -26,6 +26,7 @@ const DEFAULT_GENERATE_EDGES: EdgeType[] = [
   "dependsOn",
   "references",
   "rendersTo",
+  "derivedFrom",
 ];
 
 export function resolveDocumentForNode(
@@ -103,6 +104,19 @@ export function projectionPathForNode(
   return undefined;
 }
 
+export function dataSourcePathsForNode(
+  g: InMemoryGraph,
+  nodeId: string,
+): string[] {
+  const paths: string[] = [];
+  for (const e of g.outEdges.get(nodeId) ?? []) {
+    if (e.type === "derivedFrom" && !e.to.startsWith("graphify:")) {
+      paths.push(e.to);
+    }
+  }
+  return paths;
+}
+
 export function querySubgraph(
   g: InMemoryGraph,
   seedId: string,
@@ -163,9 +177,12 @@ export function querySubgraph(
 
   const projectionPaths = [
     ...new Set(
-      [...visitedNodes]
-        .map((id) => projectionPathForNode(g, id))
-        .filter((p): p is string => Boolean(p && !p.includes("{"))),
+      [
+        ...[...visitedNodes]
+          .map((id) => projectionPathForNode(g, id))
+          .filter((p): p is string => Boolean(p && !p.includes("{"))),
+        ...[...visitedNodes].flatMap((id) => dataSourcePathsForNode(g, id)),
+      ],
     ),
   ];
 

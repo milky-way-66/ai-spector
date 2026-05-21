@@ -34,6 +34,24 @@ describe("InMemoryGraph.from", () => {
     );
   });
 
+  it("allows derivedFrom when the target is not a graph node (data-source path)", () => {
+    const data = graph([node("UC-01", "useCase")], [
+      {
+        type: "derivedFrom",
+        from: "UC-01",
+        to: "docs/data-source/interviews/uc01.md",
+      },
+    ]);
+
+    const g = InMemoryGraph.from(data);
+
+    expect(g.hasEdge({
+      type: "derivedFrom",
+      from: "UC-01",
+      to: "docs/data-source/interviews/uc01.md",
+    })).toBe(true);
+  });
+
   it("allows rendersTo when the target is not a graph node (file path)", () => {
     const data = graph([node("srs:intro", "section")], [
       {

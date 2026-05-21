@@ -31,7 +31,9 @@ After **`/generate-srs`** (recommended):
 ai-spector index
 ```
 
-Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → validate → doc indexes.
+Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → **data-source provenance (`derivedFrom`)** → validate → doc indexes.
+
+**Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` source fields, SRS detail `Source:` lines, or inline path mentions) and optionally **`graphify:<nodeId>`** when Graphify `graph.json` matches a single symbol in that file. No evidence → no edge.
 
 Flags:
 

@@ -1,9 +1,83 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import { pathExists } from "../util/fs.js";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "graphify-out", ".ai-spector"]);
+
+/**
+ * Extensions Graphify `update` / `watch` index via AST (graphify.detect.CODE_EXTENSIONS).
+ * Markdown-only doc trees (docs/srs, docs/basic-design) have no matches → skip before spawn.
+ */
+export const GRAPHIFY_CODE_EXTENSIONS = new Set([
+  ".py",
+  ".ts",
+  ".js",
+  ".jsx",
+  ".tsx",
+  ".mjs",
+  ".ejs",
+  ".go",
+  ".rs",
+  ".java",
+  ".groovy",
+  ".gradle",
+  ".cpp",
+  ".cc",
+  ".cxx",
+  ".c",
+  ".h",
+  ".hpp",
+  ".rb",
+  ".swift",
+  ".kt",
+  ".kts",
+  ".cs",
+  ".scala",
+  ".php",
+  ".lua",
+  ".luau",
+  ".toc",
+  ".zig",
+  ".ps1",
+  ".ex",
+  ".exs",
+  ".m",
+  ".mm",
+  ".jl",
+  ".vue",
+  ".svelte",
+  ".astro",
+  ".dart",
+  ".v",
+  ".sv",
+  ".sql",
+  ".r",
+  ".f",
+  ".F",
+  ".f90",
+  ".F90",
+  ".f95",
+  ".F95",
+  ".f03",
+  ".F03",
+  ".f08",
+  ".F08",
+  ".pas",
+  ".pp",
+  ".dpr",
+  ".dpk",
+  ".lpr",
+  ".inc",
+  ".dfm",
+  ".lfm",
+  ".lpk",
+  ".sh",
+  ".bash",
+  ".json",
+]);
+
+export type GraphifySourceSkipReason = "empty" | "no-code-files";
 
 export interface SourceFileFingerprint {
   relativePath: string;
@@ -76,16 +150,67 @@ export async function isGraphifySourceEmpty(
   projectRoot: string,
   sourceRel: string,
 ): Promise<boolean> {
+  return (await getGraphifySourceSkipReason(projectRoot, sourceRel)) === "empty";
+}
+
+/** True when Graphify `update` would find no AST-indexable code files under the source. */
+export async function hasGraphifyCodeFiles(
+  projectRoot: string,
+  sourceRel: string,
+): Promise<boolean> {
+  const files = await discoverSourceFingerprints(projectRoot, sourceRel);
+  return files.some((f) =>
+    GRAPHIFY_CODE_EXTENSIONS.has(extname(f.relativePath).toLowerCase()),
+  );
+}
+
+/**
+ * Why a source should not run `graphify update` (empty dir or markdown/docs only).
+ * Returns null when the path is missing, not a directory, or has code files to index.
+ */
+export async function getGraphifySourceSkipReason(
+  projectRoot: string,
+  sourceRel: string,
+): Promise<GraphifySourceSkipReason | null> {
   const abs = resolve(projectRoot, sourceRel);
   if (!(await pathExists(abs))) {
-    return false;
+    return null;
   }
   const st = await stat(abs).catch(() => null);
   if (!st?.isDirectory()) {
-    return false;
+    return null;
   }
   const files = await discoverSourceFingerprints(projectRoot, sourceRel);
-  return files.length === 0;
+  if (files.length === 0) {
+    return "empty";
+  }
+  const hasCode = files.some((f) =>
+    GRAPHIFY_CODE_EXTENSIONS.has(extname(f.relativePath).toLowerCase()),
+  );
+  return hasCode ? null : "no-code-files";
+}
+
+/** Pre-check before spawning Graphify CLI (empty tree or no code extensions). */
+export async function isGraphifySourceSkippable(
+  projectRoot: string,
+  sourceRel: string,
+): Promise<{ skip: true; reason: GraphifySourceSkipReason } | { skip: false }> {
+  const reason = await getGraphifySourceSkipReason(projectRoot, sourceRel);
+  if (reason) {
+    return { skip: true, reason };
+  }
+  return { skip: false };
+}
+
+const GRAPHIFY_NO_CODE_FILES_RE = /no code files found/i;
+
+/** Graphify watch/update exit 1 when the tree has nothing to rebuild. */
+export function isGraphifyNoCodeFilesOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): boolean {
+  return exitCode !== 0 && GRAPHIFY_NO_CODE_FILES_RE.test(`${stdout}\n${stderr}`);
 }
 
 export function resolveGraphifySources(

@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import {
   computeSourceContentHash,
   filterSourcesByHashChange,
+  getGraphifySourceSkipReason,
+  hasGraphifyCodeFiles,
+  isGraphifyNoCodeFilesOutput,
   isGraphifySourceEmpty,
+  isGraphifySourceSkippable,
   resolveGraphifyOutputPath,
   resolveGraphifySources,
 } from "../../src/graphify/sources.js";
@@ -47,6 +51,70 @@ describe("isGraphifySourceEmpty", () => {
   it("returns false when the source path does not exist", async () => {
     const root = await mkdtemp(join(tmpdir(), "aispector-gf-missing-"));
     expect(await isGraphifySourceEmpty(root, "docs/missing")).toBe(false);
+  });
+});
+
+describe("getGraphifySourceSkipReason / hasGraphifyCodeFiles", () => {
+  it("returns empty for a directory with no files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "aispector-gf-skip-empty-"));
+    await mkdir(join(root, "docs/srs"), { recursive: true });
+    expect(await getGraphifySourceSkipReason(root, "docs/srs")).toBe("empty");
+    expect(await hasGraphifyCodeFiles(root, "docs/srs")).toBe(false);
+  });
+
+  it("returns no-code-files for markdown-only trees", async () => {
+    const root = await mkdtemp(join(tmpdir(), "aispector-gf-skip-md-"));
+    const srsDir = join(root, "docs/srs");
+    await mkdir(srsDir, { recursive: true });
+    await writeFile(join(srsDir, "uc-01.md"), "# UC-01", "utf8");
+    await writeFile(join(srsDir, "template.md"), "<!-- placeholder -->", "utf8");
+
+    expect(await getGraphifySourceSkipReason(root, "docs/srs")).toBe(
+      "no-code-files",
+    );
+    expect(await hasGraphifyCodeFiles(root, "docs/srs")).toBe(false);
+    const skippable = await isGraphifySourceSkippable(root, "docs/srs");
+    expect(skippable).toEqual({ skip: true, reason: "no-code-files" });
+  });
+
+  it("returns null when code files exist under data-source", async () => {
+    const root = await mkdtemp(join(tmpdir(), "aispector-gf-skip-code-"));
+    const dsDir = join(root, "docs/data-source");
+    await mkdir(dsDir, { recursive: true });
+    await writeFile(join(dsDir, "notes.md"), "brief", "utf8");
+    await writeFile(join(dsDir, "app.ts"), "export {};\n", "utf8");
+
+    expect(await getGraphifySourceSkipReason(root, "docs/data-source")).toBe(
+      null,
+    );
+    expect(await hasGraphifyCodeFiles(root, "docs/data-source")).toBe(true);
+    expect(await isGraphifySourceSkippable(root, "docs/data-source")).toEqual({
+      skip: false,
+    });
+  });
+
+  it("returns null when the source path does not exist", async () => {
+    const root = await mkdtemp(join(tmpdir(), "aispector-gf-skip-missing-"));
+    expect(await getGraphifySourceSkipReason(root, "docs/missing")).toBe(null);
+  });
+});
+
+describe("isGraphifyNoCodeFilesOutput", () => {
+  it("detects Graphify no-code-files message on exit 1", () => {
+    expect(
+      isGraphifyNoCodeFilesOutput(
+        "[graphify watch] No code files found - nothing to rebuild.\n",
+        "",
+        1,
+      ),
+    ).toBe(true);
+  });
+
+  it("does not treat other failures as no-code skip", () => {
+    expect(isGraphifyNoCodeFilesOutput("", "permission denied", 1)).toBe(
+      false,
+    );
+    expect(isGraphifyNoCodeFilesOutput("ok", "", 0)).toBe(false);
   });
 });
 

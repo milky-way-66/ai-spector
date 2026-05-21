@@ -4,9 +4,11 @@ import { join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import {
   filterSourcesByHashChange,
-  isGraphifySourceEmpty,
+  getGraphifySourceSkipReason,
+  isGraphifyNoCodeFilesOutput,
   resolveGraphifyOutputPath,
   resolveGraphifySources,
+  type GraphifySourceSkipReason,
   type GraphifySourcesConfig,
 } from "../graphify/sources.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
@@ -32,7 +34,18 @@ export interface GraphifyUpdateResult {
   sourcesSkipped: string[];
   /** Sources skipped because the directory has no files (Graphify would exit 1). */
   sourcesEmptySkipped: string[];
+  /** Sources skipped because there are no Graphify code extensions (e.g. markdown-only docs/srs). */
+  sourcesNoCodeSkipped: string[];
   sourceHashes: Record<string, string>;
+}
+
+function skipReasonMessage(reason: GraphifySourceSkipReason): string {
+  switch (reason) {
+    case "empty":
+      return "empty";
+    case "no-code-files":
+      return "no code files to index";
+  }
 }
 
 function runCommand(
@@ -113,6 +126,7 @@ export async function runGraphifyUpdate(
 
   const sourcesRun: string[] = [];
   const sourcesEmptySkipped: string[] = [];
+  const sourcesNoCodeSkipped: string[] = [];
   const sourcesSkipped = specs
     .filter((s) => !toRun.some((r) => r.key === s.key))
     .map((s) => s.path);
@@ -122,7 +136,13 @@ export async function runGraphifyUpdate(
     for (const s of specs) {
       console.log(`  ○ ${s.path} (hash ${hashes[s.key] ?? "—"})`);
     }
-    return { sourcesRun, sourcesSkipped, sourcesEmptySkipped, sourceHashes: hashes };
+    return {
+      sourcesRun,
+      sourcesSkipped,
+      sourcesEmptySkipped,
+      sourcesNoCodeSkipped,
+      sourceHashes: hashes,
+    };
   }
 
   const env = {
@@ -143,9 +163,14 @@ export async function runGraphifyUpdate(
       continue;
     }
 
-    if (await isGraphifySourceEmpty(projectRoot, spec.path)) {
-      console.log(`  ⊘ skip ${spec.path} (empty)`);
-      sourcesEmptySkipped.push(spec.path);
+    const skipReason = await getGraphifySourceSkipReason(projectRoot, spec.path);
+    if (skipReason) {
+      console.log(`  ⊘ skip ${spec.path} (${skipReasonMessage(skipReason)})`);
+      if (skipReason === "empty") {
+        sourcesEmptySkipped.push(spec.path);
+      } else {
+        sourcesNoCodeSkipped.push(spec.path);
+      }
       continue;
     }
 
@@ -157,6 +182,14 @@ export async function runGraphifyUpdate(
     }
     if (result.stderr.trim()) {
       console.error(result.stderr.trimEnd());
+    }
+
+    if (
+      isGraphifyNoCodeFilesOutput(result.stdout, result.stderr, result.exitCode)
+    ) {
+      console.log(`  ⊘ skip ${spec.path} (no code files to index)`);
+      sourcesNoCodeSkipped.push(spec.path);
+      continue;
     }
 
     if (result.exitCode !== 0) {
@@ -202,9 +235,18 @@ export async function runGraphifyUpdate(
   if (sourcesEmptySkipped.length > 0) {
     console.log(`Skipped (empty): ${sourcesEmptySkipped.join(", ")}`);
   }
+  if (sourcesNoCodeSkipped.length > 0) {
+    console.log(`Skipped (no code files): ${sourcesNoCodeSkipped.join(", ")}`);
+  }
   if (sourcesSkipped.length > 0) {
     console.log(`Skipped (unchanged): ${sourcesSkipped.join(", ")}`);
   }
 
-  return { sourcesRun, sourcesSkipped, sourcesEmptySkipped, sourceHashes: hashes };
+  return {
+    sourcesRun,
+    sourcesSkipped,
+    sourcesEmptySkipped,
+    sourcesNoCodeSkipped,
+    sourceHashes: hashes,
+  };
 }
