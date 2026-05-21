@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_ORG/ai-spector.git"
+    "url": "git+https://github.com/milky-way-66/ai-spector.git"
   },
-  "homepage": "https://github.com/YOUR_ORG/ai-spector#readme",
+  "homepage": "https://github.com/milky-way-66/ai-spector#readme",
   "bugs": {
-    "url": "https://github.com/YOUR_ORG/ai-spector/issues"
+    "url": "https://github.com/milky-way-66/ai-spector/issues"
   },
   "keywords": [
     "ai-spector",

@@ -1,0 +1,3 @@
+# Graphify MCP sometimes writes here by default — not AI Spector canonical output.
+# Safe to delete; re-run /analyze with output under .ai-spector/.docflow/graph/ instead.
+graphify-out/

@@ -29,11 +29,15 @@ Creates section/document nodes from templates. Do not ask the user to run this s
 ### A. Extract (Graphify MCP)
 
 1. Load `data-source.json`, `analyze.graphify.json`.
-2. Resolve paths → `scope.json` → `sources`.
-3. Build/update Graphify index for that scope.
-4. Query / fallback to extract:
+2. **Graphify paths (mandatory):**
+   - Index: `.ai-spector/.docflow/graph/graphify-index` (`graphify.indexPath`)
+   - Output: `.ai-spector/.docflow/graph/graphify-out` (`graphify.outputPath`)
+   - **Do not** write under `docs/data-source/graphify-out/` — that is not AI Spector’s store; if Graphify created it, treat as disposable scratch or move into `.ai-spector/.docflow/graph/`.
+3. Resolve paths → `scope.json` → `sources`.
+4. Build/update Graphify index for that scope.
+5. Query / fallback to extract:
    - actors, useCases, features, functionalRequirements, nfrs, entities, interfaces, constraints, openQuestions
-5. Persist staging:
+6. Persist staging (canonical for AI Spector):
    - `.ai-spector/.docflow/analysis/knowledge.json` (see package `schemas/schema.knowledge.json`)
    - `.ai-spector/.docflow/analysis/gaps.json`
    - `.ai-spector/.docflow/analysis/scope.json`

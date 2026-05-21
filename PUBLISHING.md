@@ -2,7 +2,7 @@
 
 ## Before first publish
 
-1. Set **`repository`**, **`homepage`**, and **`bugs`** in `package.json` to your Git repo (replace `YOUR_ORG/ai-spector`).
+1. Set **`repository`**, **`homepage`**, and **`bugs`** in `package.json` to your Git repo (replace `milky-way-66/ai-spector`).
 2. Bump version: `npm version patch` (or `minor` / `major`).
 3. Confirm the package name **`ai-spector`** is free: https://www.npmjs.com/package/ai-spector
 

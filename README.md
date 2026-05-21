@@ -43,6 +43,10 @@ Command details live in `.cursor/commands/` after `init` (start with `_workflow.
 
 If a CLI step fails during a slash command, the agent should **stop**, show you the error, and help you fix it — not bypass the tool with manual edits. See `_cli-failures.md` in your project after `init`.
 
+### Why is `docs/data-source/graphify-out/` there?
+
+That folder is from **Graphify MCP** during **`/analyze`**, not from `npx ai-spector analyze`. AI Spector’s files live under `.ai-spector/` (especially `knowledge.json` and the traceability graph). You can delete `graphify-out/`; new projects gitignore it. See `docs/data-source/README.md` after `init`.
+
 ---
 
 ## What is the graph?
@@ -141,7 +145,7 @@ npm login
 npm publish
 ```
 
-Replace `YOUR_ORG/ai-spector` in `package.json` (`repository`, `homepage`, `bugs`) before publishing. See [PUBLISHING.md](PUBLISHING.md).
+Replace `milky-way-66/ai-spector` in `package.json` (`repository`, `homepage`, `bugs`) before publishing. See [PUBLISHING.md](PUBLISHING.md).
 
 ---
 

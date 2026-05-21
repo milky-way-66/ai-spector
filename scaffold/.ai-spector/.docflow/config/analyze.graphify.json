@@ -2,6 +2,7 @@
   "version": 1,
   "graphify": {
     "indexPath": ".ai-spector/.docflow/graph/graphify-index",
+    "outputPath": ".ai-spector/.docflow/graph/graphify-out",
     "defaultDataSource": "docs/data-source",
     "include": [
       "docs/data-source"
@@ -16,6 +17,8 @@
       "docs/srs/**",
       "docs/basic-design/**",
       "docs/detail-design/**",
+      "docs/data-source/graphify-out/**",
+      "**/graphify-out/**",
       ".ai-spector/**"
     ]
   },
