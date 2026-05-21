@@ -1,0 +1,14 @@
+# Source and dev-only (package.json "files" is the allowlist; this backs it up)
+src/
+example/
+docs/
+.cursor/
+.planning/
+*.tsbuildinfo
+.git/
+.github/
+
+# Tests / local artifacts (if added later)
+coverage/
+*.log
+.DS_Store

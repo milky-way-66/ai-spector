@@ -133,6 +133,18 @@ Option: `-r <path>` to point at another project root.
 
 ---
 
+## Publish to npm (maintainers)
+
+```bash
+npm run prepublish:check   # build + list tarball contents
+npm login
+npm publish
+```
+
+Replace `YOUR_ORG/ai-spector` in `package.json` (`repository`, `homepage`, `bugs`) before publishing. See [PUBLISHING.md](PUBLISHING.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
