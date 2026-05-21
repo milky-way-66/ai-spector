@@ -40,8 +40,17 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
   };
 
   for (const node of patch.nodes) {
-    if (STRUCTURE_TYPES.has(node.type)) {
+    if (node.type === "section" || node.type === "table" || node.type === "diagram") {
       stats.nodesSkipped++;
+      continue;
+    }
+    if (node.type === "document") {
+      const outcome = graph.upsertNode(node);
+      if (outcome === "created") {
+        stats.nodesCreated++;
+      } else {
+        stats.nodesUpdated++;
+      }
       continue;
     }
     if (!DOMAIN_TYPES.has(node.type)) {
@@ -67,6 +76,18 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
 
 function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
   const from = graph.nodesById.get(edge.from);
+
+  // rendersTo: document/section/domain -> repo-relative file path (to is not a node id)
+  if (edge.type === "rendersTo") {
+    if (!from) {
+      throw new Error(`rendersTo missing source node: ${edge.from}`);
+    }
+    if (from.type === "document" || from.type === "section" || DOMAIN_TYPES.has(from.type)) {
+      return;
+    }
+    throw new Error(`rendersTo source must be document, section, or domain node: ${edge.from}`);
+  }
+
   const to = graph.nodesById.get(edge.to);
 
   if (!from) {
@@ -77,10 +98,18 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
   }
 
   if (STRUCTURE_TYPES.has(to.type)) {
-    const anchorTypes = new Set(["listedIn", "definedIn", "describedIn", "references"]);
-    if (!anchorTypes.has(edge.type)) {
+    const allowedToStructure = new Set([
+      "listedIn",
+      "definedIn",
+      "describedIn",
+      "references",
+      "dependsOn",
+      "contains",
+      "partOf",
+    ]);
+    if (!allowedToStructure.has(edge.type)) {
       throw new Error(
-        `Edge ${edge.type} cannot target structure node ${edge.to} (use listedIn/definedIn/describedIn)`,
+        `Edge ${edge.type} cannot target structure node ${edge.to}`,
       );
     }
   }

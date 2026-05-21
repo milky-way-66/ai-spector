@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "description": "Map dag.basic-design.json node ids to graph query seeds and projection document ids",
+  "seeds": {
+    "bd.db-design": "doc.srs.5-data-requirements",
+    "bd.list-api": "doc.srs.6-external-interfaces",
+    "bd.detail-api": "doc.srs.4-system-features",
+    "bd.list-screen": "doc.srs.4-system-features",
+    "bd.detail-screen": "doc.srs.4-system-features"
+  },
+  "perDomain": {
+    "perEndpoint": {
+      "parentDagId": "bd.detail-api",
+      "graphNodeType": "feature",
+      "seedFromDomainId": true,
+      "outputDir": "docs/basic-design/api/"
+    },
+    "perScreen": {
+      "parentDagId": "bd.detail-screen",
+      "graphNodeType": "feature",
+      "seedFromDomainId": true,
+      "outputDir": "docs/basic-design/screens/"
+    }
+  },
+  "documentNodes": {
+    "bd.db-design": {
+      "id": "doc.bd.db-design",
+      "type": "document",
+      "output": "docs/basic-design/db-design.md",
+      "template": "basic_design/db-design-template.md"
+    },
+    "bd.list-api": {
+      "id": "doc.bd.list-api",
+      "type": "document",
+      "output": "docs/basic-design/api-list.md",
+      "template": "basic_design/list-api-template.md"
+    },
+    "bd.list-screen": {
+      "id": "doc.bd.list-screen",
+      "type": "document",
+      "output": "docs/basic-design/screens/list-screens.md",
+      "template": "basic_design/list-screen-template.md"
+    }
+  }
+}

@@ -90,15 +90,24 @@ export class InMemoryGraph {
 
   addEdge(edge: GraphEdge): void {
     this.outEdges.get(edge.from)!.push(edge);
-    this.inEdges.get(edge.to)!.push(edge);
+    const inbound = this.inEdges.get(edge.to);
+    if (inbound) {
+      inbound.push(edge);
+    } else if (edge.type !== "rendersTo") {
+      throw new Error(`Edge references missing target node: ${edge.from} -> ${edge.to}`);
+    }
   }
 
   addEdgeIfAbsent(edge: GraphEdge): boolean {
     if (this.hasEdge(edge)) {
       return false;
     }
-    if (!this.nodesById.has(edge.from) || !this.nodesById.has(edge.to)) {
-      throw new Error(`Edge references missing node: ${edge.from} -> ${edge.to}`);
+    if (!this.nodesById.has(edge.from)) {
+      throw new Error(`Edge references missing source node: ${edge.from}`);
+    }
+    // rendersTo targets a markdown path, not a graph node id
+    if (edge.type !== "rendersTo" && !this.nodesById.has(edge.to)) {
+      throw new Error(`Edge references missing target node: ${edge.from} -> ${edge.to}`);
     }
     this.addEdge(edge);
     return true;

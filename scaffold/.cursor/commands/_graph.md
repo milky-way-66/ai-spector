@@ -14,6 +14,7 @@ Run from project root: `npx ai-spector …` if needed.
 
 ```bash
 ai-spector analyze
+ai-spector graphify update
 ai-spector graph merge --from-knowledge
 ai-spector graph validate
 ai-spector graph visualize [--open]
@@ -24,8 +25,12 @@ ai-spector graph impact <nodeId> --json
 ## `graph query`
 
 ```bash
-ai-spector graph query <seedId> --direction both --depth 3 --json
+ai-spector graph query <seedId> --direction both --depth 4 --json
+ai-spector graph query <depDocId> --edges rendersTo,dependsOn,listedIn,satisfies --depth 2 --json
+ai-spector graph impact <seedId> --change content_change --json
 ```
+
+**Generate:** query **before** write; **`graph merge`** projection patch **after** each file (`rendersTo` + `dependsOn`). See `_generate-graph.md`.
 
 Use `projectionPaths`, `nodes`, `edges` from JSON. **If command fails or JSON invalid:** stop — do not glob `docs/srs/**`.
 

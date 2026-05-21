@@ -5,6 +5,13 @@
     "outputPath": ".ai-spector/.docflow/graph/graphify-out",
     "graphJsonPath": ".ai-spector/.docflow/graph/graphify-out/graph.json",
     "defaultDataSource": "docs/data-source",
+    "cli": {
+      "update": "ai-spector graphify update",
+      "env": {
+        "GRAPHIFY_OUT": ".ai-spector/.docflow/graph/graphify-out"
+      },
+      "forbidden": "Never use: graphify update <path> --graph <file> (unknown option). Use GRAPHIFY_OUT or ai-spector graphify update."
+    },
     "include": [
       "docs/data-source"
     ],

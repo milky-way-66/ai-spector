@@ -1,0 +1,39 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "readme_md",
+      "community": 0,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "Data source",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "data_source_readme_data_source",
+      "community": 0,
+      "norm_label": "data source"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "readme_md",
+      "target": "data_source_readme_data_source",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "f5e304db8e633285d6efbd83d00cf0e8bed04a5e"
+}

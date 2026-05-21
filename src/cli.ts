@@ -12,6 +12,7 @@ import { runGraphQuery } from "./commands/graph-query.js";
 import { runGraphImpact } from "./commands/graph-impact.js";
 import { runGraphMerge } from "./commands/graph-merge.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
+import { runGraphifyUpdate } from "./commands/graphify-update.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -55,6 +56,27 @@ program
   )
   .action(async (opts, cmd) => {
     await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
+  });
+
+const graphify = program
+  .command("graphify")
+  .description("Graphify CLI wrappers (sets GRAPHIFY_OUT — do not use graphify update --graph)");
+
+graphify
+  .command("update [path]")
+  .description(
+    "Run graphify update on data-source with output under .ai-spector/.docflow/graph/graphify-out",
+  )
+  .option(
+    "--keep-stale",
+    "Do not delete docs/data-source/graphify-out if Graphify wrote it there by mistake",
+  )
+  .action(async (path: string | undefined, opts, cmd) => {
+    await runGraphifyUpdate({
+      root: projectRootOpt(cmd),
+      sourcePath: path,
+      removeStaleOutput: !opts.keepStale,
+    });
   });
 
 const graph = program.command("graph").description("Traceability graph operations");

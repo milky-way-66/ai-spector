@@ -1,6 +1,6 @@
 # /generate-detail-design
 
-Detail design via graph context. **User runs this command;** agent runs CLI. On CLI failure: [_cli-failures.md](./_cli-failures.md). [_workflow.md](./_workflow.md), [_graph.md](./_graph.md).
+Detail design via graph context. **User runs this command;** agent runs CLI. Graph-first: [_generate-graph.md](./_generate-graph.md). On CLI failure: [_cli-failures.md](./_cli-failures.md).
 
 ## Prerequisites
 

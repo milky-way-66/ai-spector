@@ -95,6 +95,18 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 - **Means:** `/analyze` cannot extract.
 - **Fix:** User enables Graphify in Cursor; do not fake `knowledge.json`; stop and document blocker.
 
+### `graphify update` — `unknown option: --graph`
+
+- **Means:** Agent used `graphify update <path> --graph <file>`. The `update` subcommand does **not** accept `--graph` (only `query`, `explain`, `path`, `cluster-only` do).
+- **Fix:** Run **`ai-spector graphify update`** or  
+  `GRAPHIFY_OUT=.ai-spector/.docflow/graph/graphify-out graphify update docs/data-source`  
+  Then delete `docs/data-source/graphify-out/` if it exists.
+
+### Graphify wrote `docs/data-source/graphify-out/`
+
+- **Means:** `graphify update` ran without `GRAPHIFY_OUT`.
+- **Fix:** Run **`ai-spector graphify update`** (sets env + removes stale folder). Do not copy files manually unless CLI failed.
+
 ---
 
 ## Agent may fix without asking (small, local)

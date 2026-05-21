@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "description": "Map dag.srs.json node ids to traceability graph document ids for /generate-srs",
+  "seeds": {
+    "srs.introduction": "doc.srs.1-introduction",
+    "srs.overall-description": "doc.srs.2-overall-description",
+    "srs.use-cases": "doc.srs.3-use-cases",
+    "srs.features-list": "doc.srs.4-system-features",
+    "srs.feature-details": "doc.srs.4-system-features",
+    "srs.data-requirements": "doc.srs.5-data-requirements",
+    "srs.external-interfaces": "doc.srs.6-external-interfaces",
+    "srs.quality-attributes": "doc.srs.7-quality-attributes",
+    "srs.internationalization": "doc.srs.8-internationalization",
+    "srs.other-requirements": "doc.srs.9-other-requirements"
+  },
+  "perDomain": {
+    "useCase": {
+      "graphNodeType": "useCase",
+      "documentPattern": "doc.srs.uc-{id}",
+      "seedFromDomainId": true
+    },
+    "feature": {
+      "graphNodeType": "feature",
+      "documentPattern": "doc.srs.f-{id}",
+      "seedFromDomainId": true
+    }
+  }
+}

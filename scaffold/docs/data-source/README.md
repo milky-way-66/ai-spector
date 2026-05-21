@@ -4,7 +4,7 @@ Put **your** input files here (briefs, notes, exports, diagrams, legacy docs) be
 
 ## Not your inputs: `graphify-out/`
 
-If you see `docs/data-source/graphify-out/`, it was created by **Graphify MCP** during **`/analyze`** in Cursor — not by `npx ai-spector analyze`.
+If you see `docs/data-source/graphify-out/`, **Graphify `update` ran without `GRAPHIFY_OUT`** (often after `graphify update --graph …`, which is invalid). Fix: run **`ai-spector graphify update`** from the project root.
 
 | Location | What it is |
 |----------|------------|

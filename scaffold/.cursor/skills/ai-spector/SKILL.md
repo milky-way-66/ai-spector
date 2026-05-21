@@ -23,12 +23,13 @@ Never ignore CLI errors and “work around” with index files, manual BFS, or i
 
 | Command | Agent runs CLI |
 |---------|----------------|
-| `/analyze` | `analyze` → Graphify → `graph merge --from-knowledge` → `graph validate` |
+| `/analyze` | `analyze` → `graphify update` → Graphify MCP extract → `graph merge` → `graph validate` |
 | `/validate-graph` | `graph validate` |
 | `/visualize-graph` | `graph visualize --open` |
-| `/generate-srs` | `graph validate` + `graph query <seed> --json` per target |
+| `/generate-srs` | All DAG, explicit paths, or natural-language scope (confirm before gen) → waves → query → write → merge |
 | `/graph-impact` | `graph impact <id> --json` |
-| `/generate-basic-design`, `/generate-detail-design` | `graph query` per target |
+| `/generate-basic-design` | Same as SRS: all / paths / request (**confirm**) → waves → query → merge (`dag.basic-design.*`) |
+| `/generate-detail-design` | `graph query` per target |
 
 Run CLI from **project workspace root**; prefer `npx ai-spector` if the binary is not on PATH.
 
@@ -36,6 +37,8 @@ Run CLI from **project workspace root**; prefer `npx ai-spector` if the binary i
 
 `.ai-spector/graph/traceability.graph.json`
 
-Context: **`ai-spector graph query <seedId> --json`** — only after validate passes; use `projectionPaths` from stdout. Details: `_graph.md`.
+Context: **`ai-spector graph query <seedId> --json`** — depth 4 for targets, depth 2 for DAG deps; use `projectionPaths`. After each generated file: **`graph merge`** projection patch with `rendersTo` + `dependsOn`. Details: `_generate-graph.md`, `_graph.md`.
+
+**Generate:** accuracy over speed — batch only same-wave independent targets; merge + validate after each wave.
 
 Templates: `node_modules/ai-spector/templates/` (monorepo `example/`: `../templates/`).

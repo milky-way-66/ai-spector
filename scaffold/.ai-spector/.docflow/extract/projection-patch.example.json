@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "comment": "After one SRS file or a whole parallel wave — merge before the next wave",
+  "nodes": [],
+  "edges": [
+    {
+      "type": "rendersTo",
+      "from": "doc.srs.3-use-cases",
+      "to": "docs/srs/3-use-cases.md"
+    },
+    {
+      "type": "dependsOn",
+      "from": "doc.srs.3-use-cases",
+      "to": "doc.srs.1-introduction"
+    },
+    {
+      "type": "dependsOn",
+      "from": "doc.srs.3-use-cases",
+      "to": "doc.srs.2-overall-description"
+    }
+  ]
+}

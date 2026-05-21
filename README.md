@@ -26,8 +26,8 @@ Put your source files in `docs/data-source/`, open the folder in Cursor, turn on
 | **`/analyze`** | Builds the graph skeleton, extracts knowledge (Graphify), merges use cases & features into the graph, validates |
 | **`/visualize-graph`** | Opens a browser report to inspect the graph and `knowledge.json` |
 | **`/validate-graph`** | Checks the graph before generation |
-| **`/generate-srs`** | Writes SRS files using graph context (not whole-folder guessing) |
-| **`/generate-basic-design`** | Basic design from the graph |
+| **`/generate-srs`** | All SRS, listed files, or a short request (agent confirms scope) — graph-first, by DAG waves |
+| **`/generate-basic-design`** | All, listed files, or request (confirm) — graph + SRS context, by waves |
 | **`/generate-detail-design`** | Detail design from the graph |
 | **`/graph-impact <id>`** | Shows what to regenerate after you change something |
 
@@ -135,6 +135,7 @@ npm run init:example
 |---------|---------|
 | `ai-spector init` | Scaffold project |
 | `ai-spector analyze` | Section tree in graph |
+| `ai-spector graphify update` | Graphify code graph → `.ai-spector/.../graphify-out/` (sets `GRAPHIFY_OUT`) |
 | `ai-spector graph merge --from-knowledge` | Domain nodes from staging |
 | `ai-spector graph validate` | Rules check |
 | `ai-spector graph visualize [--open]` | HTML report |

@@ -26,19 +26,33 @@ ai-spector analyze
 
 Creates section/document nodes from templates. Do not ask the user to run this separately.
 
-### A. Extract (Graphify MCP)
+### A. Extract (Graphify)
 
 1. Load `data-source.json`, `analyze.graphify.json`.
-2. **Graphify paths (mandatory — set by `ai-spector init` in `.cursor/mcp.json`):**
-   - MCP graph file: `.ai-spector/.docflow/graph/graphify-out/graph.json`
-   - Index: `.ai-spector/.docflow/graph/graphify-index` (`graphify.indexPath`)
-   - Output dir: `.ai-spector/.docflow/graph/graphify-out` (`graphify.outputPath`)
-   - **Do not** use `docs/data-source/graphify-out/` — legacy Graphify default; delete or gitignore if present.
-3. Resolve paths → `scope.json` → `sources`.
-4. Build/update Graphify index for that scope.
-5. Query / fallback to extract:
+2. **Graphify paths (from `ai-spector init`):**
+   - Output dir: `.ai-spector/.docflow/graph/graphify-out` (`GRAPHIFY_OUT`)
+   - Graph file: `.ai-spector/.docflow/graph/graphify-out/graph.json` (MCP + queries use `--graph` only on `graphify query`, not on `update`)
+3. **Code ingest (CLI — agent runs):**
+
+```bash
+ai-spector graphify update
+```
+
+This runs `graphify update docs/data-source` with `GRAPHIFY_OUT` set. **Forbidden:** `graphify update … --graph …` (`unknown option: --graph`).
+
+Fallback if needed:
+
+```bash
+GRAPHIFY_OUT=.ai-spector/.docflow/graph/graphify-out graphify update docs/data-source
+```
+
+The command removes stale `docs/data-source/graphify-out/` if Graphify created it by mistake.
+
+4. **Semantic extract (Graphify MCP)** — query profiles in `analyze.graphify.json`; use graph at `graphJsonPath` for `graphify query "…" --graph .ai-spector/.docflow/graph/graphify-out/graph.json`.
+5. Resolve paths → `scope.json` → `sources`.
+6. Query / fallback to extract:
    - actors, useCases, features, functionalRequirements, nfrs, entities, interfaces, constraints, openQuestions
-6. Persist staging (canonical for AI Spector):
+7. Persist staging (canonical for AI Spector):
    - `.ai-spector/.docflow/analysis/knowledge.json` (see package `schemas/schema.knowledge.json`)
    - `.ai-spector/.docflow/analysis/gaps.json`
    - `.ai-spector/.docflow/analysis/scope.json`

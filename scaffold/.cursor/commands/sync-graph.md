@@ -9,9 +9,12 @@ Reconcile **disk projections** (`docs/srs/`, etc.) with **graph nodes** — add 
 
 ## When to run
 
+- **Repair** when `/generate-srs` skipped per-file `graph merge` ingest
 - After manual edits to markdown outside `/generate-*`
 - Before `/validate-graph` when files exist but graph lacks `document` nodes
 - After bulk import of SRS files
+
+**Preferred during `/generate-srs`:** per-file `graph merge` with `projection-patch.json` (see `_generate-graph.md`) — not batch sync at the end.
 
 ## Required Behavior
 
