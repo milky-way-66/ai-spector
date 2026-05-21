@@ -3,6 +3,7 @@
   "graphify": {
     "indexPath": ".ai-spector/.docflow/graph/graphify-index",
     "outputPath": ".ai-spector/.docflow/graph/graphify-out",
+    "graphJsonPath": ".ai-spector/.docflow/graph/graphify-out/graph.json",
     "defaultDataSource": "docs/data-source",
     "include": [
       "docs/data-source"

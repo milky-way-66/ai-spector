@@ -15,7 +15,9 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Put your source files in `docs/data-source/`, open the folder in Cursor, and turn on the **ai-spector** skill.
+Put your source files in `docs/data-source/`, open the folder in Cursor, turn on the **ai-spector** skill, and **reload MCP** (init writes `.cursor/mcp.json` for Graphify).
+
+**Graphify requires:** [uv](https://docs.astral.sh/uv/) installed; package `graphifyy` is pulled via `uv tool run` on first MCP start.
 
 ### Then use slash commands
 
@@ -43,9 +45,15 @@ Command details live in `.cursor/commands/` after `init` (start with `_workflow.
 
 If a CLI step fails during a slash command, the agent should **stop**, show you the error, and help you fix it — not bypass the tool with manual edits. See `_cli-failures.md` in your project after `init`.
 
-### Why is `docs/data-source/graphify-out/` there?
+### Graphify MCP (configured on `init`)
 
-That folder is from **Graphify MCP** during **`/analyze`**, not from `npx ai-spector analyze`. AI Spector’s files live under `.ai-spector/` (especially `knowledge.json` and the traceability graph). You can delete `graphify-out/`; new projects gitignore it. See `docs/data-source/README.md` after `init`.
+`init` adds **`.cursor/mcp.json`** (Graphify) and updates **`.gitignore`** (Graphify cache, HTML reports, legacy `docs/data-source/graphify-out/`).
+
+Graphify graph file:
+
+`.ai-spector/.docflow/graph/graphify-out/graph.json`
+
+Restart Cursor or reload MCP after init. If you still see **`docs/data-source/graphify-out/`**, that is an old Graphify default — delete it; see `docs/data-source/README.md`.
 
 ---
 

@@ -7,6 +7,8 @@ description: "Cursor-first docs: user runs slash commands; agent runs CLI; on CL
 
 **Workflow:** `.cursor/commands/_workflow.md` — user only runs `npx ai-spector init` once, then slash commands.
 
+**Graphify MCP:** `init` configures `.cursor/mcp.json` → graph file at `.ai-spector/.docflow/graph/graphify-out/graph.json` (not `docs/data-source/graphify-out/`).
+
 ## CLI failure rule (non-negotiable)
 
 When `ai-spector` exits non-zero or required `--json` is missing/invalid:

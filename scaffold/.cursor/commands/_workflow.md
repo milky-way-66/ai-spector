@@ -11,7 +11,7 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Add source material under `docs/data-source/`, open the project in Cursor, and enable the **ai-spector** skill.
+Add source material under `docs/data-source/`, open the project in Cursor, **reload MCP** (Graphify is in `.cursor/mcp.json` from `init`), and enable the **ai-spector** skill.
 
 ## Day-to-day (slash commands only)
 

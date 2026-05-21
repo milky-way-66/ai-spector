@@ -13,6 +13,4 @@ If you see `docs/data-source/graphify-out/`, it was created by **Graphify MCP** 
 | `.ai-spector/.docflow/graph/graphify-out` | Preferred Graphify output (see `analyze.graphify.json`) |
 | `.ai-spector/.docflow/analysis/knowledge.json` | **AI Spector staging** → merged into the traceability graph |
 
-You can **delete** `graphify-out/` under `docs/data-source/`; it is gitignored. The agent should write extract results to `knowledge.json`, not rely on that folder.
-
 Override inputs: `/analyze path/to/other-folder`

@@ -29,10 +29,11 @@ Creates section/document nodes from templates. Do not ask the user to run this s
 ### A. Extract (Graphify MCP)
 
 1. Load `data-source.json`, `analyze.graphify.json`.
-2. **Graphify paths (mandatory):**
+2. **Graphify paths (mandatory — set by `ai-spector init` in `.cursor/mcp.json`):**
+   - MCP graph file: `.ai-spector/.docflow/graph/graphify-out/graph.json`
    - Index: `.ai-spector/.docflow/graph/graphify-index` (`graphify.indexPath`)
-   - Output: `.ai-spector/.docflow/graph/graphify-out` (`graphify.outputPath`)
-   - **Do not** write under `docs/data-source/graphify-out/` — that is not AI Spector’s store; if Graphify created it, treat as disposable scratch or move into `.ai-spector/.docflow/graph/`.
+   - Output dir: `.ai-spector/.docflow/graph/graphify-out` (`graphify.outputPath`)
+   - **Do not** use `docs/data-source/graphify-out/` — legacy Graphify default; delete or gitignore if present.
 3. Resolve paths → `scope.json` → `sources`.
 4. Build/update Graphify index for that scope.
 5. Query / fallback to extract:

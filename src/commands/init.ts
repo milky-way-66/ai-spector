@@ -2,6 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { scaffoldBundleRoot } from "../config/load.js";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
+import { ensureGraphifyMcpConfig } from "../util/mcp.js";
+import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 
 export interface InitOptions {
   targetDir: string;
@@ -26,6 +28,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     ".ai-spector/registry",
     ".ai-spector/.docflow/analysis",
     ".ai-spector/.docflow/extract",
+    ".ai-spector/.docflow/graph/graphify-out",
     ".ai-spector/views",
     "docs/srs",
     "docs/basic-design",
@@ -48,13 +51,20 @@ export async function runInit(opts: InitOptions): Promise<void> {
     await writeFile(gitkeep, "");
   }
 
+  const mcpPath = await ensureGraphifyMcpConfig(root);
+  const gitignorePath = await ensureAiSpectorGitignore(root);
+
   console.log(`Initialized AI Spector project at ${root}`);
+  console.log("");
+  console.log(`  MCP       → ${mcpPath} (Graphify server added/updated)`);
+  console.log(`  gitignore → ${gitignorePath} (ai-spector block added/updated)`);
   console.log("");
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");
-  console.log("  2. Enable the ai-spector skill (.cursor/skills/ai-spector/)");
-  console.log("  3. Add files under docs/data-source/");
-  console.log("  4. Run /analyze  →  /validate-graph  →  /generate-srs");
+  console.log("  2. Reload MCP (Settings → MCP) or restart Cursor — needs uv + graphifyy");
+  console.log("  3. Enable the ai-spector skill (.cursor/skills/ai-spector/)");
+  console.log("  4. Add files under docs/data-source/");
+  console.log("  5. Run /analyze  →  /validate-graph  →  /generate-srs");
   console.log("");
   console.log("See .cursor/commands/_workflow.md — you do not need other CLI commands.");
 }

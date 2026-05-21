@@ -54,6 +54,8 @@ npm install ai-spector
 npx ai-spector init
 ```
 
+`init` writes `.cursor/mcp.json` (Graphify via `uv` + `graphifyy`). Users need **uv** installed and must reload MCP in Cursor after init.
+
 ## Troubleshooting
 
 | Issue | Fix |
