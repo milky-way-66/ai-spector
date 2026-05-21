@@ -20,6 +20,8 @@ ai-spector graph validate
 ai-spector graph visualize [--open]
 ai-spector graph query <nodeId> --json
 ai-spector graph impact <nodeId> --json
+ai-spector graph impact --file <path> [--heading <text>] --json
+ai-spector graph impact --git --json
 ```
 
 ## `graph query`
@@ -38,8 +40,22 @@ Use `projectionPaths`, `nodes`, `edges` from JSON. **If command fails or JSON in
 
 ## `graph impact`
 
+Resolve the seed in the agent (see `/impact`), then:
+
 ```bash
 ai-spector graph impact <nodeId> --change content_change --json
+```
+
+Optional resolver flags (verify path/heading → id):
+
+```bash
+ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
+```
+
+Current working tree (staged + unstaged vs `HEAD`, or unstaged + `--cached` before first commit):
+
+```bash
+ai-spector graph impact --git --change content_change --json
 ```
 
 If this fails, do not guess impact scope — show CLI output and fix.

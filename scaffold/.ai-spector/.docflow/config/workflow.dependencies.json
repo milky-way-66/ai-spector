@@ -260,7 +260,7 @@
   "graphUsage": {
     "rule": "Before opening docs under docs/srs/ or docs/basic-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/_graph.md.",
     "validateBeforeGenerate": "/validate-graph",
-    "afterEdit": "/graph-impact",
+    "afterEdit": "/impact",
     "reconcileProjections": "/sync-graph"
   },
   "indexUsage": {

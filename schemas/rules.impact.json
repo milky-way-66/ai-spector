@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Impact propagation rules (P1+). P0 stub for future /graph-impact.",
+  "description": "Impact propagation rules (P1+). Used by /impact (graph impact CLI).",
   "edgePropagation": {
     "partOf": { "direction": "out", "depth": "unbounded" },
     "contains": { "direction": "in", "depth": "unbounded" },

@@ -17,7 +17,7 @@ description: "Cursor-first docs workflow: user runs slash commands; agent runs a
 | `/validate-graph` | `graph validate` |
 | `/visualize-graph` | `graph visualize --open` |
 | `/generate-srs` | `graph validate` + `graph query <seed> --json` per target |
-| `/graph-impact` | `graph impact <id> --json` |
+| `/impact` | Empty args → git diff + seeds; else resolve → `graph impact <id> --json` (optional `--git` / `--file` / `--heading`) |
 | `/generate-basic-design`, `/generate-detail-design` | `graph query` per target |
 
 ## Heart of the system

@@ -1,6 +1,8 @@
 # AI Spector workflow (Cursor)
 
-**You use slash commands.** The agent runs `ai-spector` CLI in the terminal when needed. Do not ask the user to run `analyze`, `graph merge`, or `graph query` manually.
+**You use slash commands.** The agent runs `ai-spector` CLI in the terminal. Do not ask the user to run `analyze`, `graph merge`, or `graph query` manually.
+
+If CLI fails: agent **stops**, shows output, and helps you fix — see [**_cli-failures.md**](./_cli-failures.md). No silent fallbacks.
 
 ## One-time setup (terminal)
 
@@ -9,21 +11,23 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Add source material under `docs/data-source/`, open the project in Cursor, and enable the **ai-spector** skill.
+Add source material under `docs/data-source/`, open the project in Cursor, **reload MCP** (Graphify is in `.cursor/mcp.json` from `init`), and enable the **ai-spector** skill.
 
 ## Day-to-day (slash commands only)
 
 | Step | You run | Agent runs (CLI) |
 |------|---------|------------------|
-| 1 | **`/analyze`** | `ai-spector analyze` → Graphify extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
+| 1 | **`/analyze`** | `ai-spector analyze` → `ai-spector graphify update` → Graphify MCP extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
 | 2 | **`/validate-graph`** | `ai-spector graph validate` |
-| 3 | **`/generate-srs`** | `graph validate` → `graph query <seed> --json` per target → write docs → `graph validate` |
+| 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
 | — | **`/index`** | After manual edits: `ai-spector index` (graph + knowledge merge + Graphify + doc indexes) |
-| 5 | **`/generate-basic-design`** | same `graph query` pattern |
+| 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
-| After edits | **`/graph-impact <nodeId>`** | `graph impact <id> --json` |
+| After edits | **`/impact`** [what changed] | Empty args → `git diff` + resolve seeds; else describe change → `graph impact <id> --json` (or `--git` / `--file`) |
 | Inspect graph | **`/visualize-graph`** | `graph visualize --open` |
+
+**Any step fails?** Agent reports the error and fix steps, then you re-run the **same** slash command. The agent does not bypass CLI with manual graph edits or folder-wide doc reads.
 
 ## Typical first run
 
@@ -37,11 +41,11 @@ docs/data-source/            ← add files
 
 ## If something fails
 
-| Symptom | You run |
-|---------|---------|
-| No use cases in graph | `/analyze` again (after updating `docs/data-source/`) |
-| Validate errors | `/analyze` or `/validate-graph` — agent fixes graph from CLI output |
-| Wrong or empty SRS context | `/analyze` then `/generate-srs` |
-| Changed a section and unsure what to regen | `/graph-impact <section-or-UC-id>` |
+| Symptom | What to do |
+|---------|------------|
+| Red error after `/analyze` | Read agent’s **Blocked** message; fix data-source or Graphify; run **`/analyze`** again |
+| Validate errors | **`/validate-graph`** — agent explains each `[ERROR]` and fixes or guides you |
+| Empty SRS / wrong context | **`/analyze`** then **`/generate-srs`** — not “read all docs manually” |
+| Unsure what regen | **`/impact`** (current git diff, selection, path, or short description) |
 
-Technical CLI details: [_graph.md](./_graph.md). Prerequisites: [_prerequisites.md](./_prerequisites.md).
+Details: [_cli-failures.md](./_cli-failures.md). CLI reference: [_graph.md](./_graph.md). Prerequisites: [_prerequisites.md](./_prerequisites.md).

@@ -24,7 +24,7 @@ Add source material under `docs/data-source/`, open the project in Cursor, **rel
 | — | **`/index`** | After manual edits: `ai-spector index` (graph + knowledge merge + Graphify + doc indexes) |
 | 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
-| After edits | **`/graph-impact <nodeId>`** | `graph impact <id> --json` |
+| After edits | **`/impact`** [what changed] | Empty args → `git diff` + resolve seeds; else describe change → `graph impact <id> --json` (or `--git` / `--file`) |
 | Inspect graph | **`/visualize-graph`** | `graph visualize --open` |
 
 **Any step fails?** Agent reports the error and fix steps, then you re-run the **same** slash command. The agent does not bypass CLI with manual graph edits or folder-wide doc reads.
@@ -46,6 +46,6 @@ docs/data-source/            ← add files
 | Red error after `/analyze` | Read agent’s **Blocked** message; fix data-source or Graphify; run **`/analyze`** again |
 | Validate errors | **`/validate-graph`** — agent explains each `[ERROR]` and fixes or guides you |
 | Empty SRS / wrong context | **`/analyze`** then **`/generate-srs`** — not “read all docs manually” |
-| Unsure what regen | **`/graph-impact <id>`** |
+| Unsure what regen | **`/impact`** (current git diff, selection, path, or short description) |
 
 Details: [_cli-failures.md](./_cli-failures.md). CLI reference: [_graph.md](./_graph.md). Prerequisites: [_prerequisites.md](./_prerequisites.md).

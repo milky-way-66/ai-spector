@@ -1,9 +1,16 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
+import { InMemoryGraph } from "../graph/InMemoryGraph.js";
+import {
+  findDocumentNodeIdForPath as findDocumentNodeIdInGraph,
+  globToRegExp,
+} from "../graph/resolve.js";
 import type { TraceabilityGraph } from "../types.js";
 import type { IndexDocsConfig } from "./docs-config.js";
 import { INDEX_PLACEHOLDER_MARKERS } from "./docs-config.js";
+
+export { globToRegExp };
 
 export interface DiscoveredDocFile {
   relativePath: string;
@@ -81,15 +88,6 @@ export async function discoverMarkdownFiles(
   return files;
 }
 
-export function globToRegExp(glob: string): RegExp {
-  const escaped = glob
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*\//g, "(?:.*/)?")
-    .replace(/\*\*/g, ".*")
-    .replace(/\*/g, "[^/]*");
-  return new RegExp(`^${escaped}$`);
-}
-
 export function findDocumentNodeIdForPath(
   graph: TraceabilityGraph | null,
   relativePath: string,
@@ -97,21 +95,7 @@ export function findDocumentNodeIdForPath(
   if (!graph) {
     return undefined;
   }
-  const norm = relativePath.replace(/\\/g, "/");
-  for (const n of graph.nodes) {
-    if (n.type !== "document") {
-      continue;
-    }
-    const out = n.output as string | undefined;
-    if (out && norm === out.replace(/\\/g, "/")) {
-      return n.id;
-    }
-    const pattern = n.outputPattern as string | undefined;
-    if (pattern && globToRegExp(pattern).test(norm)) {
-      return n.id;
-    }
-  }
-  return undefined;
+  return findDocumentNodeIdInGraph(InMemoryGraph.from(graph), relativePath);
 }
 
 export function firstMeaningfulLine(content: string): string {

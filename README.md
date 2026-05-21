@@ -29,7 +29,7 @@ Put your source files in `docs/data-source/`, open the folder in Cursor, turn on
 | **`/generate-srs`** | All SRS, listed files, or a short request (agent confirms scope) — graph-first, by DAG waves |
 | **`/generate-basic-design`** | All, listed files, or request (confirm) — graph + SRS context, by waves |
 | **`/generate-detail-design`** | Detail design from the graph |
-| **`/graph-impact <id>`** | Shows what to regenerate after you change something |
+| **`/impact`** [what changed] | Shows what to regenerate after you change something (agent resolves graph seed) |
 | **`/index`** (or `ai-spector index`) | Rebuild graph structure, re-merge knowledge, Graphify storage, doc indexes after manual file edits |
 | **`/summary`** (optional) | Build `.ai-spector/index/*.md` doc summaries — not the same as full `/index` |
 
@@ -144,7 +144,7 @@ npm run init:example
 | `ai-spector graph validate` | Rules check |
 | `ai-spector graph visualize [--open]` | HTML report |
 | `ai-spector graph query <id> --json` | Context for generation |
-| `ai-spector graph impact <id> --json` | Regen scope |
+| `ai-spector graph impact <id> --json` | Regen scope (or `--file` / `--heading` / `--git` for current diff) |
 | `ai-spector index` | Refresh graph + knowledge merge + Graphify + `.ai-spector/index/` (see flags below) |
 
 **`ai-spector index` flags:** `--graph-only`, `--docs-only`, `--skip-graphify`, `--skip-docs`, `--skip-merge`, `--skip-validate`

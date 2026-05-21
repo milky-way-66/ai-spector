@@ -29,7 +29,7 @@ Never ignore CLI errors and “work around” with index files, manual BFS, or i
 | `/validate-graph` | `graph validate` |
 | `/visualize-graph` | `graph visualize --open` |
 | `/generate-srs` | All DAG, explicit paths, or natural-language scope (confirm before gen) → waves → query → write → merge |
-| `/graph-impact` | `graph impact <id> --json` |
+| `/impact` | Empty args → git diff + seeds; else resolve → `graph impact <id> --json` (optional `--git` / `--file` / `--heading`) |
 | `/generate-basic-design` | Same as SRS: all / paths / request (**confirm**) → waves → query → merge (`dag.basic-design.*`) |
 | `/generate-detail-design` | `graph query` per target |
 

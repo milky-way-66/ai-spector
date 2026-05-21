@@ -1,67 +1,69 @@
 # Graph CLI (for agents)
 
-**Users do not run these commands.** Slash commands (`/analyze`, `/generate-srs`, …) invoke the CLI. User workflow: [_workflow.md](./_workflow.md).
+**Users do not run these.** Slash commands invoke CLI. Workflow: [_workflow.md](./_workflow.md). **On failure:** [_cli-failures.md](./_cli-failures.md).
 
-Run from project root. Use `npx ai-spector` if the binary is not on PATH.
+Run from project root: `npx ai-spector …` if needed.
 
-## Commands the agent calls
+## Every CLI invocation
+
+1. Run the command; capture **exit code**, **stdout**, **stderr**.
+2. If non-zero or `--json` is unparseable → **stop**; report per `_cli-failures.md`.
+3. On success, use CLI output only — do not re-derive graph state in the agent.
+
+## Commands
 
 ```bash
 ai-spector analyze
+ai-spector graphify update
 ai-spector graph merge --from-knowledge
 ai-spector graph validate
 ai-spector graph visualize [--open]
-ai-spector graph query <nodeId> [options]
-ai-spector graph impact <nodeId> [options]
+ai-spector graph query <nodeId> --json
+ai-spector graph impact <nodeId> --json
+ai-spector graph impact --file <path> [--heading <text>] --json
+ai-spector graph impact --git --json
 ```
 
-## `graph query` — context for generation
+## `graph query`
 
 ```bash
-ai-spector graph query <seedId> --json
-ai-spector graph query UC-01 --edges listedIn,definedIn,satisfies,references --depth 3 --json
+ai-spector graph query <seedId> --direction both --depth 4 --json
+ai-spector graph query <depDocId> --edges rendersTo,dependsOn,listedIn,satisfies --depth 2 --json
+ai-spector graph impact <seedId> --change content_change --json
 ```
 
-**JSON output** — use in `/generate-*`:
+**Generate:** query **before** write; **`graph merge`** projection patch **after** each file (`rendersTo` + `dependsOn`). See `_generate-graph.md`.
 
-```json
-{
-  "seed": "UC-01",
-  "nodes": [{ "id": "UC-01", "type": "useCase" }],
-  "edges": [{ "type": "listedIn", "from": "UC-01", "to": "sec.srs.3.2" }],
-  "projectionPaths": ["docs/srs/3-use-cases.md"]
-}
-```
+Use `projectionPaths`, `nodes`, `edges` from JSON. **If command fails or JSON invalid:** stop — do not glob `docs/srs/**`.
 
-**Agent rule:** Open **only** `projectionPaths` plus needed `docs/data-source/**`. Do not glob `docs/srs/**`.
+**If success but empty domain nodes:** report to user; suggest `/analyze` — still no folder-wide SRS reads.
 
-| Task | Example seed | `--depth` |
-|------|----------------|-----------|
-| SRS chapter | `document` or chapter `section` id | 2–3 |
-| UC detail | `UC-01` | 3 |
-| Feature | `F-01` | 3 |
+## `graph impact`
 
-## `graph impact` — scope regen
+Resolve the seed in the agent (see `/impact`), then:
 
 ```bash
 ai-spector graph impact <nodeId> --change content_change --json
 ```
 
-Buckets: `regenerate`, `review`, `downstream`. For each regenerate id, run `graph query <id> --json` before editing.
-
-## `graph merge` — called from `/analyze`
+Optional resolver flags (verify path/heading → id):
 
 ```bash
-ai-spector graph merge --from-knowledge
+ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
 ```
 
-Do not ask the user to merge manually after `/analyze`.
+Current working tree (staged + unstaged vs `HEAD`, or unstaged + `--cached` before first commit):
 
-## Fallback
+```bash
+ai-spector graph impact --git --change content_change --json
+```
 
-Only if `graph query` returns no domain nodes and empty `projectionPaths`:
+If this fails, do not guess impact scope — show CLI output and fix.
 
-- `.ai-spector/.docflow/analysis/knowledge.json`
-- `.ai-spector/index/*.md`
+## `graph merge`
 
-Then suggest **`/analyze`**.
+Called from `/analyze`. On merge/validate failure, do not patch `traceability.graph.json` by hand at scale — fix `knowledge.json` or section ids and re-run merge.
+
+## Narrow fallback (success only)
+
+Only when **validate passed** and **query succeeded** but content is thin: read specific `docs/data-source/**` files. Never because CLI failed.
