@@ -96,7 +96,12 @@ export async function runDocSemanticMerge(
     merged: true,
     detail:
       `${stats.filesScanned} files → ${stats.useCases} use cases, ${stats.features} features, ${stats.actors} actors` +
-      (stats.detailDocuments > 0 ? `, ${stats.detailDocuments} detail documents` : "") +
+      (stats.detailDocuments > 0
+        ? `, ${stats.detailDocuments} detail documents` +
+          (stats.bdDetailDocuments > 0
+            ? ` (${stats.srsDetailDocuments} SRS, ${stats.bdDetailDocuments} basic-design)`
+            : "")
+        : "") +
       (stats.detailSections > 0 ? `, ${stats.detailSections} detail sections` : "") +
       ` (+${mergeStats.nodesCreated} nodes, ~${mergeStats.nodesUpdated} updated, +${mergeStats.edgesAdded} edges)`,
     sourceHashes,

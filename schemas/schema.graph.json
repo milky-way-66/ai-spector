@@ -62,7 +62,10 @@
         "template": { "type": "string" },
         "output": { "type": "string" },
         "outputPattern": { "type": "string" },
-        "perDomain": { "type": "string", "enum": ["useCase", "feature"] },
+        "perDomain": {
+          "type": "string",
+          "enum": ["useCase", "feature", "apiDetail", "screenDetail"]
+        },
         "documentId": { "type": "string" },
         "heading": { "type": "string" },
         "level": { "type": "integer", "minimum": 2, "maximum": 6 },

@@ -7,3 +7,16 @@ export const DEFAULT_LISTED_IN = {
   nfr: "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes",
   dataEntity: "sec.srs.5-data-requirements.l3.2.51-logical-data-model",
 } as const;
+
+/** Basic-design list chapter documents (from generate merge / graph-seeds). */
+export const DEFAULT_BD_LIST_DOC = {
+  apiList: "doc.bd.list-api",
+  screenList: "doc.bd.list-screen",
+  dbDesign: "doc.bd.db-design",
+} as const;
+
+/** Template document ids for per-domain basic-design detail (DAG / graph-seeds). */
+export const PER_DOMAIN_TEMPLATE_DOC_BD = {
+  api: "doc.bd.detail-api",
+  screen: "doc.bd.detail-screen",
+} as const;

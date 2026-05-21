@@ -219,6 +219,7 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
       "describedIn",
       "references",
       "dependsOn",
+      "tracesTo",
       "contains",
       "partOf",
       "follows",

@@ -4,7 +4,11 @@ import {
   parseDetailSections,
   snippetAfterHeading,
 } from "./detail-sections.js";
-import { DEFAULT_LISTED_IN } from "./defaults.js";
+import {
+  DEFAULT_BD_LIST_DOC,
+  DEFAULT_LISTED_IN,
+  PER_DOMAIN_TEMPLATE_DOC_BD,
+} from "./defaults.js";
 import type { ExtractPatch } from "./knowledge.js";
 
 export interface DocExtractEntry {
@@ -18,6 +22,8 @@ export interface DocExtractResult {
   actors: number;
   detailDocuments: number;
   detailSections: number;
+  srsDetailDocuments: number;
+  bdDetailDocuments: number;
   filesScanned: number;
 }
 
@@ -66,6 +72,7 @@ function isRealDomainId(id: string): boolean {
 }
 
 export type DetailFileKind = "useCaseDetail" | "featureDetail";
+export type BasicDesignDetailKind = "apiDetail" | "screenDetail";
 
 function normalizeRelativePath(relativePath: string): string {
   return relativePath.replace(/\\/g, "/").replace(/^\.\//, "");
@@ -89,6 +96,29 @@ export function classifySrsDetailFile(relativePath: string): DetailFileKind | nu
   return null;
 }
 
+/** Classify markdown under docs/basic-design as list chapter vs per-feature/per-screen detail. */
+export function classifyBasicDesignDetailFile(
+  relativePath: string,
+): BasicDesignDetailKind | null {
+  const p = normalizeRelativePath(relativePath).toLowerCase();
+  if (
+    p === "docs/basic-design/api-list.md" ||
+    p.endsWith("/api-list.md") ||
+    p === "docs/basic-design/db-design.md" ||
+    p.endsWith("/db-design.md") ||
+    p.includes("/screens/list-screens.md")
+  ) {
+    return null;
+  }
+  if (/\/api\/f-\d+/.test(p)) {
+    return "apiDetail";
+  }
+  if (/\/screens\/.+\.md$/.test(p)) {
+    return "screenDetail";
+  }
+  return null;
+}
+
 export function documentIdForDomainDetail(
   kind: DetailFileKind,
   domainId: string,
@@ -97,6 +127,67 @@ export function documentIdForDomainDetail(
   return kind === "useCaseDetail"
     ? `doc.srs.uc-${norm}`
     : `doc.srs.f-${norm}`;
+}
+
+export function documentIdForBasicDesignDetail(
+  kind: BasicDesignDetailKind,
+  featureId: string,
+  relativePath: string,
+): string {
+  const norm = normalizeDomainId(featureId);
+  if (kind === "apiDetail") {
+    return `doc.bd.api-${norm}`;
+  }
+  const base =
+    normalizeRelativePath(relativePath)
+      .split("/")
+      .pop()
+      ?.replace(/\.md$/i, "") ?? "screen";
+  const slug = base
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64);
+  return `doc.bd.screen-${slug}`;
+}
+
+function featureIdFromBasicDesignPath(
+  relativePath: string,
+  kind: BasicDesignDetailKind,
+): string | null {
+  const p = normalizeRelativePath(relativePath);
+  if (kind === "apiDetail") {
+    const m = p.match(/\/api\/f-(\d+)/i);
+    return m?.[1] ? normalizeDomainId(`F-${m[1]}`) : null;
+  }
+  const fromPath = p.match(/f-(\d+)/i);
+  if (fromPath?.[1]) {
+    return normalizeDomainId(`F-${fromPath[1]}`);
+  }
+  return null;
+}
+
+function primaryDomainIdFromBasicDesignContent(
+  content: string,
+  kind: BasicDesignDetailKind,
+  relativePath: string,
+): { id: string; title?: string } | null {
+  const fromPath = featureIdFromBasicDesignPath(relativePath, kind);
+  const idLine = content.match(FEATURE_ID_LINE);
+  if (idLine?.[1] && isRealDomainId(idLine[1])) {
+    return {
+      id: normalizeDomainId(idLine[1]),
+      title: content.match(FEATURE_NAME_HEADING)?.[2]?.trim(),
+    };
+  }
+  const heading = content.match(FEATURE_NAME_HEADING);
+  if (heading?.[1] && isRealDomainId(heading[1])) {
+    return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+  }
+  if (fromPath) {
+    return { id: fromPath };
+  }
+  return null;
 }
 
 function primaryDomainIdFromDetailContent(
@@ -210,7 +301,12 @@ function listedInForPath(relativePath: string, kind: "useCase" | "feature" | "ac
     }
   }
   if (kind === "feature") {
-    if (p.includes("system-features") || p.includes("04-system-features") || /\/4-/.test(p)) {
+    if (
+      p.includes("basic-design") ||
+      p.includes("system-features") ||
+      p.includes("04-system-features") ||
+      /\/4-/.test(p)
+    ) {
       return DEFAULT_LISTED_IN.feature;
     }
   }
@@ -367,18 +463,29 @@ export function extractDomainFromMarkdown(
     }
   }
 
-  const detailKind = classifySrsDetailFile(relativePath);
-  if (detailKind) {
-    const rich = extractDetailDomainMeta(content, detailKind);
+  const srsDetailKind = classifySrsDetailFile(relativePath);
+  if (srsDetailKind) {
+    const rich = extractDetailDomainMeta(content, srsDetailKind);
     if (rich) {
-      const primary = primaryDomainIdFromDetailContent(content, detailKind);
+      const primary = primaryDomainIdFromDetailContent(content, srsDetailKind);
       if (primary) {
-        if (detailKind === "useCaseDetail") {
+        if (srsDetailKind === "useCaseDetail") {
           addUseCase(parsed, primary.id, rich);
         } else {
           addFeature(parsed, primary.id, rich);
         }
       }
+    }
+  }
+
+  const bdKind = classifyBasicDesignDetailFile(relativePath);
+  if (bdKind) {
+    const primary = primaryDomainIdFromBasicDesignContent(content, bdKind, relativePath);
+    if (primary) {
+      addFeature(parsed, primary.id, {
+        title: primary.title,
+        description: extractBasicDesignDetailDescription(content, bdKind),
+      });
     }
   }
 
@@ -392,6 +499,29 @@ export function extractDomainFromMarkdown(
   }
 
   return parsed;
+}
+
+const SCREEN_PURPOSE_BLOCK =
+  /##\s*1\.\s*Screen:[\s\S]*?\*\*Purpose:\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
+
+function extractBasicDesignDetailDescription(
+  content: string,
+  kind: BasicDesignDetailKind,
+): string | undefined {
+  if (kind === "apiDetail") {
+    const meta = extractDetailDomainMeta(content, "featureDetail");
+    return meta?.description;
+  }
+  const purpose = content.match(SCREEN_PURPOSE_BLOCK);
+  if (purpose?.[1]) {
+    return cleanQuotedBlock(purpose[1]);
+  }
+  const sections = parseDetailSections(content, "doc.temp");
+  const screenHeading = sections.find((s) => /^##\s*1\.\s*screen/i.test(s.heading));
+  if (screenHeading) {
+    return snippetAfterHeading(content, screenHeading.heading);
+  }
+  return undefined;
 }
 
 function slugActorId(name: string): string {
@@ -467,11 +597,63 @@ export function parsedDomainToPatch(
   return { version: 1, nodes, edges };
 }
 
-/** Document nodes + definedIn/rendersTo for per-UC / per-feature markdown on disk. */
-export function detailFileToPatch(
-  relativePath: string,
-  content: string,
-): ExtractPatch {
+function buildDetailInstancePatch(opts: {
+  relativePath: string;
+  content: string;
+  docId: string;
+  domainId: string;
+  domainType: "useCase" | "feature";
+  perDomain: GraphNode["perDomain"];
+  templateDocId: string;
+  listAnchorId: string;
+  title?: string;
+  description?: string;
+  priority?: string;
+}): ExtractPatch {
+  const path = normalizeRelativePath(opts.relativePath);
+  const nodes: GraphNode[] = [
+    {
+      id: opts.docId,
+      type: "document",
+      output: path,
+      perDomain: opts.perDomain,
+      title: opts.title ?? opts.domainId,
+      ...(opts.description ? { description: opts.description } : {}),
+    },
+    {
+      id: opts.domainId,
+      type: opts.domainType,
+      title: opts.title ?? opts.domainId,
+      ...(opts.description ? { description: opts.description } : {}),
+      ...(opts.priority ? { priority: opts.priority } : {}),
+    },
+  ];
+
+  const edges: GraphEdge[] = [
+    { type: "rendersTo", from: opts.domainId, to: path },
+    { type: "rendersTo", from: opts.templateDocId, to: path },
+    { type: "partOf", from: opts.docId, to: opts.templateDocId },
+    { type: "describedIn", from: opts.domainId, to: opts.docId },
+    { type: "contains", from: opts.listAnchorId, to: opts.docId },
+    { type: "tracesTo", from: opts.domainId, to: opts.docId },
+  ];
+
+  const sections = parseDetailSections(opts.content, opts.docId);
+  const sectionPatch = detailSectionsToPatch(opts.docId, sections, opts.content);
+  nodes.push(...sectionPatch.nodes);
+  edges.push(...sectionPatch.edges);
+  for (const sec of sections) {
+    edges.push({ type: "definedIn", from: opts.domainId, to: sec.id });
+    edges.push({ type: "describedIn", from: opts.domainId, to: sec.id });
+  }
+  if (sections.length === 0) {
+    edges.push({ type: "definedIn", from: opts.domainId, to: opts.docId });
+  }
+
+  return { version: 1, nodes, edges };
+}
+
+function srsDetailFileToPatch(relativePath: string, content: string): ExtractPatch {
   const kind = classifySrsDetailFile(relativePath);
   if (!kind) {
     return { version: 1, nodes: [], edges: [] };
@@ -482,54 +664,71 @@ export function detailFileToPatch(
     return { version: 1, nodes: [], edges: [] };
   }
 
-  const path = normalizeRelativePath(relativePath);
-  const docId = documentIdForDomainDetail(kind, primary.id);
   const perDomain = kind === "useCaseDetail" ? "useCase" : "feature";
-  const templateDocId = PER_DOMAIN_TEMPLATE_DOC[perDomain];
   const rich = extractDetailDomainMeta(content, kind);
-  const listSection =
-    perDomain === "useCase" ? DEFAULT_LISTED_IN.useCase : DEFAULT_LISTED_IN.feature;
-  const domainType = perDomain === "useCase" ? "useCase" : "feature";
 
-  const nodes: GraphNode[] = [
-    {
-      id: docId,
-      type: "document",
-      output: path,
-      perDomain,
-      title: rich?.title ?? primary.title ?? primary.id,
-      ...(rich?.description ? { description: rich.description } : {}),
-    },
-    {
-      id: primary.id,
-      type: domainType,
-      title: rich?.title ?? primary.title ?? primary.id,
-      ...(rich?.description ? { description: rich.description } : {}),
-      ...(rich?.priority ? { priority: rich.priority } : {}),
-    },
-  ];
+  return buildDetailInstancePatch({
+    relativePath,
+    content,
+    docId: documentIdForDomainDetail(kind, primary.id),
+    domainId: primary.id,
+    domainType: perDomain === "useCase" ? "useCase" : "feature",
+    perDomain,
+    templateDocId: PER_DOMAIN_TEMPLATE_DOC[perDomain],
+    listAnchorId:
+      perDomain === "useCase" ? DEFAULT_LISTED_IN.useCase : DEFAULT_LISTED_IN.feature,
+    title: rich?.title ?? primary.title,
+    description: rich?.description,
+    priority: rich?.priority,
+  });
+}
 
-  const edges: GraphEdge[] = [
-    { type: "rendersTo", from: primary.id, to: path },
-    { type: "rendersTo", from: templateDocId, to: path },
-    { type: "partOf", from: docId, to: templateDocId },
-    { type: "describedIn", from: primary.id, to: docId },
-    { type: "contains", from: listSection, to: docId },
-  ];
-
-  const sections = parseDetailSections(content, docId);
-  const sectionPatch = detailSectionsToPatch(docId, sections, content);
-  nodes.push(...sectionPatch.nodes);
-  edges.push(...sectionPatch.edges);
-  for (const sec of sections) {
-    edges.push({ type: "definedIn", from: primary.id, to: sec.id });
-    edges.push({ type: "describedIn", from: primary.id, to: sec.id });
-  }
-  if (sections.length === 0) {
-    edges.push({ type: "definedIn", from: primary.id, to: docId });
+function basicDesignDetailFileToPatch(
+  relativePath: string,
+  content: string,
+): ExtractPatch {
+  const kind = classifyBasicDesignDetailFile(relativePath);
+  if (!kind) {
+    return { version: 1, nodes: [], edges: [] };
   }
 
-  return { version: 1, nodes, edges };
+  const primary = primaryDomainIdFromBasicDesignContent(content, kind, relativePath);
+  if (!primary) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+
+  const description = extractBasicDesignDetailDescription(content, kind);
+  const listAnchorId =
+    kind === "apiDetail" ? DEFAULT_BD_LIST_DOC.apiList : DEFAULT_BD_LIST_DOC.screenList;
+  const templateDocId =
+    kind === "apiDetail"
+      ? PER_DOMAIN_TEMPLATE_DOC_BD.api
+      : PER_DOMAIN_TEMPLATE_DOC_BD.screen;
+
+  return buildDetailInstancePatch({
+    relativePath,
+    content,
+    docId: documentIdForBasicDesignDetail(kind, primary.id, relativePath),
+    domainId: primary.id,
+    domainType: "feature",
+    perDomain: kind,
+    templateDocId,
+    listAnchorId,
+    title: primary.title ?? primary.id,
+    description,
+  });
+}
+
+/** Document nodes + sections for per-UC/F SRS or per-feature API/screen basic-design files. */
+export function detailFileToPatch(
+  relativePath: string,
+  content: string,
+): ExtractPatch {
+  const srs = srsDetailFileToPatch(relativePath, content);
+  if (srs.nodes.length > 0 || srs.edges.length > 0) {
+    return srs;
+  }
+  return basicDesignDetailFileToPatch(relativePath, content);
 }
 
 export function mergeParsedDomains(domains: ParsedDomain[]): ParsedDomain {
@@ -564,6 +763,8 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
   const edgeKeys = new Set<string>();
   let detailDocuments = 0;
   let detailSections = 0;
+  let srsDetailDocuments = 0;
+  let bdDetailDocuments = 0;
 
   const mergePatchInto = (patch: ExtractPatch) => {
     for (const n of patch.nodes) {
@@ -571,11 +772,17 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
         allNodes.push(n);
         if (n.type === "document" && n.output) {
           detailDocuments++;
+          const out = String(n.output).replace(/\\/g, "/");
+          if (out.includes("docs/basic-design/")) {
+            bdDetailDocuments++;
+          } else if (out.includes("docs/srs/")) {
+            srsDetailDocuments++;
+          }
         }
         if (
           n.type === "section" &&
           typeof n.documentId === "string" &&
-          n.documentId.startsWith("doc.srs.")
+          (n.documentId.startsWith("doc.srs.") || n.documentId.startsWith("doc.bd."))
         ) {
           detailSections++;
         }
@@ -618,6 +825,8 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
       actors: merged.actors.size,
       detailDocuments,
       detailSections,
+      srsDetailDocuments,
+      bdDetailDocuments,
       filesScanned: entries.length,
     },
   };

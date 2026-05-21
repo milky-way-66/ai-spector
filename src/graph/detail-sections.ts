@@ -16,14 +16,29 @@ export interface ParsedDetailSection {
   order: number;
 }
 
+const BD_INSTANCE_PATH_RE =
+  /docs\/basic-design\/(?:api\/|screens\/(?!list-screens\.md))/i;
+
 /** Per-domain detail markdown instance (not a template document from bootstrap). */
 export function isPerDomainInstanceDocument(node: GraphNode): boolean {
-  return (
-    node.type === "document" &&
-    typeof node.output === "string" &&
-    !node.outputPattern &&
-    (node.perDomain === "useCase" || node.perDomain === "feature")
-  );
+  if (node.type !== "document" || node.outputPattern) {
+    return false;
+  }
+  const output = typeof node.output === "string" ? node.output : "";
+  if (!output) {
+    return false;
+  }
+  if (node.perDomain === "useCase" || node.perDomain === "feature") {
+    return true;
+  }
+  if (
+    node.perDomain === "apiDetail" ||
+    node.perDomain === "screenDetail" ||
+    BD_INSTANCE_PATH_RE.test(output.replace(/\\/g, "/"))
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function resolveParentSectionId(

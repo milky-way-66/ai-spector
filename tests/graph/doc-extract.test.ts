@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDocExtractPatch,
+  classifyBasicDesignDetailFile,
   classifySrsDetailFile,
   detailFileToPatch,
+  documentIdForBasicDesignDetail,
   documentIdForDomainDetail,
   extractDetailDomainMeta,
   extractDomainFromMarkdown,
@@ -236,6 +238,81 @@ describe("detailFileToPatch", () => {
   });
 });
 
+describe("classifyBasicDesignDetailFile", () => {
+  it("detects API and screen detail paths and skips list chapters", () => {
+    expect(classifyBasicDesignDetailFile("docs/basic-design/api-list.md")).toBeNull();
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/screens/list-screens.md"),
+    ).toBeNull();
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/api/f-02-checkout.md"),
+    ).toBe("apiDetail");
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/screens/dashboard.md"),
+    ).toBe("screenDetail");
+  });
+});
+
+describe("basic design detailFileToPatch", () => {
+  it("links feature to API detail document and sections", () => {
+    const path = "docs/basic-design/api/f-02-checkout.md";
+    const patch = detailFileToPatch(
+      path,
+      `**Feature ID:** F-2
+
+## 1. Detailed Endpoint Specifications
+
+### 1.1 \`POST /checkout\`
+
+**Summary:** Submit checkout
+`,
+    );
+    const docId = documentIdForBasicDesignDetail("apiDetail", "F-02", path);
+    expect(patch.nodes).toContainEqual(
+      expect.objectContaining({
+        id: docId,
+        type: "document",
+        output: path,
+        perDomain: "apiDetail",
+      }),
+    );
+    expect(patch.edges).toContainEqual({
+      type: "contains",
+      from: "doc.bd.list-api",
+      to: docId,
+    });
+    expect(patch.edges).toContainEqual({
+      type: "tracesTo",
+      from: "F-02",
+      to: docId,
+    });
+    expect(patch.nodes.filter((n) => n.type === "section").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("links feature from filename when Feature ID line missing (screen)", () => {
+    const path = "docs/basic-design/screens/f-03-dashboard.md";
+    const patch = detailFileToPatch(
+      path,
+      `## 1. Screen:
+
+**Purpose:**
+
+> Main dashboard for managers.
+`,
+    );
+    const docId = documentIdForBasicDesignDetail("screenDetail", "F-03", path);
+    expect(patch.nodes.some((n) => n.id === docId)).toBe(true);
+    expect(patch.edges).toContainEqual({
+      type: "contains",
+      from: "doc.bd.list-screen",
+      to: docId,
+    });
+    expect(
+      patch.edges.some((e) => e.type === "definedIn" && e.from === "F-03"),
+    ).toBe(true);
+  });
+});
+
 describe("buildDocExtractPatch", () => {
   it("produces mergeable domain nodes and listedIn edges", () => {
     const { patch, stats } = buildDocExtractPatch([
@@ -283,5 +360,21 @@ describe("buildDocExtractPatch", () => {
           e.to === "docs/srs/04-system-features/f-01-auth.md",
       ),
     ).toBe(true);
+  });
+
+  it("merges basic-design detail documents alongside SRS", () => {
+    const { patch, stats } = buildDocExtractPatch([
+      {
+        relativePath: "docs/basic-design/api/f-01-auth.md",
+        content: "**Feature ID:** F-1\n\n### 1.1 `GET /session`",
+      },
+      {
+        relativePath: "docs/basic-design/screens/f-01-login.md",
+        content: "## 1. Screen:\n\n**Purpose:**\n\n> Login page",
+      },
+    ]);
+    expect(stats.bdDetailDocuments).toBe(2);
+    expect(patch.nodes.some((n) => n.id === "doc.bd.api-F-01")).toBe(true);
+    expect(patch.nodes.some((n) => n.id.startsWith("doc.bd.screen-"))).toBe(true);
   });
 });
