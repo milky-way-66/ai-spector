@@ -233,6 +233,10 @@ export async function runIndex(
           gf.sourcesRun.length > 0
             ? `updated: ${gf.sourcesRun.join(", ")}`
             : "no source changes";
+        const emptyDetail =
+          gf.sourcesEmptySkipped.length > 0
+            ? `; empty (skipped): ${gf.sourcesEmptySkipped.join(", ")}`
+            : "";
         const skipDetail =
           gf.sourcesSkipped.length > 0
             ? `; unchanged: ${gf.sourcesSkipped.join(", ")}`
@@ -241,7 +245,7 @@ export async function runIndex(
           id: "graphify-storage",
           label: "Graphify index & graph.json",
           status: "ok",
-          detail: `${runDetail}${skipDetail}`,
+          detail: `${runDetail}${emptyDetail}${skipDetail}`,
         });
       } catch (err) {
         record({

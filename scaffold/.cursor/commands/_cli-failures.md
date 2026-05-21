@@ -98,9 +98,17 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 ### `graphify update` — `unknown option: --graph`
 
 - **Means:** Agent used `graphify update <path> --graph <file>`. The `update` subcommand does **not** accept `--graph` (only `query`, `explain`, `path`, `cluster-only` do).
-- **Fix:** Run **`ai-spector graphify update`** or  
-  `GRAPHIFY_OUT=.ai-spector/.docflow/graph/graphify-out graphify update docs/data-source`  
-  Then delete `docs/data-source/graphify-out/` if it exists.
+- **Fix:** Run **`ai-spector graphify update`** (sets absolute `GRAPHIFY_OUT` and project-root cwd). Do not pass `--graph` on `update`.
+
+### `graphify update` — `No code files found` (exit 1) on empty `docs/srs` / `docs/basic-design`
+
+- **Means:** Graphify was invoked on an empty doc folder (no files to index).
+- **Fix:** **`ai-spector index`** / **`ai-spector graphify update`** skip empty sources automatically. Add SRS/basic-design markdown when you want Graphify storage for those paths.
+
+### `graphify update` — output under `docs/data-source/.ai-spector/...`
+
+- **Means:** `GRAPHIFY_OUT` was a **relative** path and Graphify resolved it from the **source directory** (`docs/data-source`), not the repo root.
+- **Fix:** Run **`ai-spector graphify update`** from the project root. Delete mistaken `docs/data-source/graphify-out/` or `docs/data-source/.ai-spector/.docflow/graph/graphify-out/` if present.
 
 ### `graph impact --git` — not a git repository / no changes
 
@@ -118,10 +126,10 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 - **Fix:** Run **`ai-spector index`** (or **`/index`**). Index merges `knowledge.json`, parses UC/F/actor ids from `docs/srs/` bodies, and runs Graphify on **changed** paths (`docs/data-source`, `docs/srs`, `docs/basic-design`). Use **`--force-graphify`** if Graphify output must rebuild entirely.
 - **Still stale domain detail?** Re-run **`/analyze`** for Graphify MCP → fresh `knowledge.json`.
 
-### Graphify wrote `docs/data-source/graphify-out/`
+### Graphify wrote `docs/data-source/graphify-out/` or `docs/data-source/.ai-spector/.../graphify-out/`
 
-- **Means:** `graphify update` ran without `GRAPHIFY_OUT`.
-- **Fix:** Run **`ai-spector graphify update`** (sets env + removes stale folder). Do not copy files manually unless CLI failed.
+- **Means:** `graphify update` ran without absolute `GRAPHIFY_OUT` from project root (or used a relative env path).
+- **Fix:** Run **`ai-spector graphify update`** (absolute `GRAPHIFY_OUT`, cwd = project root, removes stale folders). Do not copy files manually unless CLI failed.
 
 ---
 

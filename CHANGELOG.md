@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Graphify index** — skip `graphify update` for empty doc sources (`docs/srs`, `docs/basic-design`) instead of failing with exit 1; `ai-spector index` continues.
+- **Graphify output path** — `GRAPHIFY_OUT` is always an absolute path under the project root (cwd stays project root); removes stale `docs/data-source/.ai-spector/.../graphify-out` when Graphify wrote relative to the source path.
+
 ## [0.2.0] - 2026-05-21
 
 ### Added

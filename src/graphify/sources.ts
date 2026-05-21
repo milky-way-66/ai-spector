@@ -61,6 +61,33 @@ export interface GraphifySourcesConfig {
   docSources?: string[];
 }
 
+/** Central graphify-out under project root (absolute path for GRAPHIFY_OUT). */
+export function resolveGraphifyOutputPath(
+  projectRoot: string,
+  outputPathRel?: string,
+): string {
+  const rel =
+    outputPathRel ?? ".ai-spector/.docflow/graph/graphify-out";
+  return resolve(projectRoot, rel);
+}
+
+/** True when the source dir exists but has no files to fingerprint (empty tree). */
+export async function isGraphifySourceEmpty(
+  projectRoot: string,
+  sourceRel: string,
+): Promise<boolean> {
+  const abs = resolve(projectRoot, sourceRel);
+  if (!(await pathExists(abs))) {
+    return false;
+  }
+  const st = await stat(abs).catch(() => null);
+  if (!st?.isDirectory()) {
+    return false;
+  }
+  const files = await discoverSourceFingerprints(projectRoot, sourceRel);
+  return files.length === 0;
+}
+
 export function resolveGraphifySources(
   config: GraphifySourcesConfig,
 ): GraphifySourceSpec[] {
