@@ -4,6 +4,8 @@ Turn project notes and specs into structured documentation (SRS, basic design, d
 
 You work with **slash commands**. The AI runs the `ai-spector` CLI behind the scenes. You only use the terminal once: **`npx ai-spector init`**.
 
+Release history: [CHANGELOG.md](CHANGELOG.md).
+
 ---
 
 ## How you work (Cursor-first)
@@ -19,19 +21,19 @@ Put your source files in `docs/data-source/`, open the folder in Cursor, turn on
 
 **Graphify requires:** [uv](https://docs.astral.sh/uv/) installed; package `graphifyy` is pulled via `uv tool run` on first MCP start.
 
-### Then use slash commands
+### Slash commands
 
 | You run | What happens |
 |---------|----------------|
-| **`/analyze`** | Builds the graph skeleton, extracts knowledge (Graphify), merges use cases & features into the graph, validates |
-| **`/visualize-graph`** | Opens a browser report to inspect the graph and `knowledge.json` |
+| **`/analyze`** | Graph skeleton, Graphify extract → `knowledge.json`, merge domain nodes, validate |
 | **`/validate-graph`** | Checks the graph before generation |
-| **`/generate-srs`** | All SRS, listed files, or a short request (agent confirms scope) — graph-first, by DAG waves |
-| **`/generate-basic-design`** | All, listed files, or request (confirm) — graph + SRS context, by waves |
+| **`/generate-srs`** | SRS by DAG waves — graph-first context, `rendersTo` + `dependsOn` on output |
+| **`/generate-basic-design`** | Basic design from graph + SRS (same targeting/waves pattern) |
 | **`/generate-detail-design`** | Detail design from the graph |
-| **`/impact`** [what changed] | Shows what to regenerate after you change something (agent resolves graph seed) |
-| **`/index`** (or `ai-spector index`) | Rebuild graph, merge knowledge, parse UC/F from SRS bodies, Graphify on changed paths, doc indexes — run after `/generate-srs` |
-| **`/summary`** (optional) | Build `.ai-spector/index/*.md` doc summaries — not the same as full `/index` |
+| **`/index`** | Full refresh: registry/bootstrap, knowledge merge, **UC/F from markdown**, Graphify on changed paths, validate, doc indexes — run after **`/generate-srs`** |
+| **`/summary`** | Optional searchable summaries under `.ai-spector/index/` only (not a full graph refresh) |
+| **`/impact`** [what changed] | Regen scope from **your description**, git diff, selection, or path — agent resolves seeds (no node id required) |
+| **`/visualize-graph`** | Browser report: graph, knowledge, detail docs, sections, **`rendersTo`** to file paths |
 
 **Typical path:**
 
@@ -41,9 +43,10 @@ npx ai-spector init
 → /analyze
 → /validate-graph
 → /generate-srs
+→ /index
 ```
 
-Command details live in `.cursor/commands/` after `init` (start with `_workflow.md`).
+Command details live in `.cursor/commands/` after `init` — start with `_workflow.md`. Deeper guides: `index.md`, `summary.md`, `impact.md`, `analyze.md`.
 
 If a CLI step fails during a slash command, the agent should **stop**, show you the error, and help you fix it — not bypass the tool with manual edits. See `_cli-failures.md` in your project after `init`.
 
@@ -67,9 +70,12 @@ All structure and traceability live in one file:
 
 - Chapters and headings → **sections** in the graph  
 - Use cases, features, actors → **domain nodes** with links (`listedIn`, `satisfies`, …)  
-- Files under `docs/srs/` → **output** of the graph, not the source of truth  
+- Generated markdown under `docs/srs/`, `docs/basic-design/`, etc. → linked by **`rendersTo`** (target is the **repo-relative file path**, not a node id)  
+- Per-UC / per-feature **detail files** → extra `document` nodes, **section** nodes from headings, **`definedIn`** from domain nodes to those sections  
 
-**Graphify** (optional MCP) only helps read `docs/data-source/` during **`/analyze`**. The graph remains canonical.
+**`/index`** (or `ai-spector index`) parses UC/F/actor ids from SRS and basic-design bodies and wires detail semantics without a full **`/analyze`**. **`/analyze`** is still required for rich Graphify MCP extract into `knowledge.json`.
+
+**Graphify** (optional MCP) helps read `docs/data-source/` during **`/analyze`**. The graph remains canonical.
 
 ---
 
@@ -77,7 +83,7 @@ All structure and traceability live in one file:
 
 - Node.js 20+
 - [Cursor](https://cursor.com)
-- Graphify MCP for **`/analyze`**
+- Graphify MCP for **`/analyze`** (optional for **`/index`** with `--skip-graphify`)
 
 ---
 
@@ -92,7 +98,7 @@ npm install && npm run build
 npm run init:example
 ```
 
-Open **`example/`** as the Cursor workspace, add files under `example/docs/data-source/`, then run **`/analyze`** → **`/generate-srs`**.
+Open **`example/`** as the Cursor workspace, add files under `example/docs/data-source/`, then run **`/analyze`** → **`/generate-srs`** → **`/index`**.
 
 See [example/README.md](example/README.md).
 
@@ -102,16 +108,30 @@ See [example/README.md](example/README.md).
 
 ```text
 your-project/
-  .cursor/commands/          # /analyze, /generate-srs, …
+  .cursor/commands/          # /analyze, /index, /impact, …
   .cursor/skills/ai-spector/
   .ai-spector/
     graph/traceability.graph.json
     .docflow/analysis/knowledge.json
+    index/                     # optional summaries (/summary)
     views/graph-knowledge.html   # after /visualize-graph
   docs/
     data-source/                 # your inputs
-    srs/                         # generated
+    srs/                         # generated (+ per-UC/F detail files)
+    basic-design/
 ```
+
+---
+
+## Troubleshooting
+
+| Symptom | What to try |
+|---------|-------------|
+| CLI error during a slash command | Read agent **Blocked** message; fix cause; re-run the **same** command — see `_cli-failures.md` |
+| Validate fails on `rendersTo` | Ensure each generated doc has `rendersTo` from its template `doc.*` node to the real file path; run **`/index`** after **`/generate-srs`** |
+| Stale UC/F or detail sections | **`/index`** (body extract + section `definedIn`); full knowledge refresh needs **`/analyze`** |
+| Unsure what to regenerate | **`/impact`** (empty = git diff), or describe the change in plain language |
+| Graphify unavailable | `ai-spector index --skip-graphify` |
 
 ---
 
@@ -123,13 +143,14 @@ The CLI is the engine; Cursor commands wrap it.
 |-----|--------|
 | [workflow-overview.md](docs/design/workflow-overview.md) | Graph-centric design |
 | [traceability-graph-redesign.md](docs/design/traceability-graph-redesign.md) | Schema and roadmap |
-| [testing.md](docs/testing.md) | Vitest layout, commands, mocking |
+| [testing.md](docs/testing.md) | Vitest, `tests/` layout, `npm test`, mocking |
 
-**Build from source:**
+**Tests:** [Vitest](https://vitest.dev/) — mirror `src/` under `tests/` (e.g. `tests/graph/InMemoryGraph.test.ts`). Do not colocate tests in `src/`.
 
 ```bash
 npm install && npm run build
-npm test
+npm test              # vitest run
+npm run test:watch    # during development
 npm run init:example
 ```
 
@@ -138,14 +159,14 @@ npm run init:example
 | Command | Purpose |
 |---------|---------|
 | `ai-spector init` | Scaffold project |
-| `ai-spector analyze` | Section tree in graph |
-| `ai-spector graphify update` | Graphify code graph → `.ai-spector/.../graphify-out/` (sets `GRAPHIFY_OUT`) |
+| `ai-spector analyze` | Section tree in graph (`--merge` if knowledge present) |
+| `ai-spector index` | Graph bootstrap, knowledge merge, doc semantics, Graphify, validate, doc indexes |
+| `ai-spector graphify update` | Graphify code graph → `.ai-spector/.../graphify-out/` |
 | `ai-spector graph merge --from-knowledge` | Domain nodes from staging |
-| `ai-spector graph validate` | Rules check |
-| `ai-spector graph visualize [--open]` | HTML report |
+| `ai-spector graph validate` | Schema + rules (`rendersTo` may target file paths) |
+| `ai-spector graph visualize [--open]` | HTML report (detail docs, sections, `rendersTo` edges) |
 | `ai-spector graph query <id> --json` | Context for generation |
-| `ai-spector graph impact <id> --json` | Regen scope (or `--file` / `--heading` / `--git` for current diff) |
-| `ai-spector index` | Refresh graph + knowledge merge + SRS body extract + Graphify + `.ai-spector/index/` (see flags below) |
+| `ai-spector graph impact` | Regen scope — `<id>` optional with `--file`, `--heading`, or `--git` |
 
 **`ai-spector index` flags:** `--graph-only`, `--docs-only`, `--skip-graphify`, `--skip-docs`, `--skip-merge`, `--skip-doc-semantics`, `--force-graphify`, `--skip-validate`
 
