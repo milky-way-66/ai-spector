@@ -155,6 +155,7 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
       "dependsOn",
       "contains",
       "partOf",
+      "follows",
     ]);
     if (!allowedToStructure.has(edge.type)) {
       throw new Error(

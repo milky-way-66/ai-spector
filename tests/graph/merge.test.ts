@@ -203,6 +203,54 @@ describe("mergePatch", () => {
     ).toThrow(/domain node/);
   });
 
+  it("allows follows between per-domain detail sections", () => {
+    const g = loadGraph(
+      [
+        node("doc.srs.uc-UC-01", "document", {
+          output: "docs/srs/03-use-cases/uc-01.md",
+          perDomain: "useCase",
+        }),
+        node("sec.srs.uc-UC-01.l3.1.overview", "section", {
+          documentId: "doc.srs.uc-UC-01",
+          level: 3,
+          order: 1,
+        }),
+        node("sec.srs.uc-UC-01.l3.2.flow", "section", {
+          documentId: "doc.srs.uc-UC-01",
+          level: 3,
+          order: 2,
+        }),
+      ],
+      [
+        { type: "contains", from: "doc.srs.uc-UC-01", to: "sec.srs.uc-UC-01.l3.1.overview" },
+        { type: "partOf", from: "sec.srs.uc-UC-01.l3.1.overview", to: "doc.srs.uc-UC-01" },
+        { type: "contains", from: "doc.srs.uc-UC-01", to: "sec.srs.uc-UC-01.l3.2.flow" },
+        { type: "partOf", from: "sec.srs.uc-UC-01.l3.2.flow", to: "doc.srs.uc-UC-01" },
+      ],
+    );
+
+    const result = mergePatch(g, {
+      version: 1,
+      nodes: [],
+      edges: [
+        {
+          type: "follows",
+          from: "sec.srs.uc-UC-01.l3.1.overview",
+          to: "sec.srs.uc-UC-01.l3.2.flow",
+        },
+      ],
+    });
+
+    expect(result.stats.edgesAdded).toBe(1);
+    expect(
+      g.hasEdge({
+        type: "follows",
+        from: "sec.srs.uc-UC-01.l3.1.overview",
+        to: "sec.srs.uc-UC-01.l3.2.flow",
+      }),
+    ).toBe(true);
+  });
+
   it("rejects edges that target structure nodes with disallowed types", () => {
     const g = loadGraph(
       [node("doc.srs", "document"), node("sec.a", "section")],
