@@ -1,6 +1,6 @@
 # /generate-basic-design
 
-Basic design from graph-selected SRS context. [**`ai-spector graph query`**](_graph.md).
+Basic design from graph-selected SRS context. **User runs this command;** agent runs CLI. On CLI failure: [_cli-failures.md](./_cli-failures.md). [_workflow.md](./_workflow.md), [_graph.md](./_graph.md).
 
 ## Prerequisites
 
@@ -19,4 +19,8 @@ ai-spector graph query F-xx --direction both --depth 3 --json
 4. Load only `projectionPaths` + referenced sources from JSON.
 5. Generate; update graph edges (`tracesTo` / `references`); `ai-spector graph validate`.
 
-Index (`.ai-spector/index/srs.md`) — fallback only if query returns empty subgraph.
+## If blocked
+
+Any failed `graph validate` or `graph query` → [_cli-failures.md](./_cli-failures.md). No index or SRS folder-wide fallback when CLI failed.
+
+Index only if **query succeeded** and subgraph is empty — then suggest `/analyze`.

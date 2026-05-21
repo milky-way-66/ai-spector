@@ -72,15 +72,7 @@ export async function runAnalyzePrep(
     }
   }
 
-  console.log("Next — in Cursor with Graphify MCP:");
-  console.log("  /analyze");
-  console.log("  → extract → .ai-spector/.docflow/analysis/knowledge.json");
-  console.log("  → ai-spector graph merge --from-knowledge");
-  console.log("  → ai-spector graph validate");
   console.log("");
-  console.log("Or after /analyze:");
-  console.log("  ai-spector analyze --merge");
-  console.log("");
-  console.log("Then:");
-  console.log("  /generate-srs  (ai-spector graph query <seed> --json per target)");
+  console.log("Structure ready. In Cursor run:  /analyze");
+  console.log("(The /analyze agent runs merge, validate, and Graphify — not you.)");
 }

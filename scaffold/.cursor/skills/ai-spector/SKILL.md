@@ -1,48 +1,39 @@
 ---
 name: ai-spector
-description: "Graph-centric docs: use ai-spector graph query/impact/validate CLI; never traverse JSON manually."
+description: "Cursor-first docs: user runs slash commands; agent runs CLI; on CLI failure stop and help fix — no manual bypass."
 ---
 
 # AI Spector Skill
 
-**Heart:** `.ai-spector/graph/traceability.graph.json`
+**Workflow:** `.cursor/commands/_workflow.md` — user only runs `npx ai-spector init` once, then slash commands.
 
-**IDE rule:** Use **`ai-spector graph`** CLI for search, impact, and validation. Parse `--json` output. See `.cursor/commands/_graph.md`.
+## CLI failure rule (non-negotiable)
 
-## Workflow
+When `ai-spector` exits non-zero or required `--json` is missing/invalid:
 
-1. `ai-spector init`
-2. `docs/data-source/` inputs
-3. `ai-spector analyze` → structure in graph
-4. `/analyze` → merge UC/F into graph
-5. `ai-spector graph validate`
-6. `/generate-srs` → per target: **`ai-spector graph query <seed> --json`**
-7. `/graph-impact` → **`ai-spector graph impact <id> --json`**
-8. `/generate-basic-design`, `/generate-detail-design` → same query pattern
+1. **Stop** — no generate, no bulk `docs/srs/**` reads, no hand-editing the whole graph.
+2. **Report** using the format in `.cursor/commands/_cli-failures.md` (verbatim CLI output + plain fix steps).
+3. **Fix** the root cause, then **re-run the same CLI** and continue the slash command.
 
-## Context selection (mandatory)
+Never ignore CLI errors and “work around” with index files, manual BFS, or inventing graph content. See `_cli-failures.md` for forbidden fallbacks.
 
-```bash
-ai-spector graph query <seedId> --direction both --depth 3 --json
-```
+## Slash commands (user)
 
-Use `projectionPaths` and `nodes` from stdout. **Do not** implement BFS in the agent. **Do not** bulk-read `docs/srs/` when query returns paths.
+| Command | Agent runs CLI |
+|---------|----------------|
+| `/analyze` | `analyze` → Graphify → `graph merge --from-knowledge` → `graph validate` |
+| `/validate-graph` | `graph validate` |
+| `/visualize-graph` | `graph visualize --open` |
+| `/generate-srs` | `graph validate` + `graph query <seed> --json` per target |
+| `/graph-impact` | `graph impact <id> --json` |
+| `/generate-basic-design`, `/generate-detail-design` | `graph query` per target |
 
-## Impact
+Run CLI from **project workspace root**; prefer `npx ai-spector` if the binary is not on PATH.
 
-```bash
-ai-spector graph impact <nodeId> --change content_change --json
-```
+## Heart of the system
 
-Regenerate only `regenerate` bucket entries; query each for context.
+`.ai-spector/graph/traceability.graph.json`
 
-## Commands
+Context: **`ai-spector graph query <seedId> --json`** — only after validate passes; use `projectionPaths` from stdout. Details: `_graph.md`.
 
-| Cursor | CLI |
-|--------|-----|
-| `/validate-graph` | `ai-spector graph validate` |
-| `/generate-srs` | `graph query` per section/doc seed |
-| `/graph-impact` | `graph impact` |
-| `/analyze` | merge graph + `graph validate` |
-
-Templates: `node_modules/ai-spector/templates/`
+Templates: `node_modules/ai-spector/templates/` (monorepo `example/`: `../templates/`).

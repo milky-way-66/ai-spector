@@ -26,6 +26,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     ".ai-spector/registry",
     ".ai-spector/.docflow/analysis",
     ".ai-spector/.docflow/extract",
+    ".ai-spector/views",
     "docs/srs",
     "docs/basic-design",
     "docs/detail-design",
@@ -49,11 +50,11 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   console.log(`Initialized AI Spector project at ${root}`);
   console.log("");
-  console.log("Next steps:");
-  console.log("  1. Add input files under docs/data-source/");
-  console.log("  2. ai-spector analyze");
-  console.log("  3. In Cursor: /analyze → ai-spector graph merge --from-knowledge");
-  console.log("  4. /generate-srs (ai-spector graph query --json) → /generate-basic-design");
+  console.log("Next steps (Cursor):");
+  console.log("  1. Open this folder in Cursor");
+  console.log("  2. Enable the ai-spector skill (.cursor/skills/ai-spector/)");
+  console.log("  3. Add files under docs/data-source/");
+  console.log("  4. Run /analyze  →  /validate-graph  →  /generate-srs");
   console.log("");
-  console.log("Cursor: open this folder and enable the ai-spector skill (.cursor/skills/ai-spector/).");
+  console.log("See .cursor/commands/_workflow.md — you do not need other CLI commands.");
 }

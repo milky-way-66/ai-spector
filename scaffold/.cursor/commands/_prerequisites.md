@@ -1,21 +1,24 @@
 # Workflow prerequisites (shared)
 
-Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active step. See also [**_graph.md**](./_graph.md) for context selection.
+User workflow: [**_workflow.md**](./_workflow.md). **CLI failures:** [**_cli-failures.md**](./_cli-failures.md). Agent CLI: [**_graph.md**](./_graph.md).
+
+Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active step.
 
 ## When checks fail
 
 1. **Stop immediately** — do not read templates, spawn subagents, or write outputs.
-2. Reply using the format in each command’s **If blocked** section.
+2. Reply with the **Blocked** format in [_cli-failures.md](./_cli-failures.md) (include full CLI output).
+3. Help the user fix the issue; re-run the failed CLI; then continue the slash command.
 
-## Graph-first context (primary)
+## Graph context (only after CLI succeeds)
 
-When `traceability.graph.json` has domain nodes for the task:
+1. **`ai-spector graph validate`** — exit 0 required before generate.
+2. Per target: **`ai-spector graph query <seedId> --json`** — parse JSON; use `projectionPaths` and `nodes`.
+3. Open **only** those paths (+ targeted `docs/data-source/**` if still insufficient).
 
-1. Run **`ai-spector graph validate`** (or stop on errors).
-2. For each generation target: **`ai-spector graph query <seedId> --json`** per [_graph.md](./_graph.md).
-3. Open **only** `projectionPaths` from CLI JSON — not whole `docs/` trees.
+**If validate or query fails:** follow [_cli-failures.md](./_cli-failures.md) — do **not** fall back to index or full-tree reads.
 
-**Index fallback:** Use `.ai-spector/index/*.md` only when the graph lacks domain nodes or neighbors return an empty subgraph. After generate, prefer updating the graph over relying on index alone.
+**If query succeeds but has no domain nodes:** tell the user; suggest **`/analyze`** — still no `docs/srs/**` glob.
 
 ## Check types
 
@@ -34,12 +37,12 @@ When `traceability.graph.json` has domain nodes for the task:
 | id | Pass when |
 |----|-----------|
 | `graph-file` | `.ai-spector/graph/traceability.graph.json` exists |
-| `graph-merged` | `state.json` → `analysis.graphMergedAt` is set ( `/analyze` committed domain nodes) |
+| `graph-merged` | `state.json` → `analysis.graphMergedAt` is set |
 
-Agent should also verify at least one `useCase` or `feature` node in the graph before `/generate-srs`; block with “run `/analyze` and merge into graph” if only section shells exist.
+If only section shells (no `useCase`/`feature`): **block** with fix steps → **`/analyze`**, not manual SRS from index.
 
-## Stale warnings
+## Stale warnings (not failures)
 
-- **Data source** newer than `analysis.lastRunAt` → suggest `/analyze`.
-- **Projections** changed but graph not updated → suggest `/sync-graph` or manual `rendersTo` edges.
-- **Index** stale → warn; graph neighbors remain primary when graph is populated.
+- Data source newer than `analysis.lastRunAt` → suggest `/analyze`.
+- Projections changed → suggest `/sync-graph` after validate passes.
+- Index stale → warn only; graph query remains primary when domain nodes exist.

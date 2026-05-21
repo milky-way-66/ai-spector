@@ -1,6 +1,6 @@
 # /validate-graph
 
-Gate generation using the graph CLI.
+Gate before generation. **User runs this command;** agent runs the CLI.
 
 ## Usage
 
@@ -12,9 +12,17 @@ Gate generation using the graph CLI.
 ai-spector graph validate
 ```
 
-- Exit 0 → report OK; suggest `/generate-srs` if domain nodes exist.
-- Non-zero → print errors; stop until fixed.
+- **Exit 0** → tell the user OK; if domain nodes exist, suggest `/generate-srs`; if only section shells, explain they need `/analyze` first.
+- **Non-zero** → **stop**. Use [_cli-failures.md](./_cli-failures.md): paste every `[ERROR]` line, explain each, give fix steps (usually re-run `/analyze` or fix one node then re-validate).
 
-Optional: if graph has only section shells (no `useCase`/`feature`), tell user to run `/analyze` and merge domain nodes.
+**Do not:** guess validation in the agent, hand-fix the whole graph without showing the user, or proceed to `/generate-srs`.
 
-**Do not** duplicate validation logic in the agent — use CLI output only.
+## If blocked
+
+Follow [_cli-failures.md](./_cli-failures.md). Typical fixes:
+
+- `DOMAIN-ANCHORED` → domain node missing `listedIn` / `describedIn` → re-run `/analyze` or fix one node and `graph merge` again.
+- `SECTION-TREE` → structure edge wrong → re-run `ai-spector analyze` (agent), not manual graph surgery at scale.
+- `REGISTRY-COMPLETE` → re-run `/analyze` step 0 (`ai-spector analyze`).
+
+After fix, user re-runs **`/validate-graph`**.

@@ -100,10 +100,17 @@ export function formatIssues(issues: ValidationIssue[]): string {
   if (issues.length === 0) {
     return "OK — no validation issues";
   }
-  return issues
-    .map(
-      (i) =>
-        `[${i.severity.toUpperCase()}] ${i.ruleId}: ${i.message}${i.nodeId ? ` (${i.nodeId})` : ""}`,
-    )
-    .join("\n");
+  const lines = issues.map(
+    (i) =>
+      `[${i.severity.toUpperCase()}] ${i.ruleId}: ${i.message}${i.nodeId ? ` (${i.nodeId})` : ""}`,
+  );
+  const errors = issues.filter((i) => i.severity === "error");
+  if (errors.length > 0) {
+    lines.push("");
+    lines.push(
+      "Fix each ERROR above, then re-run: ai-spector graph validate (or /validate-graph in Cursor).",
+    );
+    lines.push("Do not generate docs until validate passes. See .cursor/commands/_cli-failures.md");
+  }
+  return lines.join("\n");
 }

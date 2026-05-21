@@ -86,6 +86,10 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
     const errors = issues.filter((i) => i.severity === "error");
     if (errors.length > 0) {
       console.log(formatIssues(issues));
+      console.error("");
+      console.error("Merge rolled back nothing — graph was saved but validation failed.");
+      console.error("Fix the issues above, then re-run: ai-spector graph merge --from-knowledge");
+      console.error("Or run /analyze in Cursor (agent should show these errors and help fix).");
       throw new Error("Graph validation failed after merge");
     }
     const warns = issues.filter((i) => i.severity === "warn");

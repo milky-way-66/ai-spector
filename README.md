@@ -1,204 +1,135 @@
-# ai-spector
+# AI Spector
 
-**AI Spector** turns project inputs into structured documentation (SRS, basic design, detail design) inside [Cursor](https://cursor.com). One `npm install` gives you a CLI, templates, slash commands, and an agent skill.
+Turn project notes and specs into structured documentation (SRS, basic design, detail design) inside [Cursor](https://cursor.com).
 
-The **traceability graph** (`.ai-spector/graph/traceability.graph.json`) is the heart of the system: it stores sections, use cases, features, and links. Generation and search go through **`ai-spector graph query`** — not by reading whole folders.
-
-**Graphify** (optional MCP) only helps **extract** facts from `docs/data-source/` during `/analyze`. The **canonical store** is always our graph.
+You work with **slash commands**. The AI runs the `ai-spector` CLI behind the scenes. You only use the terminal once: **`npx ai-spector init`**.
 
 ---
 
-## 1. Overview
+## How you work (Cursor-first)
 
-| You get | Purpose |
-|---------|---------|
-| **`ai-spector init`** | Project scaffold: `.ai-spector/`, `.cursor/commands`, skill, `docs/data-source/` |
-| **Templates** | SRS, basic design, detail design (bundled in the package) |
-| **`ai-spector analyze`** | Build section/document structure in the graph |
-| **`/analyze` in Cursor** | Extract from inputs (Graphify) → merge into the graph |
-| **`/generate-*` in Cursor** | Fill templates; agents use `graph query --json` for context |
-| **`graph validate` / `query` / `impact`** | Validate, find relevant docs, scope regen after edits |
-
-**In one sentence:** inputs → graph (truth) → generated markdown projections, with the IDE asking the CLI which parts of the graph matter for each step.
-
----
-
-## 2. Getting started
-
-### Requirements
-
-- Node.js 20+
-- [Cursor](https://cursor.com)
-- Graphify MCP (for `/analyze` only)
-
-### New project
+### Once per project
 
 ```bash
 npm install ai-spector
-cd your-project
 npx ai-spector init
 ```
 
-| Step | What to do |
-|------|------------|
-| 1 | Add files under `docs/data-source/` |
-| 2 | `npx ai-spector analyze` |
-| 3 | Open in Cursor, enable **ai-spector** skill |
-| 4 | Run **`/analyze`** (merge knowledge into the graph) |
-| 5 | `npx ai-spector graph validate` |
-| 6 | **`/validate-graph`** then **`/generate-srs`** |
-| 7 | Optional: `/index-docs srs`, `/generate-basic-design`, `/generate-detail-design` |
+Put your source files in `docs/data-source/`, open the folder in Cursor, and turn on the **ai-spector** skill.
 
-Agents should run `npx ai-spector graph query <id> --json` during generate steps and use only `projectionPaths` from the output.
+### Then use slash commands
 
-### Try `example/` in this repo
+| You run | What happens |
+|---------|----------------|
+| **`/analyze`** | Builds the graph skeleton, extracts knowledge (Graphify), merges use cases & features into the graph, validates |
+| **`/visualize-graph`** | Opens a browser report to inspect the graph and `knowledge.json` |
+| **`/validate-graph`** | Checks the graph before generation |
+| **`/generate-srs`** | Writes SRS files using graph context (not whole-folder guessing) |
+| **`/generate-basic-design`** | Basic design from the graph |
+| **`/generate-detail-design`** | Detail design from the graph |
+| **`/graph-impact <id>`** | Shows what to regenerate after you change something |
+
+**Typical path:**
+
+```text
+npx ai-spector init
+→ add docs/data-source/
+→ /analyze
+→ /validate-graph
+→ /generate-srs
+```
+
+Command details live in `.cursor/commands/` after `init` (start with `_workflow.md`).
+
+If a CLI step fails during a slash command, the agent should **stop**, show you the error, and help you fix it — not bypass the tool with manual edits. See `_cli-failures.md` in your project after `init`.
+
+---
+
+## What is the graph?
+
+All structure and traceability live in one file:
+
+`.ai-spector/graph/traceability.graph.json`
+
+- Chapters and headings → **sections** in the graph  
+- Use cases, features, actors → **domain nodes** with links (`listedIn`, `satisfies`, …)  
+- Files under `docs/srs/` → **output** of the graph, not the source of truth  
+
+**Graphify** (optional MCP) only helps read `docs/data-source/` during **`/analyze`**. The graph remains canonical.
+
+---
+
+## Requirements
+
+- Node.js 20+
+- [Cursor](https://cursor.com)
+- Graphify MCP for **`/analyze`**
+
+---
+
+## Try the example in this repo
+
+For package developers:
 
 ```bash
 git clone <repo-url>
 cd ai-spector
-npm install
-npm run build
+npm install && npm run build
 npm run init:example
-npm run analyze
-npm run graph:validate
 ```
 
-Open **`example/`** as the Cursor workspace (not the repo root). Add samples under `example/docs/data-source/`, then run `/analyze` → `/validate-graph` → `/generate-srs`.
-
-From repo root:
-
-```bash
-npx ai-spector -r example graph query sec.srs.3-use-cases.l3.3.32-list-use-case --json
-```
+Open **`example/`** as the Cursor workspace, add files under `example/docs/data-source/`, then run **`/analyze`** → **`/generate-srs`**.
 
 See [example/README.md](example/README.md).
 
 ---
 
-## 3. How it works (detail)
-
-### 3.1 Components
-
-| Component | Role |
-|-----------|------|
-| **CLI (`ai-spector`)** | `init`, `analyze`, `graph validate`, `graph query`, `graph impact` |
-| **Traceability graph** | JSON graph: `document`, `section`, `useCase`, `feature`, edges |
-| **Cursor commands + skill** | `/analyze`, `/generate-srs`, … — must call CLI for graph operations |
-| **Templates** | `node_modules/ai-spector/templates/` — section patterns for generated docs |
-
-### 3.2 Graphify vs our graph
-
-| | Graphify (MCP) | Our graph |
-|---|----------------|-----------|
-| **When** | `/analyze` on raw inputs | `ai-spector analyze` + merge after `/analyze` + all generate/impact |
-| **Role** | Ingest helper (search, extract) | **Source of truth** |
-| **On disk** | `knowledge.json` (staging) | `traceability.graph.json` |
-| **Generation** | Not used | `graph query` / `graph impact` |
-
-### 3.3 Data flow
-
-```text
-docs/data-source/
-        │
-        ▼
-/analyze + Graphify          → knowledge.json (staging)
-        │
-        ▼ merge
-traceability.graph.json      ← OUR graph
-        ▲
-        │ ai-spector analyze   (section tree from templates)
-        │
-        ├── graph query --json
-        ├── graph impact --json
-        └── /generate-*  →  docs/srs/, docs/basic-design/, …
-```
-
-- **Sections** — template headings (`##`, `###`) are nodes with `partOf` / `contains`.
-- **Domain nodes** — `useCase`, `feature`, … with `listedIn`, `satisfies`, `definedIn`, …
-- **Markdown under `docs/`** — projections from the graph, not the canonical store.
-
-### 3.4 Full pipeline
-
-```text
-ai-spector init
-→ add docs/data-source/
-→ ai-spector analyze              (graph structure)
-→ /analyze                        (extract → knowledge.json)
-→ ai-spector graph merge --from-knowledge
-→ ai-spector graph validate
-→ /generate-srs                   (graph query per target)
-→ /index-docs srs                 (optional)
-→ /generate-basic-design
-→ /graph-impact after edits       (graph impact --json)
-```
-
-Cursor contract (see `.cursor/commands/_graph.md` after `init`):
-
-```bash
-ai-spector graph merge --from-knowledge
-ai-spector graph validate
-ai-spector graph query <seedId> --json
-ai-spector graph impact <nodeId> --json
-```
-
-### 3.5 Project layout
+## Project layout (after init)
 
 ```text
 your-project/
-  .cursor/commands/           # slash commands
+  .cursor/commands/          # /analyze, /generate-srs, …
   .cursor/skills/ai-spector/
   .ai-spector/
-    docflow.config.json
     graph/traceability.graph.json
-    registry/section-registry.json
-    .docflow/analysis/          # knowledge.json, gaps.json
-    .docflow/extract/           # patch.json (optional; from merge --write-patch)
-    .docflow/config/            # DAGs, prerequisites
-    index/                      # optional
+    .docflow/analysis/knowledge.json
+    views/graph-knowledge.html   # after /visualize-graph
   docs/
-    data-source/                # inputs
-    srs/                          # generated
-    basic-design/
-    detail-design/
+    data-source/                 # your inputs
+    srs/                         # generated
 ```
 
-### 3.6 CLI reference
+---
 
-| Command | Description |
-|---------|-------------|
-| `ai-spector init [--force]` | Scaffold project |
-| `ai-spector analyze` | Registry + bootstrap graph structure |
-| `ai-spector graph validate` | Schema + traceability rules |
-| `ai-spector graph query <id> --json` | Neighbors + `projectionPaths` |
-| `ai-spector graph impact <id> --json` | Regen / review / downstream |
-| `ai-spector graph registry` | Rebuild section registry |
-| `ai-spector graph bootstrap` | Rebuild structure from registry |
+## For developers & contributors
 
-Option: `-r, --root <path>` to target a project directory.
-
-### 3.7 npm package contents
-
-| Path | Contents |
-|------|----------|
-| `dist/` | CLI |
-| `templates/` | SRS, basic_design, detail_design |
-| `schemas/` | Graph schema + rules |
-| `documents.json` | SRS manifest |
-| `scaffold/` | Copied on `init` |
-
-### 3.8 Design docs & development
+The CLI is the engine; Cursor commands wrap it.
 
 | Doc | Topic |
 |-----|--------|
-| [workflow-overview.md](docs/design/workflow-overview.md) | Graph-centric workflow |
-| [traceability-graph-redesign.md](docs/design/traceability-graph-redesign.md) | Schema, migration phases |
+| [workflow-overview.md](docs/design/workflow-overview.md) | Graph-centric design |
+| [traceability-graph-redesign.md](docs/design/traceability-graph-redesign.md) | Schema and roadmap |
 
-**Hack on this repo:**
+**Build from source:**
 
 ```bash
 npm install && npm run build
-npm run init:example && npm run analyze && npm run graph:validate
+npm run init:example
 ```
+
+**CLI reference** (normally invoked by agents, not end users):
+
+| Command | Purpose |
+|---------|---------|
+| `ai-spector init` | Scaffold project |
+| `ai-spector analyze` | Section tree in graph |
+| `ai-spector graph merge --from-knowledge` | Domain nodes from staging |
+| `ai-spector graph validate` | Rules check |
+| `ai-spector graph visualize [--open]` | HTML report |
+| `ai-spector graph query <id> --json` | Context for generation |
+| `ai-spector graph impact <id> --json` | Regen scope |
+
+Option: `-r <path>` to point at another project root.
 
 ---
 

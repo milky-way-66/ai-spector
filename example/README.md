@@ -1,73 +1,50 @@
 # Example project
 
-Sample consumer layout for **ai-spector**. Use this folder to try the workflow without publishing the package.
+Sample layout for **ai-spector**. Open this folder as your **Cursor workspace** (not the repo root).
 
-## Quick start
+## Setup (once)
 
 From the **repository root**:
 
 ```bash
 npm install
 npm run build
-npm run init:example    # copy scaffold → example/
-npm run analyze         # section registry + graph bootstrap
-npm run graph:validate
+npm run init:example
 ```
 
-Then open **`example/`** as your **Cursor workspace root** (File → Open Folder → `example`).
+That copies scaffold files into `example/`. You do **not** need to run `analyze` or `graph merge` in the terminal for normal use — use Cursor slash commands in `example/`.
 
-## Inside Cursor
+## In Cursor
 
-1. Add real input files under `docs/data-source/` (not only README).
-2. Run **`/analyze`** (needs Graphify MCP) — merge UC/features into `traceability.graph.json`.
-3. Run **`/validate-graph`** or:
+1. Add files under `docs/data-source/`.
+2. **`/analyze`** — agent runs `ai-spector analyze`, Graphify, merge, validate.
+3. **`/visualize-graph`** (optional) — browser report.
+4. **`/validate-graph`**
+5. **`/generate-srs`**
+6. Optional: **`/index-docs srs`**, **`/generate-basic-design`**
 
-   ```bash
-   npx ai-spector graph validate
-   ```
-
-   (from `example/`, or `npx ai-spector -r . graph validate` from repo root).
-
-4. Run **`/generate-srs`**.
-
-   The agent should call:
-
-   ```bash
-   npx ai-spector graph query <seedId> --json
-   ```
-
-5. Optional: **`/index-docs srs`**, **`/generate-basic-design`**.
-
-## Try graph CLI from repo root
-
-```bash
-# query context around §3.2 List Use Case
-npx ai-spector -r example graph query sec.srs.3-use-cases.l3.3.32-list-use-case --depth 2 --json
-
-# impact if that section changes
-npx ai-spector -r example graph impact sec.srs.3-use-cases.l3.3.32-list-use-case --json
-```
+See `.cursor/commands/_workflow.md`.
 
 ## Layout
 
 ```text
 example/
-  .cursor/commands/       # slash commands
-  .cursor/skills/         # ai-spector skill
-  .ai-spector/
-    graph/                # traceability.graph.json (generated)
-    registry/
-    .docflow/             # knowledge, DAGs, state
-  docs/
-    data-source/          # your inputs
-    srs/                  # generated (after /generate-srs)
+  .cursor/commands/
+  .ai-spector/graph/
+  docs/data-source/
+  docs/srs/              # after /generate-srs
 ```
 
-## Templates
+## Developing the package
 
-| Context | Path |
-|---------|------|
-| Developing in this monorepo | `../templates/` at repo root |
-| After `npm install ai-spector` elsewhere | `node_modules/ai-spector/templates/` |
+Templates in this monorepo: `../templates/` (not `node_modules/`). Agents in `example/` should use that path when `node_modules/ai-spector` is absent.
 
-Commands reference `node_modules/ai-spector/templates/`; when developing from source, agents should use `../templates/` relative to `example/`.
+From repo root, maintainers may run:
+
+```bash
+npm run analyze -r example
+npm run graph:merge
+npm run graph:validate
+```
+
+End users should still prefer **`/analyze`** in Cursor.

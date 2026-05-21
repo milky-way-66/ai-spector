@@ -1,6 +1,6 @@
 # /graph-impact
 
-Scope regen via **`ai-spector graph impact`** CLI ([_graph.md](./_graph.md)).
+Scope regen after a change. **User runs this command;** agent runs `graph impact` ([_graph.md](./_graph.md), [_workflow.md](./_workflow.md)).
 
 ## Usage
 
@@ -35,6 +35,11 @@ ai-spector graph query <thatId> --json
 
 **Do not** implement impact BFS in the agent.
 
+## If blocked
+
+Use [_cli-failures.md](./_cli-failures.md). If `graph impact` or follow-up `graph query` fails, show output and fix — do not invent regenerate lists.
+
 ## Guardrails
 
 - No whole-repo regen outside CLI buckets.
+- No regen plan if impact CLI failed.

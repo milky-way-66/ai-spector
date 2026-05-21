@@ -22,7 +22,8 @@
     "init:example": "node dist/cli.js init -C example --force",
     "analyze": "node dist/cli.js -r example analyze",
     "graph:validate": "node dist/cli.js -r example graph validate",
-    "graph:merge": "node dist/cli.js -r example graph merge --from-knowledge"
+    "graph:merge": "node dist/cli.js -r example graph merge --from-knowledge",
+    "graph:visualize": "node dist/cli.js -r example graph visualize --open"
   },
   "dependencies": {
     "ajv": "^8.17.1",

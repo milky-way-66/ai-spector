@@ -1,6 +1,8 @@
 # Workflow prerequisites (shared)
 
-Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active step. See also [**_graph.md**](./_graph.md) for context selection.
+User workflow: [**_workflow.md**](./_workflow.md). Agent CLI details: [**_graph.md**](./_graph.md).
+
+Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active step.
 
 ## When checks fail
 

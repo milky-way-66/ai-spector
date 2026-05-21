@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Spector — Graph &amp; Knowledge</title>
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "SF Pro Text", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
+      align-items: baseline;
+    }
+    header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    header .meta { color: var(--muted); font-size: 0.8rem; }
+    nav.tabs {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.5rem 1.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    nav.tabs button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    nav.tabs button.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+    .panel { display: none; padding: 1rem 1.25rem 1.5rem; }
+    .panel.active { display: block; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    .stat-card .label { font-size: 0.75rem; color: var(--muted); }
+    .stat-card .value { font-size: 1.35rem; font-weight: 600; margin-top: 0.2rem; }
+    .graph-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .graph-toolbar label { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; }
+    .graph-toolbar select, .graph-toolbar input {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    #graph-network {
+      width: 100%;
+      height: min(70vh, 640px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #121820;
+    }
+    #node-detail {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      min-height: 4rem;
+      white-space: pre-wrap;
+      font-family: ui-monospace, monospace;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.data th, table.data td {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data th { color: var(--muted); font-weight: 500; }
+    table.data tr:hover td { background: var(--panel); }
+    .empty { color: var(--muted); font-style: italic; padding: 1rem 0; }
+    .section-title { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--muted); }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      background: var(--border);
+      margin-left: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Spector — Graph &amp; Knowledge</h1>
+    <span class="meta" id="header-meta"></span>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button type="button" class="active" data-tab="overview">Overview</button>
+    <button type="button" data-tab="graph">Graph</button>
+    <button type="button" data-tab="knowledge">Knowledge</button>
+  </nav>
+
+  <section id="panel-overview" class="panel active"></section>
+  <section id="panel-graph" class="panel">
+    <div class="graph-toolbar">
+      <label>View
+        <select id="filter-view">
+          <option value="domain">Domain + documents</option>
+          <option value="structure">Documents + sections</option>
+          <option value="all">Full graph</option>
+        </select>
+      </label>
+      <label>Search <input type="search" id="filter-search" placeholder="node id or title…" /></label>
+      <label><input type="checkbox" id="filter-physics" checked /> Physics</label>
+    </div>
+    <div id="graph-network"></div>
+    <div class="legend" id="legend"></div>
+    <div id="node-detail">Click a node to inspect.</div>
+  </section>
+  <section id="panel-knowledge" class="panel"></section>
+
+  <script type="application/json" id="payload">{"generatedAt":"2026-05-21T06:37:51.140Z","projectRoot":"example","graph":{"version":1,"nodes":[{"id":"doc.srs.1-introduction","type":"document","template":"1-introduction.md","output":"docs/srs/1-introduction.md"},{"id":"sec.srs.1-introduction.l2.1.1-introduction","type":"section","documentId":"doc.srs.1-introduction","heading":"1. Introduction","level":2,"order":1},{"id":"sec.srs.1-introduction.l3.2.11-document-purpose","type":"section","documentId":"doc.srs.1-introduction","heading":"1.1 Document Purpose","level":3,"order":2},{"id":"sec.srs.1-introduction.l3.3.12-document-conventions","type":"section","documentId":"doc.srs.1-introduction","heading":"1.2 Document Conventions","level":3,"order":3},{"id":"sec.srs.1-introduction.l3.4.13-project-scope","type":"section","documentId":"doc.srs.1-introduction","heading":"1.3 Project Scope","level":3,"order":4},{"id":"sec.srs.1-introduction.l3.5.14-references","type":"section","documentId":"doc.srs.1-introduction","heading":"1.4 References","level":3,"order":5},{"id":"doc.srs.2-overall-description","type":"document","template":"2-overall-description.md","output":"docs/srs/2-overall-description.md"},{"id":"sec.srs.2-overall-description.l2.1.2-overall-description","type":"section","documentId":"doc.srs.2-overall-description","heading":"2. Overall Description","level":2,"order":1},{"id":"sec.srs.2-overall-description.l3.2.21-product-perspective","type":"section","documentId":"doc.srs.2-overall-description","heading":"2.1 Product Perspective","level":3,"order":2},{"id":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics","type":"section","documentId":"doc.srs.2-overall-description","heading":"2.2 User Classes and Characteristics","level":3,"order":3},{"id":"sec.srs.2-overall-description.l3.4.23-operating-environment","type":"section","documentId":"doc.srs.2-overall-description","heading":"2.3 Operating Environment","level":3,"order":4},{"id":"sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints","type":"section","documentId":"doc.srs.2-overall-description","heading":"2.4 Design and Implementation Constraints","level":3,"order":5},{"id":"sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies","type":"section","documentId":"doc.srs.2-overall-description","heading":"2.5 Assumptions and Dependencies","level":3,"order":6},{"id":"doc.srs.3-use-cases","type":"document","template":"3-use-cases.md","output":"docs/srs/3-use-cases.md"},{"id":"sec.srs.3-use-cases.l2.1.3-use-cases","type":"section","documentId":"doc.srs.3-use-cases","heading":"3. Use Cases","level":2,"order":1},{"id":"sec.srs.3-use-cases.l3.2.31-use-case-diagrams","type":"section","documentId":"doc.srs.3-use-cases","heading":"3.1 Use Case Diagrams","level":3,"order":2},{"id":"sec.srs.3-use-cases.l3.3.32-list-use-case","type":"section","documentId":"doc.srs.3-use-cases","heading":"3.2 List Use Case","level":3,"order":3},{"id":"doc.srs.4-system-features","type":"document","template":"4-system-features-list-template.md","output":"docs/srs/4-system-features.md"},{"id":"sec.srs.4-system-features.l2.1.4-system-features","type":"section","documentId":"doc.srs.4-system-features","heading":"4. System Features","level":2,"order":1},{"id":"sec.srs.4-system-features.l3.2.41-feature-diagram-optional","type":"section","documentId":"doc.srs.4-system-features","heading":"4.1 Feature Diagram (Optional)","level":3,"order":2},{"id":"sec.srs.4-system-features.l3.3.42-list-of-system-features","type":"section","documentId":"doc.srs.4-system-features","heading":"4.2 List of System Features","level":3,"order":3},{"id":"sec.srs.4-system-features.l3.4.43-feature-relationships-optional","type":"section","documentId":"doc.srs.4-system-features","heading":"4.3 Feature Relationships (Optional)","level":3,"order":4},{"id":"doc.srs.5-data-requirements","type":"document","template":"5-data-requirements.md","output":"docs/srs/5-data-requirements.md"},{"id":"sec.srs.5-data-requirements.l2.1.5-data-requirements","type":"section","documentId":"doc.srs.5-data-requirements","heading":"5. Data Requirements","level":2,"order":1},{"id":"sec.srs.5-data-requirements.l3.2.51-logical-data-model","type":"section","documentId":"doc.srs.5-data-requirements","heading":"5.1 Logical Data Model","level":3,"order":2},{"id":"sec.srs.5-data-requirements.l3.3.52-data-dictionary","type":"section","documentId":"doc.srs.5-data-requirements","heading":"5.2 Data Dictionary","level":3,"order":3},{"id":"sec.srs.5-data-requirements.l3.4.53-reports","type":"section","documentId":"doc.srs.5-data-requirements","heading":"5.3 Reports","level":3,"order":4},{"id":"sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal","type":"section","documentId":"doc.srs.5-data-requirements","heading":"5.4 Data Acquisition, Integrity, Retention, and Disposal","level":3,"order":5},{"id":"doc.srs.6-external-interfaces","type":"document","template":"6-external-interfaces.md","output":"docs/srs/6-external-interfaces.md"},{"id":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","type":"section","documentId":"doc.srs.6-external-interfaces","heading":"6. External Interface Requirements","level":2,"order":1},{"id":"sec.srs.6-external-interfaces.l3.2.61-user-interfaces","type":"section","documentId":"doc.srs.6-external-interfaces","heading":"6.1 User Interfaces","level":3,"order":2},{"id":"sec.srs.6-external-interfaces.l3.3.62-software-interfaces","type":"section","documentId":"doc.srs.6-external-interfaces","heading":"6.2 Software Interfaces","level":3,"order":3},{"id":"sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces","type":"section","documentId":"doc.srs.6-external-interfaces","heading":"6.3 Hardware Interfaces","level":3,"order":4},{"id":"sec.srs.6-external-interfaces.l3.5.64-communications-interfaces","type":"section","documentId":"doc.srs.6-external-interfaces","heading":"6.4 Communications Interfaces","level":3,"order":5},{"id":"doc.srs.7-quality-attributes","type":"document","template":"7-quality-attributes.md","output":"docs/srs/7-quality-attributes.md"},{"id":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7. Non-Functional Requirements (Quality Attributes)","level":2,"order":1},{"id":"sec.srs.7-quality-attributes.l3.2.71-usability","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7.1 Usability","level":3,"order":2},{"id":"sec.srs.7-quality-attributes.l3.3.72-performance","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7.2 Performance","level":3,"order":3},{"id":"sec.srs.7-quality-attributes.l3.4.73-security","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7.3 Security","level":3,"order":4},{"id":"sec.srs.7-quality-attributes.l3.5.74-safety","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7.4 Safety","level":3,"order":5},{"id":"sec.srs.7-quality-attributes.l3.6.75-others-as-relevant","type":"section","documentId":"doc.srs.7-quality-attributes","heading":"7.5 Others as relevant","level":3,"order":6},{"id":"doc.srs.8-internationalization","type":"document","template":"8-internationalization.md","output":"docs/srs/8-internationalization.md"},{"id":"sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements","type":"section","documentId":"doc.srs.8-internationalization","heading":"8. Internationalization and Localization Requirements","level":2,"order":1},{"id":"doc.srs.9-other-requirements","type":"document","template":"9-other-requirements.md","output":"docs/srs/9-other-requirements.md"},{"id":"sec.srs.9-other-requirements.l2.1.9-other-requirements","type":"section","documentId":"doc.srs.9-other-requirements","heading":"9. Other Requirements","level":2,"order":1},{"id":"sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance","type":"section","documentId":"doc.srs.9-other-requirements","heading":"9.1 Legal and Regulatory Compliance","level":3,"order":2},{"id":"sec.srs.9-other-requirements.l3.3.92-installation-and-configuration","type":"section","documentId":"doc.srs.9-other-requirements","heading":"9.2 Installation and Configuration","level":3,"order":3},{"id":"sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring","type":"section","documentId":"doc.srs.9-other-requirements","heading":"9.3 Logging and Monitoring","level":3,"order":4},{"id":"doc.srs.uc-detail","type":"document","template":"3-use-case-detail-template.md","outputPattern":"docs/srs/03-use-cases/uc-{nn}-{slug}.md","perDomain":"useCase"},{"id":"sec.srs.uc-detail.l2.1.use-case","type":"section","documentId":"doc.srs.uc-detail","heading":"Use Case:","level":2,"order":1},{"id":"sec.srs.uc-detail.l3.2.1-use-case-overview","type":"section","documentId":"doc.srs.uc-detail","heading":"1. Use Case Overview","level":3,"order":2},{"id":"sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow","type":"section","documentId":"doc.srs.uc-detail","heading":"2. Main Success Scenario (Basic Flow)","level":3,"order":3},{"id":"sec.srs.uc-detail.l3.4.3-alternative-flows","type":"section","documentId":"doc.srs.uc-detail","heading":"3. Alternative Flows","level":3,"order":4},{"id":"sec.srs.uc-detail.l4.5.31-alternative-flow-a","type":"section","documentId":"doc.srs.uc-detail","heading":"3.1 Alternative Flow A:","level":4,"order":5},{"id":"sec.srs.uc-detail.l3.6.4-exception-flows-error-handling","type":"section","documentId":"doc.srs.uc-detail","heading":"4. Exception Flows (Error Handling)","level":3,"order":6},{"id":"sec.srs.uc-detail.l4.7.41-exception-a","type":"section","documentId":"doc.srs.uc-detail","heading":"4.1 Exception A:","level":4,"order":7},{"id":"sec.srs.uc-detail.l3.8.5-business-rules","type":"section","documentId":"doc.srs.uc-detail","heading":"5. Business Rules","level":3,"order":8},{"id":"sec.srs.uc-detail.l3.9.6-functional-requirements","type":"section","documentId":"doc.srs.uc-detail","heading":"6. Functional Requirements","level":3,"order":9},{"id":"sec.srs.uc-detail.l3.10.7-data-requirements","type":"section","documentId":"doc.srs.uc-detail","heading":"7. Data Requirements","level":3,"order":10},{"id":"sec.srs.uc-detail.l3.11.8-user-interface-requirements","type":"section","documentId":"doc.srs.uc-detail","heading":"8. User Interface Requirements","level":3,"order":11},{"id":"sec.srs.uc-detail.l3.12.9-related-use-cases","type":"section","documentId":"doc.srs.uc-detail","heading":"9. Related Use Cases","level":3,"order":12},{"id":"sec.srs.uc-detail.l3.13.10-notes","type":"section","documentId":"doc.srs.uc-detail","heading":"10. Notes","level":3,"order":13},{"id":"doc.srs.feature-detail","type":"document","template":"4-system-feature-detail-template.md","outputPattern":"docs/srs/04-system-features/f-{nn}-{slug}.md","perDomain":"feature"},{"id":"sec.srs.feature-detail.l2.1.feature","type":"section","documentId":"doc.srs.feature-detail","heading":"Feature:","level":2,"order":1},{"id":"sec.srs.feature-detail.l3.2.1-description","type":"section","documentId":"doc.srs.feature-detail","heading":"1. Description","level":3,"order":2},{"id":"sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences","type":"section","documentId":"doc.srs.feature-detail","heading":"2. Stimulus/Response Sequences","level":3,"order":3},{"id":"sec.srs.feature-detail.l3.4.3-functional-requirements","type":"section","documentId":"doc.srs.feature-detail","heading":"3. Functional Requirements","level":3,"order":4},{"id":"actor.customer","type":"actor","name":"Customer","description":"End user placing orders"},{"id":"UC-01","type":"useCase","title":"Place order","priority":"High","description":"Customer submits an order for fulfillment"},{"id":"F-01","type":"feature","title":"Checkout","description":"Cart and payment flow"}],"edges":[{"type":"contains","from":"doc.srs.1-introduction","to":"sec.srs.1-introduction.l2.1.1-introduction"},{"type":"partOf","from":"sec.srs.1-introduction.l2.1.1-introduction","to":"doc.srs.1-introduction"},{"type":"contains","from":"sec.srs.1-introduction.l2.1.1-introduction","to":"sec.srs.1-introduction.l3.2.11-document-purpose"},{"type":"contains","from":"sec.srs.1-introduction.l2.1.1-introduction","to":"sec.srs.1-introduction.l3.3.12-document-conventions"},{"type":"contains","from":"sec.srs.1-introduction.l2.1.1-introduction","to":"sec.srs.1-introduction.l3.4.13-project-scope"},{"type":"contains","from":"sec.srs.1-introduction.l2.1.1-introduction","to":"sec.srs.1-introduction.l3.5.14-references"},{"type":"partOf","from":"sec.srs.1-introduction.l3.2.11-document-purpose","to":"sec.srs.1-introduction.l2.1.1-introduction"},{"type":"follows","from":"sec.srs.1-introduction.l3.2.11-document-purpose","to":"sec.srs.1-introduction.l3.3.12-document-conventions"},{"type":"partOf","from":"sec.srs.1-introduction.l3.3.12-document-conventions","to":"sec.srs.1-introduction.l2.1.1-introduction"},{"type":"follows","from":"sec.srs.1-introduction.l3.3.12-document-conventions","to":"sec.srs.1-introduction.l3.4.13-project-scope"},{"type":"partOf","from":"sec.srs.1-introduction.l3.4.13-project-scope","to":"sec.srs.1-introduction.l2.1.1-introduction"},{"type":"follows","from":"sec.srs.1-introduction.l3.4.13-project-scope","to":"sec.srs.1-introduction.l3.5.14-references"},{"type":"partOf","from":"sec.srs.1-introduction.l3.5.14-references","to":"sec.srs.1-introduction.l2.1.1-introduction"},{"type":"contains","from":"doc.srs.2-overall-description","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"partOf","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"doc.srs.2-overall-description"},{"type":"contains","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"sec.srs.2-overall-description.l3.2.21-product-perspective"},{"type":"contains","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"},{"type":"contains","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"sec.srs.2-overall-description.l3.4.23-operating-environment"},{"type":"contains","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints"},{"type":"contains","from":"sec.srs.2-overall-description.l2.1.2-overall-description","to":"sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies"},{"type":"partOf","from":"sec.srs.2-overall-description.l3.2.21-product-perspective","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"follows","from":"sec.srs.2-overall-description.l3.2.21-product-perspective","to":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"},{"type":"partOf","from":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"follows","from":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics","to":"sec.srs.2-overall-description.l3.4.23-operating-environment"},{"type":"partOf","from":"sec.srs.2-overall-description.l3.4.23-operating-environment","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"follows","from":"sec.srs.2-overall-description.l3.4.23-operating-environment","to":"sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints"},{"type":"partOf","from":"sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"follows","from":"sec.srs.2-overall-description.l3.5.24-design-and-implementation-constraints","to":"sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies"},{"type":"partOf","from":"sec.srs.2-overall-description.l3.6.25-assumptions-and-dependencies","to":"sec.srs.2-overall-description.l2.1.2-overall-description"},{"type":"contains","from":"doc.srs.3-use-cases","to":"sec.srs.3-use-cases.l2.1.3-use-cases"},{"type":"partOf","from":"sec.srs.3-use-cases.l2.1.3-use-cases","to":"doc.srs.3-use-cases"},{"type":"contains","from":"sec.srs.3-use-cases.l2.1.3-use-cases","to":"sec.srs.3-use-cases.l3.2.31-use-case-diagrams"},{"type":"contains","from":"sec.srs.3-use-cases.l2.1.3-use-cases","to":"sec.srs.3-use-cases.l3.3.32-list-use-case"},{"type":"partOf","from":"sec.srs.3-use-cases.l3.2.31-use-case-diagrams","to":"sec.srs.3-use-cases.l2.1.3-use-cases"},{"type":"follows","from":"sec.srs.3-use-cases.l3.2.31-use-case-diagrams","to":"sec.srs.3-use-cases.l3.3.32-list-use-case"},{"type":"partOf","from":"sec.srs.3-use-cases.l3.3.32-list-use-case","to":"sec.srs.3-use-cases.l2.1.3-use-cases"},{"type":"contains","from":"doc.srs.4-system-features","to":"sec.srs.4-system-features.l2.1.4-system-features"},{"type":"partOf","from":"sec.srs.4-system-features.l2.1.4-system-features","to":"doc.srs.4-system-features"},{"type":"contains","from":"sec.srs.4-system-features.l2.1.4-system-features","to":"sec.srs.4-system-features.l3.2.41-feature-diagram-optional"},{"type":"contains","from":"sec.srs.4-system-features.l2.1.4-system-features","to":"sec.srs.4-system-features.l3.3.42-list-of-system-features"},{"type":"contains","from":"sec.srs.4-system-features.l2.1.4-system-features","to":"sec.srs.4-system-features.l3.4.43-feature-relationships-optional"},{"type":"partOf","from":"sec.srs.4-system-features.l3.2.41-feature-diagram-optional","to":"sec.srs.4-system-features.l2.1.4-system-features"},{"type":"follows","from":"sec.srs.4-system-features.l3.2.41-feature-diagram-optional","to":"sec.srs.4-system-features.l3.3.42-list-of-system-features"},{"type":"partOf","from":"sec.srs.4-system-features.l3.3.42-list-of-system-features","to":"sec.srs.4-system-features.l2.1.4-system-features"},{"type":"follows","from":"sec.srs.4-system-features.l3.3.42-list-of-system-features","to":"sec.srs.4-system-features.l3.4.43-feature-relationships-optional"},{"type":"partOf","from":"sec.srs.4-system-features.l3.4.43-feature-relationships-optional","to":"sec.srs.4-system-features.l2.1.4-system-features"},{"type":"contains","from":"doc.srs.5-data-requirements","to":"sec.srs.5-data-requirements.l2.1.5-data-requirements"},{"type":"partOf","from":"sec.srs.5-data-requirements.l2.1.5-data-requirements","to":"doc.srs.5-data-requirements"},{"type":"contains","from":"sec.srs.5-data-requirements.l2.1.5-data-requirements","to":"sec.srs.5-data-requirements.l3.2.51-logical-data-model"},{"type":"contains","from":"sec.srs.5-data-requirements.l2.1.5-data-requirements","to":"sec.srs.5-data-requirements.l3.3.52-data-dictionary"},{"type":"contains","from":"sec.srs.5-data-requirements.l2.1.5-data-requirements","to":"sec.srs.5-data-requirements.l3.4.53-reports"},{"type":"contains","from":"sec.srs.5-data-requirements.l2.1.5-data-requirements","to":"sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal"},{"type":"partOf","from":"sec.srs.5-data-requirements.l3.2.51-logical-data-model","to":"sec.srs.5-data-requirements.l2.1.5-data-requirements"},{"type":"follows","from":"sec.srs.5-data-requirements.l3.2.51-logical-data-model","to":"sec.srs.5-data-requirements.l3.3.52-data-dictionary"},{"type":"partOf","from":"sec.srs.5-data-requirements.l3.3.52-data-dictionary","to":"sec.srs.5-data-requirements.l2.1.5-data-requirements"},{"type":"follows","from":"sec.srs.5-data-requirements.l3.3.52-data-dictionary","to":"sec.srs.5-data-requirements.l3.4.53-reports"},{"type":"partOf","from":"sec.srs.5-data-requirements.l3.4.53-reports","to":"sec.srs.5-data-requirements.l2.1.5-data-requirements"},{"type":"follows","from":"sec.srs.5-data-requirements.l3.4.53-reports","to":"sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal"},{"type":"partOf","from":"sec.srs.5-data-requirements.l3.5.54-data-acquisition-integrity-retention-and-disposal","to":"sec.srs.5-data-requirements.l2.1.5-data-requirements"},{"type":"contains","from":"doc.srs.6-external-interfaces","to":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"},{"type":"partOf","from":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","to":"doc.srs.6-external-interfaces"},{"type":"contains","from":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","to":"sec.srs.6-external-interfaces.l3.2.61-user-interfaces"},{"type":"contains","from":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","to":"sec.srs.6-external-interfaces.l3.3.62-software-interfaces"},{"type":"contains","from":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","to":"sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces"},{"type":"contains","from":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements","to":"sec.srs.6-external-interfaces.l3.5.64-communications-interfaces"},{"type":"partOf","from":"sec.srs.6-external-interfaces.l3.2.61-user-interfaces","to":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"},{"type":"follows","from":"sec.srs.6-external-interfaces.l3.2.61-user-interfaces","to":"sec.srs.6-external-interfaces.l3.3.62-software-interfaces"},{"type":"partOf","from":"sec.srs.6-external-interfaces.l3.3.62-software-interfaces","to":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"},{"type":"follows","from":"sec.srs.6-external-interfaces.l3.3.62-software-interfaces","to":"sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces"},{"type":"partOf","from":"sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces","to":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"},{"type":"follows","from":"sec.srs.6-external-interfaces.l3.4.63-hardware-interfaces","to":"sec.srs.6-external-interfaces.l3.5.64-communications-interfaces"},{"type":"partOf","from":"sec.srs.6-external-interfaces.l3.5.64-communications-interfaces","to":"sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"},{"type":"contains","from":"doc.srs.7-quality-attributes","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"doc.srs.7-quality-attributes"},{"type":"contains","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"sec.srs.7-quality-attributes.l3.2.71-usability"},{"type":"contains","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"sec.srs.7-quality-attributes.l3.3.72-performance"},{"type":"contains","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"sec.srs.7-quality-attributes.l3.4.73-security"},{"type":"contains","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"sec.srs.7-quality-attributes.l3.5.74-safety"},{"type":"contains","from":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes","to":"sec.srs.7-quality-attributes.l3.6.75-others-as-relevant"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l3.2.71-usability","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"follows","from":"sec.srs.7-quality-attributes.l3.2.71-usability","to":"sec.srs.7-quality-attributes.l3.3.72-performance"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l3.3.72-performance","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"follows","from":"sec.srs.7-quality-attributes.l3.3.72-performance","to":"sec.srs.7-quality-attributes.l3.4.73-security"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l3.4.73-security","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"follows","from":"sec.srs.7-quality-attributes.l3.4.73-security","to":"sec.srs.7-quality-attributes.l3.5.74-safety"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l3.5.74-safety","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"follows","from":"sec.srs.7-quality-attributes.l3.5.74-safety","to":"sec.srs.7-quality-attributes.l3.6.75-others-as-relevant"},{"type":"partOf","from":"sec.srs.7-quality-attributes.l3.6.75-others-as-relevant","to":"sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"},{"type":"contains","from":"doc.srs.8-internationalization","to":"sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements"},{"type":"partOf","from":"sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements","to":"doc.srs.8-internationalization"},{"type":"contains","from":"doc.srs.9-other-requirements","to":"sec.srs.9-other-requirements.l2.1.9-other-requirements"},{"type":"partOf","from":"sec.srs.9-other-requirements.l2.1.9-other-requirements","to":"doc.srs.9-other-requirements"},{"type":"contains","from":"sec.srs.9-other-requirements.l2.1.9-other-requirements","to":"sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance"},{"type":"contains","from":"sec.srs.9-other-requirements.l2.1.9-other-requirements","to":"sec.srs.9-other-requirements.l3.3.92-installation-and-configuration"},{"type":"contains","from":"sec.srs.9-other-requirements.l2.1.9-other-requirements","to":"sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring"},{"type":"partOf","from":"sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance","to":"sec.srs.9-other-requirements.l2.1.9-other-requirements"},{"type":"follows","from":"sec.srs.9-other-requirements.l3.2.91-legal-and-regulatory-compliance","to":"sec.srs.9-other-requirements.l3.3.92-installation-and-configuration"},{"type":"partOf","from":"sec.srs.9-other-requirements.l3.3.92-installation-and-configuration","to":"sec.srs.9-other-requirements.l2.1.9-other-requirements"},{"type":"follows","from":"sec.srs.9-other-requirements.l3.3.92-installation-and-configuration","to":"sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring"},{"type":"partOf","from":"sec.srs.9-other-requirements.l3.4.93-logging-and-monitoring","to":"sec.srs.9-other-requirements.l2.1.9-other-requirements"},{"type":"contains","from":"doc.srs.uc-detail","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"partOf","from":"sec.srs.uc-detail.l2.1.use-case","to":"doc.srs.uc-detail"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.2.1-use-case-overview"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.4.3-alternative-flows"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.6.4-exception-flows-error-handling"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.8.5-business-rules"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.9.6-functional-requirements"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.10.7-data-requirements"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.11.8-user-interface-requirements"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.12.9-related-use-cases"},{"type":"contains","from":"sec.srs.uc-detail.l2.1.use-case","to":"sec.srs.uc-detail.l3.13.10-notes"},{"type":"partOf","from":"sec.srs.uc-detail.l3.2.1-use-case-overview","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.2.1-use-case-overview","to":"sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow"},{"type":"partOf","from":"sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.3.2-main-success-scenario-basic-flow","to":"sec.srs.uc-detail.l3.4.3-alternative-flows"},{"type":"partOf","from":"sec.srs.uc-detail.l3.4.3-alternative-flows","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"contains","from":"sec.srs.uc-detail.l3.4.3-alternative-flows","to":"sec.srs.uc-detail.l4.5.31-alternative-flow-a"},{"type":"partOf","from":"sec.srs.uc-detail.l4.5.31-alternative-flow-a","to":"sec.srs.uc-detail.l3.4.3-alternative-flows"},{"type":"partOf","from":"sec.srs.uc-detail.l3.6.4-exception-flows-error-handling","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"contains","from":"sec.srs.uc-detail.l3.6.4-exception-flows-error-handling","to":"sec.srs.uc-detail.l4.7.41-exception-a"},{"type":"partOf","from":"sec.srs.uc-detail.l4.7.41-exception-a","to":"sec.srs.uc-detail.l3.6.4-exception-flows-error-handling"},{"type":"partOf","from":"sec.srs.uc-detail.l3.8.5-business-rules","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.8.5-business-rules","to":"sec.srs.uc-detail.l3.9.6-functional-requirements"},{"type":"partOf","from":"sec.srs.uc-detail.l3.9.6-functional-requirements","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.9.6-functional-requirements","to":"sec.srs.uc-detail.l3.10.7-data-requirements"},{"type":"partOf","from":"sec.srs.uc-detail.l3.10.7-data-requirements","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.10.7-data-requirements","to":"sec.srs.uc-detail.l3.11.8-user-interface-requirements"},{"type":"partOf","from":"sec.srs.uc-detail.l3.11.8-user-interface-requirements","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.11.8-user-interface-requirements","to":"sec.srs.uc-detail.l3.12.9-related-use-cases"},{"type":"partOf","from":"sec.srs.uc-detail.l3.12.9-related-use-cases","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"follows","from":"sec.srs.uc-detail.l3.12.9-related-use-cases","to":"sec.srs.uc-detail.l3.13.10-notes"},{"type":"partOf","from":"sec.srs.uc-detail.l3.13.10-notes","to":"sec.srs.uc-detail.l2.1.use-case"},{"type":"contains","from":"doc.srs.feature-detail","to":"sec.srs.feature-detail.l2.1.feature"},{"type":"partOf","from":"sec.srs.feature-detail.l2.1.feature","to":"doc.srs.feature-detail"},{"type":"contains","from":"sec.srs.feature-detail.l2.1.feature","to":"sec.srs.feature-detail.l3.2.1-description"},{"type":"contains","from":"sec.srs.feature-detail.l2.1.feature","to":"sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences"},{"type":"contains","from":"sec.srs.feature-detail.l2.1.feature","to":"sec.srs.feature-detail.l3.4.3-functional-requirements"},{"type":"partOf","from":"sec.srs.feature-detail.l3.2.1-description","to":"sec.srs.feature-detail.l2.1.feature"},{"type":"follows","from":"sec.srs.feature-detail.l3.2.1-description","to":"sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences"},{"type":"partOf","from":"sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences","to":"sec.srs.feature-detail.l2.1.feature"},{"type":"follows","from":"sec.srs.feature-detail.l3.3.2-stimulusresponse-sequences","to":"sec.srs.feature-detail.l3.4.3-functional-requirements"},{"type":"partOf","from":"sec.srs.feature-detail.l3.4.3-functional-requirements","to":"sec.srs.feature-detail.l2.1.feature"},{"type":"describedIn","from":"actor.customer","to":"sec.srs.2-overall-description.l3.3.22-user-classes-and-characteristics"},{"type":"listedIn","from":"UC-01","to":"sec.srs.3-use-cases.l3.3.32-list-use-case"},{"type":"listedIn","from":"F-01","to":"sec.srs.4-system-features.l3.3.42-list-of-system-features"},{"type":"satisfies","from":"F-01","to":"UC-01"}]},"knowledge":{"knowledgeVersion":1,"generatedAt":"2026-05-21T00:00:00.000Z","scope":["docs/data-source"],"actors":[{"id":"actor.customer","name":"Customer","description":"End user placing orders"}],"useCases":[{"id":"UC-01","title":"Place order","priority":"High","description":"Customer submits an order for fulfillment"}],"features":[{"id":"F-01","title":"Checkout","description":"Cart and payment flow","satisfies":["UC-01"]}],"functionalRequirements":[],"nfrs":[],"entities":[],"interfaces":[],"constraints":[],"openQuestions":[]},"graphStats":{"nodes":70,"edges":147,"byType":{"document":11,"section":56,"actor":1,"useCase":1,"feature":1},"domainNodes":3,"structureNodes":67},"knowledgeStats":{"present":true,"actors":1,"useCases":1,"features":1,"functionalRequirements":0,"nfrs":0,"entities":0}}</script>
+  <script>
+(function () {
+  const P = JSON.parse(document.getElementById("payload").textContent);
+
+  const NODE_COLORS = {
+    document: "#3b82f6",
+    section: "#64748b",
+    table: "#475569",
+    diagram: "#475569",
+    actor: "#a855f7",
+    useCase: "#22c55e",
+    feature: "#f59e0b",
+    requirement: "#ec4899",
+    dataEntity: "#06b6d4",
+  };
+
+  const STRUCTURE = new Set(["document", "section", "table", "diagram"]);
+
+  document.getElementById("header-meta").textContent =
+    P.projectRoot + " · generated " + new Date(P.generatedAt).toLocaleString();
+
+  // Tabs
+  document.querySelectorAll("nav.tabs button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("nav.tabs button").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+      if (btn.dataset.tab === "graph" && !window.__network) initGraph();
+    });
+  });
+
+  // Overview
+  const ov = document.getElementById("panel-overview");
+  const gs = P.graphStats;
+  const ks = P.knowledgeStats;
+  ov.innerHTML =
+    '<div class="stats-grid">' +
+    stat("Graph nodes", gs.nodes) +
+    stat("Graph edges", gs.edges) +
+    stat("Domain nodes", gs.domainNodes) +
+    stat("Structure nodes", gs.structureNodes) +
+    (ks.present ? stat("Knowledge use cases", ks.useCases) : stat("Knowledge", "—")) +
+    (ks.present ? stat("Knowledge features", ks.features) : "") +
+    "</div>" +
+    "<p class=\"section-title\">Nodes by type</p>" +
+    typeBreakdown(gs.byType) +
+    (ks.present ? "<p class=\"section-title\">Knowledge staging (not merged yet?)</p><p>Compare tables in the <strong>Knowledge</strong> tab with domain nodes in the <strong>Graph</strong> tab.</p>" : "<p class=\"empty\">No knowledge.json found — run /analyze in Cursor.</p>");
+
+  function stat(label, value) {
+    return '<div class="stat-card"><div class="label">' + label + '</div><div class="value">' + value + "</div></div>";
+  }
+  function typeBreakdown(byType) {
+    return "<table class=data><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>" +
+      Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([t, n]) => "<tr><td>" + t + "</td><td>" + n + "</td></tr>").join("") +
+      "</tbody></table>";
+  }
+
+  // Knowledge panel
+  const kn = document.getElementById("panel-knowledge");
+  if (!P.knowledge || !ks.present) {
+    kn.innerHTML = '<p class="empty">No knowledge.json loaded.</p>';
+  } else {
+    kn.innerHTML =
+      knowledgeTable("Actors", P.knowledge.actors, ["id", "name", "title", "listedInSection"]) +
+      knowledgeTable("Use cases", P.knowledge.useCases, ["id", "title", "priority", "listedInSection"]) +
+      knowledgeTable("Features", P.knowledge.features, ["id", "title", "satisfies", "listedInSection"]) +
+      knowledgeTable("Functional requirements", P.knowledge.functionalRequirements, ["id", "title", "tracesTo", "listedInSection"]) +
+      knowledgeTable("NFRs", P.knowledge.nfrs, ["id", "title", "listedInSection"]) +
+      knowledgeTable("Entities", P.knowledge.entities, ["id", "name", "listedInSection"]);
+  }
+
+  function knowledgeTable(title, rows, cols) {
+    if (!rows || !rows.length) return '<p class="section-title">' + title + ' <span class="badge">0</span></p><p class="empty">(empty)</p>';
+    const head = cols.map((c) => "<th>" + c + "</th>").join("");
+    const body = rows.map((row) =>
+      "<tr>" + cols.map((c) => {
+        let v = row[c];
+        if (Array.isArray(v)) v = v.join(", ");
+        if (v === undefined || v === null) v = "";
+        return "<td>" + escapeHtml(String(v)) + "</td>";
+      }).join("") + "</tr>"
+    ).join("");
+    return '<p class="section-title">' + title + ' <span class="badge">' + rows.length + "</span></p>" +
+      '<table class="data"><thead><tr>' + head + "</tr></thead><tbody>" + body + "</tbody></table>";
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Legend
+  const legend = document.getElementById("legend");
+  legend.innerHTML = Object.entries(NODE_COLORS).map(([t, c]) =>
+    '<span><i style="background:' + c + '"></i>' + t + "</span>"
+  ).join("");
+
+  let network = null;
+  window.__network = null;
+
+  function nodeLabel(n) {
+    const t = n.title || n.heading || n.name || n.id;
+    return t.length > 42 ? t.slice(0, 40) + "…" : t;
+  }
+
+  function filterNodes(viewMode, search) {
+    const q = (search || "").trim().toLowerCase();
+    return P.graph.nodes.filter((n) => {
+      if (viewMode === "domain") {
+        if (n.type === "section" && !q) return false;
+        if (n.type === "table" || n.type === "diagram") return false;
+      } else if (viewMode === "structure") {
+        if (!STRUCTURE.has(n.type)) return false;
+      }
+      if (q) {
+        const hay = (n.id + " " + (n.title || "") + " " + (n.heading || "") + " " + (n.name || "")).toLowerCase();
+        return hay.includes(q);
+      }
+      return true;
+    });
+  }
+
+  function buildVisData(viewMode, search) {
+    const nodes = filterNodes(viewMode, search);
+    const ids = new Set(nodes.map((n) => n.id));
+    const visNodes = nodes.map((n) => ({
+      id: n.id,
+      label: nodeLabel(n),
+      title: "<pre style=\"margin:0;font-size:11px\">" + escapeHtml(JSON.stringify(n, null, 2)) + "</pre>",
+      color: NODE_COLORS[n.type] || "#94a3b8",
+      font: { color: "#e7ecf3", size: 11 },
+      shape: n.type === "document" ? "box" : "dot",
+      size: STRUCTURE.has(n.type) ? 12 : 18,
+    }));
+    const visEdges = P.graph.edges
+      .filter((e) => ids.has(e.from) && ids.has(e.to))
+      .map((e, i) => ({
+        id: i,
+        from: e.from,
+        to: e.to,
+        label: e.type,
+        font: { size: 9, color: "#8b9cb3", strokeWidth: 0 },
+        color: { color: "#4b5563", highlight: "#60a5fa" },
+        arrows: "to",
+      }));
+    return { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
+  }
+
+  function initGraph() {
+    const container = document.getElementById("graph-network");
+    const viewMode = document.getElementById("filter-view").value;
+    const search = document.getElementById("filter-search").value;
+    const data = buildVisData(viewMode, search);
+    const physics = document.getElementById("filter-physics").checked;
+    const options = {
+      physics: { enabled: physics, stabilization: { iterations: 120 } },
+      interaction: { hover: true, tooltipDelay: 120 },
+      layout: { improvedLayout: true },
+      edges: { smooth: { type: "dynamic" } },
+    };
+    if (network) {
+      network.setData(data);
+      network.setOptions(options);
+    } else {
+      network = new vis.Network(container, data, options);
+      window.__network = network;
+      network.on("click", (params) => {
+        const detail = document.getElementById("node-detail");
+        if (!params.nodes.length) {
+          detail.textContent = "Click a node to inspect.";
+          return;
+        }
+        const id = params.nodes[0];
+        const node = P.graph.nodes.find((n) => n.id === id);
+        const out = P.graph.edges.filter((e) => e.from === id);
+        const inc = P.graph.edges.filter((e) => e.to === id);
+        detail.textContent =
+          JSON.stringify(node, null, 2) +
+          "\n\n--- outgoing (" + out.length + ") ---\n" +
+          out.map((e) => e.type + " → " + e.to).join("\n") +
+          "\n\n--- incoming (" + inc.length + ") ---\n" +
+          inc.map((e) => e.from + " → " + e.type).join("\n");
+      });
+    }
+  }
+
+  ["filter-view", "filter-search", "filter-physics"].forEach((id) => {
+    document.getElementById(id).addEventListener("change", () => initGraph());
+    document.getElementById(id).addEventListener("input", () => initGraph());
+  });
+})();
+  </script>
+</body>
+</html>

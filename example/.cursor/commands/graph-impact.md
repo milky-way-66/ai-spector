@@ -1,6 +1,6 @@
 # /graph-impact
 
-Scope regen via **`ai-spector graph impact`** CLI ([_graph.md](./_graph.md)).
+Scope regen after a change. **User runs this command;** agent runs `graph impact` ([_graph.md](./_graph.md), [_workflow.md](./_workflow.md)).
 
 ## Usage
 

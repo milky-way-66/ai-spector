@@ -11,6 +11,7 @@ import { runAnalyzePrep } from "./commands/analyze.js";
 import { runGraphQuery } from "./commands/graph-query.js";
 import { runGraphImpact } from "./commands/graph-impact.js";
 import { runGraphMerge } from "./commands/graph-merge.js";
+import { runGraphVisualize } from "./commands/graph-visualize.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -46,7 +47,7 @@ program
 program
   .command("analyze")
   .description(
-    "Prepare traceability graph (registry + bootstrap). Then /analyze in Cursor → graph merge",
+    "Prepare graph structure (registry + bootstrap). Normally invoked by /analyze, not the user.",
   )
   .option(
     "--merge",
@@ -152,6 +153,26 @@ graph
   });
 
 graph
+  .command("visualize")
+  .description("Generate HTML report to explore graph and knowledge in a browser")
+  .option("-o, --output <path>", "Output HTML path")
+  .option("-g, --graph <path>", "Graph JSON path")
+  .option("--knowledge <path>", "knowledge.json path")
+  .option("--no-knowledge", "Omit knowledge.json from report")
+  .option("--open", "Open the HTML file in the default browser")
+  .action(async (opts, cmd) => {
+    const paths = await getPaths(cmd);
+    await runGraphVisualize({
+      root: paths.root,
+      graphPath: opts.graph ?? paths.graph,
+      knowledgePath: opts.knowledge,
+      output: opts.output,
+      open: opts.open,
+      skipKnowledge: opts.noKnowledge,
+    });
+  });
+
+graph
   .command("validate")
   .description("Validate graph against bundled schema and traceability rules")
   .option("-g, --graph <path>", "Graph path")
@@ -174,6 +195,10 @@ graph
   });
 
 program.parseAsync(process.argv).catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(msg);
+  console.error("");
+  console.error("Fix the issue above, then re-run the same command.");
+  console.error("In Cursor, re-run the slash command (/analyze, /validate-graph, …) — see .cursor/commands/_cli-failures.md");
   process.exit(1);
 });

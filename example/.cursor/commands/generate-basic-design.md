@@ -1,6 +1,6 @@
 # /generate-basic-design
 
-Basic design from graph-selected SRS context. [**`ai-spector graph query`**](_graph.md).
+Basic design from graph-selected SRS context. **User runs this command;** agent runs CLI. [_workflow.md](./_workflow.md), [_graph.md](./_graph.md).
 
 ## Prerequisites
 

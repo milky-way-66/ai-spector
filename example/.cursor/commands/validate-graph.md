@@ -1,6 +1,6 @@
 # /validate-graph
 
-Gate generation using the graph CLI.
+Gate before generation. **User runs this command;** agent runs the CLI.
 
 ## Usage
 

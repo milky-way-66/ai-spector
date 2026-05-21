@@ -1,6 +1,6 @@
 # /generate-srs
 
-Generate SRS projections. Context via **`ai-spector graph query`** only ([_graph.md](./_graph.md)).
+Generate SRS projections. **User runs this command;** agent runs CLI (`graph validate`, `graph query`, …). See [_workflow.md](./_workflow.md).
 
 ## Usage
 
