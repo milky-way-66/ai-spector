@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "defaultRoot": "docs/data-source",
-  "description": "Primary input materials for /analyze, /generate-srs, and /generate-basic-design (specs, notes, exports, diagrams, legacy docs)."
-}

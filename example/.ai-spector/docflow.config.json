@@ -1,7 +1,0 @@
-{
-  "version": 1,
-  "paths": {
-    "graph": ".ai-spector/graph/traceability.graph.json",
-    "registry": ".ai-spector/registry/section-registry.json"
-  }
-}
