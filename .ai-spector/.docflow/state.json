@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "analysis": {
+    "lastRunAt": null,
+    "scopeHash": null,
+    "sources": []
+  },
+  "graphify": {
+    "ready": false,
+    "installedByInit": true,
+    "lastBootstrapAt": "2026-05-21T03:55:16.992Z"
+  },
+  "srs": {
+    "completed": [],
+    "inProgress": [],
+    "failed": [],
+    "artifacts": {}
+  },
+  "detailDesign": {
+    "completed": [],
+    "inProgress": [],
+    "failed": [],
+    "artifacts": {}
+  },
+  "index": {
+    "lastRunAt": null,
+    "entries": {}
+  }
+}

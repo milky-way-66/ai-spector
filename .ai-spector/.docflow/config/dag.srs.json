@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "root": "docs/srs",
+  "nodes": [
+    {
+      "id": "srs.introduction",
+      "template": "srs/1-introduction.md",
+      "output": "1-introduction.md",
+      "dependsOn": []
+    },
+    {
+      "id": "srs.overall-description",
+      "template": "srs/2-overall-description.md",
+      "output": "2-overall-description.md",
+      "dependsOn": []
+    },
+    {
+      "id": "srs.use-cases",
+      "template": "srs/3-use-cases.md",
+      "output": "3-use-cases.md",
+      "dependsOn": [
+        "srs.introduction",
+        "srs.overall-description"
+      ]
+    },
+    {
+      "id": "srs.features-list",
+      "template": "srs/4-system-features-list-template.md",
+      "output": "4-system-features.md",
+      "dependsOn": [
+        "srs.use-cases"
+      ]
+    },
+    {
+      "id": "srs.feature-details",
+      "template": "srs/4-system-feature-detail-template.md",
+      "output": "features/",
+      "dependsOn": [
+        "srs.features-list"
+      ],
+      "mode": "perFeature"
+    },
+    {
+      "id": "srs.data-requirements",
+      "template": "srs/5-data-requirements.md",
+      "output": "5-data-requirements.md",
+      "dependsOn": [
+        "srs.feature-details"
+      ]
+    },
+    {
+      "id": "srs.external-interfaces",
+      "template": "srs/6-external-interfaces.md",
+      "output": "6-external-interfaces.md",
+      "dependsOn": [
+        "srs.feature-details"
+      ]
+    },
+    {
+      "id": "srs.quality-attributes",
+      "template": "srs/7-quality-attributes.md",
+      "output": "7-quality-attributes.md",
+      "dependsOn": [
+        "srs.data-requirements",
+        "srs.external-interfaces"
+      ]
+    },
+    {
+      "id": "srs.internationalization",
+      "template": "srs/8-internationalization.md",
+      "output": "8-internationalization.md",
+      "dependsOn": [
+        "srs.data-requirements",
+        "srs.external-interfaces"
+      ]
+    },
+    {
+      "id": "srs.other-requirements",
+      "template": "srs/9-other-requirements.md",
+      "output": "9-other-requirements.md",
+      "dependsOn": [
+        "srs.data-requirements",
+        "srs.external-interfaces"
+      ]
+    }
+  ]
+}
