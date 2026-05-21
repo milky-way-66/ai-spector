@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "meta": {
+    "seed": "UC-03",
+    "generatedAt": "2026-05-21T00:00:00.000Z",
+    "agent": "cursor"
+  },
+  "nodes": [],
+  "edges": [
+    {
+      "type": "relatesTo",
+      "from": "sec.srs.uc-UC-03.l3.1.use-case-overview",
+      "to": "source.file:docs/data-source/requirement/outline.md",
+      "role": "evidence"
+    }
+  ]
+}

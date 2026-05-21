@@ -16,6 +16,8 @@ export interface GraphMergeOptions {
   root?: string;
   inputPath?: string;
   fromKnowledge?: boolean;
+  /** Merge agent semantic-links.patch.json (edges only; no structure nodes). */
+  semantic?: boolean;
   graphPath?: string;
   writePatch?: string;
   validate?: boolean;
@@ -30,9 +32,20 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
     ".ai-spector/.docflow/analysis/knowledge.json",
   );
   const defaultPatchPath = join(paths.root, ".ai-spector/.docflow/extract/patch.json");
+  const semanticPatchPath = join(
+    paths.root,
+    ".ai-spector/.docflow/extract/semantic-links.patch.json",
+  );
 
   let inputPath = opts.inputPath;
-  if (opts.fromKnowledge) {
+  if (opts.semantic) {
+    inputPath = opts.inputPath ?? semanticPatchPath;
+    if (!(await pathExists(inputPath))) {
+      throw new Error(
+        `No semantic patch at ${inputPath}. Run /link-graph in Cursor (agent writes semantic-links.patch.json), then merge.`,
+      );
+    }
+  } else if (opts.fromKnowledge) {
     inputPath = knowledgePath;
   } else if (!inputPath) {
     if (await pathExists(defaultPatchPath)) {
@@ -51,7 +64,7 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
   }
 
   const graph = await loadInMemoryGraph(graphPath);
-  const { stats } = mergePatch(graph, patch);
+  const { stats } = mergePatch(graph, patch, { semanticOnly: opts.semantic === true });
 
   console.log(
     `Merge: +${stats.nodesCreated} nodes, ~${stats.nodesUpdated} updated, +${stats.edgesAdded} edges` +

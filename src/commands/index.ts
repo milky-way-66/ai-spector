@@ -6,6 +6,7 @@ import { validateGraph, formatIssues } from "./validate.js";
 import { runGraphMerge } from "./graph-merge.js";
 import { runGraphifyUpdate } from "./graphify-update.js";
 import { runProvenanceLink } from "../graph/provenance.js";
+import { ensureBusinessBundle, ensureSourceBundle } from "../graph/bundles.js";
 import {
   knowledgeStaleWarning,
   runDocSemanticMerge,
@@ -273,6 +274,28 @@ export async function runIndex(
 
     if (!failed) {
       try {
+        const graphMem = await loadInMemoryGraph(paths.graph);
+        const srcBundle = await ensureSourceBundle(graphMem, projectRoot);
+        await writeJson(paths.graph, graphMem.toTraceabilityGraph());
+        graphJson = graphMem.toTraceabilityGraph();
+        record({
+          id: "source-bundle",
+          label: "Source hub (bundle.source)",
+          status: "ok",
+          detail: `${srcBundle.sourceFiles} source file node(s)`,
+        });
+      } catch (err) {
+        record({
+          id: "source-bundle",
+          label: "Source hub (bundle.source)",
+          status: "failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (!failed) {
+      try {
         const prov = await runProvenanceLink({
           projectRoot,
           graphPath: paths.graph,
@@ -290,6 +313,28 @@ export async function runIndex(
         record({
           id: "provenance-link",
           label: "Data-source provenance (derivedFrom)",
+          status: "failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (!failed) {
+      try {
+        const graphMem = await loadInMemoryGraph(paths.graph);
+        const biz = ensureBusinessBundle(graphMem);
+        await writeJson(paths.graph, graphMem.toTraceabilityGraph());
+        graphJson = graphMem.toTraceabilityGraph();
+        record({
+          id: "business-bundle",
+          label: "Business hub (bundle.business)",
+          status: "ok",
+          detail: `${biz.domainMembers} domain member(s)`,
+        });
+      } catch (err) {
+        record({
+          id: "business-bundle",
+          label: "Business hub (bundle.business)",
           status: "failed",
           detail: err instanceof Error ? err.message : String(err),
         });

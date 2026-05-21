@@ -4,13 +4,35 @@ import { isPerDomainInstanceDocument } from "./detail-sections.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
 
-const STRUCTURE_TYPES = new Set<NodeType>(["document", "section", "table", "diagram"]);
+const STRUCTURE_TYPES = new Set<NodeType>([
+  "document",
+  "section",
+  "table",
+  "diagram",
+]);
+const HUB_TYPES = new Set<NodeType>(["bundle", "sourceFile"]);
 const DOMAIN_TYPES = new Set<NodeType>([
   "actor",
   "useCase",
   "feature",
   "requirement",
   "dataEntity",
+]);
+
+const STRUCTURE_CREATE_TYPES = new Set<NodeType>([
+  "document",
+  "section",
+  "table",
+  "diagram",
+]);
+
+const SEMANTIC_EDGE_TYPES = new Set<GraphEdge["type"]>(["relatesTo", "references"]);
+
+const RELATES_TO_ENDPOINT_TYPES = new Set<NodeType>([
+  ...DOMAIN_TYPES,
+  "section",
+  "sourceFile",
+  "bundle",
 ]);
 
 export interface MergeStats {
@@ -25,6 +47,11 @@ export interface MergeResult {
   stats: MergeStats;
 }
 
+export interface MergePatchOptions {
+  /** Agent semantic patch: no structure nodes; only relatesTo/references + domain field updates. */
+  semanticOnly?: boolean;
+}
+
 export function normalizePatch(input: ExtractPatch | Partial<ExtractPatch>): ExtractPatch {
   return {
     version: 1,
@@ -34,6 +61,8 @@ export function normalizePatch(input: ExtractPatch | Partial<ExtractPatch>): Ext
 }
 
 const PATCH_NODE_ORDER: Record<string, number> = {
+  bundle: -2,
+  sourceFile: -1,
   document: 0,
   actor: 1,
   useCase: 1,
@@ -49,7 +78,11 @@ function patchNodeSortKey(node: GraphNode): number {
   return PATCH_NODE_ORDER[node.type] ?? 9;
 }
 
-export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResult {
+export function mergePatch(
+  graph: InMemoryGraph,
+  patch: ExtractPatch,
+  options?: MergePatchOptions,
+): MergeResult {
   const stats: MergeStats = {
     nodesCreated: 0,
     nodesUpdated: 0,
@@ -57,11 +90,21 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
     nodesSkipped: 0,
   };
 
+  if (options?.semanticOnly) {
+    validateSemanticPatch(patch);
+  }
+
   const sortedNodes = [...patch.nodes].sort(
     (a, b) => patchNodeSortKey(a) - patchNodeSortKey(b),
   );
 
   for (const node of sortedNodes) {
+    if (options?.semanticOnly && STRUCTURE_CREATE_TYPES.has(node.type)) {
+      throw new Error(
+        `Semantic patch cannot create structure node ${node.id} (${node.type})`,
+      );
+    }
+
     if (node.type === "section") {
       const parentDoc = graph.nodesById.get(String(node.documentId ?? ""));
       if (parentDoc && isPerDomainInstanceDocument(parentDoc)) {
@@ -80,7 +123,7 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
       stats.nodesSkipped++;
       continue;
     }
-    if (node.type === "document") {
+    if (HUB_TYPES.has(node.type) || node.type === "document") {
       const outcome = graph.upsertNode(node);
       if (outcome === "created") {
         stats.nodesCreated++;
@@ -101,6 +144,11 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
   }
 
   for (const edge of patch.edges) {
+    if (options?.semanticOnly && !SEMANTIC_EDGE_TYPES.has(edge.type)) {
+      throw new Error(
+        `Semantic patch edge type not allowed: ${edge.type} (use relatesTo or references)`,
+      );
+    }
     assertMergeEdgeAllowed(graph, edge);
     if (graph.addEdgeIfAbsent(edge)) {
       stats.edgesAdded++;
@@ -110,7 +158,25 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
   return { graph, stats };
 }
 
+function validateSemanticPatch(patch: ExtractPatch): void {
+  for (const node of patch.nodes) {
+    if (STRUCTURE_CREATE_TYPES.has(node.type)) {
+      throw new Error(
+        `Semantic patch cannot add structure node ${node.id} (${node.type})`,
+      );
+    }
+    if (HUB_TYPES.has(node.type)) {
+      throw new Error(`Semantic patch cannot add hub node ${node.id}`);
+    }
+  }
+}
+
 function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
+  if (edge.type === "relatesTo") {
+    assertRelatesToEdge(graph, edge);
+    return;
+  }
+
   const from = graph.nodesById.get(edge.from);
 
   if (isPathTargetEdge(edge.type)) {
@@ -162,5 +228,31 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
         `Edge ${edge.type} cannot target structure node ${edge.to}`,
       );
     }
+  }
+
+  if (HUB_TYPES.has(to.type) || HUB_TYPES.has(from.type)) {
+    const allowedHub = new Set(["contains", "partOf", "relatesTo", "references"]);
+    if (!allowedHub.has(edge.type)) {
+      throw new Error(
+        `Edge ${edge.type} cannot connect hub nodes ${edge.from} → ${edge.to}`,
+      );
+    }
+  }
+}
+
+function assertRelatesToEdge(graph: InMemoryGraph, edge: GraphEdge): void {
+  const from = graph.nodesById.get(edge.from);
+  const to = graph.nodesById.get(edge.to);
+  if (!from) {
+    throw new Error(`relatesTo missing source node: ${edge.from}`);
+  }
+  if (!to) {
+    throw new Error(`relatesTo missing target node: ${edge.to}`);
+  }
+  if (!RELATES_TO_ENDPOINT_TYPES.has(from.type)) {
+    throw new Error(`relatesTo invalid source type ${from.type}: ${edge.from}`);
+  }
+  if (!RELATES_TO_ENDPOINT_TYPES.has(to.type)) {
+    throw new Error(`relatesTo invalid target type ${to.type}: ${edge.to}`);
   }
 }

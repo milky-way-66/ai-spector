@@ -31,7 +31,9 @@ After **`/generate-srs`** (recommended):
 ai-spector index
 ```
 
-Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → **data-source provenance (`derivedFrom`)** → validate → doc indexes.
+Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → **source hub** → **provenance (`derivedFrom`)** → **business hub** → validate → doc indexes.
+
+**CLI alone is not full semantics:** Index builds structure + parseable meaning. For cross-hub evidence links (`relatesTo`), run **`/link-graph`** after index, then `ai-spector graph merge --semantic`. Check gaps with `ai-spector graph report --json`.
 
 **Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` **`sourceRef`** / `sourceRefs` / `derivedFrom`, SRS detail **`Source:`** lines, or inline `docs/data-source/…` mentions) and optionally **`graphify:<nodeId>`** when Graphify `graph.json` matches a single symbol in that file. No evidence → no edge.
 

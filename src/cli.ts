@@ -11,6 +11,9 @@ import { runAnalyzePrep } from "./commands/analyze.js";
 import { runGraphQuery } from "./commands/graph-query.js";
 import { runGraphImpact } from "./commands/graph-impact.js";
 import { runGraphMerge } from "./commands/graph-merge.js";
+import { runGraphReport } from "./commands/graph-report.js";
+import { ensureHubBundles } from "./graph/bundles.js";
+import { loadInMemoryGraph } from "./graph/loadGraph.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
 import { runGraphifyUpdate } from "./commands/graphify-update.js";
 import { runIndex } from "./commands/index.js";
@@ -207,6 +210,10 @@ graph
     "Merge domain patch or knowledge.json into traceability graph (upsert nodes/edges)",
   )
   .option("--from-knowledge", "Read .ai-spector/.docflow/analysis/knowledge.json")
+  .option(
+    "--semantic",
+    "Merge .ai-spector/.docflow/extract/semantic-links.patch.json (agent meaning edges only)",
+  )
   .option("-g, --graph <path>", "Graph path")
   .option("-o, --write-patch <path>", "Write normalized extract patch before merge")
   .option("--no-validate", "Skip validate after merge")
@@ -217,11 +224,41 @@ graph
       root: paths.root,
       inputPath: file,
       fromKnowledge: opts.fromKnowledge,
+      semantic: opts.semantic,
       graphPath: opts.graph ?? paths.graph,
       writePatch: opts.writePatch,
       validate: !opts.noValidate,
       dryRun: opts.dryRun,
     });
+  });
+
+graph
+  .command("report")
+  .description("Layer health: structure, spec instances, hubs, provenance, semantic links")
+  .option("-g, --graph <path>", "Graph path")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const paths = await getPaths(cmd);
+    await runGraphReport({
+      root: paths.root,
+      graphPath: opts.graph ?? paths.graph,
+      json: opts.json,
+    });
+  });
+
+graph
+  .command("ensure-bundles")
+  .description("Create bundle.source + source files + bundle.business (idempotent)")
+  .option("-g, --graph <path>", "Graph path")
+  .action(async (opts, cmd) => {
+    const paths = await getPaths(cmd);
+    const graph = await loadInMemoryGraph(opts.graph ?? paths.graph);
+    const result = await ensureHubBundles(graph, paths.root);
+    await writeJson(opts.graph ?? paths.graph, graph.toTraceabilityGraph());
+    console.log(
+      `Source hub: ${result.sourceFiles} file(s); business hub: ${result.domainMembers} domain member(s)`,
+    );
+    console.log(`Wrote ${opts.graph ?? paths.graph}`);
   });
 
 graph

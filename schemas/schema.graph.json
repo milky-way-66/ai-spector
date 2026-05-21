@@ -20,6 +20,8 @@
     "nodeType": {
       "type": "string",
       "enum": [
+        "bundle",
+        "sourceFile",
         "document",
         "section",
         "table",
@@ -46,7 +48,8 @@
         "requires",
         "tracesTo",
         "derivedFrom",
-        "rendersTo"
+        "rendersTo",
+        "relatesTo"
       ]
     },
     "node": {
@@ -65,7 +68,9 @@
         "level": { "type": "integer", "minimum": 2, "maximum": 6 },
         "order": { "type": "integer", "minimum": 0 },
         "title": { "type": "string" },
-        "slug": { "type": "string" }
+        "slug": { "type": "string" },
+        "role": { "type": "string", "enum": ["source", "business", "spec"] },
+        "path": { "type": "string" }
       }
     },
     "edge": {

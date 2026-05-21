@@ -1,4 +1,6 @@
 export type NodeType =
+  | "bundle"
+  | "sourceFile"
   | "document"
   | "section"
   | "table"
@@ -8,6 +10,8 @@ export type NodeType =
   | "feature"
   | "requirement"
   | "dataEntity";
+
+export type BundleRole = "source" | "business" | "spec";
 
 export type EdgeType =
   | "partOf"
@@ -22,7 +26,8 @@ export type EdgeType =
   | "requires"
   | "tracesTo"
   | "derivedFrom"
-  | "rendersTo";
+  | "rendersTo"
+  | "relatesTo";
 
 export interface GraphNode {
   id: string;

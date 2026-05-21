@@ -17,6 +17,10 @@ import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 import { indexDocsConfigPath, type IndexDocsConfig } from "../index/docs-config.js";
 import { extractSourceRefsFromMarkdown } from "./source-refs.js";
+import {
+  knownSourceFileNodeIds,
+  provenanceTargetId,
+} from "./bundles.js";
 
 export interface ProvenanceLinkOptions {
   projectRoot: string;
@@ -151,6 +155,7 @@ function buildProvenancePatch(
   dataSourceRoot: string,
   graphify: GraphifyIndex | null,
   validDomainIds: Set<string>,
+  knownSourceFiles: ReadonlySet<string>,
 ): ExtractPatch {
   const edges: GraphEdge[] = [];
   const edgeKeys = new Set<string>();
@@ -160,10 +165,14 @@ function buildProvenancePatch(
       continue;
     }
     for (const ref of refs) {
-      for (const to of resolveRefToTargets(ref, dataSourceRoot, graphify)) {
-        if (isGraphifyNodeTarget(to) && !graphify) {
+      for (const rawTo of resolveRefToTargets(ref, dataSourceRoot, graphify)) {
+        if (isGraphifyNodeTarget(rawTo) && !graphify) {
           continue;
         }
+        const to =
+          !isGraphifyNodeTarget(rawTo) && rawTo.startsWith("docs/data-source/")
+            ? provenanceTargetId(rawTo, knownSourceFiles)
+            : rawTo;
         const key = `${domainId}|derivedFrom|${to}`;
         if (edgeKeys.has(key)) {
           continue;
@@ -286,11 +295,13 @@ export async function runProvenanceLink(
       .map((n) => n.id),
   );
 
+  const knownSourceFiles = knownSourceFileNodeIds(graph);
   const patch = buildProvenancePatch(
     domainRefs,
     dataSourceRoot,
     graphify,
     validDomainIds,
+    knownSourceFiles,
   );
   if (patch.edges.length === 0) {
     return {
