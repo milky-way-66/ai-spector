@@ -11,7 +11,10 @@ export class InMemoryGraph {
       g.addNode(node);
     }
     for (const edge of data.edges) {
-      if (!g.nodesById.has(edge.from) || !g.nodesById.has(edge.to)) {
+      if (!g.nodesById.has(edge.from)) {
+        throw new Error(`Edge references missing node: ${edge.from} -> ${edge.to}`);
+      }
+      if (edge.type !== "rendersTo" && !g.nodesById.has(edge.to)) {
         throw new Error(`Edge references missing node: ${edge.from} -> ${edge.to}`);
       }
       g.addEdge(edge);

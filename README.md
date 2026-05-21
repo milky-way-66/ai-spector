@@ -121,11 +121,13 @@ The CLI is the engine; Cursor commands wrap it.
 |-----|--------|
 | [workflow-overview.md](docs/design/workflow-overview.md) | Graph-centric design |
 | [traceability-graph-redesign.md](docs/design/traceability-graph-redesign.md) | Schema and roadmap |
+| [testing.md](docs/testing.md) | Vitest layout, commands, mocking |
 
 **Build from source:**
 
 ```bash
 npm install && npm run build
+npm test
 npm run init:example
 ```
 
