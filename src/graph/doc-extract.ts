@@ -748,6 +748,44 @@ export function mergeParsedDomains(domains: ParsedDomain[]): ParsedDomain {
   return out;
 }
 
+/** Chapter + template documents for basic-design (not in SRS bootstrap). Emitted before edges in doc-extract patch. */
+export function basicDesignAnchorDocumentNodes(): GraphNode[] {
+  return [
+    {
+      id: DEFAULT_BD_LIST_DOC.apiList,
+      type: "document",
+      output: "docs/basic-design/api-list.md",
+      title: "API List",
+    },
+    {
+      id: DEFAULT_BD_LIST_DOC.screenList,
+      type: "document",
+      output: "docs/basic-design/screens/list-screens.md",
+      title: "Screen Map",
+    },
+    {
+      id: DEFAULT_BD_LIST_DOC.dbDesign,
+      type: "document",
+      output: "docs/basic-design/db-design.md",
+      title: "Database Design",
+    },
+    {
+      id: PER_DOMAIN_TEMPLATE_DOC_BD.api,
+      type: "document",
+      outputPattern: "docs/basic-design/api/",
+      perDomain: "apiDetail",
+      title: "API Detail (template)",
+    },
+    {
+      id: PER_DOMAIN_TEMPLATE_DOC_BD.screen,
+      type: "document",
+      outputPattern: "docs/basic-design/screens/",
+      perDomain: "screenDetail",
+      title: "Screen Detail (template)",
+    },
+  ];
+}
+
 export function buildDocExtractPatch(entries: DocExtractEntry[]): {
   patch: ExtractPatch;
   stats: DocExtractResult;
@@ -770,12 +808,20 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
     for (const n of patch.nodes) {
       if (!allNodes.some((x) => x.id === n.id && x.type === n.type)) {
         allNodes.push(n);
-        if (n.type === "document" && n.output) {
-          detailDocuments++;
+        if (n.type === "document" && n.output && !n.outputPattern) {
           const out = String(n.output).replace(/\\/g, "/");
-          if (out.includes("docs/basic-design/")) {
+          const isBdInstance =
+            n.id.startsWith("doc.bd.api-") ||
+            (n.id.startsWith("doc.bd.screen-") &&
+              !out.includes("list-screens") &&
+              !out.endsWith("api-list.md"));
+          const isSrsInstance =
+            n.id.startsWith("doc.srs.uc-") || n.id.startsWith("doc.srs.f-");
+          if (isBdInstance) {
+            detailDocuments++;
             bdDetailDocuments++;
-          } else if (out.includes("docs/srs/")) {
+          } else if (isSrsInstance) {
+            detailDocuments++;
             srsDetailDocuments++;
           }
         }
@@ -810,6 +856,17 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
       }
     }
   };
+
+  const hasBasicDesignFiles = entries.some((e) =>
+    normalizeRelativePath(e.relativePath).toLowerCase().startsWith("docs/basic-design/"),
+  );
+  if (hasBasicDesignFiles) {
+    mergePatchInto({
+      version: 1,
+      nodes: basicDesignAnchorDocumentNodes(),
+      edges: [],
+    });
+  }
 
   for (const e of entries) {
     const single = extractDomainFromMarkdown(e.content, e.relativePath);

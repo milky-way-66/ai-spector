@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Basic-design doc extract** — emit list + template `document` nodes in the same patch before detail edges (one index pass); still skip edges only when an endpoint is genuinely missing (fallback).
 - **Provenance from knowledge** — `sourceRef` on staged knowledge rows (e.g. `requirement/…md`) is now honored when building **`derivedFrom`** edges during index.
 
 - **Graphify index** — skip `graphify update` for empty or markdown-only doc sources (`docs/srs`, `docs/basic-design`) instead of failing with Graphify exit 1 (`No code files found`); `ai-spector index` continues. Code sources (`docs/data-source` with `.ts`/`.py`/etc.) still run as before.

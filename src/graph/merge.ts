@@ -149,6 +149,9 @@ export function mergePatch(
         `Semantic patch edge type not allowed: ${edge.type} (use relatesTo or references)`,
       );
     }
+    if (skipPatchEdgeIfEndpointsMissing(graph, edge)) {
+      continue;
+    }
     assertMergeEdgeAllowed(graph, edge);
     if (graph.addEdgeIfAbsent(edge)) {
       stats.edgesAdded++;
@@ -156,6 +159,30 @@ export function mergePatch(
   }
 
   return { graph, stats };
+}
+
+/**
+ * Fallback when an edge references a node not in this patch or graph yet (e.g. optional
+ * projection-only ids). Doc-extract now emits basic-design anchor documents before edges.
+ */
+export function skipPatchEdgeIfEndpointsMissing(
+  graph: InMemoryGraph,
+  edge: GraphEdge,
+): boolean {
+  const from = graph.nodesById.get(edge.from);
+  if (isPathTargetEdge(edge.type)) {
+    return !from;
+  }
+  const to = graph.nodesById.get(edge.to);
+  if (
+    edge.type === "partOf" ||
+    edge.type === "contains" ||
+    edge.type === "follows" ||
+    edge.type === "tracesTo"
+  ) {
+    return !from || !to;
+  }
+  return false;
 }
 
 function validateSemanticPatch(patch: ExtractPatch): void {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildDocExtractPatch } from "../../src/graph/doc-extract.js";
 import { mergePatch, normalizePatch } from "../../src/graph/merge.js";
 import type { GraphNode } from "../../src/types.js";
 import { loadGraph, node } from "../helpers/graph.js";
@@ -247,6 +248,40 @@ describe("mergePatch", () => {
         type: "follows",
         from: "sec.srs.uc-UC-01.l3.1.overview",
         to: "sec.srs.uc-UC-01.l3.2.flow",
+      }),
+    ).toBe(true);
+  });
+
+  it("applies template rendersTo when anchor documents are in the same patch", () => {
+    const g = loadGraph(
+      [
+        node("F-01", "feature"),
+        node("sec.srs.4-system-features.l3.3.42-list-of-system-features", "section", {
+          documentId: "doc.srs.4-system-features",
+        }),
+      ],
+      [],
+    );
+    const { patch } = buildDocExtractPatch([
+      {
+        relativePath: "docs/basic-design/api/f-01-auth.md",
+        content: "**Feature ID:** F-1\n\n### 1.1 `GET /session`",
+      },
+    ]);
+
+    mergePatch(g, patch);
+    expect(
+      g.hasEdge({
+        type: "rendersTo",
+        from: "doc.bd.detail-api",
+        to: "docs/basic-design/api/f-01-auth.md",
+      }),
+    ).toBe(true);
+    expect(
+      g.hasEdge({
+        type: "contains",
+        from: "doc.bd.list-api",
+        to: "doc.bd.api-F-01",
       }),
     ).toBe(true);
   });
