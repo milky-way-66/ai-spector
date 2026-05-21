@@ -2,8 +2,9 @@
   "version": 1,
   "graphify": {
     "indexPath": ".ai-spector/.docflow/graph/graphify-index",
+    "defaultDataSource": "docs/data-source",
     "include": [
-      "."
+      "docs/data-source"
     ],
     "exclude": [
       ".git/**",

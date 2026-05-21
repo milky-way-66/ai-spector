@@ -2,8 +2,15 @@
   "version": 1,
   "analysis": {
     "lastRunAt": null,
+    "dataSource": "docs/data-source",
     "scopeHash": null,
     "sources": []
+  },
+  "basicDesign": {
+    "completed": [],
+    "inProgress": [],
+    "failed": [],
+    "artifacts": {}
   },
   "graphify": {
     "ready": false,

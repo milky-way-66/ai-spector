@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "defaultChecks": {
+    "disallowPlaceholders": ["<", "TODO", "TBD"],
+    "requireNonEmptyTables": true,
+    "validateMarkdownLinks": true
+  },
+  "rules": [
+    {
+      "target": "db-design.md",
+      "requiredHeadings": ["# Database Design"]
+    },
+    {
+      "target": "api-list.md",
+      "requiredHeadings": ["# API List:"]
+    }
+  ]
+}

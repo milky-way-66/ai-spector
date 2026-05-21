@@ -1,6 +1,6 @@
 # /index-docs
 
-Build or refresh searchable metadata and summaries for SRS and basic design documents. Use the index to select relevant files for downstream generation or Q&A.
+Build or refresh searchable metadata and summaries under `.ai-spector/index/`. Downstream commands **require** these indexes before reading `docs/srs/` or `docs/basic-design/`.
 
 ## Usage
 
@@ -14,6 +14,18 @@ Build or refresh searchable metadata and summaries for SRS and basic design docu
   - Index one file or directory under a supported root.
 - `/index-docs --force`
   - Rebuild every entry even when source hash is unchanged.
+
+## Prerequisites
+
+Indexing is **allowed** without prior steps, but **warn** when outputs are empty (do not block).
+
+| Scope | Warn if | Suggest |
+|-------|---------|---------|
+| `srs` | no `docs/srs/**/*.md` | Run `/generate-srs` first |
+| `basic-design` | no `docs/basic-design/**/*.md` | Run `/generate-basic-design` first |
+| both | either collection empty | Per-row suggestion above |
+
+Use `workflow.dependencies.json` steps `index-docs-srs` / `index-docs-basic-design` for warn text. Still write index headers noting zero files.
 
 ## Required Behavior
 
@@ -33,9 +45,9 @@ Build or refresh searchable metadata and summaries for SRS and basic design docu
      - `topics`: top-level headings (`#`, `##`) as a short list
      - `relatedSrs` / `relatedFeatures` (basic design: SRS sections or feature IDs mentioned in content)
    - Write **summary**: 2–5 sentences describing what the document covers; use actual content when present, not template placeholders.
-5. Write outputs (overwrite whole file per collection):
-   - `.ai-spector/index/srs.md`
-   - `.ai-spector/index/basic-design.md`
+5. Write outputs (overwrite whole file per collection; paths from `index.docs.json` → `outputs`):
+   - `.ai-spector/index/srs.md` — consumed by `/generate-basic-design`, `/generate-detail-design`
+   - `.ai-spector/index/basic-design.md` — consumed by `/generate-detail-design` when basic design exists
 6. File layout — start each index with a title and `Last indexed:` ISO timestamp, then one block per source file:
 
 ```markdown
