@@ -204,6 +204,13 @@ export class InMemoryGraph {
 
     for (const node of this.nodesById.values()) {
       if (node.type === "document") {
+        const isPerDomainInstance =
+          typeof node.output === "string" &&
+          !node.outputPattern &&
+          (node.perDomain === "useCase" || node.perDomain === "feature");
+        if (isPerDomainInstance) {
+          continue;
+        }
         const hasSection = [...this.outEdges.get(node.id) ?? []].some(
           (e) =>
             e.type === "contains" &&

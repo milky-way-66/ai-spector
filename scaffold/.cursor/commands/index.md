@@ -15,7 +15,7 @@ Rebuild **graph**, re-merge **knowledge** staging, refresh **Graphify storage**,
 - Graph validate fails due to stale structure
 - `.ai-spector/index/*.md` is out of date vs `docs/srs/` or `docs/basic-design/`
 
-**Partial semantic refresh without `/analyze`:** After `/generate-srs`, index parses **UC/F/actor ids from markdown bodies** under `docs/srs/` and `docs/basic-design/` into the traceability graph, and runs **Graphify `update` on changed sources** (`docs/data-source`, `docs/srs`, `docs/basic-design`).
+**Partial semantic refresh without `/analyze`:** After `/generate-srs`, index parses **UC/F/actor ids from markdown bodies** under `docs/srs/` and `docs/basic-design/` into the traceability graph. Per-domain detail files also get **`section` nodes** (from `###` headings / `<!-- section:... -->`) with **`definedIn`** from each UC/F to those sections—not only file-level `document` links. Index runs **Graphify `update` on changed sources** (`docs/data-source`, `docs/srs`, `docs/basic-design`).
 
 **Still requires `/analyze` for:** full Graphify MCP extract → `knowledge.json` (NFRs, data model, rich descriptions). Index re-merges existing `knowledge.json` when present; warns if SRS changed but knowledge is stale.
 

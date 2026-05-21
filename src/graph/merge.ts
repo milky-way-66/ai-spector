@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode, NodeType } from "../types.js";
+import { isPerDomainInstanceDocument } from "./detail-sections.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
 
@@ -40,7 +41,21 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
   };
 
   for (const node of patch.nodes) {
-    if (node.type === "section" || node.type === "table" || node.type === "diagram") {
+    if (node.type === "section") {
+      const parentDoc = graph.nodesById.get(String(node.documentId ?? ""));
+      if (parentDoc && isPerDomainInstanceDocument(parentDoc)) {
+        const outcome = graph.upsertNode(node);
+        if (outcome === "created") {
+          stats.nodesCreated++;
+        } else {
+          stats.nodesUpdated++;
+        }
+      } else {
+        stats.nodesSkipped++;
+      }
+      continue;
+    }
+    if (node.type === "table" || node.type === "diagram") {
       stats.nodesSkipped++;
       continue;
     }

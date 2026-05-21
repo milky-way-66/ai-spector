@@ -153,6 +153,30 @@ describe("InMemoryGraph.validateStructure", () => {
     expect(issues.some((i) => i.ruleId === "DOC-SECTION-COVERAGE")).toBe(true);
   });
 
+  it("allows per-domain instance documents without template sections", () => {
+    const g = InMemoryGraph.from(
+      graph(
+        [
+          node("doc.srs.uc-detail", "document", { outputPattern: "docs/srs/03-use-cases/*.md" }),
+          node("sec.uc-detail", "section", { documentId: "doc.srs.uc-detail" }),
+          node("doc.srs.uc-UC-01", "document", {
+            output: "docs/srs/03-use-cases/uc-01.md",
+            perDomain: "useCase",
+          }),
+          node("UC-01", "useCase"),
+        ],
+        [
+          { type: "contains", from: "doc.srs.uc-detail", to: "sec.uc-detail" },
+          { type: "partOf", from: "sec.uc-detail", to: "doc.srs.uc-detail" },
+          { type: "partOf", from: "doc.srs.uc-UC-01", to: "doc.srs.uc-detail" },
+          { type: "definedIn", from: "UC-01", to: "doc.srs.uc-UC-01" },
+        ],
+      ),
+    );
+    const issues = g.validateStructure().filter((i) => i.ruleId === "DOC-SECTION-COVERAGE");
+    expect(issues).toHaveLength(0);
+  });
+
   it("passes for a minimal valid document tree with anchored domain node", () => {
     const g = InMemoryGraph.from(
       graph(

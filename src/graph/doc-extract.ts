@@ -1,4 +1,8 @@
 import type { GraphEdge, GraphNode } from "../types.js";
+import {
+  detailSectionsToPatch,
+  parseDetailSections,
+} from "./detail-sections.js";
 import { DEFAULT_LISTED_IN } from "./defaults.js";
 import type { ExtractPatch } from "./knowledge.js";
 
@@ -11,13 +15,22 @@ export interface DocExtractResult {
   useCases: number;
   features: number;
   actors: number;
+  detailDocuments: number;
+  detailSections: number;
   filesScanned: number;
 }
+
+/** Registry template ids for per-domain SRS detail (see documents.json). */
+export const PER_DOMAIN_TEMPLATE_DOC = {
+  useCase: "doc.srs.uc-detail",
+  feature: "doc.srs.feature-detail",
+} as const;
 
 const UC_ID_RE = /\b(UC-\d+)\b/gi;
 const F_ID_RE = /\b(F-\d+)\b/gi;
 const USE_CASE_ID_LINE = /\*\*Use Case ID:\*\*\s*(UC-\d+)/i;
 const USE_CASE_NAME_LINE = /\*\*Use Case Name:\*\*\s*(.+)/i;
+const FEATURE_ID_LINE = /\*\*Feature ID:\*\*\s*(F-\d+)/i;
 const FEATURE_NAME_HEADING = /^#{1,3}\s+(F-\d+)\s*[:\-–—]\s*(.+)$/im;
 const UC_HEADING = /^#{1,3}\s+(UC-\d+)\s*[:\-–—]\s*(.+)$/im;
 const TABLE_ROW_UC = /^\|\s*(UC-\d+)\s*\|/im;
@@ -42,6 +55,74 @@ export function normalizeDomainId(raw: string): string {
 
 function isRealDomainId(id: string): boolean {
   return /^(UC|F)-\d+$/i.test(id) && !/XX$/i.test(id);
+}
+
+export type DetailFileKind = "useCaseDetail" | "featureDetail";
+
+function normalizeRelativePath(relativePath: string): string {
+  return relativePath.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+/** Classify markdown under docs/srs as list chapter vs per-domain detail file. */
+export function classifySrsDetailFile(relativePath: string): DetailFileKind | null {
+  const p = normalizeRelativePath(relativePath).toLowerCase();
+  if (p.endsWith("/3-use-cases.md") || p === "docs/srs/3-use-cases.md") {
+    return null;
+  }
+  if (p.endsWith("/4-system-features.md") || p === "docs/srs/4-system-features.md") {
+    return null;
+  }
+  if (/\/03-use-cases\//.test(p) || /\/uc-\d+/.test(p)) {
+    return "useCaseDetail";
+  }
+  if (/\/04-system-features\/f-\d+/.test(p)) {
+    return "featureDetail";
+  }
+  return null;
+}
+
+export function documentIdForDomainDetail(
+  kind: DetailFileKind,
+  domainId: string,
+): string {
+  const norm = normalizeDomainId(domainId);
+  return kind === "useCaseDetail"
+    ? `doc.srs.uc-${norm}`
+    : `doc.srs.f-${norm}`;
+}
+
+function primaryDomainIdFromDetailContent(
+  content: string,
+  kind: DetailFileKind,
+): { id: string; title?: string } | null {
+  if (kind === "useCaseDetail") {
+    const idLine = content.match(USE_CASE_ID_LINE);
+    if (idLine?.[1] && isRealDomainId(idLine[1])) {
+      const nameLine = content.match(USE_CASE_NAME_LINE);
+      return {
+        id: normalizeDomainId(idLine[1]),
+        title: nameLine?.[1]?.trim(),
+      };
+    }
+    const heading = content.match(UC_HEADING);
+    if (heading?.[1] && isRealDomainId(heading[1])) {
+      return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+    }
+    return null;
+  }
+  const idLine = content.match(FEATURE_ID_LINE);
+  if (idLine?.[1] && isRealDomainId(idLine[1])) {
+    const heading = content.match(FEATURE_NAME_HEADING);
+    return {
+      id: normalizeDomainId(idLine[1]),
+      title: heading?.[2]?.trim(),
+    };
+  }
+  const heading = content.match(FEATURE_NAME_HEADING);
+  if (heading?.[1] && isRealDomainId(heading[1])) {
+    return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+  }
+  return null;
 }
 
 function listedInForPath(relativePath: string, kind: "useCase" | "feature" | "actor"): string {
@@ -267,6 +348,56 @@ export function parsedDomainToPatch(
   return { version: 1, nodes, edges };
 }
 
+/** Document nodes + definedIn/rendersTo for per-UC / per-feature markdown on disk. */
+export function detailFileToPatch(
+  relativePath: string,
+  content: string,
+): ExtractPatch {
+  const kind = classifySrsDetailFile(relativePath);
+  if (!kind) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+
+  const primary = primaryDomainIdFromDetailContent(content, kind);
+  if (!primary) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+
+  const path = normalizeRelativePath(relativePath);
+  const docId = documentIdForDomainDetail(kind, primary.id);
+  const perDomain = kind === "useCaseDetail" ? "useCase" : "feature";
+  const templateDocId = PER_DOMAIN_TEMPLATE_DOC[perDomain];
+
+  const nodes: GraphNode[] = [
+    {
+      id: docId,
+      type: "document",
+      output: path,
+      perDomain,
+      title: primary.title ?? primary.id,
+    },
+  ];
+
+  const edges: GraphEdge[] = [
+    { type: "rendersTo", from: primary.id, to: path },
+    { type: "rendersTo", from: templateDocId, to: path },
+    { type: "partOf", from: docId, to: templateDocId },
+  ];
+
+  const sections = parseDetailSections(content, docId);
+  const sectionPatch = detailSectionsToPatch(docId, sections);
+  nodes.push(...sectionPatch.nodes);
+  edges.push(...sectionPatch.edges);
+  for (const sec of sections) {
+    edges.push({ type: "definedIn", from: primary.id, to: sec.id });
+  }
+  if (sections.length === 0) {
+    edges.push({ type: "definedIn", from: primary.id, to: docId });
+  }
+
+  return { version: 1, nodes, edges };
+}
+
 export function mergeParsedDomains(domains: ParsedDomain[]): ParsedDomain {
   const out = emptyParsed();
   for (const d of domains) {
@@ -297,18 +428,31 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
   const allNodes: GraphNode[] = [];
   const allEdges: GraphEdge[] = [];
   const edgeKeys = new Set<string>();
+  let detailDocuments = 0;
+  let detailSections = 0;
 
-  for (const e of entries) {
-    const single = extractDomainFromMarkdown(e.content, e.relativePath);
-    const patch = parsedDomainToPatch(single, e.relativePath);
+  const mergePatchInto = (patch: ExtractPatch) => {
     for (const n of patch.nodes) {
       if (!allNodes.some((x) => x.id === n.id && x.type === n.type)) {
         allNodes.push(n);
+        if (n.type === "document" && n.output) {
+          detailDocuments++;
+        }
+        if (
+          n.type === "section" &&
+          typeof n.documentId === "string" &&
+          n.documentId.startsWith("doc.srs.")
+        ) {
+          detailSections++;
+        }
       } else {
         const idx = allNodes.findIndex((x) => x.id === n.id);
         const existing = allNodes[idx]!;
         if (!existing.title && n.title) {
           allNodes[idx] = { ...existing, ...n };
+        }
+        if (n.type === "document" && n.output && !existing.output) {
+          allNodes[idx] = { ...allNodes[idx]!, output: n.output };
         }
       }
     }
@@ -319,6 +463,12 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
         allEdges.push(edge);
       }
     }
+  };
+
+  for (const e of entries) {
+    const single = extractDomainFromMarkdown(e.content, e.relativePath);
+    mergePatchInto(parsedDomainToPatch(single, e.relativePath));
+    mergePatchInto(detailFileToPatch(e.relativePath, e.content));
   }
 
   return {
@@ -327,6 +477,8 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
       useCases: merged.useCases.size,
       features: merged.features.size,
       actors: merged.actors.size,
+      detailDocuments,
+      detailSections,
       filesScanned: entries.length,
     },
   };

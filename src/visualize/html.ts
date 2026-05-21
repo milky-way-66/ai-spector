@@ -197,6 +197,7 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
 
   const NODE_COLORS = {
     document: "#3b82f6",
+    file: "#38bdf8",
     section: "#64748b",
     table: "#475569",
     diagram: "#475569",
@@ -296,14 +297,32 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
     return t.length > 42 ? t.slice(0, 40) + "…" : t;
   }
 
+  const DOMAIN_TYPES = new Set(["actor", "useCase", "feature", "requirement", "dataEntity"]);
+
+  function domainLinkedStructureIds(domainIds) {
+    const linked = new Set();
+    for (const e of P.graph.edges) {
+      if (!["listedIn", "definedIn", "describedIn"].includes(e.type)) {
+        continue;
+      }
+      if (!domainIds.has(e.from)) {
+        continue;
+      }
+      const target = P.graph.nodes.find((n) => n.id === e.to);
+      if (target && (STRUCTURE.has(target.type) || target.type === "document")) {
+        linked.add(e.to);
+      }
+    }
+    return linked;
+  }
+
   function filterNodes(viewMode, search) {
     const q = (search || "").trim().toLowerCase();
-    return P.graph.nodes.filter((n) => {
-      if (viewMode === "domain") {
-        if (n.type === "section" && !q) return false;
-        if (n.type === "table" || n.type === "diagram") return false;
-      } else if (viewMode === "structure") {
+    const filtered = P.graph.nodes.filter((n) => {
+      if (viewMode === "structure") {
         if (!STRUCTURE.has(n.type)) return false;
+      } else if (viewMode === "domain") {
+        if (n.type === "table" || n.type === "diagram") return false;
       }
       if (q) {
         const hay = (n.id + " " + (n.title || "") + " " + (n.heading || "") + " " + (n.name || "")).toLowerCase();
@@ -311,26 +330,92 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       }
       return true;
     });
+    if (viewMode !== "domain" || q) {
+      return filtered;
+    }
+    const domainIds = new Set(
+      filtered.filter((n) => DOMAIN_TYPES.has(n.type)).map((n) => n.id),
+    );
+    const linked = domainLinkedStructureIds(domainIds);
+    return filtered.filter(
+      (n) =>
+        DOMAIN_TYPES.has(n.type) ||
+        linked.has(n.id) ||
+        (n.type === "document" && linked.has(n.id)),
+    );
+  }
+
+  function fileNodeId(path) {
+    return "file:" + path;
   }
 
   function buildVisData(viewMode, search) {
     const nodes = filterNodes(viewMode, search);
     const ids = new Set(nodes.map((n) => n.id));
-    const visNodes = nodes.map((n) => ({
+    const pathsWithDocument = new Set(
+      P.graph.nodes
+        .filter((n) => n.type === "document" && typeof n.output === "string")
+        .map((n) => n.output),
+    );
+    const fileNodes = new Map();
+    for (const e of P.graph.edges) {
+      if (e.type !== "rendersTo" || !ids.has(e.from)) {
+        continue;
+      }
+      if (ids.has(e.to)) {
+        continue;
+      }
+      if (pathsWithDocument.has(e.to)) {
+        continue;
+      }
+      const fid = fileNodeId(e.to);
+      if (!fileNodes.has(fid)) {
+        const base = e.to.split("/").pop() || e.to;
+        fileNodes.set(fid, {
+          id: fid,
+          type: "file",
+          title: base,
+          output: e.to,
+        });
+      }
+    }
+    const pathToDocId = new Map();
+    for (const n of P.graph.nodes) {
+      if (n.type === "document" && typeof n.output === "string") {
+        pathToDocId.set(n.output, n.id);
+      }
+    }
+    const allNodes = nodes.concat([...fileNodes.values()]);
+    const allIds = new Set(allNodes.map((n) => n.id));
+    function resolveEdgeTarget(to) {
+      if (allIds.has(to)) {
+        return to;
+      }
+      const docId = pathToDocId.get(to);
+      if (docId && allIds.has(docId)) {
+        return docId;
+      }
+      if (fileNodes.has(fileNodeId(to))) {
+        return fileNodeId(to);
+      }
+      return null;
+    }
+    const visNodes = allNodes.map((n) => ({
       id: n.id,
       label: nodeLabel(n),
       title: "<pre style=\\"margin:0;font-size:11px\\">" + escapeHtml(JSON.stringify(n, null, 2)) + "</pre>",
       color: NODE_COLORS[n.type] || "#94a3b8",
       font: { color: "#e7ecf3", size: 11 },
-      shape: n.type === "document" ? "box" : "dot",
-      size: STRUCTURE.has(n.type) ? 12 : 18,
+      shape: n.type === "document" || n.type === "file" ? "box" : "dot",
+      size: n.type === "section" ? 10 : STRUCTURE.has(n.type) ? 12 : n.type === "file" ? 14 : 18,
     }));
     const visEdges = P.graph.edges
-      .filter((e) => ids.has(e.from) && ids.has(e.to))
-      .map((e, i) => ({
+      .map((e) => ({ e, to: resolveEdgeTarget(e.to) }))
+      .filter(({ e, to }) => to !== null && allIds.has(e.from))
+      .map(({ e, to }, i) => ({
         id: i,
         from: e.from,
-        to: e.to,
+        to,
         label: e.type,
         font: { size: 9, color: "#8b9cb3", strokeWidth: 0 },
         color: { color: "#4b5563", highlight: "#60a5fa" },
@@ -364,9 +449,13 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
           return;
         }
         const id = params.nodes[0];
-        const node = P.graph.nodes.find((n) => n.id === id);
-        const out = P.graph.edges.filter((e) => e.from === id);
-        const inc = P.graph.edges.filter((e) => e.to === id);
+        const node =
+          P.graph.nodes.find((n) => n.id === id) ||
+          (id.startsWith("file:")
+            ? { id, type: "file", output: id.slice(5) }
+            : null);
+        const out = P.graph.edges.filter((e) => e.from === id || (id.startsWith("file:") && e.to === id.slice(5)));
+        const inc = P.graph.edges.filter((e) => e.to === id || (id.startsWith("file:") && e.type === "rendersTo" && e.to === id.slice(5)));
         detail.textContent =
           JSON.stringify(node, null, 2) +
           "\\n\\n--- outgoing (" + out.length + ") ---\\n" +

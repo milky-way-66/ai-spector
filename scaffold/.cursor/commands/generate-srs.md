@@ -152,6 +152,8 @@ Append to `.ai-spector/.docflow/logs/generate-srs.log` (create if needed): times
 ai-spector index
 ```
 
+`index` also adds **per-domain detail** `document` nodes (`doc.srs.uc-UC-01`, `doc.srs.f-F-01`, …) plus **`section` nodes** parsed from each detail file’s headings. **`definedIn`** links each UC/F to those sections (e.g. Overview, Main flow); **`rendersTo`** still points at the markdown path. Per-file `graph merge` patches are still required for list chapters (`3-use-cases.md`, `4-system-features.md`) and `dependsOn`; without them, validate may warn on missing `rendersTo` from template `doc.srs.*` nodes.
+
 Use `ai-spector index --force-graphify` if Graphify storage should rebuild even when file hashes are unchanged.
 - Optional: `/visualize-graph` for user review.
 - Suggest `/summary srs` only after graph ingest is complete.

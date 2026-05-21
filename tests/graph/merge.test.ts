@@ -10,12 +10,12 @@ describe("normalizePatch", () => {
 });
 
 describe("mergePatch", () => {
-  it("skips structure nodes (section, table, diagram) and counts them as skipped", () => {
+  it("skips template structure nodes (section, table, diagram) and counts them as skipped", () => {
     const g = loadGraph([node("doc.srs", "document")], []);
     const result = mergePatch(g, {
       version: 1,
       nodes: [
-        node("sec.a", "section"),
+        node("sec.a", "section", { documentId: "doc.srs" }),
         node("tbl.1", "table"),
         node("diag.1", "diagram"),
       ],
@@ -25,6 +25,45 @@ describe("mergePatch", () => {
     expect(result.stats.nodesSkipped).toBe(3);
     expect(result.stats.nodesCreated).toBe(0);
     expect(g.nodesById.has("sec.a")).toBe(false);
+  });
+
+  it("upserts sections under per-domain detail document instances", () => {
+    const g = loadGraph(
+      [
+        node("doc.srs.uc-UC-01", "document", {
+          output: "docs/srs/03-use-cases/uc-01-order.md",
+          perDomain: "useCase",
+        }),
+        node("UC-01", "useCase"),
+      ],
+      [],
+    );
+    const result = mergePatch(g, {
+      version: 1,
+      nodes: [
+        node("sec.srs.uc-UC-01.l3.1.overview", "section", {
+          documentId: "doc.srs.uc-UC-01",
+          heading: "### 1. Use Case Overview",
+          level: 3,
+          order: 1,
+        }),
+      ],
+      edges: [
+        { type: "contains", from: "doc.srs.uc-UC-01", to: "sec.srs.uc-UC-01.l3.1.overview" },
+        { type: "partOf", from: "sec.srs.uc-UC-01.l3.1.overview", to: "doc.srs.uc-UC-01" },
+        { type: "definedIn", from: "UC-01", to: "sec.srs.uc-UC-01.l3.1.overview" },
+      ],
+    });
+
+    expect(result.stats.nodesCreated).toBe(1);
+    expect(g.nodesById.has("sec.srs.uc-UC-01.l3.1.overview")).toBe(true);
+    expect(
+      g.hasEdge({
+        type: "definedIn",
+        from: "UC-01",
+        to: "sec.srs.uc-UC-01.l3.1.overview",
+      }),
+    ).toBe(true);
   });
 
   it("creates domain nodes and adds edges when absent", () => {
