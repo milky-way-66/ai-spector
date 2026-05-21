@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "name": "srs",
+  "templatesDir": "templates/srs",
+  "documents": [
+    {
+      "documentId": "doc.srs.1-introduction",
+      "template": "1-introduction.md",
+      "output": "docs/srs/1-introduction.md"
+    },
+    {
+      "documentId": "doc.srs.2-overall-description",
+      "template": "2-overall-description.md",
+      "output": "docs/srs/2-overall-description.md"
+    },
+    {
+      "documentId": "doc.srs.3-use-cases",
+      "template": "3-use-cases.md",
+      "output": "docs/srs/3-use-cases.md"
+    },
+    {
+      "documentId": "doc.srs.4-system-features",
+      "template": "4-system-features-list-template.md",
+      "output": "docs/srs/4-system-features.md"
+    },
+    {
+      "documentId": "doc.srs.5-data-requirements",
+      "template": "5-data-requirements.md",
+      "output": "docs/srs/5-data-requirements.md"
+    },
+    {
+      "documentId": "doc.srs.6-external-interfaces",
+      "template": "6-external-interfaces.md",
+      "output": "docs/srs/6-external-interfaces.md"
+    },
+    {
+      "documentId": "doc.srs.7-quality-attributes",
+      "template": "7-quality-attributes.md",
+      "output": "docs/srs/7-quality-attributes.md"
+    },
+    {
+      "documentId": "doc.srs.8-internationalization",
+      "template": "8-internationalization.md",
+      "output": "docs/srs/8-internationalization.md"
+    },
+    {
+      "documentId": "doc.srs.9-other-requirements",
+      "template": "9-other-requirements.md",
+      "output": "docs/srs/9-other-requirements.md"
+    },
+    {
+      "documentId": "doc.srs.uc-detail",
+      "template": "3-use-case-detail-template.md",
+      "outputPattern": "docs/srs/03-use-cases/uc-{nn}-{slug}.md",
+      "perDomain": "useCase"
+    },
+    {
+      "documentId": "doc.srs.feature-detail",
+      "template": "4-system-feature-detail-template.md",
+      "outputPattern": "docs/srs/04-system-features/f-{nn}-{slug}.md",
+      "perDomain": "feature"
+    }
+  ]
+}

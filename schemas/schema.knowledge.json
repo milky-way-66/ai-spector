@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-spector.local/schemas/schema.knowledge.json",
+  "title": "AnalysisKnowledge",
+  "type": "object",
+  "required": ["knowledgeVersion", "actors", "useCases", "features"],
+  "additionalProperties": true,
+  "properties": {
+    "knowledgeVersion": { "type": "integer", "minimum": 1 },
+    "generatedAt": { "type": ["string", "null"] },
+    "scope": { "type": "array", "items": { "type": "string" } },
+    "actors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/actor" }
+    },
+    "useCases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/useCase" }
+    },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/feature" }
+    },
+    "functionalRequirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirement" }
+    },
+    "nfrs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirement" }
+    },
+    "entities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entity" }
+    },
+    "interfaces": { "type": "array" },
+    "constraints": { "type": "array" },
+    "openQuestions": { "type": "array" }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "listedInSection": { "type": "string", "minLength": 1 }
+      }
+    },
+    "useCase": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "priority": { "type": "string" },
+        "description": { "type": "string" },
+        "listedInSection": { "type": "string", "minLength": 1 }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "listedInSection": { "type": "string", "minLength": 1 },
+        "satisfies": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "listedInSection": { "type": "string", "minLength": 1 },
+        "tracesTo": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "listedInSection": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

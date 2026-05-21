@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "root": "docs/basic-design",
+  "nodes": [
+    {
+      "id": "bd.db-design",
+      "template": "basic_design/db-design-template.md",
+      "output": "db-design.md",
+      "dependsOn": []
+    },
+    {
+      "id": "bd.list-api",
+      "template": "basic_design/list-api-template.md",
+      "output": "api-list.md",
+      "dependsOn": []
+    },
+    {
+      "id": "bd.detail-api",
+      "template": "basic_design/detail-api-template.md",
+      "output": "api/",
+      "dependsOn": ["bd.list-api"],
+      "mode": "perEndpoint"
+    },
+    {
+      "id": "bd.list-screen",
+      "template": "basic_design/list-screen-template.md",
+      "output": "screens/list-screens.md",
+      "dependsOn": []
+    },
+    {
+      "id": "bd.detail-screen",
+      "template": "basic_design/detail-screen-template.md",
+      "output": "screens/",
+      "dependsOn": ["bd.list-screen"],
+      "mode": "perScreen"
+    }
+  ]
+}

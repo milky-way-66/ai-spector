@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "SCHEMA",
+      "severity": "error",
+      "description": "Graph must validate against schema.graph.json"
+    },
+    {
+      "id": "REGISTRY-COMPLETE",
+      "severity": "error",
+      "description": "Every registry document and section must exist in the graph"
+    },
+    {
+      "id": "SECTION-TREE",
+      "severity": "error",
+      "description": "Each section has exactly one partOf parent"
+    },
+    {
+      "id": "DOC-SECTION-COVERAGE",
+      "severity": "error",
+      "description": "Each document contains at least one section"
+    },
+    {
+      "id": "DOMAIN-ANCHORED",
+      "severity": "error",
+      "description": "Domain nodes must link to sections via listedIn, definedIn, or describedIn"
+    }
+  ]
+}

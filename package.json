@@ -1,0 +1,46 @@
+{
+  "name": "ai-spector",
+  "version": "0.1.0",
+  "description": "AI documentation workflow for Cursor: init, analyze, SRS/basic-design generation, templates, and traceability graph",
+  "type": "module",
+  "files": [
+    "dist",
+    "schemas",
+    "templates",
+    "documents.json",
+    "scaffold",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "ai-spector": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "prepublishOnly": "npm run build",
+    "init:example": "node dist/cli.js init -C example --force",
+    "analyze": "node dist/cli.js -r example analyze",
+    "graph:validate": "node dist/cli.js -r example graph validate",
+    "graph:merge": "node dist/cli.js -r example graph merge --from-knowledge"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "documentation",
+    "srs",
+    "traceability",
+    "requirements"
+  ],
+  "license": "MIT"
+}

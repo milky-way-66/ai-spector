@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-spector.local/schemas/schema.extract-patch.json",
+  "title": "ExtractPatch",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "https://ai-spector.local/graph/schema.graph.json#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "https://ai-spector.local/graph/schema.graph.json#/$defs/edge" }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "outputs": {
+    "srs": ".ai-spector/index/srs.md",
+    "basicDesign": ".ai-spector/index/basic-design.md"
+  },
+  "sources": {
+    "srs": {
+      "root": "docs/srs",
+      "dag": ".ai-spector/.docflow/config/dag.srs.json",
+      "glob": "**/*.md"
+    },
+    "basicDesign": {
+      "root": "docs/basic-design",
+      "glob": "**/*.md"
+    }
+  },
+  "entryFormat": {
+    "heading": "## File: {basename}",
+    "fields": ["location", "metadata", "summary"]
+  }
+}

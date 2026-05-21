@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "indexes": {
+    "srs": ".ai-spector/index/srs.md",
+    "basicDesign": ".ai-spector/index/basic-design.md"
+  },
+  "indexPlaceholderMarkers": ["not yet run", "No entries yet"],
+  "messageFormat": {
+    "title": "Cannot run {command}",
+    "sections": ["missing", "doFirst", "optionalNext", "why"]
+  },
+  "steps": {
+    "analyze": {
+      "command": "/analyze",
+      "requires": [],
+      "checks": [
+        {
+          "id": "data-source-dir",
+          "type": "pathExists",
+          "path": "docs/data-source",
+          "fail": "Directory docs/data-source/ does not exist."
+        },
+        {
+          "id": "data-source-inputs",
+          "type": "hasFiles",
+          "path": "docs/data-source",
+          "glob": "**/*",
+          "min": 1,
+          "ignore": ["README.md", ".gitkeep"],
+          "fail": "No input files in docs/data-source/ (only README or empty folder)."
+        }
+      ],
+      "onSuccess": {
+        "optionalNext": ["/validate-graph", "/generate-srs"]
+      }
+    },
+    "validate-graph": {
+      "command": "/validate-graph",
+      "requires": ["analyze"],
+      "checks": [
+        {
+          "id": "graph-file",
+          "type": "pathExists",
+          "path": ".ai-spector/graph/traceability.graph.json",
+          "fail": "Missing traceability graph — run ai-spector analyze first."
+        }
+      ],
+      "onSuccess": {
+        "optionalNext": ["/generate-srs"]
+      }
+    },
+    "generate-srs": {
+      "command": "/generate-srs",
+      "requires": ["analyze"],
+      "checks": [
+        {
+          "id": "analysis-last-run",
+          "type": "stateNotNull",
+          "field": "analysis.lastRunAt",
+          "fail": "Analysis has never completed (analysis.lastRunAt is null)."
+        },
+        {
+          "id": "graph-file",
+          "type": "pathExists",
+          "path": ".ai-spector/graph/traceability.graph.json",
+          "fail": "Missing traceability graph — run ai-spector analyze and /analyze."
+        },
+        {
+          "id": "graph-merged",
+          "type": "stateNotNull",
+          "field": "analysis.graphMergedAt",
+          "fail": "Knowledge not merged into graph — run /analyze and commit domain nodes to traceability.graph.json."
+        },
+        {
+          "id": "knowledge-file",
+          "type": "pathExists",
+          "path": ".ai-spector/.docflow/analysis/knowledge.json",
+          "fail": "Missing knowledge.json — run /analyze first."
+        }
+      ],
+      "usesGraph": true,
+      "onBlock": {
+        "doFirst": [
+          "Add or update files in docs/data-source/",
+          "Run ai-spector analyze",
+          "Run /analyze (merge into graph)",
+          "Run /validate-graph"
+        ]
+      },
+      "onSuccess": {
+        "optionalNext": ["/index-docs srs", "/generate-basic-design"],
+        "why": "Use graph_neighbors for downstream generate; index is optional fallback."
+      }
+    },
+    "index-docs-srs": {
+      "command": "/index-docs srs",
+      "requires": [],
+      "checks": [
+        {
+          "id": "srs-any-files",
+          "type": "hasFiles",
+          "path": "docs/srs",
+          "glob": "**/*.md",
+          "min": 0,
+          "warnIfBelow": 1,
+          "warn": "No SRS files under docs/srs/ yet — index will be empty."
+        }
+      ],
+      "onWarn": {
+        "doFirst": ["/generate-srs"],
+        "why": "Indexing is allowed but summaries need generated SRS files."
+      }
+    },
+    "generate-basic-design": {
+      "command": "/generate-basic-design",
+      "requires": ["analyze", "generate-srs-minimum"],
+      "checks": [
+        {
+          "id": "analysis-last-run",
+          "type": "stateNotNull",
+          "field": "analysis.lastRunAt",
+          "fail": "Analysis has never completed."
+        },
+        {
+          "id": "knowledge-populated",
+          "type": "jsonAnyNonEmpty",
+          "path": ".ai-spector/.docflow/analysis/knowledge.json",
+          "keys": ["actors", "useCases", "features", "functionalRequirements"],
+          "fail": "knowledge.json is empty or missing — run /analyze first."
+        },
+        {
+          "id": "srs-minimum",
+          "type": "allPathsExist",
+          "paths": [
+            "docs/srs/1-introduction.md",
+            "docs/srs/4-system-features.md"
+          ],
+          "fail": "Minimum SRS outputs missing (need introduction and system features list)."
+        },
+        {
+          "id": "srs-index-file",
+          "type": "pathExists",
+          "path": ".ai-spector/index/srs.md",
+          "fail": "SRS index missing at .ai-spector/index/srs.md — run /index-docs srs first."
+        },
+        {
+          "id": "srs-index-populated",
+          "type": "indexPopulated",
+          "path": ".ai-spector/index/srs.md",
+          "fail": "SRS index is empty or placeholder — run /index-docs srs after SRS files exist."
+        }
+      ],
+      "usesGraph": true,
+      "usesIndex": [".ai-spector/index/srs.md"],
+      "onBlock": {
+        "doFirst": [
+          "Run /validate-graph",
+          "Run /generate-srs until minimum SRS exists",
+          "Use graph_neighbors from target feature ids"
+        ],
+        "optionalNext": ["/index-docs basic-design"]
+      },
+      "onSuccess": {
+        "requiredNext": ["/index-docs basic-design"],
+        "why": "Refresh .ai-spector/index/basic-design.md before /generate-detail-design."
+      }
+    },
+    "index-docs-basic-design": {
+      "command": "/index-docs basic-design",
+      "requires": [],
+      "checks": [
+        {
+          "id": "basic-design-any-files",
+          "type": "hasFiles",
+          "path": "docs/basic-design",
+          "glob": "**/*.md",
+          "min": 0,
+          "warnIfBelow": 1,
+          "warn": "No basic design files under docs/basic-design/ yet."
+        }
+      ],
+      "onWarn": {
+        "doFirst": ["/generate-basic-design"],
+        "why": "Indexing is allowed but summaries need generated basic design files."
+      }
+    },
+    "generate-detail-design": {
+      "command": "/generate-detail-design",
+      "requires": ["analyze", "generate-srs-minimum"],
+      "checks": [
+        {
+          "id": "analysis-last-run",
+          "type": "stateNotNull",
+          "field": "analysis.lastRunAt",
+          "fail": "Analysis has never completed."
+        },
+        {
+          "id": "knowledge-populated",
+          "type": "jsonAnyNonEmpty",
+          "path": ".ai-spector/.docflow/analysis/knowledge.json",
+          "keys": ["features", "functionalRequirements"],
+          "fail": "knowledge.json lacks feature/requirement data — run /analyze first."
+        },
+        {
+          "id": "srs-minimum",
+          "type": "allPathsExist",
+          "paths": [
+            "docs/srs/1-introduction.md",
+            "docs/srs/4-system-features.md"
+          ],
+          "fail": "Required SRS files missing for detail design."
+        },
+        {
+          "id": "srs-index-populated",
+          "type": "indexPopulated",
+          "path": ".ai-spector/index/srs.md",
+          "fail": "SRS index not built — run /index-docs srs before detail design."
+        },
+        {
+          "id": "basic-design-index-when-outputs-exist",
+          "type": "indexPopulatedIfSourceHasFiles",
+          "indexPath": ".ai-spector/index/basic-design.md",
+          "sourcePath": "docs/basic-design",
+          "sourceGlob": "**/*.md",
+          "fail": "Basic design outputs exist but .ai-spector/index/basic-design.md is missing or placeholder — run /index-docs basic-design."
+        }
+      ],
+      "usesGraph": true,
+      "usesIndex": [
+        ".ai-spector/index/srs.md",
+        ".ai-spector/index/basic-design.md"
+      ],
+      "onBlock": {
+        "doFirst": [
+          "Run /validate-graph",
+          "Run /generate-srs",
+          "graph_neighbors from feature seeds",
+          "Run /generate-basic-design if needed"
+        ],
+        "optionalNext": []
+      }
+    },
+    "index-docs": {
+      "command": "/index-docs",
+      "requires": [],
+      "checks": [],
+      "onWarn": {
+        "note": "Runs even when outputs are empty; warns per collection when no files found."
+      }
+    }
+  },
+  "pipeline": [
+    "analyze",
+    "generate-srs",
+    "index-docs-srs",
+    "generate-basic-design",
+    "index-docs-basic-design",
+    "generate-detail-design"
+  ],
+  "graphUsage": {
+    "rule": "Before opening docs under docs/srs/ or docs/basic-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/_graph.md.",
+    "validateBeforeGenerate": "/validate-graph",
+    "afterEdit": "/graph-impact",
+    "reconcileProjections": "/sync-graph"
+  },
+  "indexUsage": {
+    "rule": "Fallback only when graph domain nodes are missing or graph_neighbors returns an empty subgraph. Otherwise prefer graphUsage.rule.",
+    "afterGenerateSrs": "/index-docs srs",
+    "afterGenerateBasicDesign": "/index-docs basic-design"
+  }
+}

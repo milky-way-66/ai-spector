@@ -1,139 +1,207 @@
-# AI Spector
+# ai-spector
 
-Cursor-driven documentation workflow for turning project inputs into structured **SRS**, **basic design**, and **detail design** documents. Uses Graphify for analysis, dependency DAGs for generation order, and searchable indexes under `.ai-spector/index/` to pick relevant files without reading every doc.
+**AI Spector** turns project inputs into structured documentation (SRS, basic design, detail design) inside [Cursor](https://cursor.com). One `npm install` gives you a CLI, templates, slash commands, and an agent skill.
 
-## Quick start
+The **traceability graph** (`.ai-spector/graph/traceability.graph.json`) is the heart of the system: it stores sections, use cases, features, and links. Generation and search go through **`ai-spector graph query`** — not by reading whole folders.
 
-1. Add input materials to [`docs/data-source/`](docs/data-source/README.md) (specs, notes, API exports, diagrams, legacy docs).
-2. In Cursor, run commands in order:
+**Graphify** (optional MCP) only helps **extract** facts from `docs/data-source/` during `/analyze`. The **canonical store** is always our graph.
 
-```text
-/analyze
-/generate-srs
-/index-docs srs
-/generate-basic-design
-/index-docs basic-design
-/generate-detail-design
+---
+
+## 1. Overview
+
+| You get | Purpose |
+|---------|---------|
+| **`ai-spector init`** | Project scaffold: `.ai-spector/`, `.cursor/commands`, skill, `docs/data-source/` |
+| **Templates** | SRS, basic design, detail design (bundled in the package) |
+| **`ai-spector analyze`** | Build section/document structure in the graph |
+| **`/analyze` in Cursor** | Extract from inputs (Graphify) → merge into the graph |
+| **`/generate-*` in Cursor** | Fill templates; agents use `graph query --json` for context |
+| **`graph validate` / `query` / `impact`** | Validate, find relevant docs, scope regen after edits |
+
+**In one sentence:** inputs → graph (truth) → generated markdown projections, with the IDE asking the CLI which parts of the graph matter for each step.
+
+---
+
+## 2. Getting started
+
+### Requirements
+
+- Node.js 20+
+- [Cursor](https://cursor.com)
+- Graphify MCP (for `/analyze` only)
+
+### New project
+
+```bash
+npm install ai-spector
+cd your-project
+npx ai-spector init
 ```
 
-3. Generated docs appear under `docs/srs/`, `docs/basic-design/`, and `docs/detail-design/`.
+| Step | What to do |
+|------|------------|
+| 1 | Add files under `docs/data-source/` |
+| 2 | `npx ai-spector analyze` |
+| 3 | Open in Cursor, enable **ai-spector** skill |
+| 4 | Run **`/analyze`** (merge knowledge into the graph) |
+| 5 | `npx ai-spector graph validate` |
+| 6 | **`/validate-graph`** then **`/generate-srs`** |
+| 7 | Optional: `/index-docs srs`, `/generate-basic-design`, `/generate-detail-design` |
 
-If a step’s prerequisites are not met, the agent **stops** and tells you what is missing and what to run next.
+Agents should run `npx ai-spector graph query <id> --json` during generate steps and use only `projectionPaths` from the output.
 
-## Folder layout
+### Try `example/` in this repo
 
-```text
-ai-spector/
-├── README.md                 # This file
-├── .cursor/
-│   ├── commands/             # Cursor slash commands
-│   └── skills/ai-spector/    # Agent skill (workflow rules)
-├── .ai-spector/
-│   ├── _templates/           # SRS, basic design, detail design templates
-│   ├── index/                # Searchable summaries (srs.md, basic-design.md)
-│   └── .docflow/
-│       ├── analysis/         # knowledge.json, gaps.json, scope.json
-│       ├── config/           # DAGs, prerequisites, Graphify settings
-│       └── state.json        # Run state and index hashes
-└── docs/
-    ├── data-source/          # Default input (you add files here)
-    ├── srs/                  # Generated SRS
-    ├── basic-design/         # Generated basic design
-    └── detail-design/        # Generated detail design
+```bash
+git clone <repo-url>
+cd ai-spector
+npm install
+npm run build
+npm run init:example
+npm run analyze
+npm run graph:validate
 ```
 
-| Path | Purpose |
-|------|---------|
-| `docs/data-source/` | **Input** — materials analyzed before generation |
-| `docs/srs/` | **Output** — Software Requirements Specification |
-| `docs/basic-design/` | **Output** — API, DB, screen basic design |
-| `docs/detail-design/` | **Output** — Feature-level detail design |
-| `.ai-spector/_templates/` | Templates used by generate commands (do not edit outputs here) |
-| `.ai-spector/index/` | Metadata + summaries for file selection ([details](.ai-spector/index/README.md)) |
-| `.ai-spector/.docflow/` | Analysis artifacts, DAG config, runtime state |
+Open **`example/`** as the Cursor workspace (not the repo root). Add samples under `example/docs/data-source/`, then run `/analyze` → `/validate-graph` → `/generate-srs`.
 
-## Commands
+From repo root:
+
+```bash
+npx ai-spector -r example graph query sec.srs.3-use-cases.l3.3.32-list-use-case --json
+```
+
+See [example/README.md](example/README.md).
+
+---
+
+## 3. How it works (detail)
+
+### 3.1 Components
+
+| Component | Role |
+|-----------|------|
+| **CLI (`ai-spector`)** | `init`, `analyze`, `graph validate`, `graph query`, `graph impact` |
+| **Traceability graph** | JSON graph: `document`, `section`, `useCase`, `feature`, edges |
+| **Cursor commands + skill** | `/analyze`, `/generate-srs`, … — must call CLI for graph operations |
+| **Templates** | `node_modules/ai-spector/templates/` — section patterns for generated docs |
+
+### 3.2 Graphify vs our graph
+
+| | Graphify (MCP) | Our graph |
+|---|----------------|-----------|
+| **When** | `/analyze` on raw inputs | `ai-spector analyze` + merge after `/analyze` + all generate/impact |
+| **Role** | Ingest helper (search, extract) | **Source of truth** |
+| **On disk** | `knowledge.json` (staging) | `traceability.graph.json` |
+| **Generation** | Not used | `graph query` / `graph impact` |
+
+### 3.3 Data flow
+
+```text
+docs/data-source/
+        │
+        ▼
+/analyze + Graphify          → knowledge.json (staging)
+        │
+        ▼ merge
+traceability.graph.json      ← OUR graph
+        ▲
+        │ ai-spector analyze   (section tree from templates)
+        │
+        ├── graph query --json
+        ├── graph impact --json
+        └── /generate-*  →  docs/srs/, docs/basic-design/, …
+```
+
+- **Sections** — template headings (`##`, `###`) are nodes with `partOf` / `contains`.
+- **Domain nodes** — `useCase`, `feature`, … with `listedIn`, `satisfies`, `definedIn`, …
+- **Markdown under `docs/`** — projections from the graph, not the canonical store.
+
+### 3.4 Full pipeline
+
+```text
+ai-spector init
+→ add docs/data-source/
+→ ai-spector analyze              (graph structure)
+→ /analyze                        (extract → knowledge.json)
+→ ai-spector graph merge --from-knowledge
+→ ai-spector graph validate
+→ /generate-srs                   (graph query per target)
+→ /index-docs srs                 (optional)
+→ /generate-basic-design
+→ /graph-impact after edits       (graph impact --json)
+```
+
+Cursor contract (see `.cursor/commands/_graph.md` after `init`):
+
+```bash
+ai-spector graph merge --from-knowledge
+ai-spector graph validate
+ai-spector graph query <seedId> --json
+ai-spector graph impact <nodeId> --json
+```
+
+### 3.5 Project layout
+
+```text
+your-project/
+  .cursor/commands/           # slash commands
+  .cursor/skills/ai-spector/
+  .ai-spector/
+    docflow.config.json
+    graph/traceability.graph.json
+    registry/section-registry.json
+    .docflow/analysis/          # knowledge.json, gaps.json
+    .docflow/extract/           # patch.json (optional; from merge --write-patch)
+    .docflow/config/            # DAGs, prerequisites
+    index/                      # optional
+  docs/
+    data-source/                # inputs
+    srs/                          # generated
+    basic-design/
+    detail-design/
+```
+
+### 3.6 CLI reference
 
 | Command | Description |
 |---------|-------------|
-| [`/analyze`](.cursor/commands/analyze.md) | Index `docs/data-source/` and build `knowledge.json` via Graphify |
-| [`/generate-srs`](.cursor/commands/generate-srs.md) | Generate SRS under `docs/srs/` (DAG order, incremental) |
-| [`/index-docs`](.cursor/commands/index-docs.md) | Build `.ai-spector/index/srs.md` and/or `basic-design.md` |
-| [`/generate-basic-design`](.cursor/commands/generate-basic-design.md) | Generate basic design under `docs/basic-design/` |
-| [`/generate-detail-design`](.cursor/commands/generate-detail-design.md) | Generate detail design under `docs/detail-design/` |
+| `ai-spector init [--force]` | Scaffold project |
+| `ai-spector analyze` | Registry + bootstrap graph structure |
+| `ai-spector graph validate` | Schema + traceability rules |
+| `ai-spector graph query <id> --json` | Neighbors + `projectionPaths` |
+| `ai-spector graph impact <id> --json` | Regen / review / downstream |
+| `ai-spector graph registry` | Rebuild section registry |
+| `ai-spector graph bootstrap` | Rebuild structure from registry |
 
-Examples:
+Option: `-r, --root <path>` to target a project directory.
 
-```text
-/index-docs srs
-/index-docs basic-design
-/generate-srs 1-introduction.md
+### 3.7 npm package contents
+
+| Path | Contents |
+|------|----------|
+| `dist/` | CLI |
+| `templates/` | SRS, basic_design, detail_design |
+| `schemas/` | Graph schema + rules |
+| `documents.json` | SRS manifest |
+| `scaffold/` | Copied on `init` |
+
+### 3.8 Design docs & development
+
+| Doc | Topic |
+|-----|--------|
+| [workflow-overview.md](docs/design/workflow-overview.md) | Graph-centric workflow |
+| [traceability-graph-redesign.md](docs/design/traceability-graph-redesign.md) | Schema, migration phases |
+
+**Hack on this repo:**
+
+```bash
+npm install && npm run build
+npm run init:example && npm run analyze && npm run graph:validate
 ```
 
-## Pipeline and prerequisites
+---
 
-Commands enforce a dependency chain (see [`workflow.dependencies.json`](.ai-spector/.docflow/config/workflow.dependencies.json)):
+## License
 
-```text
-docs/data-source
-    → /analyze
-    → /generate-srs
-    → /index-docs srs          ← required before basic/detail design
-    → /generate-basic-design
-    → /index-docs basic-design ← required before detail design (if basic design exists)
-    → /generate-detail-design
-```
-
-| Step | Minimum required before run |
-|------|----------------------------|
-| `/analyze` | At least one file in `docs/data-source/` (not only README) |
-| `/generate-srs` | Completed `/analyze` with populated `knowledge.json` |
-| `/generate-basic-design` | Analyze + SRS (`1-introduction.md`, `4-system-features.md`) + populated `.ai-spector/index/srs.md` |
-| `/generate-detail-design` | Analyze + minimum SRS + populated `srs.md`; `basic-design.md` if `docs/basic-design/` has files |
-
-On failure, the agent responds with **What's missing**, **Do this first**, and **Recommended next** (see [`.cursor/commands/_prerequisites.md`](.cursor/commands/_prerequisites.md)).
-
-## Document index (`.ai-spector/index/`)
-
-Indexes are **required** for downstream generation—not optional shortcuts.
-
-1. `/index-docs` writes summaries and metadata per file.
-2. `/generate-basic-design` and `/generate-detail-design` read the index first and open only relevant `location` paths under `docs/srs/` or `docs/basic-design/`.
-
-Refresh indexes after you change generated docs:
-
-```text
-/index-docs srs
-/index-docs basic-design
-```
-
-## Configuration
-
-| File | Role |
-|------|------|
-| [`data-source.json`](.ai-spector/.docflow/config/data-source.json) | Default input root (`docs/data-source`) |
-| [`analyze.graphify.json`](.ai-spector/.docflow/config/analyze.graphify.json) | Graphify index scope and query profiles |
-| [`dag.srs.json`](.ai-spector/.docflow/config/dag.srs.json) | SRS generation order and outputs |
-| [`dag.basic-design.json`](.ai-spector/.docflow/config/dag.basic-design.json) | Basic design generation order |
-| [`dag.detail-design.json`](.ai-spector/.docflow/config/dag.detail-design.json) | Detail design generation order |
-| [`workflow.dependencies.json`](.ai-spector/.docflow/config/workflow.dependencies.json) | Prerequisite checks and index paths |
-| [`index.docs.json`](.ai-spector/.docflow/config/index.docs.json) | Index output paths and format |
-
-## Cursor setup
-
-- **Skill:** `.cursor/skills/ai-spector/SKILL.md` — loaded when working on documentation in this repo.
-- **Commands:** `.cursor/commands/*.md` — available as slash commands in Cursor.
-
-Enable the **ai-spector** skill and Graphify MCP in your Cursor project settings as needed for `/analyze`.
-
-## Design principles
-
-- **Incremental** — classify outputs as `good` / `missing_content` / `missing_file`; skip or patch instead of full rewrite.
-- **DAG-ordered** — independent sections generate in parallel; dependencies run in waves.
-- **Fail fast** — missing prerequisites block work with clear next steps.
-- **Index-first** — use `.ai-spector/index/` to select files, not bulk reads of `docs/srs/` or `docs/basic-design/`.
-
-## Related READMEs
-
-- [Data source inputs](docs/data-source/README.md)
-- [Document indexes](.ai-spector/index/README.md)
+MIT — see [LICENSE](LICENSE).

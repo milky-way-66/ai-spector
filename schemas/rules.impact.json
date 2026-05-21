@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "description": "Impact propagation rules (P1+). P0 stub for future /graph-impact.",
+  "edgePropagation": {
+    "partOf": { "direction": "out", "depth": "unbounded" },
+    "contains": { "direction": "in", "depth": "unbounded" },
+    "satisfies": { "direction": "in", "depth": 1 },
+    "dependsOn": { "direction": "out", "depth": "unbounded" },
+    "definedIn": { "direction": "in", "depth": 1 },
+    "listedIn": { "direction": "in", "depth": 1 }
+  },
+  "buckets": {
+    "regenerate": ["section", "document"],
+    "review": ["useCase", "feature", "requirement"],
+    "downstream": ["document"]
+  }
+}
