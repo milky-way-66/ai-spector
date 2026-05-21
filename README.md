@@ -72,7 +72,7 @@ All structure and traceability live in one file:
 - Use cases, features, actors → **domain nodes** with links (`listedIn`, `satisfies`, …)  
 - Originating inputs under `docs/data-source/` → **`derivedFrom`** to repo-relative paths (and `graphify:<id>` when Graphify index matches)  
 - Generated markdown under `docs/srs/`, `docs/basic-design/`, etc. → linked by **`rendersTo`** (target is the **repo-relative file path**, not a node id)  
-- Per-UC / per-feature **detail files** → extra `document` nodes, **section** nodes from headings, **`definedIn`** from domain nodes to those sections  
+- Per-UC / per-feature **detail files** → instance `document` nodes (`doc.srs.uc-UC-01`, …), **section** nodes with titles/snippets from generated markdown, **`definedIn`** / **`describedIn`** from domain nodes to those sections  
 
 **`/index`** (or `ai-spector index`) parses UC/F/actor ids from SRS and basic-design bodies and wires detail semantics without a full **`/analyze`**. **`/analyze`** is still required for rich Graphify MCP extract into `knowledge.json`.
 

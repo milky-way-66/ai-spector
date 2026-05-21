@@ -4,10 +4,14 @@ import {
   classifySrsDetailFile,
   detailFileToPatch,
   documentIdForDomainDetail,
+  extractDetailDomainMeta,
   extractDomainFromMarkdown,
   normalizeDomainId,
 } from "../../src/graph/doc-extract.js";
-import { parseDetailSections } from "../../src/graph/detail-sections.js";
+import {
+  parseDetailSections,
+  snippetAfterHeading,
+} from "../../src/graph/detail-sections.js";
 
 describe("normalizeDomainId", () => {
   it("pads numeric suffixes", () => {
@@ -98,6 +102,43 @@ Step 1
   });
 });
 
+describe("extractDetailDomainMeta", () => {
+  it("reads title and brief description from use case detail", () => {
+    const meta = extractDetailDomainMeta(
+      `**Use Case ID:** UC-01
+**Use Case Name:** Assessment cycle
+
+### 1. Use Case Overview
+
+**Brief Description:**
+
+> HR admin issues invitations; employee completes the full assessment path.
+
+**Priority:** High
+`,
+      "useCaseDetail",
+    );
+    expect(meta?.title).toBe("Assessment cycle");
+    expect(meta?.description).toContain("HR admin");
+    expect(meta?.priority).toBe("High");
+  });
+});
+
+describe("snippetAfterHeading", () => {
+  it("extracts prose after a section heading", () => {
+    const snippet = snippetAfterHeading(
+      `### 1. Use Case Overview
+
+The employee completes each assessment step in order.
+
+**Actor(s):**
+`,
+      "1. Use Case Overview",
+    );
+    expect(snippet).toContain("assessment step");
+  });
+});
+
 describe("detailFileToPatch", () => {
   it("links UC domain node to detail sections and file path", () => {
     const patch = detailFileToPatch(
@@ -106,6 +147,10 @@ describe("detailFileToPatch", () => {
 **Use Case Name:** Checkout
 
 ### 1. Use Case Overview
+
+**Brief Description:**
+
+> Customer completes checkout with saved payment method.
 
 ### 2. Main Success Scenario (Basic Flow)
 `,
@@ -117,13 +162,32 @@ describe("detailFileToPatch", () => {
         type: "document",
         output: "docs/srs/03-use-cases/uc-03-checkout.md",
         perDomain: "useCase",
+        title: "Checkout",
+        description: expect.stringContaining("checkout"),
+      }),
+    );
+    expect(patch.nodes).toContainEqual(
+      expect.objectContaining({
+        id: "UC-03",
+        type: "useCase",
+        title: "Checkout",
+        description: expect.stringContaining("checkout"),
       }),
     );
     const sectionNodes = patch.nodes.filter((n) => n.type === "section");
     expect(sectionNodes.length).toBeGreaterThanOrEqual(2);
+    const overview = sectionNodes.find((n) =>
+      String(n.heading).includes("Use Case Overview"),
+    );
+    expect(overview?.title).toBe(overview?.heading);
     for (const sec of sectionNodes) {
       expect(patch.edges).toContainEqual({
         type: "definedIn",
+        from: "UC-03",
+        to: sec.id,
+      });
+      expect(patch.edges).toContainEqual({
+        type: "describedIn",
         from: "UC-03",
         to: sec.id,
       });
@@ -142,6 +206,11 @@ describe("detailFileToPatch", () => {
       type: "rendersTo",
       from: "UC-03",
       to: "docs/srs/03-use-cases/uc-03-checkout.md",
+    });
+    expect(patch.edges).toContainEqual({
+      type: "contains",
+      from: "sec.srs.3-use-cases.l3.3.32-list-use-case",
+      to: docId,
     });
   });
 

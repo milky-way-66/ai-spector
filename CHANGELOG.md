@@ -9,8 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - **Data-source provenance** — `ai-spector index` and `ai-spector graph link-sources` add **`derivedFrom`** edges from domain nodes (`UC-*`, `F-*`, requirements, actors) to `docs/data-source/**` paths and optional `graphify:<nodeId>` targets when Graphify `graph.json` matches; evidence from `knowledge.json` source fields, SRS detail `Source:` / path mentions, and Graphify file index. Visualize shows teal **source** / **graphify** nodes and colored `derivedFrom` edges; `graph query` traverses `derivedFrom` and includes data-source paths in `projectionPaths`.
+- **Detail-file graph enrichment** — `ai-spector index` doc semantics now fill UC/F **`title`** / **`description`** from detail markdown (`**Use Case Name:**`, `**Brief Description:**`, feature purpose), add **`title`** / **`description`** on per-file **section** nodes from headings and first prose snippet, link list chapters to detail docs via **`contains`**, and add **`describedIn`** from domain nodes to detail docs/sections. Merge applies documents before sections so instance section nodes are not skipped.
 
 ### Fixed
+
+- **Provenance from knowledge** — `sourceRef` on staged knowledge rows (e.g. `requirement/…md`) is now honored when building **`derivedFrom`** edges during index.
 
 - **Graphify index** — skip `graphify update` for empty or markdown-only doc sources (`docs/srs`, `docs/basic-design`) instead of failing with Graphify exit 1 (`No code files found`); `ai-spector index` continues. Code sources (`docs/data-source` with `.ts`/`.py`/etc.) still run as before.
 - **Graphify output path** — `GRAPHIFY_OUT` is always an absolute path under the project root (cwd stays project root); removes stale `docs/data-source/.ai-spector/.../graphify-out` when Graphify wrote relative to the source path.

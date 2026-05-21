@@ -2,6 +2,7 @@ import type { GraphEdge, GraphNode } from "../types.js";
 import {
   detailSectionsToPatch,
   parseDetailSections,
+  snippetAfterHeading,
 } from "./detail-sections.js";
 import { DEFAULT_LISTED_IN } from "./defaults.js";
 import type { ExtractPatch } from "./knowledge.js";
@@ -35,6 +36,13 @@ const FEATURE_NAME_HEADING = /^#{1,3}\s+(F-\d+)\s*[:\-–—]\s*(.+)$/im;
 const UC_HEADING = /^#{1,3}\s+(UC-\d+)\s*[:\-–—]\s*(.+)$/im;
 const TABLE_ROW_UC = /^\|\s*(UC-\d+)\s*\|/im;
 const TABLE_ROW_F = /^\|\s*(F-\d+)\s*\|/im;
+const BRIEF_DESCRIPTION_BLOCK =
+  /\*\*Brief Description:\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
+const FEATURE_PURPOSE_BLOCK =
+  /\*\*(?:Feature Purpose|Purpose):\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
+const PRIORITY_LINE = /\*\*Priority:\*\*\s*(High|Medium|Low)/i;
+const OVERVIEW_HEADING = /use case overview/i;
+const FEATURE_DESC_HEADING = /^1\.\s*description$/i;
 
 /** Normalize UC-1 → UC-01, F-2 → F-02; leaves placeholders (UC-XX) unchanged */
 export function normalizeDomainId(raw: string): string {
@@ -125,6 +133,75 @@ function primaryDomainIdFromDetailContent(
   return null;
 }
 
+export interface DetailDomainMeta {
+  title?: string;
+  description?: string;
+  priority?: string;
+}
+
+function cleanQuotedBlock(raw: string): string {
+  return raw
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*>\s?/, "").trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Rich title/description from generated detail markdown (not list-table stubs). */
+export function extractDetailDomainMeta(
+  content: string,
+  kind: DetailFileKind,
+): DetailDomainMeta | null {
+  const primary = primaryDomainIdFromDetailContent(content, kind);
+  if (!primary) {
+    return null;
+  }
+
+  const meta: DetailDomainMeta = {};
+  if (primary.title) {
+    meta.title = primary.title;
+  }
+
+  const nameLine = content.match(USE_CASE_NAME_LINE);
+  if (nameLine?.[1]?.trim()) {
+    meta.title = nameLine[1].trim();
+  }
+
+  if (kind === "useCaseDetail") {
+    const brief = content.match(BRIEF_DESCRIPTION_BLOCK);
+    if (brief?.[1]) {
+      meta.description = cleanQuotedBlock(brief[1]);
+    }
+    const priority = content.match(PRIORITY_LINE);
+    if (priority?.[1]) {
+      meta.priority = priority[1];
+    }
+    if (!meta.description) {
+      const sections = parseDetailSections(content, "doc.temp");
+      const overview = sections.find((s) => OVERVIEW_HEADING.test(s.heading));
+      if (overview) {
+        meta.description = snippetAfterHeading(content, overview.heading);
+      }
+    }
+  } else {
+    const purpose = content.match(FEATURE_PURPOSE_BLOCK);
+    if (purpose?.[1]) {
+      meta.description = cleanQuotedBlock(purpose[1]);
+    }
+    if (!meta.description) {
+      const sections = parseDetailSections(content, "doc.temp");
+      const descSec = sections.find((s) => FEATURE_DESC_HEADING.test(s.heading));
+      if (descSec) {
+        meta.description = snippetAfterHeading(content, descSec.heading);
+      }
+    }
+  }
+
+  return meta;
+}
+
 function listedInForPath(relativePath: string, kind: "useCase" | "feature" | "actor"): string {
   const p = relativePath.replace(/\\/g, "/").toLowerCase();
   if (kind === "useCase") {
@@ -146,8 +223,8 @@ function listedInForPath(relativePath: string, kind: "useCase" | "feature" | "ac
 }
 
 interface ParsedDomain {
-  useCases: Map<string, { title?: string }>;
-  features: Map<string, { title?: string }>;
+  useCases: Map<string, { title?: string; description?: string; priority?: string }>;
+  features: Map<string, { title?: string; description?: string }>;
   actors: Map<string, { title?: string }>;
   satisfies: Array<{ from: string; to: string }>;
 }
@@ -161,24 +238,41 @@ function emptyParsed(): ParsedDomain {
   };
 }
 
-function addUseCase(parsed: ParsedDomain, id: string, title?: string): void {
+function addUseCase(
+  parsed: ParsedDomain,
+  id: string,
+  fields?: { title?: string; description?: string; priority?: string },
+): void {
   const norm = normalizeDomainId(id);
-  const prev = parsed.useCases.get(norm);
-  if (!prev?.title && title?.trim()) {
-    parsed.useCases.set(norm, { title: title.trim() });
-  } else if (!prev) {
-    parsed.useCases.set(norm, { title: title?.trim() });
+  const prev = parsed.useCases.get(norm) ?? {};
+  const next = { ...prev };
+  if (fields?.title?.trim() && !prev.title) {
+    next.title = fields.title.trim();
   }
+  if (fields?.description?.trim() && !prev.description) {
+    next.description = fields.description.trim();
+  }
+  if (fields?.priority?.trim() && !prev.priority) {
+    next.priority = fields.priority.trim();
+  }
+  parsed.useCases.set(norm, next);
 }
 
-function addFeature(parsed: ParsedDomain, id: string, title?: string): void {
+function addFeature(
+  parsed: ParsedDomain,
+  id: string,
+  fields?: { title?: string; description?: string },
+): void {
   const norm = normalizeDomainId(id);
-  const prev = parsed.features.get(norm);
-  if (!prev?.title && title?.trim()) {
-    parsed.features.set(norm, { title: title.trim() });
-  } else if (!prev) {
-    parsed.features.set(norm, { title: title?.trim() });
+  const prev = parsed.features.get(norm) ?? {};
+  const next = { ...prev };
+  if (fields?.title?.trim() && !prev.title) {
+    next.title = fields.title.trim();
   }
+  if (fields?.description?.trim() && !prev.description) {
+    next.description = fields.description.trim();
+  }
+  parsed.features.set(norm, next);
 }
 
 function parseTableSatisfies(line: string, parsed: ParsedDomain): void {
@@ -215,13 +309,13 @@ export function extractDomainFromMarkdown(
     const ucIdLine = line.match(USE_CASE_ID_LINE);
     if (ucIdLine) {
       pendingUcId = normalizeDomainId(ucIdLine[1]!);
-      addUseCase(parsed, pendingUcId);
+      addUseCase(parsed, pendingUcId, {});
       continue;
     }
     if (pendingUcId) {
       const nameLine = line.match(USE_CASE_NAME_LINE);
       if (nameLine) {
-        addUseCase(parsed, pendingUcId, nameLine[1]);
+        addUseCase(parsed, pendingUcId, { title: nameLine[1] });
         pendingUcId = undefined;
         continue;
       }
@@ -232,26 +326,30 @@ export function extractDomainFromMarkdown(
 
     const ucHeading = line.match(UC_HEADING);
     if (ucHeading) {
-      addUseCase(parsed, ucHeading[1]!, ucHeading[2]);
+      addUseCase(parsed, ucHeading[1]!, { title: ucHeading[2] });
     }
 
     const fHeading = line.match(FEATURE_NAME_HEADING);
     if (fHeading) {
-      addFeature(parsed, fHeading[1]!, fHeading[2]);
+      addFeature(parsed, fHeading[1]!, { title: fHeading[2] });
     }
 
     const ucRow = line.match(TABLE_ROW_UC);
     if (ucRow) {
       const cells = line.split("|").map((c) => c.trim());
       const title = cells[2] || cells[1];
-      addUseCase(parsed, ucRow[1]!, title && !/^UC-/i.test(title) ? title : undefined);
+      addUseCase(parsed, ucRow[1]!, {
+        title: title && !/^UC-/i.test(title) ? title : undefined,
+      });
     }
 
     const fRow = line.match(TABLE_ROW_F);
     if (fRow) {
       const cells = line.split("|").map((c) => c.trim());
       const title = cells[2] || cells[1];
-      addFeature(parsed, fRow[1]!, title && !/^F-/i.test(title) ? title : undefined);
+      addFeature(parsed, fRow[1]!, {
+        title: title && !/^F-/i.test(title) ? title : undefined,
+      });
       parseTableSatisfies(line, parsed);
     } else if (/^\|.*F-\d+/i.test(line) && /UC-/i.test(line)) {
       parseTableSatisfies(line, parsed);
@@ -260,12 +358,27 @@ export function extractDomainFromMarkdown(
 
   for (const m of content.matchAll(UC_ID_RE)) {
     if (m[1] && isRealDomainId(m[1])) {
-      addUseCase(parsed, m[1]);
+      addUseCase(parsed, m[1], {});
     }
   }
   for (const m of content.matchAll(F_ID_RE)) {
     if (m[1] && isRealDomainId(m[1])) {
-      addFeature(parsed, m[1]);
+      addFeature(parsed, m[1], {});
+    }
+  }
+
+  const detailKind = classifySrsDetailFile(relativePath);
+  if (detailKind) {
+    const rich = extractDetailDomainMeta(content, detailKind);
+    if (rich) {
+      const primary = primaryDomainIdFromDetailContent(content, detailKind);
+      if (primary) {
+        if (detailKind === "useCaseDetail") {
+          addUseCase(parsed, primary.id, rich);
+        } else {
+          addFeature(parsed, primary.id, rich);
+        }
+      }
     }
   }
 
@@ -298,8 +411,11 @@ export function parsedDomainToPatch(
 
   for (const [id, meta] of parsed.useCases) {
     const node: GraphNode = { id, type: "useCase", title: meta.title ?? id };
-    if (meta.title) {
-      node.description = meta.title;
+    if (meta.description) {
+      node.description = meta.description;
+    }
+    if (meta.priority) {
+      node.priority = meta.priority;
     }
     nodes.push(node);
     edges.push({
@@ -311,6 +427,9 @@ export function parsedDomainToPatch(
 
   for (const [id, meta] of parsed.features) {
     const node: GraphNode = { id, type: "feature", title: meta.title ?? id };
+    if (meta.description) {
+      node.description = meta.description;
+    }
     nodes.push(node);
     edges.push({
       type: "listedIn",
@@ -367,6 +486,10 @@ export function detailFileToPatch(
   const docId = documentIdForDomainDetail(kind, primary.id);
   const perDomain = kind === "useCaseDetail" ? "useCase" : "feature";
   const templateDocId = PER_DOMAIN_TEMPLATE_DOC[perDomain];
+  const rich = extractDetailDomainMeta(content, kind);
+  const listSection =
+    perDomain === "useCase" ? DEFAULT_LISTED_IN.useCase : DEFAULT_LISTED_IN.feature;
+  const domainType = perDomain === "useCase" ? "useCase" : "feature";
 
   const nodes: GraphNode[] = [
     {
@@ -374,7 +497,15 @@ export function detailFileToPatch(
       type: "document",
       output: path,
       perDomain,
-      title: primary.title ?? primary.id,
+      title: rich?.title ?? primary.title ?? primary.id,
+      ...(rich?.description ? { description: rich.description } : {}),
+    },
+    {
+      id: primary.id,
+      type: domainType,
+      title: rich?.title ?? primary.title ?? primary.id,
+      ...(rich?.description ? { description: rich.description } : {}),
+      ...(rich?.priority ? { priority: rich.priority } : {}),
     },
   ];
 
@@ -382,14 +513,17 @@ export function detailFileToPatch(
     { type: "rendersTo", from: primary.id, to: path },
     { type: "rendersTo", from: templateDocId, to: path },
     { type: "partOf", from: docId, to: templateDocId },
+    { type: "describedIn", from: primary.id, to: docId },
+    { type: "contains", from: listSection, to: docId },
   ];
 
   const sections = parseDetailSections(content, docId);
-  const sectionPatch = detailSectionsToPatch(docId, sections);
+  const sectionPatch = detailSectionsToPatch(docId, sections, content);
   nodes.push(...sectionPatch.nodes);
   edges.push(...sectionPatch.edges);
   for (const sec of sections) {
     edges.push({ type: "definedIn", from: primary.id, to: sec.id });
+    edges.push({ type: "describedIn", from: primary.id, to: sec.id });
   }
   if (sections.length === 0) {
     edges.push({ type: "definedIn", from: primary.id, to: docId });
@@ -402,10 +536,10 @@ export function mergeParsedDomains(domains: ParsedDomain[]): ParsedDomain {
   const out = emptyParsed();
   for (const d of domains) {
     for (const [id, meta] of d.useCases) {
-      addUseCase(out, id, meta.title);
+      addUseCase(out, id, meta);
     }
     for (const [id, meta] of d.features) {
-      addFeature(out, id, meta.title);
+      addFeature(out, id, meta);
     }
     for (const [id, meta] of d.actors) {
       out.actors.set(id, meta);
@@ -448,9 +582,14 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
       } else {
         const idx = allNodes.findIndex((x) => x.id === n.id);
         const existing = allNodes[idx]!;
-        if (!existing.title && n.title) {
-          allNodes[idx] = { ...existing, ...n };
+        const merged = { ...existing, ...n };
+        if (!n.title && existing.title) {
+          merged.title = existing.title;
         }
+        if (!n.description && existing.description) {
+          merged.description = existing.description;
+        }
+        allNodes[idx] = merged;
         if (n.type === "document" && n.output && !existing.output) {
           allNodes[idx] = { ...allNodes[idx]!, output: n.output };
         }

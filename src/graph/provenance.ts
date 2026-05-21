@@ -37,7 +37,14 @@ function collectKnowledgeRefs(
   item: Record<string, unknown>,
 ): string[] {
   const out: string[] = [];
-  const fields = ["derivedFrom", "sourceRefs", "sources", "sourceFiles", "source"];
+  const fields = [
+    "derivedFrom",
+    "sourceRef",
+    "sourceRefs",
+    "sources",
+    "sourceFiles",
+    "source",
+  ];
   for (const key of fields) {
     const v = item[key];
     if (typeof v === "string" && v.trim()) {
@@ -102,6 +109,9 @@ export function normalizeDataSourcePath(
     .trim()
     .replace(/^[`'"]+|[`'"]+$/g, "")
     .replace(/\\/g, "/");
+  if (s.includes("§")) {
+    s = s.split(/\s*§/)[0]!.trim();
+  }
   if (!s || s.includes("://")) {
     return undefined;
   }

@@ -15,7 +15,7 @@ Rebuild **graph**, re-merge **knowledge** staging, refresh **Graphify storage**,
 - Graph validate fails due to stale structure
 - `.ai-spector/index/*.md` is out of date vs `docs/srs/` or `docs/basic-design/`
 
-**Partial semantic refresh without `/analyze`:** After `/generate-srs`, index parses **UC/F/actor ids from markdown bodies** under `docs/srs/` and `docs/basic-design/` into the traceability graph. Per-domain detail files also get **`section` nodes** (from `###` headings / `<!-- section:... -->`) with **`definedIn`** from each UC/F to those sections—not only file-level `document` links. Index runs **Graphify `update` on changed sources** (`docs/data-source`, `docs/srs`, `docs/basic-design`).
+**Partial semantic refresh without `/analyze`:** After `/generate-srs`, index parses **UC/F/actor ids from markdown bodies** under `docs/srs/` and `docs/basic-design/` into the traceability graph. Per-domain detail files get **`doc.srs.uc-UC-01` / `doc.srs.f-F-01` document nodes**, **`section` nodes** with **`title`** + snippet **`description`** from real headings/body text, **`definedIn`** / **`describedIn`** from each UC/F to those sections, and **`contains`** from the list chapter to each detail doc. Domain **`title`** / **`description`** are refreshed from detail fields (`**Use Case Name:**`, `**Brief Description:**`, feature purpose)—not only list-table stubs. Index runs **Graphify `update` on changed sources** (`docs/data-source`, `docs/srs`, `docs/basic-design`).
 
 **Still requires `/analyze` for:** full Graphify MCP extract → `knowledge.json` (NFRs, data model, rich descriptions). Index re-merges existing `knowledge.json` when present; warns if SRS changed but knowledge is stale.
 
@@ -33,7 +33,7 @@ ai-spector index
 
 Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → **data-source provenance (`derivedFrom`)** → validate → doc indexes.
 
-**Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` source fields, SRS detail `Source:` lines, or inline path mentions) and optionally **`graphify:<nodeId>`** when Graphify `graph.json` matches a single symbol in that file. No evidence → no edge.
+**Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` **`sourceRef`** / `sourceRefs` / `derivedFrom`, SRS detail **`Source:`** lines, or inline `docs/data-source/…` mentions) and optionally **`graphify:<nodeId>`** when Graphify `graph.json` matches a single symbol in that file. No evidence → no edge.
 
 Flags:
 

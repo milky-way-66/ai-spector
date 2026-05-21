@@ -791,6 +791,11 @@
         "to": "sec.srs.1-introduction.l2.1.1-introduction"
       },
       {
+        "type": "rendersTo",
+        "from": "doc.srs.1-introduction",
+        "to": "docs/srs/1-introduction.md"
+      },
+      {
         "type": "partOf",
         "from": "sec.srs.1-introduction.l2.1.1-introduction",
         "to": "doc.srs.1-introduction"
@@ -854,6 +859,11 @@
         "type": "contains",
         "from": "doc.srs.2-overall-description",
         "to": "sec.srs.2-overall-description.l2.1.2-overall-description"
+      },
+      {
+        "type": "rendersTo",
+        "from": "doc.srs.2-overall-description",
+        "to": "docs/srs/2-overall-description.md"
       },
       {
         "type": "partOf",
@@ -936,6 +946,21 @@
         "to": "sec.srs.3-use-cases.l2.1.3-use-cases"
       },
       {
+        "type": "rendersTo",
+        "from": "doc.srs.3-use-cases",
+        "to": "docs/srs/3-use-cases.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.3-use-cases",
+        "to": "doc.srs.1-introduction"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.3-use-cases",
+        "to": "doc.srs.2-overall-description"
+      },
+      {
         "type": "partOf",
         "from": "sec.srs.3-use-cases.l2.1.3-use-cases",
         "to": "doc.srs.3-use-cases"
@@ -969,6 +994,16 @@
         "type": "contains",
         "from": "doc.srs.4-system-features",
         "to": "sec.srs.4-system-features.l2.1.4-system-features"
+      },
+      {
+        "type": "rendersTo",
+        "from": "doc.srs.4-system-features",
+        "to": "docs/srs/4-system-features.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.4-system-features",
+        "to": "doc.srs.3-use-cases"
       },
       {
         "type": "partOf",
@@ -1019,6 +1054,16 @@
         "type": "contains",
         "from": "doc.srs.5-data-requirements",
         "to": "sec.srs.5-data-requirements.l2.1.5-data-requirements"
+      },
+      {
+        "type": "rendersTo",
+        "from": "doc.srs.5-data-requirements",
+        "to": "docs/srs/5-data-requirements.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.5-data-requirements",
+        "to": "doc.srs.4-system-features"
       },
       {
         "type": "partOf",
@@ -1086,6 +1131,16 @@
         "to": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements"
       },
       {
+        "type": "rendersTo",
+        "from": "doc.srs.6-external-interfaces",
+        "to": "docs/srs/6-external-interfaces.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.6-external-interfaces",
+        "to": "doc.srs.4-system-features"
+      },
+      {
         "type": "partOf",
         "from": "sec.srs.6-external-interfaces.l2.1.6-external-interface-requirements",
         "to": "doc.srs.6-external-interfaces"
@@ -1149,6 +1204,21 @@
         "type": "contains",
         "from": "doc.srs.7-quality-attributes",
         "to": "sec.srs.7-quality-attributes.l2.1.7-non-functional-requirements-quality-attributes"
+      },
+      {
+        "type": "rendersTo",
+        "from": "doc.srs.7-quality-attributes",
+        "to": "docs/srs/7-quality-attributes.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.7-quality-attributes",
+        "to": "doc.srs.5-data-requirements"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.7-quality-attributes",
+        "to": "doc.srs.6-external-interfaces"
       },
       {
         "type": "partOf",
@@ -1231,6 +1301,21 @@
         "to": "sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements"
       },
       {
+        "type": "rendersTo",
+        "from": "doc.srs.8-internationalization",
+        "to": "docs/srs/8-internationalization.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.8-internationalization",
+        "to": "doc.srs.5-data-requirements"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.8-internationalization",
+        "to": "doc.srs.6-external-interfaces"
+      },
+      {
         "type": "partOf",
         "from": "sec.srs.8-internationalization.l2.1.8-internationalization-and-localization-requirements",
         "to": "doc.srs.8-internationalization"
@@ -1239,6 +1324,21 @@
         "type": "contains",
         "from": "doc.srs.9-other-requirements",
         "to": "sec.srs.9-other-requirements.l2.1.9-other-requirements"
+      },
+      {
+        "type": "rendersTo",
+        "from": "doc.srs.9-other-requirements",
+        "to": "docs/srs/9-other-requirements.md"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.9-other-requirements",
+        "to": "doc.srs.5-data-requirements"
+      },
+      {
+        "type": "dependsOn",
+        "from": "doc.srs.9-other-requirements",
+        "to": "doc.srs.6-external-interfaces"
       },
       {
         "type": "partOf",

@@ -27,6 +27,33 @@ describe("mergePatch", () => {
     expect(g.nodesById.has("sec.a")).toBe(false);
   });
 
+  it("upserts sections when document and section arrive in the same patch", () => {
+    const g = loadGraph([node("UC-01", "useCase")], []);
+    const result = mergePatch(g, {
+      version: 1,
+      nodes: [
+        node("sec.srs.uc-UC-01.l3.1.overview", "section", {
+          documentId: "doc.srs.uc-UC-01",
+          heading: "### 1. Use Case Overview",
+          title: "1. Use Case Overview",
+          level: 3,
+          order: 1,
+        }),
+        node("doc.srs.uc-UC-01", "document", {
+          output: "docs/srs/03-use-cases/uc-01-order.md",
+          perDomain: "useCase",
+        }),
+      ],
+      edges: [
+        { type: "contains", from: "doc.srs.uc-UC-01", to: "sec.srs.uc-UC-01.l3.1.overview" },
+        { type: "partOf", from: "sec.srs.uc-UC-01.l3.1.overview", to: "doc.srs.uc-UC-01" },
+      ],
+    });
+
+    expect(result.stats.nodesCreated).toBe(2);
+    expect(g.nodesById.has("sec.srs.uc-UC-01.l3.1.overview")).toBe(true);
+  });
+
   it("upserts sections under per-domain detail document instances", () => {
     const g = loadGraph(
       [

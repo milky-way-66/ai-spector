@@ -4,6 +4,10 @@ import type { ExtractPatch } from "./knowledge.js";
 
 const HEADING_RE = /^(#{2,4})\s+(.+)$/;
 const SECTION_ANCHOR_RE = /<!--\s*section:\s*([^\s>]+)\s*-->/;
+const BLOCKQUOTE_LINE_RE = /^\s*>/;
+const FIELD_LINE_RE = /^\s*\*\*[^*]+:\*\*/;
+const TABLE_LINE_RE = /^\s*\|/;
+const HR_RE = /^---+\s*$/;
 
 export interface ParsedDetailSection {
   id: string;
@@ -38,7 +42,92 @@ function resolveParentSectionId(
   return null;
 }
 
-/** Parse `###` headings and optional `<!-- section:sec.... -->` anchors from detail markdown. */
+function isSkippableBodyLine(line: string): boolean {
+  const t = line.trim();
+  if (!t) {
+    return true;
+  }
+  if (HEADING_RE.test(t)) {
+    return true;
+  }
+  if (BLOCKQUOTE_LINE_RE.test(line) || FIELD_LINE_RE.test(line)) {
+    return true;
+  }
+  if (TABLE_LINE_RE.test(line) || HR_RE.test(t)) {
+    return true;
+  }
+  if (t.startsWith("<!--")) {
+    return true;
+  }
+  return false;
+}
+
+/** First paragraph of prose after a heading (skips fields, blockquotes, tables). */
+export function snippetAfterHeading(content: string, heading: string): string | undefined {
+  const lines = content.split(/\r?\n/);
+  const needle = heading.trim().toLowerCase();
+  let start = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const m = HEADING_RE.exec(lines[i]!.trim());
+    if (m && m[2]!.trim().toLowerCase() === needle) {
+      start = i + 1;
+      break;
+    }
+  }
+  if (start < 0) {
+    return undefined;
+  }
+
+  const parts: string[] = [];
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (HEADING_RE.test(line.trim())) {
+      break;
+    }
+    if (isSkippableBodyLine(line)) {
+      if (parts.length > 0) {
+        break;
+      }
+      continue;
+    }
+    const t = line.trim();
+    if (BLOCKQUOTE_LINE_RE.test(line)) {
+      const quoted = t.replace(/^>\s*/, "").trim();
+      if (quoted) {
+        parts.push(quoted);
+      }
+      continue;
+    }
+    parts.push(t);
+    if (parts.join(" ").length >= 40) {
+      break;
+    }
+  }
+
+  const text = parts.join(" ").replace(/\s+/g, " ").trim();
+  if (text.length < 12) {
+    return undefined;
+  }
+  return text.length > 320 ? `${text.slice(0, 317)}…` : text;
+}
+
+/** Map section headings to body snippets for graph `description` fields. */
+export function sectionSnippetsFromContent(
+  content: string,
+  sections: ParsedDetailSection[],
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const sec of sections) {
+    const snippet = snippetAfterHeading(content, sec.heading);
+    if (snippet) {
+      out.set(sec.id, snippet);
+    }
+  }
+  return out;
+}
+
+/** Parse `##`–`####` headings and optional `<!-- section:sec.... -->` anchors from detail markdown. */
 export function parseDetailSections(
   content: string,
   documentId: string,
@@ -53,9 +142,6 @@ export function parseDetailSections(
     const anchorMatch = SECTION_ANCHOR_RE.exec(trimmed);
     if (anchorMatch) {
       pendingAnchor = anchorMatch[1]!.trim();
-      continue;
-    }
-    if (line.startsWith(">")) {
       continue;
     }
     const m = HEADING_RE.exec(trimmed);
@@ -77,15 +163,26 @@ export function parseDetailSections(
 export function detailSectionsToPatch(
   documentId: string,
   sections: ParsedDetailSection[],
+  content?: string,
 ): ExtractPatch {
-  const nodes: GraphNode[] = sections.map((sec) => ({
-    id: sec.id,
-    type: "section",
-    documentId,
-    heading: sec.heading,
-    level: sec.level,
-    order: sec.order,
-  }));
+  const snippets = content ? sectionSnippetsFromContent(content, sections) : new Map();
+
+  const nodes: GraphNode[] = sections.map((sec) => {
+    const node: GraphNode = {
+      id: sec.id,
+      type: "section",
+      documentId,
+      heading: sec.heading,
+      title: sec.heading,
+      level: sec.level,
+      order: sec.order,
+    };
+    const description = snippets.get(sec.id);
+    if (description) {
+      node.description = description;
+    }
+    return node;
+  });
 
   const edges: GraphEdge[] = [];
   for (let i = 0; i < sections.length; i++) {

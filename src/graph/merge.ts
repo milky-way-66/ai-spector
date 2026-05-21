@@ -33,6 +33,22 @@ export function normalizePatch(input: ExtractPatch | Partial<ExtractPatch>): Ext
   };
 }
 
+const PATCH_NODE_ORDER: Record<string, number> = {
+  document: 0,
+  actor: 1,
+  useCase: 1,
+  feature: 1,
+  requirement: 1,
+  dataEntity: 1,
+  section: 2,
+  table: 3,
+  diagram: 3,
+};
+
+function patchNodeSortKey(node: GraphNode): number {
+  return PATCH_NODE_ORDER[node.type] ?? 9;
+}
+
 export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResult {
   const stats: MergeStats = {
     nodesCreated: 0,
@@ -41,7 +57,11 @@ export function mergePatch(graph: InMemoryGraph, patch: ExtractPatch): MergeResu
     nodesSkipped: 0,
   };
 
-  for (const node of patch.nodes) {
+  const sortedNodes = [...patch.nodes].sort(
+    (a, b) => patchNodeSortKey(a) - patchNodeSortKey(b),
+  );
+
+  for (const node of sortedNodes) {
     if (node.type === "section") {
       const parentDoc = graph.nodesById.get(String(node.documentId ?? ""));
       if (parentDoc && isPerDomainInstanceDocument(parentDoc)) {

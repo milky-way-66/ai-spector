@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InMemoryGraph } from "../../src/graph/InMemoryGraph.js";
 import { mergePatch } from "../../src/graph/merge.js";
+import { normalizeDataSourcePath } from "../../src/graph/provenance.js";
 import {
   graphifyNodeTargetId,
   loadGraphifyIndex,
@@ -10,6 +11,19 @@ import { node } from "../helpers/graph.js";
 import { mkdtemp, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+
+describe("normalizeDataSourcePath", () => {
+  it("maps knowledge-style sourceRef paths under docs/data-source", () => {
+    expect(
+      normalizeDataSourcePath(
+        "requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md §1-4",
+        "docs/data-source",
+      ),
+    ).toBe(
+      "docs/data-source/requirement/SAKUSEN_TOKYO_Development_Request_Outline_v1.en.md",
+    );
+  });
+});
 
 describe("derivedFrom path targets", () => {
   it("loads derivedFrom without a target node", () => {
