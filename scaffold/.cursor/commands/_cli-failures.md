@@ -112,10 +112,11 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 - **Means:** Changed paths are not linked to `document` / `section` nodes (e.g. only `README.md` or `src/`).
 - **Fix:** Run impact on doc paths under `docs/` or `.ai-spector/`; or **`/impact`** with a short description of the traceability change.
 
-### Stale graph or indexes after manual edits
+### Stale graph or indexes after manual edits or `/generate-srs`
 
-- **Means:** User changed `docs/data-source/`, SRS outputs, or templates without re-running ingest.
-- **Fix:** Run **`ai-spector index`** (or **`/index`** in Cursor). For semantic re-extract of actors/use cases, still run **`/analyze`** after index fixes structure.
+- **Means:** User changed `docs/data-source/`, SRS outputs, or templates without re-running ingest; graph still shows template-only domain nodes.
+- **Fix:** Run **`ai-spector index`** (or **`/index`**). Index merges `knowledge.json`, parses UC/F/actor ids from `docs/srs/` bodies, and runs Graphify on **changed** paths (`docs/data-source`, `docs/srs`, `docs/basic-design`). Use **`--force-graphify`** if Graphify output must rebuild entirely.
+- **Still stale domain detail?** Re-run **`/analyze`** for Graphify MCP → fresh `knowledge.json`.
 
 ### Graphify wrote `docs/data-source/graphify-out/`
 

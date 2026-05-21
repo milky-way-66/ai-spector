@@ -21,7 +21,7 @@ Add source material under `docs/data-source/`, open the project in Cursor, **rel
 | 2 | **`/validate-graph`** | `ai-spector graph validate` |
 | 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
-| — | **`/index`** | After manual edits: `ai-spector index` (graph + knowledge merge + Graphify + doc indexes) |
+| — | **`/index`** | After manual edits or **`/generate-srs`**: `ai-spector index` (structure + knowledge merge + **SRS body extract** + Graphify on changed paths + doc indexes) |
 | 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
 | After edits | **`/impact`** [what changed] | Empty args → `git diff` + resolve seeds; else describe change → `graph impact <id> --json` (or `--git` / `--file`) |
@@ -37,6 +37,7 @@ docs/data-source/            ← add files
 /analyze
 /validate-graph
 /generate-srs
+/index
 ```
 
 ## If something fails

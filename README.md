@@ -30,7 +30,7 @@ Put your source files in `docs/data-source/`, open the folder in Cursor, turn on
 | **`/generate-basic-design`** | All, listed files, or request (confirm) — graph + SRS context, by waves |
 | **`/generate-detail-design`** | Detail design from the graph |
 | **`/impact`** [what changed] | Shows what to regenerate after you change something (agent resolves graph seed) |
-| **`/index`** (or `ai-spector index`) | Rebuild graph structure, re-merge knowledge, Graphify storage, doc indexes after manual file edits |
+| **`/index`** (or `ai-spector index`) | Rebuild graph, merge knowledge, parse UC/F from SRS bodies, Graphify on changed paths, doc indexes — run after `/generate-srs` |
 | **`/summary`** (optional) | Build `.ai-spector/index/*.md` doc summaries — not the same as full `/index` |
 
 **Typical path:**
@@ -145,9 +145,9 @@ npm run init:example
 | `ai-spector graph visualize [--open]` | HTML report |
 | `ai-spector graph query <id> --json` | Context for generation |
 | `ai-spector graph impact <id> --json` | Regen scope (or `--file` / `--heading` / `--git` for current diff) |
-| `ai-spector index` | Refresh graph + knowledge merge + Graphify + `.ai-spector/index/` (see flags below) |
+| `ai-spector index` | Refresh graph + knowledge merge + SRS body extract + Graphify + `.ai-spector/index/` (see flags below) |
 
-**`ai-spector index` flags:** `--graph-only`, `--docs-only`, `--skip-graphify`, `--skip-docs`, `--skip-merge`, `--skip-validate`
+**`ai-spector index` flags:** `--graph-only`, `--docs-only`, `--skip-graphify`, `--skip-docs`, `--skip-merge`, `--skip-doc-semantics`, `--force-graphify`, `--skip-validate`
 
 Option: `-r <path>` to point at another project root.
 

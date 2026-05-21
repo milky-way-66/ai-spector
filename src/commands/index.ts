@@ -5,6 +5,10 @@ import { bootstrapFromRegistry } from "./bootstrap.js";
 import { validateGraph, formatIssues } from "./validate.js";
 import { runGraphMerge } from "./graph-merge.js";
 import { runGraphifyUpdate } from "./graphify-update.js";
+import {
+  knowledgeStaleWarning,
+  runDocSemanticMerge,
+} from "../index/doc-semantics.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { loadDocflowConfig } from "../config/load.js";
@@ -42,7 +46,10 @@ export interface IndexOptions {
   skipGraphify?: boolean;
   skipDocs?: boolean;
   skipMerge?: boolean;
+  skipDocSemantics?: boolean;
   skipValidate?: boolean;
+  /** Re-run Graphify on all sources even when content hash unchanged */
+  forceGraphify?: boolean;
 }
 
 export interface IndexReport {
@@ -176,14 +183,65 @@ export async function runIndex(
       }
     }
 
+    if (!opts.skipDocSemantics && !failed) {
+      try {
+        const docResult = await runDocSemanticMerge({
+          projectRoot,
+          graphPath: paths.graph,
+        });
+        if (docResult.merged) {
+          graphJson = await readJson<TraceabilityGraph>(paths.graph);
+          const stale = await knowledgeStaleWarning(projectRoot, docResult.sourceHashes);
+          record({
+            id: "docs-semantic-merge",
+            label: "SRS/docs → graph (body extract)",
+            status: "ok",
+            detail: stale ? `${docResult.detail}\n      ⚠ ${stale}` : docResult.detail,
+          });
+        } else {
+          record({
+            id: "docs-semantic-merge",
+            label: "SRS/docs → graph (body extract)",
+            status: "skipped",
+            detail: docResult.detail,
+          });
+        }
+      } catch (err) {
+        record({
+          id: "docs-semantic-merge",
+          label: "SRS/docs → graph (body extract)",
+          status: "failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else if (opts.skipDocSemantics) {
+      record({
+        id: "docs-semantic-merge",
+        label: "SRS/docs → graph (body extract)",
+        status: "skipped",
+        detail: "--skip-doc-semantics",
+      });
+    }
+
     if (runGraphify && !failed) {
       try {
-        await runGraphifyUpdate({ root: projectRoot });
+        const gf = await runGraphifyUpdate({
+          root: projectRoot,
+          force: opts.forceGraphify,
+        });
+        const runDetail =
+          gf.sourcesRun.length > 0
+            ? `updated: ${gf.sourcesRun.join(", ")}`
+            : "no source changes";
+        const skipDetail =
+          gf.sourcesSkipped.length > 0
+            ? `; unchanged: ${gf.sourcesSkipped.join(", ")}`
+            : "";
         record({
           id: "graphify-storage",
           label: "Graphify index & graph.json",
           status: "ok",
-          detail: ".ai-spector/.docflow/graph/graphify-out/",
+          detail: `${runDetail}${skipDetail}`,
         });
       } catch (err) {
         record({
@@ -360,6 +418,11 @@ function printIndexSummary(steps: IndexStepResult[], failed: boolean): void {
     console.log("Re-run after fixing, or use flags: --skip-graphify, --skip-merge, --graph-only");
   } else {
     console.log("All requested steps completed.");
-    console.log("Semantic knowledge re-extract still requires /analyze in Cursor (Graphify MCP).");
+    console.log(
+      "Full semantic re-extract (actors, NFRs, data model) still uses /analyze + Graphify MCP → knowledge.json.",
+    );
+    console.log(
+      "Index merges existing knowledge plus UC/F/actor ids parsed from docs/srs and docs/basic-design bodies.",
+    );
   }
 }

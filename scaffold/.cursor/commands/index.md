@@ -15,13 +15,32 @@ Rebuild **graph**, re-merge **knowledge** staging, refresh **Graphify storage**,
 - Graph validate fails due to stale structure
 - `.ai-spector/index/*.md` is out of date vs `docs/srs/` or `docs/basic-design/`
 
-**Does not replace `/analyze` for semantic extract** — `knowledge.json` is still produced by Graphify MCP during `/analyze`. This command re-merges existing knowledge and rebuilds structure/indexes.
+**Partial semantic refresh without `/analyze`:** After `/generate-srs`, index parses **UC/F/actor ids from markdown bodies** under `docs/srs/` and `docs/basic-design/` into the traceability graph, and runs **Graphify `update` on changed sources** (`docs/data-source`, `docs/srs`, `docs/basic-design`).
+
+**Still requires `/analyze` for:** full Graphify MCP extract → `knowledge.json` (NFRs, data model, rich descriptions). Index re-merges existing `knowledge.json` when present; warns if SRS changed but knowledge is stale.
 
 ## Required Behavior (agent runs CLI)
 
 ```bash
 ai-spector index
 ```
+
+After **`/generate-srs`** (recommended):
+
+```bash
+ai-spector index
+```
+
+Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → Graphify (changed paths only) → validate → doc indexes.
+
+Flags:
+
+| Flag | Effect |
+|------|--------|
+| `--force-graphify` | Re-index all Graphify sources even when content hash unchanged |
+| `--skip-doc-semantics` | Skip UC/F parsing from `docs/srs` and `docs/basic-design` |
+| `--skip-merge` | Skip `knowledge.json` merge |
+| `--skip-graphify` | Skip Graphify CLI entirely |
 
 On Graphify missing or CI without `uv`:
 

@@ -56,6 +56,11 @@ program
   .option("--skip-graphify", "Skip Graphify update (code graph / graphify-index)")
   .option("--skip-docs", "Skip .ai-spector/index document indexes")
   .option("--skip-merge", "Skip merging knowledge.json into graph")
+  .option(
+    "--skip-doc-semantics",
+    "Skip parsing docs/srs and docs/basic-design for UC/F/actor ids into the graph",
+  )
+  .option("--force-graphify", "Re-run Graphify update on all sources even when unchanged")
   .option("--skip-validate", "Skip graph validate after refresh")
   .action(async (opts, cmd) => {
     await runIndex({
@@ -65,6 +70,8 @@ program
       skipGraphify: opts.skipGraphify,
       skipDocs: opts.skipDocs,
       skipMerge: opts.skipMerge,
+      skipDocSemantics: opts.skipDocSemantics,
+      forceGraphify: opts.forceGraphify,
       skipValidate: opts.skipValidate,
     });
   });
@@ -95,11 +102,13 @@ graphify
     "--keep-stale",
     "Do not delete docs/data-source/graphify-out if Graphify wrote it there by mistake",
   )
+  .option("--force", "Re-run update on all configured sources even when content hash unchanged")
   .action(async (path: string | undefined, opts, cmd) => {
     await runGraphifyUpdate({
       root: projectRootOpt(cmd),
       sourcePath: path,
       removeStaleOutput: !opts.keepStale,
+      force: opts.force,
     });
   });
 

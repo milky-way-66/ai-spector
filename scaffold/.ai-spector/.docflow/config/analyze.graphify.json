@@ -15,6 +15,10 @@
     "include": [
       "docs/data-source"
     ],
+    "docSources": [
+      "docs/srs",
+      "docs/basic-design"
+    ],
     "exclude": [
       ".git/**",
       "node_modules/**",
@@ -22,8 +26,6 @@
       "build/**",
       ".next/**",
       "coverage/**",
-      "docs/srs/**",
-      "docs/basic-design/**",
       "docs/detail-design/**",
       "docs/data-source/graphify-out/**",
       "**/graphify-out/**",

@@ -146,6 +146,13 @@ Append to `.ai-spector/.docflow/logs/generate-srs.log` (create if needed): times
 ### 4. Finish
 
 - Final `ai-spector graph validate`.
+- **Refresh indexes and semantic graph** (parses UC/F/actor ids from generated markdown + updates Graphify on changed paths):
+
+```bash
+ai-spector index
+```
+
+Use `ai-spector index --force-graphify` if Graphify storage should rebuild even when file hashes are unchanged.
 - Optional: `/visualize-graph` for user review.
 - Suggest `/summary srs` only after graph ingest is complete.
 
