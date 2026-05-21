@@ -3,7 +3,7 @@
 **Status:** Target specification (v3)  
 **Date:** 2026-05-21  
 **Audience:** Implementers, Cursor agent authors, reviewers  
-**Supersedes (conceptually):** file-only DAG, flat `knowledge.json`, Graphify-as-truth, manual `/index-docs`
+**Supersedes (conceptually):** file-only DAG, flat `knowledge.json`, Graphify-as-truth, manual `/summary`
 
 ---
 
@@ -632,7 +632,7 @@ See [Package layout](#package-layout). Generated SRS remains under `docs/srs/`; 
 | **P1** | `query`, `merge`, `docflow-ingest`, `/extract` → patch | `/analyze` partial |
 | **P2** | `impact`, `rules.impact.json`, `/graph-impact` command | — |
 | **P3** | `/generate-srs` from graph, `export matrix` | file DAG primary |
-| **P4** | Workflow prerequisites on graph; optional `/sync-graph` | `/index-docs` gate |
+| **P4** | Workflow prerequisites on graph; optional `/sync-graph` | `/summary` gate |
 | **P5** | Basic/detail + `tracesTo`; GitNexus downstream | — |
 | **P6** | Optional UI; SQLite cache if profiled | — |
 
@@ -704,7 +704,7 @@ Reference: [SARA smart-home example](https://github.com/cledouarec/sara/tree/mai
 | `/analyze` | `docflow-ingest` + `/extract` + `merge` |
 | `knowledge.json` | `traceability.graph.json` (domain slice) |
 | `dag.srs.json` | `docflow-graph plan srs` from graph |
-| `/index-docs` | `graph_neighbors` / `export`; deprecated as gate at P4 |
+| `/summary` | `graph_neighbors` / `export`; deprecated as gate at P4 |
 | `/bootstrap-sections` | `docflow-graph bootstrap` |
 | `/validate-graph` | `docflow-graph validate` |
 | `/graph-impact` | `docflow-graph impact` |

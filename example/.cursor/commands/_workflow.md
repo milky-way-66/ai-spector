@@ -18,7 +18,8 @@ Add source material under `docs/data-source/`, open the project in Cursor, and e
 | 1 | **`/analyze`** | `ai-spector analyze` → Graphify extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
 | 2 | **`/validate-graph`** | `ai-spector graph validate` |
 | 3 | **`/generate-srs`** | `graph validate` → `graph query <seed> --json` per target → write docs → `graph validate` |
-| 4 | **`/index-docs srs`** (optional) | index update per command |
+| 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
+| — | **`/index`** | After manual edits: `ai-spector index` (graph + knowledge merge + Graphify + doc indexes) |
 | 5 | **`/generate-basic-design`** | same `graph query` pattern |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
 | After edits | **`/graph-impact <nodeId>`** | `graph impact <id> --json` |

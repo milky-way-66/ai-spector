@@ -21,7 +21,7 @@ That copies scaffold files into `example/`. You do **not** need to run `analyze`
 3. **`/visualize-graph`** (optional) — browser report.
 4. **`/validate-graph`**
 5. **`/generate-srs`**
-6. Optional: **`/index-docs srs`**, **`/generate-basic-design`**
+6. Optional: **`/summary srs`**, **`/generate-basic-design`**
 
 See `.cursor/commands/_workflow.md`.
 

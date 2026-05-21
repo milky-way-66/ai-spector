@@ -102,6 +102,11 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
   `GRAPHIFY_OUT=.ai-spector/.docflow/graph/graphify-out graphify update docs/data-source`  
   Then delete `docs/data-source/graphify-out/` if it exists.
 
+### Stale graph or indexes after manual edits
+
+- **Means:** User changed `docs/data-source/`, SRS outputs, or templates without re-running ingest.
+- **Fix:** Run **`ai-spector index`** (or **`/index`** in Cursor). For semantic re-extract of actors/use cases, still run **`/analyze`** after index fixes structure.
+
 ### Graphify wrote `docs/data-source/graphify-out/`
 
 - **Means:** `graphify update` ran without `GRAPHIFY_OUT`.

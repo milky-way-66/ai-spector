@@ -59,7 +59,7 @@ Reply **yes** to proceed, **no** to cancel, or edit the list.
 
 - Merged graph (`/analyze`), **`ai-spector graph validate`**
 - Minimum SRS on disk (see workflow checks)
-- Recommended: `/index-docs srs` for summaries; refresh `/index-docs basic-design` after this command
+- Recommended: `/summary srs` for summaries; refresh `/summary basic-design` after this command
 
 Config:
 
@@ -132,7 +132,7 @@ Append `.ai-spector/.docflow/logs/generate-basic-design.log`.
 ### 4. Finish
 
 - Final `graph validate`.
-- Suggest **`/index-docs basic-design`** (required by workflow before detail design).
+- Suggest **`/summary basic-design`** (required by workflow before detail design).
 
 ## Waves (reference)
 

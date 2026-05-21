@@ -13,6 +13,7 @@ import { runGraphImpact } from "./commands/graph-impact.js";
 import { runGraphMerge } from "./commands/graph-merge.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
 import { runGraphifyUpdate } from "./commands/graphify-update.js";
+import { runIndex } from "./commands/index.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -42,6 +43,29 @@ program
     await runInit({
       targetDir: resolve(opts.cwd ?? process.cwd()),
       force: opts.force,
+    });
+  });
+
+program
+  .command("index")
+  .description(
+    "Refresh graph, knowledge merge, Graphify storage, and doc indexes from current project files",
+  )
+  .option("--graph-only", "Only registry + bootstrap + merge + validate (no Graphify, no doc indexes)")
+  .option("--docs-only", "Only rebuild .ai-spector/index/*.md and state hashes")
+  .option("--skip-graphify", "Skip Graphify update (code graph / graphify-index)")
+  .option("--skip-docs", "Skip .ai-spector/index document indexes")
+  .option("--skip-merge", "Skip merging knowledge.json into graph")
+  .option("--skip-validate", "Skip graph validate after refresh")
+  .action(async (opts, cmd) => {
+    await runIndex({
+      root: projectRootOpt(cmd),
+      graphOnly: opts.graphOnly,
+      docsOnly: opts.docsOnly,
+      skipGraphify: opts.skipGraphify,
+      skipDocs: opts.skipDocs,
+      skipMerge: opts.skipMerge,
+      skipValidate: opts.skipValidate,
     });
   });
 

@@ -24,6 +24,8 @@ Never ignore CLI errors and “work around” with index files, manual BFS, or i
 | Command | Agent runs CLI |
 |---------|----------------|
 | `/analyze` | `analyze` → `graphify update` → Graphify MCP extract → `graph merge` → `graph validate` |
+| `/index` | `ai-spector index` — rebuild graph structure, re-merge knowledge, Graphify storage, doc indexes |
+| `/summary` | Build `.ai-spector/index/*.md` summaries (optional; graph is primary for generation) |
 | `/validate-graph` | `graph validate` |
 | `/visualize-graph` | `graph visualize --open` |
 | `/generate-srs` | All DAG, explicit paths, or natural-language scope (confirm before gen) → waves → query → write → merge |

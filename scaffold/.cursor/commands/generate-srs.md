@@ -147,7 +147,7 @@ Append to `.ai-spector/.docflow/logs/generate-srs.log` (create if needed): times
 
 - Final `ai-spector graph validate`.
 - Optional: `/visualize-graph` for user review.
-- Suggest `/index-docs srs` only after graph ingest is complete.
+- Suggest `/summary srs` only after graph ingest is complete.
 
 ## Waves (reference)
 

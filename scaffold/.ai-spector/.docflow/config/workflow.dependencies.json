@@ -88,12 +88,12 @@
         ]
       },
       "onSuccess": {
-        "optionalNext": ["/index-docs srs", "/generate-basic-design"],
+        "optionalNext": ["/summary srs", "/generate-basic-design"],
         "why": "Use graph_neighbors for downstream generate; index is optional fallback."
       }
     },
-    "index-docs-srs": {
-      "command": "/index-docs srs",
+    "summary-srs": {
+      "command": "/summary srs",
       "requires": [],
       "checks": [
         {
@@ -141,13 +141,13 @@
           "id": "srs-index-file",
           "type": "pathExists",
           "path": ".ai-spector/index/srs.md",
-          "fail": "SRS index missing at .ai-spector/index/srs.md — run /index-docs srs first."
+          "fail": "SRS index missing at .ai-spector/index/srs.md — run /summary srs first."
         },
         {
           "id": "srs-index-populated",
           "type": "indexPopulated",
           "path": ".ai-spector/index/srs.md",
-          "fail": "SRS index is empty or placeholder — run /index-docs srs after SRS files exist."
+          "fail": "SRS index is empty or placeholder — run /summary srs after SRS files exist."
         }
       ],
       "usesGraph": true,
@@ -158,15 +158,15 @@
           "Run /generate-srs until minimum SRS exists",
           "Use graph_neighbors from target feature ids"
         ],
-        "optionalNext": ["/index-docs basic-design"]
+        "optionalNext": ["/summary basic-design"]
       },
       "onSuccess": {
-        "requiredNext": ["/index-docs basic-design"],
+        "requiredNext": ["/summary basic-design"],
         "why": "Refresh .ai-spector/index/basic-design.md before /generate-detail-design."
       }
     },
-    "index-docs-basic-design": {
-      "command": "/index-docs basic-design",
+    "summary-basic-design": {
+      "command": "/summary basic-design",
       "requires": [],
       "checks": [
         {
@@ -214,7 +214,7 @@
           "id": "srs-index-populated",
           "type": "indexPopulated",
           "path": ".ai-spector/index/srs.md",
-          "fail": "SRS index not built — run /index-docs srs before detail design."
+          "fail": "SRS index not built — run /summary srs before detail design."
         },
         {
           "id": "basic-design-index-when-outputs-exist",
@@ -222,7 +222,7 @@
           "indexPath": ".ai-spector/index/basic-design.md",
           "sourcePath": "docs/basic-design",
           "sourceGlob": "**/*.md",
-          "fail": "Basic design outputs exist but .ai-spector/index/basic-design.md is missing or placeholder — run /index-docs basic-design."
+          "fail": "Basic design outputs exist but .ai-spector/index/basic-design.md is missing or placeholder — run /summary basic-design."
         }
       ],
       "usesGraph": true,
@@ -240,8 +240,8 @@
         "optionalNext": []
       }
     },
-    "index-docs": {
-      "command": "/index-docs",
+    "summary": {
+      "command": "/summary",
       "requires": [],
       "checks": [],
       "onWarn": {
@@ -252,9 +252,9 @@
   "pipeline": [
     "analyze",
     "generate-srs",
-    "index-docs-srs",
+    "summary-srs",
     "generate-basic-design",
-    "index-docs-basic-design",
+    "summary-basic-design",
     "generate-detail-design"
   ],
   "graphUsage": {
@@ -265,7 +265,7 @@
   },
   "indexUsage": {
     "rule": "Fallback only when graph domain nodes are missing or graph_neighbors returns an empty subgraph. Otherwise prefer graphUsage.rule.",
-    "afterGenerateSrs": "/index-docs srs",
-    "afterGenerateBasicDesign": "/index-docs basic-design"
+    "afterGenerateSrs": "/summary srs",
+    "afterGenerateBasicDesign": "/summary basic-design"
   }
 }

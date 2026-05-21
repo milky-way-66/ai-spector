@@ -20,7 +20,8 @@ Add source material under `docs/data-source/`, open the project in Cursor, **rel
 | 1 | **`/analyze`** | `ai-spector analyze` → `ai-spector graphify update` → Graphify MCP extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
 | 2 | **`/validate-graph`** | `ai-spector graph validate` |
 | 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
-| 4 | **`/index-docs srs`** (optional) | index update per command |
+| 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
+| — | **`/index`** | After manual edits: `ai-spector index` (graph + knowledge merge + Graphify + doc indexes) |
 | 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
 | After edits | **`/graph-impact <nodeId>`** | `graph impact <id> --json` |
