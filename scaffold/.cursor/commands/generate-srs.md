@@ -103,7 +103,7 @@ Read **only** paths from `projectionPaths` plus targeted `docs/data-source/**` f
 
 #### 3b. Write one file
 
-- Use template from `node_modules/ai-spector/templates/srs/` (or monorepo `../templates/srs/`).
+- Read the DAG `template` file under **`.ai-spector/templates/`** (e.g. `.ai-spector/templates/srs/1-introduction.md`). Missing folder → user must run `npx ai-spector init`.
 - Content must match graph: UC list from `listedIn` on `useCase` nodes; features from `feature` + `satisfies`.
 - No fabricated requirements.
 

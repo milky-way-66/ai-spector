@@ -83,7 +83,8 @@ Respect `regenerate` / `review` buckets; do not rewrite unrelated chapters.
 
 ### D. Write
 
-- Fill the bundled template for that target only.
+- **Read the template** from `.ai-spector/templates/` (path = DAG `template` value, e.g. `srs/3-use-cases.md`, `basic_design/list-api-template.md`). If missing, stop and ask the user to run `npx ai-spector init`.
+- Fill that template for the target only — keep all required headings/sections; replace placeholders with graph-backed content.
 - Cross-check every UC/F reference against `nodes` from query JSON.
 - Add section anchors `<!-- section:sec.... -->` where templates expect them.
 

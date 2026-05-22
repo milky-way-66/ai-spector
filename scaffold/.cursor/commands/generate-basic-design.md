@@ -96,7 +96,7 @@ ai-spector graph validate
 
 #### 3b. Write
 
-- Templates: `node_modules/ai-spector/templates/basic_design/` (monorepo: `../templates/basic_design/`).
+- Read DAG `template` files under **`.ai-spector/templates/`** (e.g. `.ai-spector/templates/basic_design/list-screen-template.md`). Missing folder → user must run `npx ai-spector init`.
 - Align API/screen names with graph `feature` titles and SRS feature detail files.
 
 #### 3c. Ingest (mandatory before next wave)

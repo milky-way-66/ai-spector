@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { scaffoldBundleRoot } from "../config/load.js";
+import { packageBundleRoot, scaffoldBundleRoot } from "../config/load.js";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
 import { ensureGraphifyMcpConfig } from "../util/mcp.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
@@ -22,6 +22,10 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   const scaffold = scaffoldBundleRoot();
   await copyTree(scaffold, root);
+
+  const projectTemplates = join(root, ".ai-spector", "templates");
+  await mkdir(projectTemplates, { recursive: true });
+  await copyTree(join(packageBundleRoot(), "templates"), projectTemplates);
 
   const dirs = [
     ".ai-spector/graph",
@@ -58,6 +62,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   console.log("");
   console.log(`  MCP       → ${mcpPath} (Graphify server added/updated)`);
   console.log(`  gitignore → ${gitignorePath} (ai-spector block added/updated)`);
+  console.log(`  templates → ${projectTemplates} (SRS / basic / detail design)`);
   console.log("");
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");

@@ -17,7 +17,7 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Put your source files in `docs/data-source/`, open the folder in Cursor, turn on the **ai-spector** skill, and **reload MCP** (init writes `.cursor/mcp.json` for Graphify).
+Put your source files in `docs/data-source/`, open the folder in Cursor, turn on the **ai-spector** skill, and **reload MCP** (init writes `.cursor/mcp.json` for Graphify). Init also copies SRS/basic/detail **templates** into `.ai-spector/templates/` so agents always find them in the project.
 
 **Graphify requires:** [uv](https://docs.astral.sh/uv/) installed; package `graphifyy` is pulled via `uv tool run` on first MCP start.
 
@@ -112,6 +112,7 @@ your-project/
   .cursor/commands/          # /analyze, /index, /impact, …
   .cursor/skills/ai-spector/
   .ai-spector/
+    templates/                 # SRS / basic_design / detail_design (from init)
     graph/traceability.graph.json
     .docflow/analysis/knowledge.json
     index/                     # optional summaries (/summary)

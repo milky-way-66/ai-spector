@@ -2,6 +2,7 @@
   "version": 1,
   "paths": {
     "graph": ".ai-spector/graph/traceability.graph.json",
-    "registry": ".ai-spector/registry/section-registry.json"
+    "registry": ".ai-spector/registry/section-registry.json",
+    "templates": ".ai-spector/templates"
   }
 }

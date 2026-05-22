@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **`init` copies templates** — `npx ai-spector init` installs `.ai-spector/templates/` (SRS, basic design, detail design) and sets `paths.templates` in `docflow.config.json`. Cursor skill and generate commands require agents to read templates from that path (not `node_modules`).
 - **Basic-design doc extract** — `ai-spector index` parses `docs/basic-design/api/f-*.md` and `docs/basic-design/screens/*.md` into `doc.bd.*` documents, section trees, `tracesTo`/`definedIn` from features (same model as SRS detail files).
 - **Tri-layer hubs and agent semantic merge** — `bundle.source` / `bundle.business` / `sourceFile` nodes (index + `graph ensure-bundles`); `derivedFrom` prefers `source.file:*` when the source hub exists; **`relatesTo`** edges via `graph merge --semantic` and `/link-graph`; **`graph report`** for layer health and suggested CLI/agent commands.
 - **Data-source provenance** — `ai-spector index` and `ai-spector graph link-sources` add **`derivedFrom`** edges from domain nodes (`UC-*`, `F-*`, requirements, actors) to `docs/data-source/**` paths and optional `graphify:<nodeId>` targets when Graphify `graph.json` matches; evidence from `knowledge.json` source fields, SRS detail `Source:` / path mentions, and Graphify file index. Visualize shows teal **source** / **graphify** nodes and colored `derivedFrom` edges; `graph query` traverses `derivedFrom` and includes data-source paths in `projectionPaths`.

@@ -47,6 +47,7 @@ function configPath(root: string): string {
 const DEFAULT_PATHS = {
   graph: ".ai-spector/graph/traceability.graph.json",
   registry: ".ai-spector/registry/section-registry.json",
+  templates: ".ai-spector/templates",
 } as const;
 
 export async function loadDocflowConfig(
@@ -59,9 +60,18 @@ export async function loadDocflowConfig(
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
+      templates: raw.paths?.templates ?? DEFAULT_PATHS.templates,
     },
   };
   return { root, config, configFile };
+}
+
+/** Resolved absolute path to project-local templates (`.ai-spector/templates`). */
+export function resolveProjectTemplatesDir(
+  root: string,
+  config: DocflowConfig,
+): string {
+  return resolve(root, config.paths.templates ?? DEFAULT_PATHS.templates);
 }
 
 export function resolveFromRoot(root: string, relativePath: string): string {

@@ -31,7 +31,7 @@ Warn if no files to index; do not block. See `workflow.dependencies.json` warn s
 ## Guardrails
 
 - Summaries do **not** replace graph for `/generate-*` when graph is populated.
-- Never summarize templates or `node_modules/ai-spector/templates/`.
+- Never summarize templates under `.ai-spector/templates/` (reference only during generation).
 
 ## Success
 

@@ -43,4 +43,20 @@ Context: **`ai-spector graph query <seedId> --json`** — depth 4 for targets, d
 
 **Generate:** accuracy over speed — batch only same-wave independent targets; merge + validate after each wave.
 
-Templates: `node_modules/ai-spector/templates/` (monorepo `example/`: `../templates/`).
+## Templates (mandatory path)
+
+`npx ai-spector init` copies bundled templates to **`.ai-spector/templates/`** (see `docflow.config.json` → `paths.templates`).
+
+Before `/generate-srs`, `/generate-basic-design`, or `/generate-detail-design`:
+
+1. **Read** the template file from `.ai-spector/templates/` (DAG `template` field is relative to that root, e.g. `srs/1-introduction.md`, `basic_design/list-screen-template.md`).
+2. **Preserve** the template’s headings and section order in the output under `docs/`.
+3. If `.ai-spector/templates/` is missing, tell the user to run **`npx ai-spector init`** (or `init --force` to refresh) — do not guess structure from memory or search `node_modules`.
+
+| Kind | Directory |
+|------|-----------|
+| SRS | `.ai-spector/templates/srs/` |
+| Basic design | `.ai-spector/templates/basic_design/` |
+| Detail design | `.ai-spector/templates/detail_design/` |
+
+Optional index: `.ai-spector/templates/README.md`.

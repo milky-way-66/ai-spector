@@ -6,7 +6,7 @@ Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active ste
 
 ## When checks fail
 
-1. **Stop immediately** — do not read templates, spawn subagents, or write outputs.
+1. **Stop immediately** — do not read `.ai-spector/templates/`, spawn subagents, or write outputs.
 2. Reply with the **Blocked** format in [_cli-failures.md](./_cli-failures.md) (include full CLI output).
 3. Help the user fix the issue; re-run the failed CLI; then continue the slash command.
 

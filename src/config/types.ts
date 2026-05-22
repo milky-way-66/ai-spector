@@ -1,6 +1,8 @@
 export interface DocflowProjectPaths {
   graph: string;
   registry: string;
+  /** Project-local template copy (set by `ai-spector init`). */
+  templates?: string;
 }
 
 export interface DocflowConfig {
