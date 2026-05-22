@@ -117,17 +117,25 @@ ai-spector graph validate
 - `dependsOn`: mirror DAG edges between **document** ids (downstream queries use these for context).
 - Per-domain files (`UC-01`, `F-01`): also link `definedIn` from domain node to detail sections if applicable.
 
-**Wave rule:** finish all writes in wave `k`, merge **all** `rendersTo` / `dependsOn` for that wave, `graph validate`, then start wave `k+1`.
+**Wave rule:** finish all writes in wave `k`, merge **all** `rendersTo` / `dependsOn` for that wave, `graph validate`, then **`ai-spector index`** (basic design and SRS generation — see command files), then start wave `k+1`.
 
 Alternative repair: **`/sync-graph`** — not a substitute for merge between waves.
 
 ### F. Per-domain detail files
 
-For `mode: perFeature` / `perDomain` DAG nodes:
+For `mode: perFeature` / `perDomain` DAG nodes (SRS):
 
 - Seed = domain id (`UC-01`, `F-01`), not only chapter document.
 - Query with `--depth 4`; include inbound `satisfies` / `dependsOn`.
 - `rendersTo` from resolved output path (e.g. `docs/srs/03-use-cases/uc-01-....md`).
+
+For `mode: perEndpoint` / `perScreen` (basic design — `dag.basic-design.graph-seeds.json`):
+
+- **Do not** expand one file per `F-xx` feature.
+- **perEndpoint:** read `docs/basic-design/api-list.md` §3 Endpoint Summary; one markdown file per table row under `docs/basic-design/api/<slug>.md` (`slug` from method + path, e.g. `post-resource-id`).
+- **perScreen:** read `docs/basic-design/list-screens.md` §4 Screen Index; one file per screen under `docs/basic-design/screens/<slug>.md`.
+- List chapter lives at `docs/basic-design/list-screens.md` (not under `screens/`).
+- Query SRS + related `F-xx` for context on each endpoint/screen; ingest `doc.bd.api-*` / `doc.bd.screen-*` with `contains` from list chapter.
 
 ## Accuracy checklist (before marking target done)
 

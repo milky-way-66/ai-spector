@@ -1,6 +1,11 @@
 import type { GraphEdge, GraphNode } from "../types.js";
 import { sectionIdFromHeading } from "../registry/slug.js";
 import type { ExtractPatch } from "./knowledge.js";
+import {
+  BASIC_DESIGN_LIST_DOCUMENT_IDS,
+  DEFAULT_BD_LIST_DOC,
+  isBasicDesignListChapterDocumentId,
+} from "./defaults.js";
 
 const HEADING_RE = /^(#{2,4})\s+(.+)$/;
 const SECTION_ANCHOR_RE = /<!--\s*section:\s*([^\s>]+)\s*-->/;
@@ -17,7 +22,20 @@ export interface ParsedDetailSection {
 }
 
 const BD_INSTANCE_PATH_RE =
-  /docs\/basic-design\/(?:api\/|screens\/(?!list-screens\.md))/i;
+  /docs\/basic-design\/(?:api\/|screens\/)/i;
+
+/** List-chapter basic-design documents (api-list, screen map, db-design). */
+export function isBasicDesignListChapterDocument(node: GraphNode): boolean {
+  return node.type === "document" && isBasicDesignListChapterDocumentId(node.id);
+}
+
+/** Whether doc-extract may upsert `section` nodes under this document parent. */
+export function allowsSectionUpsertParent(parentDoc: GraphNode): boolean {
+  if (isPerDomainInstanceDocument(parentDoc)) {
+    return true;
+  }
+  return isBasicDesignListChapterDocument(parentDoc);
+}
 
 /** Per-domain detail markdown instance (not a template document from bootstrap). */
 export function isPerDomainInstanceDocument(node: GraphNode): boolean {
@@ -216,3 +234,46 @@ export function detailSectionsToPatch(
 
   return { version: 1, nodes, edges };
 }
+
+function normalizeDocPath(relativePath: string): string {
+  return relativePath.replace(/\\/g, "/").toLowerCase();
+}
+
+/** Map list-chapter markdown paths to graph document ids (includes common wrong paths). */
+export function basicDesignListChapterDocumentId(
+  relativePath: string,
+): string | null {
+  const p = normalizeDocPath(relativePath);
+  if (p === "docs/basic-design/api-list.md" || p.endsWith("/api-list.md")) {
+    return DEFAULT_BD_LIST_DOC.apiList;
+  }
+  if (p === "docs/basic-design/db-design.md" || p.endsWith("/db-design.md")) {
+    return DEFAULT_BD_LIST_DOC.dbDesign;
+  }
+  if (
+    p === "docs/basic-design/screens/list-screens.md" ||
+    p === "docs/basic-design/list-screens.md" ||
+    p.endsWith("/list-screens.md")
+  ) {
+    return DEFAULT_BD_LIST_DOC.screenList;
+  }
+  return null;
+}
+
+/** Parse headings from generated list-chapter basic-design files into section nodes. */
+export function basicDesignListChapterFileToPatch(
+  relativePath: string,
+  content: string,
+): ExtractPatch {
+  const documentId = basicDesignListChapterDocumentId(relativePath);
+  if (!documentId) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+  const sections = parseDetailSections(content, documentId);
+  if (sections.length === 0) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+  return detailSectionsToPatch(documentId, sections, content);
+}
+
+export { BASIC_DESIGN_LIST_DOCUMENT_IDS };

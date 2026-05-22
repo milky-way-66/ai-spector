@@ -24,7 +24,7 @@
     {
       "id": "bd.list-screen",
       "template": "basic_design/list-screen-template.md",
-      "output": "screens/list-screens.md",
+      "output": "list-screens.md",
       "dependsOn": []
     },
     {

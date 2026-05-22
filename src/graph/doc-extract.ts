@@ -1,15 +1,24 @@
 import type { GraphEdge, GraphNode } from "../types.js";
 import {
+  basicDesignListChapterDocumentId,
+  basicDesignListChapterFileToPatch,
   detailSectionsToPatch,
   parseDetailSections,
   snippetAfterHeading,
 } from "./detail-sections.js";
 import {
+  BASIC_DESIGN_LIST_DOCUMENT_IDS,
   DEFAULT_BD_LIST_DOC,
   DEFAULT_LISTED_IN,
   PER_DOMAIN_TEMPLATE_DOC_BD,
 } from "./defaults.js";
+import type { InMemoryGraph } from "./InMemoryGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
+import { scanBasicDesignListDocuments } from "../registry/build.js";
+import {
+  mergeStructurePatches,
+  registryDocumentToStructurePatch,
+} from "../registry/structure-patch.js";
 
 export interface DocExtractEntry {
   relativePath: string;
@@ -96,7 +105,7 @@ export function classifySrsDetailFile(relativePath: string): DetailFileKind | nu
   return null;
 }
 
-/** Classify markdown under docs/basic-design as list chapter vs per-feature/per-screen detail. */
+/** Classify markdown under docs/basic-design as list chapter vs per-endpoint/per-screen detail. */
 export function classifyBasicDesignDetailFile(
   relativePath: string,
 ): BasicDesignDetailKind | null {
@@ -106,14 +115,16 @@ export function classifyBasicDesignDetailFile(
     p.endsWith("/api-list.md") ||
     p === "docs/basic-design/db-design.md" ||
     p.endsWith("/db-design.md") ||
+    p === "docs/basic-design/list-screens.md" ||
+    p.endsWith("/list-screens.md") ||
     p.includes("/screens/list-screens.md")
   ) {
     return null;
   }
-  if (/\/api\/f-\d+/.test(p)) {
+  if (/\/api\/[^/]+\.md$/.test(p)) {
     return "apiDetail";
   }
-  if (/\/screens\/.+\.md$/.test(p)) {
+  if (/\/screens\/[^/]+\.md$/.test(p)) {
     return "screenDetail";
   }
   return null;
@@ -129,65 +140,122 @@ export function documentIdForDomainDetail(
     : `doc.srs.f-${norm}`;
 }
 
-export function documentIdForBasicDesignDetail(
-  kind: BasicDesignDetailKind,
-  featureId: string,
-  relativePath: string,
-): string {
-  const norm = normalizeDomainId(featureId);
-  if (kind === "apiDetail") {
-    return `doc.bd.api-${norm}`;
-  }
+function slugFromFilename(relativePath: string): string {
   const base =
     normalizeRelativePath(relativePath)
       .split("/")
       .pop()
-      ?.replace(/\.md$/i, "") ?? "screen";
-  const slug = base
+      ?.replace(/\.md$/i, "") ?? "unknown";
+  return base
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 64);
-  return `doc.bd.screen-${slug}`;
 }
 
-function featureIdFromBasicDesignPath(
-  relativePath: string,
+export function documentIdForBasicDesignDetail(
   kind: BasicDesignDetailKind,
-): string | null {
-  const p = normalizeRelativePath(relativePath);
-  if (kind === "apiDetail") {
-    const m = p.match(/\/api\/f-(\d+)/i);
-    return m?.[1] ? normalizeDomainId(`F-${m[1]}`) : null;
-  }
-  const fromPath = p.match(/f-(\d+)/i);
-  if (fromPath?.[1]) {
-    return normalizeDomainId(`F-${fromPath[1]}`);
-  }
-  return null;
+  relativePath: string,
+): string {
+  const slug = slugFromFilename(relativePath);
+  return kind === "apiDetail" ? `doc.bd.api-${slug}` : `doc.bd.screen-${slug}`;
 }
 
-function primaryDomainIdFromBasicDesignContent(
+const ENDPOINT_SPEC_HEADING = /###\s*\d+(?:\.\d+)?\s*`([A-Z]+)\s+([^`]+)`/i;
+const API_DETAIL_TITLE = /^#\s*API Detail:\s*(.+)/im;
+const SCREEN_SECTION_HEADING = /^##\s*\d+\.\s*Screen:\s*(.+)/im;
+
+export interface BasicDesignDetailMeta {
+  title: string;
+  featureIds: string[];
+}
+
+/** Title and optional related features from per-endpoint / per-screen detail markdown. */
+export function extractBasicDesignDetailMeta(
   content: string,
   kind: BasicDesignDetailKind,
   relativePath: string,
-): { id: string; title?: string } | null {
-  const fromPath = featureIdFromBasicDesignPath(relativePath, kind);
+): BasicDesignDetailMeta {
+  const featureIds = new Set<string>();
+  for (const m of content.matchAll(/\bF-\d+\b/gi)) {
+    const id = normalizeDomainId(m[0]);
+    if (isRealDomainId(id)) {
+      featureIds.add(id);
+    }
+  }
   const idLine = content.match(FEATURE_ID_LINE);
   if (idLine?.[1] && isRealDomainId(idLine[1])) {
-    return {
-      id: normalizeDomainId(idLine[1]),
-      title: content.match(FEATURE_NAME_HEADING)?.[2]?.trim(),
-    };
+    featureIds.add(normalizeDomainId(idLine[1]));
   }
-  const heading = content.match(FEATURE_NAME_HEADING);
-  if (heading?.[1] && isRealDomainId(heading[1])) {
-    return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+
+  if (kind === "apiDetail") {
+    const endpoint = content.match(ENDPOINT_SPEC_HEADING);
+    if (endpoint) {
+      return {
+        title: `${endpoint[1]} ${endpoint[2]}`.trim(),
+        featureIds: [...featureIds],
+      };
+    }
+    const titleLine = content.match(API_DETAIL_TITLE);
+    if (titleLine?.[1]?.trim()) {
+      return { title: titleLine[1].trim(), featureIds: [...featureIds] };
+    }
+    return { title: slugFromFilename(relativePath), featureIds: [...featureIds] };
   }
-  if (fromPath) {
-    return { id: fromPath };
+
+  const screen = content.match(SCREEN_SECTION_HEADING);
+  if (screen?.[1]?.trim()) {
+    return { title: screen[1].trim(), featureIds: [...featureIds] };
   }
-  return null;
+  return { title: slugFromFilename(relativePath), featureIds: [...featureIds] };
+}
+
+function buildBasicDesignDetailInstancePatch(opts: {
+  relativePath: string;
+  content: string;
+  docId: string;
+  kind: BasicDesignDetailKind;
+  title: string;
+  description?: string;
+  featureIds: string[];
+}): ExtractPatch {
+  const path = normalizeRelativePath(opts.relativePath);
+  const templateDocId =
+    opts.kind === "apiDetail"
+      ? PER_DOMAIN_TEMPLATE_DOC_BD.api
+      : PER_DOMAIN_TEMPLATE_DOC_BD.screen;
+  const listAnchorId =
+    opts.kind === "apiDetail"
+      ? DEFAULT_BD_LIST_DOC.apiList
+      : DEFAULT_BD_LIST_DOC.screenList;
+
+  const nodes: GraphNode[] = [
+    {
+      id: opts.docId,
+      type: "document",
+      output: path,
+      perDomain: opts.kind,
+      title: opts.title,
+      ...(opts.description ? { description: opts.description } : {}),
+    },
+  ];
+  const edges: GraphEdge[] = [
+    { type: "rendersTo", from: opts.docId, to: path },
+    { type: "rendersTo", from: templateDocId, to: path },
+    { type: "partOf", from: opts.docId, to: templateDocId },
+    { type: "contains", from: listAnchorId, to: opts.docId },
+  ];
+
+  for (const featureId of opts.featureIds) {
+    edges.push({ type: "tracesTo", from: featureId, to: opts.docId });
+  }
+
+  const sections = parseDetailSections(opts.content, opts.docId);
+  const sectionPatch = detailSectionsToPatch(opts.docId, sections, opts.content);
+  nodes.push(...sectionPatch.nodes);
+  edges.push(...sectionPatch.edges);
+
+  return { version: 1, nodes, edges };
 }
 
 function primaryDomainIdFromDetailContent(
@@ -480,10 +548,9 @@ export function extractDomainFromMarkdown(
 
   const bdKind = classifyBasicDesignDetailFile(relativePath);
   if (bdKind) {
-    const primary = primaryDomainIdFromBasicDesignContent(content, bdKind, relativePath);
-    if (primary) {
-      addFeature(parsed, primary.id, {
-        title: primary.title,
+    const meta = extractBasicDesignDetailMeta(content, bdKind, relativePath);
+    for (const featureId of meta.featureIds) {
+      addFeature(parsed, featureId, {
         description: extractBasicDesignDetailDescription(content, bdKind),
       });
     }
@@ -692,38 +759,33 @@ function basicDesignDetailFileToPatch(
     return { version: 1, nodes: [], edges: [] };
   }
 
-  const primary = primaryDomainIdFromBasicDesignContent(content, kind, relativePath);
-  if (!primary) {
-    return { version: 1, nodes: [], edges: [] };
-  }
-
-  const description = extractBasicDesignDetailDescription(content, kind);
-  const listAnchorId =
-    kind === "apiDetail" ? DEFAULT_BD_LIST_DOC.apiList : DEFAULT_BD_LIST_DOC.screenList;
-  const templateDocId =
-    kind === "apiDetail"
-      ? PER_DOMAIN_TEMPLATE_DOC_BD.api
-      : PER_DOMAIN_TEMPLATE_DOC_BD.screen;
-
-  return buildDetailInstancePatch({
+  const meta = extractBasicDesignDetailMeta(content, kind, relativePath);
+  return buildBasicDesignDetailInstancePatch({
     relativePath,
     content,
-    docId: documentIdForBasicDesignDetail(kind, primary.id, relativePath),
-    domainId: primary.id,
-    domainType: "feature",
-    perDomain: kind,
-    templateDocId,
-    listAnchorId,
-    title: primary.title ?? primary.id,
-    description,
+    docId: documentIdForBasicDesignDetail(kind, relativePath),
+    kind,
+    title: meta.title,
+    description: extractBasicDesignDetailDescription(content, kind),
+    featureIds: meta.featureIds,
   });
 }
 
-/** Document nodes + sections for per-UC/F SRS or per-feature API/screen basic-design files. */
+/** Document nodes + sections for per-UC/F SRS or per-endpoint/per-screen basic-design files. */
 export function detailFileToPatch(
   relativePath: string,
   content: string,
+  options?: BuildDocExtractPatchOptions,
 ): ExtractPatch {
+  if (options?.includeListChapterMarkdown !== false) {
+    const listChapter = basicDesignListChapterFileToPatch(relativePath, content);
+    if (listChapter.nodes.length > 0 || listChapter.edges.length > 0) {
+      return listChapter;
+    }
+  } else if (basicDesignListChapterDocumentId(relativePath)) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+
   const srs = srsDetailFileToPatch(relativePath, content);
   if (srs.nodes.length > 0 || srs.edges.length > 0) {
     return srs;
@@ -748,27 +810,9 @@ export function mergeParsedDomains(domains: ParsedDomain[]): ParsedDomain {
   return out;
 }
 
-/** Chapter + template documents for basic-design (not in SRS bootstrap). Emitted before edges in doc-extract patch. */
-export function basicDesignAnchorDocumentNodes(): GraphNode[] {
+/** Per-domain template shells (outputPattern — no section coverage required). */
+export function basicDesignPerDomainTemplateNodes(): GraphNode[] {
   return [
-    {
-      id: DEFAULT_BD_LIST_DOC.apiList,
-      type: "document",
-      output: "docs/basic-design/api-list.md",
-      title: "API List",
-    },
-    {
-      id: DEFAULT_BD_LIST_DOC.screenList,
-      type: "document",
-      output: "docs/basic-design/screens/list-screens.md",
-      title: "Screen Map",
-    },
-    {
-      id: DEFAULT_BD_LIST_DOC.dbDesign,
-      type: "document",
-      output: "docs/basic-design/db-design.md",
-      title: "Database Design",
-    },
     {
       id: PER_DOMAIN_TEMPLATE_DOC_BD.api,
       type: "document",
@@ -786,10 +830,88 @@ export function basicDesignAnchorDocumentNodes(): GraphNode[] {
   ];
 }
 
-export function buildDocExtractPatch(entries: DocExtractEntry[]): {
+/** @deprecated Prefer {@link basicDesignAnchorStructurePatch} — documents only, no sections. */
+export function basicDesignAnchorDocumentNodes(): GraphNode[] {
+  return [
+    {
+      id: DEFAULT_BD_LIST_DOC.apiList,
+      type: "document",
+      output: "docs/basic-design/api-list.md",
+      title: "API List",
+    },
+    {
+      id: DEFAULT_BD_LIST_DOC.screenList,
+      type: "document",
+      output: "docs/basic-design/list-screens.md",
+      title: "Screen Map",
+    },
+    {
+      id: DEFAULT_BD_LIST_DOC.dbDesign,
+      type: "document",
+      output: "docs/basic-design/db-design.md",
+      title: "Database Design",
+    },
+  ];
+}
+
+/** True when any basic-design list chapter document has no child sections in the graph. */
+export function basicDesignListChaptersNeedSections(graph: InMemoryGraph): boolean {
+  for (const docId of BASIC_DESIGN_LIST_DOCUMENT_IDS) {
+    const doc = graph.nodesById.get(docId);
+    if (!doc || doc.type !== "document") {
+      continue;
+    }
+    const hasSection = (graph.outEdges.get(docId) ?? []).some(
+      (e) =>
+        e.type === "contains" &&
+        graph.nodesById.get(e.to)?.type === "section",
+    );
+    if (!hasSection) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** List chapters + section trees from templates; used when bootstrap omitted basic-design registry docs. */
+export async function basicDesignAnchorStructurePatch(
+  projectRoot: string,
+): Promise<ExtractPatch> {
+  try {
+    const listDocs = await scanBasicDesignListDocuments(projectRoot);
+    const listPatches = listDocs.map((d) => registryDocumentToStructurePatch(d));
+    const templatePatch: ExtractPatch = {
+      version: 1,
+      nodes: basicDesignPerDomainTemplateNodes(),
+      edges: [],
+    };
+    return mergeStructurePatches([...listPatches, templatePatch]);
+  } catch {
+    return {
+      version: 1,
+      nodes: [
+        ...basicDesignAnchorDocumentNodes(),
+        ...basicDesignPerDomainTemplateNodes(),
+      ],
+      edges: [],
+    };
+  }
+}
+
+export interface BuildDocExtractPatchOptions {
+  /** When false, do not re-parse api-list / list-screens / db-design bodies (avoids duplicate section trees after bootstrap). */
+  includeListChapterMarkdown?: boolean;
+}
+
+export async function buildDocExtractPatch(
+  entries: DocExtractEntry[],
+  _projectRoot?: string,
+  options?: BuildDocExtractPatchOptions,
+): Promise<{
   patch: ExtractPatch;
   stats: DocExtractResult;
-} {
+}> {
+  const includeListChapterMarkdown = options?.includeListChapterMarkdown !== false;
   const perFile: ParsedDomain[] = [];
   for (const e of entries) {
     perFile.push(extractDomainFromMarkdown(e.content, e.relativePath));
@@ -863,7 +985,10 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
   if (hasBasicDesignFiles) {
     mergePatchInto({
       version: 1,
-      nodes: basicDesignAnchorDocumentNodes(),
+      nodes: [
+        ...basicDesignAnchorDocumentNodes(),
+        ...basicDesignPerDomainTemplateNodes(),
+      ],
       edges: [],
     });
   }
@@ -871,7 +996,11 @@ export function buildDocExtractPatch(entries: DocExtractEntry[]): {
   for (const e of entries) {
     const single = extractDomainFromMarkdown(e.content, e.relativePath);
     mergePatchInto(parsedDomainToPatch(single, e.relativePath));
-    mergePatchInto(detailFileToPatch(e.relativePath, e.content));
+    mergePatchInto(
+      detailFileToPatch(e.relativePath, e.content, {
+        includeListChapterMarkdown,
+      }),
+    );
   }
 
   return {

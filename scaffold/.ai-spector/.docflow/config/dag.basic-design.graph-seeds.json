@@ -11,15 +11,19 @@
   "perDomain": {
     "perEndpoint": {
       "parentDagId": "bd.detail-api",
-      "graphNodeType": "feature",
-      "seedFromDomainId": true,
-      "outputDir": "docs/basic-design/api/"
+      "expandFrom": "doc.bd.list-api",
+      "listTableSection": "## 3. Endpoint Summary",
+      "outputDir": "docs/basic-design/api/",
+      "outputSlugFrom": "methodAndPath",
+      "oneFilePerRow": true
     },
     "perScreen": {
       "parentDagId": "bd.detail-screen",
-      "graphNodeType": "feature",
-      "seedFromDomainId": true,
-      "outputDir": "docs/basic-design/screens/"
+      "expandFrom": "doc.bd.list-screen",
+      "listTableSection": "## 4. Screen Index",
+      "outputDir": "docs/basic-design/screens/",
+      "outputSlugFrom": "screenName",
+      "oneFilePerRow": true
     }
   },
   "documentNodes": {
@@ -38,7 +42,7 @@
     "bd.list-screen": {
       "id": "doc.bd.list-screen",
       "type": "document",
-      "output": "docs/basic-design/screens/list-screens.md",
+      "output": "docs/basic-design/list-screens.md",
       "template": "basic_design/list-screen-template.md"
     }
   }

@@ -107,3 +107,14 @@ export async function loadDocumentsManifest(): Promise<{
   }
   return { bundleRoot, manifest };
 }
+
+export async function loadBasicDesignListManifest(): Promise<DocumentsManifest> {
+  const bundleRoot = packageBundleRoot();
+  const manifest = await readJson<DocumentsManifest>(
+    join(bundleRoot, "documents-basic-design.json"),
+  );
+  if (!manifest.templatesDir || !Array.isArray(manifest.documents)) {
+    throw new Error(`Invalid documents-basic-design.json in ${bundleRoot}`);
+  }
+  return manifest;
+}

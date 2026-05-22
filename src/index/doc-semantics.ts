@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { mergePatch } from "../graph/merge.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
-import { buildDocExtractPatch } from "../graph/doc-extract.js";
+import {
+  basicDesignAnchorStructurePatch,
+  basicDesignListChaptersNeedSections,
+  buildDocExtractPatch,
+} from "../graph/doc-extract.js";
+import { mergeStructurePatches } from "../registry/structure-patch.js";
 import {
   computeIndexSourceHash,
   discoverMarkdownFiles,
@@ -67,7 +72,17 @@ export async function runDocSemanticMerge(
     };
   }
 
-  const { patch, stats } = buildDocExtractPatch(entries);
+  const graphBefore = await loadInMemoryGraph(opts.graphPath);
+  const listChaptersNeedSections = basicDesignListChaptersNeedSections(graphBefore);
+  let { patch, stats } = await buildDocExtractPatch(entries, opts.projectRoot, {
+    includeListChapterMarkdown: listChaptersNeedSections,
+  });
+
+  if (listChaptersNeedSections) {
+    const structure = await basicDesignAnchorStructurePatch(opts.projectRoot);
+    patch = mergeStructurePatches([patch, structure]);
+  }
+
   if (patch.nodes.length === 0 && patch.edges.length === 0) {
     return {
       merged: false,
@@ -76,9 +91,8 @@ export async function runDocSemanticMerge(
     };
   }
 
-  const graph = await loadInMemoryGraph(opts.graphPath);
-  const { stats: mergeStats } = mergePatch(graph, patch);
-  await writeJson(opts.graphPath, graph.toTraceabilityGraph());
+  const { stats: mergeStats } = mergePatch(graphBefore, patch);
+  await writeJson(opts.graphPath, graphBefore.toTraceabilityGraph());
 
   const statePath = join(opts.projectRoot, ".ai-spector/.docflow/state.json");
   const state = await readJson<Record<string, unknown>>(statePath).catch(() => ({

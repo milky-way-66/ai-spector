@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { RegistryDocument, RegistrySection, SectionRegistry } from "../types.js";
-import { loadDocflowConfig, loadDocumentsManifest } from "../config/load.js";
+import {
+  loadBasicDesignListManifest,
+  loadDocflowConfig,
+  loadDocumentsManifest,
+  resolveProjectTemplatesDir,
+} from "../config/load.js";
+import { pathExists } from "../util/fs.js";
 import { sectionIdFromHeading } from "./slug.js";
 
 const HEADING_RE = /^(#{2,4})\s+(.+)$/;
@@ -44,16 +50,70 @@ async function scanTemplate(
   return { ...doc, sections };
 }
 
+async function resolveTemplatesSubdir(
+  projectRoot: string,
+  config: Awaited<ReturnType<typeof loadDocflowConfig>>["config"],
+  bundleRoot: string,
+  bundledRelativeDir: string,
+  subfolder: "srs" | "basic_design",
+): Promise<string> {
+  const projectDir = join(resolveProjectTemplatesDir(projectRoot, config), subfolder);
+  if (await pathExists(projectDir)) {
+    return projectDir;
+  }
+  return join(bundleRoot, bundledRelativeDir);
+}
+
+/** Scan basic-design list-chapter templates (api-list, screen map, db-design). */
+export async function scanBasicDesignListDocuments(
+  projectRoot: string,
+): Promise<RegistryDocument[]> {
+  const { config } = await loadDocflowConfig(projectRoot);
+  const { bundleRoot } = await loadDocumentsManifest();
+  const bdManifest = await loadBasicDesignListManifest();
+  const bdTemplatesDir = await resolveTemplatesSubdir(
+    projectRoot,
+    config,
+    bundleRoot,
+    bdManifest.templatesDir,
+    "basic_design",
+  );
+  const documents: RegistryDocument[] = [];
+  for (const doc of bdManifest.documents) {
+    documents.push(await scanTemplate(bdTemplatesDir, doc));
+  }
+  return documents;
+}
+
 export async function buildSectionRegistry(
   root?: string,
 ): Promise<SectionRegistry> {
-  const { root: projectRoot } = await loadDocflowConfig(root);
-  const { bundleRoot, manifest } = await loadDocumentsManifest();
-  const templatesDir = join(bundleRoot, manifest.templatesDir);
+  const { root: projectRoot, config } = await loadDocflowConfig(root);
+  const { bundleRoot, manifest: srsManifest } = await loadDocumentsManifest();
+  const bdManifest = await loadBasicDesignListManifest();
+
+  const srsTemplatesDir = await resolveTemplatesSubdir(
+    projectRoot,
+    config,
+    bundleRoot,
+    srsManifest.templatesDir,
+    "srs",
+  );
+  const bdTemplatesDir = await resolveTemplatesSubdir(
+    projectRoot,
+    config,
+    bundleRoot,
+    bdManifest.templatesDir,
+    "basic_design",
+  );
+
   const documents: RegistryDocument[] = [];
 
-  for (const doc of manifest.documents) {
-    documents.push(await scanTemplate(templatesDir, doc));
+  for (const doc of srsManifest.documents) {
+    documents.push(await scanTemplate(srsTemplatesDir, doc));
+  }
+  for (const doc of bdManifest.documents) {
+    documents.push(await scanTemplate(bdTemplatesDir, doc));
   }
 
   return {

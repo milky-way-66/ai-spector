@@ -1,6 +1,6 @@
-# API Detail: <Project Name>
+# API Detail: <METHOD /path>
 
-> This document specifies detailed request/response schemas, path/query parameters, and error handling for each API endpoint. For the endpoint list and overview, see the API List document.
+> **One endpoint per file** under `docs/basic-design/api/<slug>.md` (slug from method + path, e.g. `post-checkout.md`). For the endpoint list and overview, see `docs/basic-design/api-list.md`.
 
 **Source Requirements:** SRS Section 4 (System Features), Section 6.2 (Software Interfaces)
 

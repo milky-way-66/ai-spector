@@ -1,6 +1,6 @@
 import type { GraphEdge, GraphNode, NodeType } from "../types.js";
 import { isPathTargetEdge } from "./path-target-edges.js";
-import { isPerDomainInstanceDocument } from "./detail-sections.js";
+import { allowsSectionUpsertParent } from "./detail-sections.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
 
@@ -107,7 +107,7 @@ export function mergePatch(
 
     if (node.type === "section") {
       const parentDoc = graph.nodesById.get(String(node.documentId ?? ""));
-      if (parentDoc && isPerDomainInstanceDocument(parentDoc)) {
+      if (parentDoc && allowsSectionUpsertParent(parentDoc)) {
         const outcome = graph.upsertNode(node);
         if (outcome === "created") {
           stats.nodesCreated++;

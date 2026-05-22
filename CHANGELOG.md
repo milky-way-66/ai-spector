@@ -6,16 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Basic-design workflow** — screen list output is `docs/basic-design/list-screens.md` (not `screens/list-screens.md`); API and screen **detail** files expand from list-chapter tables (one file per endpoint / per screen), not one file per `F-xx` feature. Doc-extract and `/generate-basic-design` updated accordingly.
+
 ### Added
 
 - **`init` copies templates** — `npx ai-spector init` installs `.ai-spector/templates/` (SRS, basic design, detail design) and sets `paths.templates` in `docflow.config.json`. Cursor skill and generate commands require agents to read templates from that path (not `node_modules`).
-- **Basic-design doc extract** — `ai-spector index` parses `docs/basic-design/api/f-*.md` and `docs/basic-design/screens/*.md` into `doc.bd.*` documents, section trees, `tracesTo`/`definedIn` from features (same model as SRS detail files).
+- **Basic-design doc extract** — `ai-spector index` parses `docs/basic-design/api/*.md` and `docs/basic-design/screens/*.md` into `doc.bd.*` documents, section trees, and optional `tracesTo` from related features cited in detail files.
 - **Tri-layer hubs and agent semantic merge** — `bundle.source` / `bundle.business` / `sourceFile` nodes (index + `graph ensure-bundles`); `derivedFrom` prefers `source.file:*` when the source hub exists; **`relatesTo`** edges via `graph merge --semantic` and `/link-graph`; **`graph report`** for layer health and suggested CLI/agent commands.
 - **Data-source provenance** — `ai-spector index` and `ai-spector graph link-sources` add **`derivedFrom`** edges from domain nodes (`UC-*`, `F-*`, requirements, actors) to `docs/data-source/**` paths and optional `graphify:<nodeId>` targets when Graphify `graph.json` matches; evidence from `knowledge.json` source fields, SRS detail `Source:` / path mentions, and Graphify file index. Visualize shows teal **source** / **graphify** nodes and colored `derivedFrom` edges; `graph query` traverses `derivedFrom` and includes data-source paths in `projectionPaths`.
 - **Detail-file graph enrichment** — `ai-spector index` doc semantics now fill UC/F **`title`** / **`description`** from detail markdown (`**Use Case Name:**`, `**Brief Description:**`, feature purpose), add **`title`** / **`description`** on per-file **section** nodes from headings and first prose snippet, link list chapters to detail docs via **`contains`**, and add **`describedIn`** from domain nodes to detail docs/sections. Merge applies documents before sections so instance section nodes are not skipped.
 
 ### Fixed
 
+- **DOC-SECTION-COVERAGE for basic-design list chapters** — `documents-basic-design.json` registers list chapters at bootstrap/index; **doc-extract** now parses `.ai-spector/templates/basic_design/` and emits `contains` → `section` edges for `doc.bd.list-api`, `doc.bd.list-screen`, and `doc.bd.db-design` during `index` (fixes validate failure when an older global CLI omitted basic-design from the registry).
 - **Basic-design doc extract** — emit list + template `document` nodes in the same patch before detail edges (one index pass); still skip edges only when an endpoint is genuinely missing (fallback).
 - **DOC-SECTION-COVERAGE** — exempt `document` nodes with `outputPattern` (SRS/BD templates) and basic-design instance docs; sections live on generated instance files.
 - **Provenance from knowledge** — `sourceRef` on staged knowledge rows (e.g. `requirement/…md`) is now honored when building **`derivedFrom`** edges during index.

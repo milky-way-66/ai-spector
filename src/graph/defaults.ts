@@ -15,6 +15,14 @@ export const DEFAULT_BD_LIST_DOC = {
   dbDesign: "doc.bd.db-design",
 } as const;
 
+export const BASIC_DESIGN_LIST_DOCUMENT_IDS: ReadonlySet<string> = new Set(
+  Object.values(DEFAULT_BD_LIST_DOC),
+);
+
+export function isBasicDesignListChapterDocumentId(id: string): boolean {
+  return BASIC_DESIGN_LIST_DOCUMENT_IDS.has(id);
+}
+
 /** Template document ids for per-domain basic-design detail (DAG / graph-seeds). */
 export const PER_DOMAIN_TEMPLATE_DOC_BD = {
   api: "doc.bd.detail-api",

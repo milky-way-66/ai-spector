@@ -252,7 +252,7 @@ describe("mergePatch", () => {
     ).toBe(true);
   });
 
-  it("applies template rendersTo when anchor documents are in the same patch", () => {
+  it("applies template rendersTo when anchor documents are in the same patch", async () => {
     const g = loadGraph(
       [
         node("F-01", "feature"),
@@ -262,10 +262,10 @@ describe("mergePatch", () => {
       ],
       [],
     );
-    const { patch } = buildDocExtractPatch([
+    const { patch } = await buildDocExtractPatch([
       {
-        relativePath: "docs/basic-design/api/f-01-auth.md",
-        content: "**Feature ID:** F-1\n\n### 1.1 `GET /session`",
+        relativePath: "docs/basic-design/api/get-session.md",
+        content: "### 1.1 `GET /session`\n\n**Source Requirement:** F-01",
       },
     ]);
 
@@ -274,14 +274,14 @@ describe("mergePatch", () => {
       g.hasEdge({
         type: "rendersTo",
         from: "doc.bd.detail-api",
-        to: "docs/basic-design/api/f-01-auth.md",
+        to: "docs/basic-design/api/get-session.md",
       }),
     ).toBe(true);
     expect(
       g.hasEdge({
         type: "contains",
         from: "doc.bd.list-api",
-        to: "doc.bd.api-F-01",
+        to: "doc.bd.api-get-session",
       }),
     ).toBe(true);
   });

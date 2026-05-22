@@ -1,6 +1,6 @@
-# Screen Detail:
+# Screen Detail: <Screen Name>
 
-> This document provides detailed layout, component, and interaction specifications for each screen. For the screen map and design system, see the Screen Map (List Screen) document. Use one section per screen; duplicate the structure below for each screen in the Screen Index.
+> **One screen per file** under `docs/basic-design/screens/<slug>.md`. For the screen map and design system, see `docs/basic-design/list-screens.md`. Use a single `## 1. Screen:` section in this file.
 
 **Source Requirements:** SRS Section 6.1 (User Interfaces)
 

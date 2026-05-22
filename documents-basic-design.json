@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "basic-design-list",
+  "templatesDir": "templates/basic_design",
+  "documents": [
+    {
+      "documentId": "doc.bd.db-design",
+      "template": "db-design-template.md",
+      "output": "docs/basic-design/db-design.md"
+    },
+    {
+      "documentId": "doc.bd.list-api",
+      "template": "list-api-template.md",
+      "output": "docs/basic-design/api-list.md"
+    },
+    {
+      "documentId": "doc.bd.list-screen",
+      "template": "list-screen-template.md",
+      "output": "docs/basic-design/list-screens.md"
+    }
+  ]
+}

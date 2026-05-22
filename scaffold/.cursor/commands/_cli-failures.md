@@ -75,6 +75,11 @@ When any `ai-spector` command **fails** (non-zero exit, throws, or empty/invalid
 - **Means:** `listedInSection` points to a section id not in the graph.
 - **Fix:** Use a section id from `section-registry.json` (e.g. `sec.srs.3-use-cases.l3.3.32-list-use-case`) or omit `listedInSection` for defaults; re-run merge.
 
+### `graph validate` — `DOC-SECTION-COVERAGE` on `doc.bd.list-api` / `doc.bd.list-screen` / `doc.bd.db-design`
+
+- **Means:** Basic-design **list chapter** documents exist in the graph without child `section` nodes (common after a projection-only `graph merge` before bootstrap/index).
+- **Fix:** From project root run **`npx ai-spector index`** (or **`/index`** in Cursor) to rebuild the registry from templates and bootstrap section trees. Ensure `.ai-spector/templates/basic_design/` exists (`npx ai-spector init`). Then re-run **`graph merge`** for your patch and **`graph validate`**.
+
 ### `graph validate` — `DOMAIN-ANCHORED` / `SECTION-TREE` / `SCHEMA`
 
 - **Means:** Graph inconsistent with rules.
