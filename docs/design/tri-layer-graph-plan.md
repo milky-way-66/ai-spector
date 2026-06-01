@@ -1,8 +1,8 @@
 # Tri-layer traceability graph — improvement plan
 
-**Status:** Implementation plan (draft)  
-**Date:** 2026-05-21  
-**Relates to:** [traceability-graph-redesign.md](./traceability-graph-redesign.md) (v3 target), [workflow-overview.md](./workflow-overview.md)  
+**Status:** Implementation plan (draft)
+**Date:** 2026-05-21
+**Relates to:** [traceability-graph-redesign.md](./traceability-graph-redesign.md) (v3 target), [workflow-overview.md](./workflow-overview.md)
 **Problem:** After `/generate-srs`, the graph often looks like bootstrap structure + flat domain nodes (`UC-01`, `F-01`) without per-file spec subtrees, data-source children, or meaning-based bridges — unlike the intended three-hub model.
 
 ---
@@ -481,7 +481,7 @@ Phases 0–1 are **high priority** (close most of the expectation gap with littl
 
 | ID | Task | Owner | Files |
 |----|------|-------|-------|
-| 0.1 | Append to `/generate-srs` success checklist: **must run `/index`** before validate/visualize as “complete” | docs | `scaffold/.cursor/commands/generate-srs.md` |
+| 0.1 | Append to `/generate-srs` success checklist: **must run `/index`** before validate/visualize as “complete” | docs | `scaffold/cursor/commands/generate-srs.md` |
 | 0.2 | `ai-spector graph report` (or extend `validate --json`) with layer checklist | CLI | `src/commands/graph-report.ts`, `src/cli.ts` |
 | 0.3 | Report fields: `specInstances`, `detailSections`, `derivedFromCount`, `missingProvenanceForDomain[]` | graph | `src/graph/layer-audit.ts` |
 | 0.4 | Warn in visualize payload when `specInstances === 0` but `docs/srs/03-use-cases/*.md` exist on disk | viz | `src/visualize/stats.ts`, `html.ts` |
@@ -853,7 +853,7 @@ flowchart LR
 | Schema / rules | `schemas/schema.graph.json`, `schemas/rules.traceability.json`, `schemas/rules.impact.json` |
 | CLI | `src/cli.ts`, `src/commands/graph-report.ts` (new) |
 | Viz | `src/visualize/html.ts`, `src/visualize/stats.ts` |
-| Cursor scaffold | `scaffold/.cursor/commands/generate-srs.md`, `link-graph.md` (new), `index.md` |
+| Cursor scaffold | `scaffold/cursor/commands/generate-srs.md`, `link-graph.md` (new), `index.md` |
 | Tests | `tests/graph/doc-extract.test.ts`, `tests/graph/layer-audit.test.ts` (new), `tests/graph/source-bundle.test.ts` (new) |
 | Docs | `README.md`, `CHANGELOG.md`, this file |
 

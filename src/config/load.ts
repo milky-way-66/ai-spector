@@ -16,6 +16,11 @@ export function scaffoldBundleRoot(): string {
   return join(packageBundleRoot(), "scaffold");
 }
 
+/** Cursor commands/skills/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
+export function scaffoldCursorBundleRoot(): string {
+  return join(scaffoldBundleRoot(), "cursor");
+}
+
 export function findProjectRoot(start = process.cwd()): string {
   let dir = resolve(start);
   for (;;) {

@@ -17,6 +17,13 @@ import { loadInMemoryGraph } from "./graph/loadGraph.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
 import { runGraphifyUpdate } from "./commands/graphify-update.js";
 import { runIndex } from "./commands/index.js";
+import {
+  runCommentsInbox,
+  runCommentsList,
+  runCommentsPlan,
+  runCommentsResolve,
+  runCommentsShow,
+} from "./commands/comments.js";
 import { runProvenanceLink } from "./graph/provenance.js";
 import type { SectionRegistry } from "./types.js";
 
@@ -296,6 +303,101 @@ graph
       output: opts.output,
       open: opts.open,
       skipKnowledge: opts.noKnowledge,
+    });
+  });
+
+const comments = program
+  .command("comments")
+  .description("Git-backed review comment threads under comments/ (local resolve flow)");
+
+comments
+  .command("list")
+  .description("List comment threads from comments/{logical_path}/")
+  .option("--file <path>", "Filter by logical file path (e.g. srs/01-overview)")
+  .option("--status <status>", "open | resolved | all", "open")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    await runCommentsList({
+      root: projectRootOpt(cmd),
+      filePath: opts.file,
+      status: opts.status,
+      json: opts.json,
+    });
+  });
+
+comments
+  .command("inbox")
+  .description(
+    "Thread pick list for IDE chat (C-001…) — JSON includes idePresentation.markdown table",
+  )
+  .option("--file <path>", "Filter by logical file path")
+  .option("--status <status>", "open | resolved | all", "open")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    await runCommentsInbox({
+      root: projectRootOpt(cmd),
+      filePath: opts.file,
+      status: opts.status,
+      json: opts.json,
+    });
+  });
+
+comments
+  .command("plan [threadId]")
+  .description("Resolve plan: anchor excerpt, graph impact, and IDE workflow hints")
+  .option("--pick <id>", "Pick id from inbox (e.g. C-001)")
+  .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--json", "JSON output for agents")
+  .action(async (threadId: string | undefined, opts, cmd) => {
+    const id = opts.pick ?? threadId;
+    if (!id) {
+      console.error("Provide <threadId> or --pick C-001");
+      process.exitCode = 1;
+      return;
+    }
+    await runCommentsPlan({
+      root: projectRootOpt(cmd),
+      threadId: id,
+      filePath: opts.file,
+      pick: opts.pick,
+      json: opts.json,
+    });
+  });
+
+comments
+  .command("show <threadId>")
+  .description("Show thread metadata, replies, and events")
+  .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--json", "JSON output for agents")
+  .action(async (threadId: string, opts, cmd) => {
+    await runCommentsShow({
+      root: projectRootOpt(cmd),
+      threadId,
+      filePath: opts.file,
+      json: opts.json,
+    });
+  });
+
+comments
+  .command("resolve <threadId>")
+  .description("Mark thread resolved in meta_data.json and append events.jsonl")
+  .requiredOption("--file <path>", "Logical file path (e.g. srs/04-features/auth)")
+  .option("--by <author>", "resolvedBy value recorded in meta_data.json", "local")
+  .option("--commit-sha <sha>", "resolvedInCommitSha (defaults to git HEAD)")
+  .option("--expected-version <n>", "Optimistic lock on meta_data.json version")
+  .option("--dry-run", "Preview resolve without writing files")
+  .option("--json", "JSON output for agents")
+  .action(async (threadId: string, opts, cmd) => {
+    await runCommentsResolve({
+      root: projectRootOpt(cmd),
+      threadId,
+      filePath: opts.file,
+      resolvedBy: opts.by,
+      commitSha: opts.commitSha,
+      expectedVersion:
+        opts.expectedVersion != null ? Number(opts.expectedVersion) : undefined,
+      dryRun: opts.dryRun,
+      json: opts.json,
     });
   });
 

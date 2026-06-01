@@ -32,4 +32,19 @@ describe("runInit", () => {
       join(root, ".ai-spector/templates"),
     );
   });
+
+  it("installs .cursor from scaffold/cursor/", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ai-spector-init-cursor-"));
+
+    await runInit({ targetDir: root });
+
+    expect(await pathExists(join(root, ".cursor/commands/_workflow.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-graph/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-comments/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/_skill-router.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/commands/resolve-comments.md"))).toBe(true);
+    expect(await pathExists(join(root, "cursor"))).toBe(false);
+  });
 });

@@ -1,6 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { packageBundleRoot, scaffoldBundleRoot } from "../config/load.js";
+import {
+  packageBundleRoot,
+  scaffoldBundleRoot,
+  scaffoldCursorBundleRoot,
+} from "../config/load.js";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
 import { ensureGraphifyMcpConfig } from "../util/mcp.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
@@ -8,6 +12,19 @@ import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 export interface InitOptions {
   targetDir: string;
   force?: boolean;
+}
+
+/** Copy scaffold into project; `scaffold/cursor/` → `.cursor/` at project root. */
+export async function copyScaffoldToProject(projectRoot: string): Promise<void> {
+  const scaffold = scaffoldBundleRoot();
+  const entries = await readdir(scaffold, { withFileTypes: true });
+  for (const ent of entries) {
+    if (ent.name === "cursor") {
+      continue;
+    }
+    await copyTree(join(scaffold, ent.name), join(projectRoot, ent.name));
+  }
+  await copyTree(scaffoldCursorBundleRoot(), join(projectRoot, ".cursor"));
 }
 
 export async function runInit(opts: InitOptions): Promise<void> {
@@ -20,8 +37,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     );
   }
 
-  const scaffold = scaffoldBundleRoot();
-  await copyTree(scaffold, root);
+  await copyScaffoldToProject(root);
 
   const projectTemplates = join(root, ".ai-spector", "templates");
   await mkdir(projectTemplates, { recursive: true });
@@ -63,13 +79,15 @@ export async function runInit(opts: InitOptions): Promise<void> {
   console.log(`  MCP       → ${mcpPath} (Graphify server added/updated)`);
   console.log(`  gitignore → ${gitignorePath} (ai-spector block added/updated)`);
   console.log(`  templates → ${projectTemplates} (SRS / basic / detail design)`);
+  console.log(`  cursor    → ${join(root, ".cursor")} (from scaffold/cursor/)`);
   console.log("");
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");
   console.log("  2. Reload MCP (Settings → MCP) or restart Cursor — needs uv + graphifyy");
-  console.log("  3. Enable the ai-spector skill (.cursor/skills/ai-spector/)");
+  console.log("  3. Enable ai-spector skills (.cursor/skills/ — see _skill-router.md)");
   console.log("  4. Add files under docs/data-source/");
   console.log("  5. Run /analyze  →  /validate-graph  →  /generate-srs");
+  console.log("     Or ask in chat: \"analyze data source\", \"generate SRS\", \"resolve comments\"");
   console.log("");
   console.log("See .cursor/commands/_workflow.md — you do not need other CLI commands.");
 }

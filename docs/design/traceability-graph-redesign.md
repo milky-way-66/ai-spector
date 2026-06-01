@@ -1,8 +1,8 @@
 # AI Spector: Traceability Graph Architecture
 
-**Status:** Target specification (v3)  
-**Date:** 2026-05-21  
-**Audience:** Implementers, Cursor agent authors, reviewers  
+**Status:** Target specification (v3)
+**Date:** 2026-05-21
+**Audience:** Implementers, Cursor agent authors, reviewers
 **Supersedes (conceptually):** file-only DAG, flat `knowledge.json`, Graphify-as-truth, manual `/summary`
 
 ---
@@ -363,8 +363,8 @@ Generation walks **section subtrees** depth-first by `order`.
 
 ### Sync (optional)
 
-Document frontmatter: `documentId`, `domainId`, `domainType`.  
-Section anchor: `<!-- section:sec.uc01.main-flow -->`.  
+Document frontmatter: `documentId`, `domainId`, `domainType`.
+Section anchor: `<!-- section:sec.uc01.main-flow -->`.
 `/sync-graph` updates edges from anchors and tables.
 
 ### Generated registers
@@ -715,6 +715,6 @@ Reference: [SARA smart-home example](https://github.com/cledouarec/sara/tree/mai
 
 - [Design index](./README.md)
 - [README.md](../../README.md) — current workflow (until migration)
-- [.cursor/skills/ai-spector/SKILL.md](../../.cursor/skills/ai-spector/SKILL.md)
+- [.cursor/skills/ai-spector/SKILL.md](../../scaffold/cursor/skills/ai-spector/SKILL.md) (source: `scaffold/cursor/`)
 - [templates/srs/](../../templates/srs/)
 - [SARA](https://github.com/cledouarec/sara)

@@ -1,5 +1,5 @@
 {
-  "name": "ai-spector",
+  "name": "@kaopiz/ai-spector",
   "version": "0.3.1",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
@@ -24,9 +24,6 @@
   ],
   "engines": {
     "node": ">=20"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "files": [
     "dist",
@@ -54,7 +51,8 @@
     "analyze": "node dist/cli.js -r example analyze",
     "graph:validate": "node dist/cli.js -r example graph validate",
     "graph:merge": "node dist/cli.js -r example graph merge --from-knowledge",
-    "graph:visualize": "node dist/cli.js -r example graph visualize --open"
+    "graph:visualize": "node dist/cli.js -r example graph visualize --open",
+    "ai-spector": "node dist/cli.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",

@@ -8,10 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Scaffold Cursor bundle** — slash commands and skills live in `scaffold/cursor/` (versioned); `ai-spector init` copies to project `.cursor/`.
+- **Task skills for auto-routing** — `ai-spector-graph`, `ai-spector-generate`, `ai-spector-resolve-comments` plus core `ai-spector`; router at `scaffold/cursor/skills/_skill-router.md`.
 - **Basic-design workflow** — screen list output is `docs/basic-design/list-screens.md` (not `screens/list-screens.md`); API and screen **detail** files expand from list-chapter tables (one file per endpoint / per screen), not one file per `F-xx` feature. Doc-extract and `/generate-basic-design` updated accordingly.
 
 ### Added
 
+- **Comment resolve flow (git-backed F-05)** — `ai-spector comments inbox|plan|list|show|resolve` for IDE workflows: numbered inbox in chat, graph impact via `comments plan`, propose/apply doc edits, then update `meta_data.json` locally; Cursor **`/resolve-comments`** orchestrates the full flow.
 - **`init` copies templates** — `npx ai-spector init` installs `.ai-spector/templates/` (SRS, basic design, detail design) and sets `paths.templates` in `docflow.config.json`. Cursor skill and generate commands require agents to read templates from that path (not `node_modules`).
 - **Basic-design doc extract** — `ai-spector index` parses `docs/basic-design/api/*.md` and `docs/basic-design/screens/*.md` into `doc.bd.*` documents, section trees, and optional `tracesTo` from related features cited in detail files.
 - **Tri-layer hubs and agent semantic merge** — `bundle.source` / `bundle.business` / `sourceFile` nodes (index + `graph ensure-bundles`); `derivedFrom` prefers `source.file:*` when the source hub exists; **`relatesTo`** edges via `graph merge --semantic` and `/link-graph`; **`graph report`** for layer health and suggested CLI/agent commands.
