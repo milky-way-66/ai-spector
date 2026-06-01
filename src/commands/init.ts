@@ -14,6 +14,11 @@ export interface InitOptions {
   force?: boolean;
 }
 
+/** Copy bundled `scaffold/cursor/` → project `.cursor/`. */
+export async function copyCursorToProject(projectRoot: string): Promise<void> {
+  await copyTree(scaffoldCursorBundleRoot(), join(projectRoot, ".cursor"));
+}
+
 /** Copy scaffold into project; `scaffold/cursor/` → `.cursor/` at project root. */
 export async function copyScaffoldToProject(projectRoot: string): Promise<void> {
   const scaffold = scaffoldBundleRoot();
@@ -24,7 +29,7 @@ export async function copyScaffoldToProject(projectRoot: string): Promise<void> 
     }
     await copyTree(join(scaffold, ent.name), join(projectRoot, ent.name));
   }
-  await copyTree(scaffoldCursorBundleRoot(), join(projectRoot, ".cursor"));
+  await copyCursorToProject(projectRoot);
 }
 
 export async function runInit(opts: InitOptions): Promise<void> {

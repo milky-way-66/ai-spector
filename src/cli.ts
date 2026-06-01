@@ -7,6 +7,7 @@ import { buildSectionRegistry } from "./registry/build.js";
 import { bootstrapFromRegistry } from "./commands/bootstrap.js";
 import { validateGraph, formatIssues } from "./commands/validate.js";
 import { runInit } from "./commands/init.js";
+import { runSyncCursor } from "./commands/sync-cursor.js";
 import { runAnalyzePrep } from "./commands/analyze.js";
 import { runGraphQuery } from "./commands/graph-query.js";
 import { runGraphImpact } from "./commands/graph-impact.js";
@@ -54,6 +55,16 @@ program
     await runInit({
       targetDir: resolve(opts.cwd ?? process.cwd()),
       force: opts.force,
+    });
+  });
+
+program
+  .command("sync-cursor")
+  .description("Refresh .cursor/commands and .cursor/skills from scaffold/cursor/ (no full re-init)")
+  .option("-C, --cwd <path>", "Target directory", process.cwd())
+  .action(async (opts) => {
+    await runSyncCursor({
+      targetDir: resolve(opts.cwd ?? process.cwd()),
     });
   });
 
