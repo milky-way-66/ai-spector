@@ -512,6 +512,8 @@ program.parseAsync(process.argv).catch((err) => {
   console.error(msg);
   console.error("");
   console.error("Fix the issue above, then re-run the same command.");
-  console.error("In Cursor, retry the same task — see .cursor/skills/ai-spector/references/cli-failures.md");
+  console.error(
+    "In Cursor: see .cursor/skills/ai-spector/references/cli-failures.md — agent offers fix, workaround, or pause.",
+  );
   process.exit(1);
 });

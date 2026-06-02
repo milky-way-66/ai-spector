@@ -110,7 +110,9 @@ export function formatIssues(issues: ValidationIssue[]): string {
     lines.push(
       "Fix each ERROR above, then re-run: ai-spector graph validate (or /validate-graph in Cursor).",
     );
-    lines.push("Do not generate docs until validate passes. See .cursor/skills/ai-spector/references/cli-failures.md");
+    lines.push(
+      "Do not generate docs until validate passes (or user approves a workaround). See .cursor/skills/ai-spector/references/cli-failures.md",
+    );
   }
   return lines.join("\n");
 }

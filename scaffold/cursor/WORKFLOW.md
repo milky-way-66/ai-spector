@@ -2,7 +2,7 @@
 
 **You describe what you need in chat.** Cursor picks the right **skill**; the agent runs `ai-spector` CLI. You do not need to memorize command names.
 
-Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/README.md)). On CLI failure: [skills/ai-spector/references/cli-failures.md](./skills/ai-spector/references/cli-failures.md).
+Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
 
 ## One-time setup
 
@@ -54,7 +54,7 @@ analyze → validate graph → generate SRS → index
 
 | Symptom | What to say / do |
 |---------|------------------|
-| Analyze failed | “analyze again” after fixing data-source / Graphify |
+| Analyze failed | Agent offers fix vs workaround; say **1** to retry or “analyze again” after fixing data-source / Graphify |
 | Validate errors | “validate the graph” — agent explains each error |
 | Empty SRS | “analyze” then “generate SRS” — not bulk-read all docs |
 | Unsure what regen | “what’s the impact of my changes” |

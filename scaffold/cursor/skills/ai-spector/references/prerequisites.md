@@ -7,7 +7,7 @@ Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active ste
 ## When checks fail
 
 1. **Stop immediately** — do not read `.ai-spector/templates/`, spawn subagents, or write outputs.
-2. Reply with the **Blocked** format in [cli-failures.md](./cli-failures.md) (include full CLI output).
+2. Reply with the **Blocked** format in [cli-failures.md](./cli-failures.md) (include full CLI output; offer fix / workaround / pause).
 3. Help the user fix the issue; re-run the failed CLI; then continue the slash command.
 
 ## Graph context (only after CLI succeeds)
@@ -16,7 +16,7 @@ Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active ste
 2. Per target: **`ai-spector graph query <seedId> --json`** — parse JSON; use `projectionPaths` and `nodes`.
 3. Open **only** those paths (+ targeted `docs/data-source/**` if still insufficient).
 
-**If validate or query fails:** follow [cli-failures.md](./cli-failures.md) — do **not** fall back to index or full-tree reads.
+**If validate or query fails:** follow [cli-failures.md](./cli-failures.md) — do **not** fall back to index or full-tree reads unless the user approves a listed workaround.
 
 **If query succeeds but has no domain nodes:** tell the user; suggest **`/analyze`** — still no `docs/srs/**` glob.
 

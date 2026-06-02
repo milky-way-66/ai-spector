@@ -12,13 +12,14 @@ description: >-
 
 **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md) · **Router:** [_skill-router.md](../_skill-router.md)
 
-## CLI failure (non-negotiable)
+## CLI and tool failure (non-negotiable)
 
-When `ai-spector` exits non-zero or required `--json` is invalid:
+When `ai-spector` exits non-zero, required `--json` is invalid, or a required MCP/terminal step fails:
 
-1. **Stop** — no generation, no bulk `docs/**` reads, no hand-editing the whole graph.
-2. **Report** per [references/cli-failures.md](references/cli-failures.md).
-3. **Fix**, then **re-run the same CLI**.
+1. **Pause** — no generation, no bulk `docs/**` reads, no silent workarounds.
+2. **Report** per [references/cli-failures.md](references/cli-failures.md) (include full output).
+3. **Offer recovery** — fix and retry (default), bounded workaround if applicable, or pause; wait for user unless [auto-fix](references/cli-failures.md#agent-may-fix-without-asking-small-local) applies.
+4. **Continue** the same task from the failed step after fix or user-approved workaround; re-run the same CLI when possible.
 
 ## Project anchors
 

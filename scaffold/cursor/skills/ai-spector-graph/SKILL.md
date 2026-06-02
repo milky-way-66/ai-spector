@@ -36,7 +36,7 @@ Read **one** runbook under `references/` for the user’s intent, then execute i
 ```
 - [ ] Matched runbook read completely
 - [ ] CLI from project root (npx ai-spector)
-- [ ] On failure: stop per ai-spector/references/cli-failures.md
+- [ ] On failure: pause; offer fix / workaround / pause per ai-spector/references/cli-failures.md
 ```
 
 ## Shared references

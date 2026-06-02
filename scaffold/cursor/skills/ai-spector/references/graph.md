@@ -7,7 +7,7 @@ Run from project root: `npx ai-spector …` if needed.
 ## Every CLI invocation
 
 1. Run the command; capture **exit code**, **stdout**, **stderr**.
-2. If non-zero or `--json` is unparseable → **stop**; report per `cli-failures.md`.
+2. If non-zero or `--json` is unparseable → **pause**; report and offer fix / workaround / pause per `cli-failures.md`.
 3. On success, use CLI output only — do not re-derive graph state in the agent.
 
 ## Commands

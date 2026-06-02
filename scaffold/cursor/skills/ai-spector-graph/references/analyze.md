@@ -94,7 +94,7 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 
 ## CLI steps — stop on first failure
 
-Run in order. If any step fails, **stop** and use [cli-failures.md](../../ai-spector/references/cli-failures.md) (show full CLI output + fix steps). Do not skip to merge, validate, or `/generate-srs`.
+Run in order. If any step fails, **pause** and use [cli-failures.md](../../ai-spector/references/cli-failures.md) (show full CLI output; offer fix / workaround / pause). Do not skip to merge, validate, or generate SRS without user choice.
 
 | Step | Command |
 |------|---------|
@@ -107,6 +107,6 @@ Only block if semantic extract / `knowledge.json` generation fails.
 
 ## If blocked
 
-Use the **Blocked** template in [cli-failures.md](../../ai-spector/references/cli-failures.md). Include which step failed, exit code, verbatim CLI output, what it means, and how to fix. Offer to apply small fixes (e.g. one bad `listedInSection`) then re-run the same step.
+Use the **Blocked** template in [cli-failures.md](../../ai-spector/references/cli-failures.md). Include which step failed, exit code, verbatim CLI output, fix steps, optional workaround, and **1 / 2 / 3** choices. Offer to apply small fixes (e.g. one bad `listedInSection`) then re-run the same step.
 
 **Do not:** hand-edit the full graph, generate SRS, or read all of `docs/srs/` as a workaround.

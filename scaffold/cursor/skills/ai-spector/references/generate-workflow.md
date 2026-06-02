@@ -5,7 +5,7 @@ Used by **SRS**, **basic design**, and **detail design** generation skills.
 | Topic | Document |
 |-------|----------|
 | Graph query, merge patch shape, waves algorithm | [generate-graph.md](./generate-graph.md) |
-| CLI failure stop rules | [cli-failures.md](./cli-failures.md) |
+| CLI failure recovery (fix / workaround / pause) | [cli-failures.md](./cli-failures.md) |
 | Layer-specific DAG, intent tables, waves | each skill’s `references/runbook.md` |
 
 **Not used by** HTML prototype generation (`ai-spector-generate-prototype` runbook).
@@ -54,7 +54,7 @@ Command-specific phrase → DAG mappings live in each `generate-*.md` (not here)
 ai-spector graph validate
 ```
 
-Stop on errors — [cli-failures.md](./cli-failures.md).
+On errors, pause and follow recovery in [cli-failures.md](./cli-failures.md).
 
 3. `workflow.dependencies.json` entry for that command (SRS minimum, etc.).
 
@@ -112,7 +112,7 @@ Index flags: `--skip-graphify` when only markdown under `docs/` changed; `--forc
 - **Every target** gets its own `graph query` + dependency queries before write.
 - **Every wave** ends with merge + validate (and **index** when the command doc says so) before the next wave.
 - **Case 3** requires explicit user **yes** before any write.
-- On `graph query` / `merge` / `validate` / `index` failure → stop per [cli-failures.md](./cli-failures.md).
+- On `graph query` / `merge` / `validate` / `index` failure → pause and recover per [cli-failures.md](./cli-failures.md).
 - Prefer graph `nodes`/`edges` over stale `knowledge.json` for generation text.
 
 ## If blocked

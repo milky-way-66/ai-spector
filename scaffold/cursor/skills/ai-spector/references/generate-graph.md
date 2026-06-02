@@ -148,4 +148,4 @@ For `mode: perEndpoint` / `perScreen` (basic design — `dag.basic-design.graph-
 
 ## On CLI failure
 
-[cli-failures.md](./cli-failures.md) — stop; do not generate from memory.
+[cli-failures.md](./cli-failures.md) — pause; offer fix / workaround / pause; do not generate from memory without user-approved workaround.

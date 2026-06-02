@@ -23,7 +23,7 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings â†’ Rules â†
 
 | Doc | Path |
 |-----|------|
-| CLI failures | `ai-spector/references/cli-failures.md` |
+| CLI failures (fix / workaround / pause) | `ai-spector/references/cli-failures.md` |
 | Graph CLI | `ai-spector/references/graph.md` |
 | Generation workflow | `ai-spector/references/generate-workflow.md` |
 | Graph query / merge | `ai-spector/references/generate-graph.md` |
