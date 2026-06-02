@@ -1,3 +1,2 @@
-# Graphify MCP sometimes writes here by default — not AI Spector canonical output.
-# Safe to delete; re-run /analyze with output under .ai-spector/.docflow/graph/ instead.
-graphify-out/
+# Input files for AI Spector analysis (markdown, docs).
+# Add your data source documents here.

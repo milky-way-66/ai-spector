@@ -12,7 +12,6 @@ const SAMPLE_RULES: ImpactRulesFile = {
   buckets: {
     regenerate: ["section"],
     review: ["useCase", "feature"],
-    downstream: ["document"],
   },
 };
 

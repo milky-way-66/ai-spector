@@ -5,6 +5,7 @@ export class InMemoryGraph {
   readonly nodesById = new Map<string, GraphNode>();
   readonly outEdges = new Map<string, GraphEdge[]>();
   readonly inEdges = new Map<string, GraphEdge[]>();
+  private readonly edgeKeys = new Set<string>();
 
   static from(data: TraceabilityGraph): InMemoryGraph {
     const g = new InMemoryGraph();
@@ -21,14 +22,6 @@ export class InMemoryGraph {
       g.addEdge(edge);
     }
     return g;
-  }
-
-  toJSON(): TraceabilityGraph {
-    return {
-      version: 1,
-      nodes: [...this.nodesById.values()],
-      edges: [...this.outEdges.values(), ...this.inEdges.values()].flat(),
-    };
   }
 
   /** Dedupe edges when exporting (each edge stored once in outEdges). */
@@ -81,18 +74,11 @@ export class InMemoryGraph {
   }
 
   hasEdge(edge: GraphEdge): boolean {
-    const key = this.edgeKey(edge);
-    for (const list of this.outEdges.values()) {
-      for (const e of list) {
-        if (this.edgeKey(e) === key) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return this.edgeKeys.has(this.edgeKey(edge));
   }
 
   addEdge(edge: GraphEdge): void {
+    this.edgeKeys.add(this.edgeKey(edge));
     this.outEdges.get(edge.from)!.push(edge);
     const inbound = this.inEdges.get(edge.to);
     if (inbound) {
@@ -166,6 +152,7 @@ export class InMemoryGraph {
       "useCase",
       "feature",
       "requirement",
+      "nfr",
       "dataEntity",
     ]);
 

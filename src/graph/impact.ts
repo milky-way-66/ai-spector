@@ -24,7 +24,6 @@ export interface ImpactResult {
   affected: {
     regenerate: ImpactEntry[];
     review: ImpactEntry[];
-    downstream: ImpactEntry[];
   };
   /** Present when CLI resolved origin via --file / --heading */
   resolvedFrom?: { id: string; type: string; reason: string };
@@ -42,12 +41,29 @@ function maxDepth(d: number | "unbounded"): number {
   return d === "unbounded" ? 10_000 : d;
 }
 
+export interface ImpactProvenance {
+  fromId: string;
+  edgeType: string;
+}
+
+/** Returns the set of reached node IDs (excludes origin). Public API for callers that only need reachability. */
 export function propagateImpact(
   g: InMemoryGraph,
   originId: string,
   rules: ImpactRulesFile,
 ): Set<string> {
-  const visited = new Set<string>([originId]);
+  const map = propagateImpactWithProvenance(g, originId, rules);
+  return new Set(map.keys());
+}
+
+/** Internal: returns provenance (immediate predecessor + edge type) for each reached node. */
+function propagateImpactWithProvenance(
+  g: InMemoryGraph,
+  originId: string,
+  rules: ImpactRulesFile,
+): Map<string, ImpactProvenance> {
+  const provenance = new Map<string, ImpactProvenance>();
+  const seen = new Set<string>([originId]);
   const queue: { id: string; depth: number }[] = [{ id: originId, depth: 0 }];
   const cap = 500;
 
@@ -68,8 +84,9 @@ export function propagateImpact(
           if (e.type !== edgeType) {
             continue;
           }
-          if (!visited.has(e.to)) {
-            visited.add(e.to);
+          if (!seen.has(e.to)) {
+            seen.add(e.to);
+            provenance.set(e.to, { fromId: current, edgeType });
             queue.push({ id: e.to, depth: depth + 1 });
           }
         }
@@ -79,8 +96,9 @@ export function propagateImpact(
           if (e.type !== edgeType) {
             continue;
           }
-          if (!visited.has(e.from)) {
-            visited.add(e.from);
+          if (!seen.has(e.from)) {
+            seen.add(e.from);
+            provenance.set(e.from, { fromId: current, edgeType });
             queue.push({ id: e.from, depth: depth + 1 });
           }
         }
@@ -88,8 +106,7 @@ export function propagateImpact(
     }
   }
 
-  visited.delete(originId);
-  return visited;
+  return provenance;
 }
 
 function bucketForType(
@@ -115,27 +132,29 @@ export function computeImpact(
     throw new Error(`Unknown node: ${originId}`);
   }
 
-  const affectedIds = propagateImpact(g, originId, rules);
-  affectedIds.delete(originId);
+  const provenance = propagateImpactWithProvenance(g, originId, rules);
 
   const result: ImpactResult = {
     origin: { id: originId, type: origin.type, change },
-    affected: { regenerate: [], review: [], downstream: [] },
+    affected: { regenerate: [], review: [] },
   };
 
-  for (const id of affectedIds) {
-    const node = g.nodesById.get(id)!;
+  for (const [id, prov] of provenance) {
+    const node = g.nodesById.get(id);
+    if (!node) {
+      continue;
+    }
     const bucket = bucketForType(node.type, rules.buckets);
-    if (!bucket) {
+    if (!bucket || !(bucket in result.affected)) {
       continue;
     }
     const entry: ImpactEntry = {
       id,
       type: node.type,
-      reason: `reachable from ${originId} via impact propagation`,
+      reason: `${prov.edgeType} from ${prov.fromId}`,
       projectionPath: projectionPathForNode(g, id),
     };
-    result.affected[bucket].push(entry);
+    result.affected[bucket as keyof ImpactResult["affected"]].push(entry);
   }
 
   for (const key of Object.keys(result.affected) as (keyof ImpactResult["affected"])[]) {
@@ -166,7 +185,7 @@ export function mergeImpactResults(
       type: "multi",
       change: results[0].origin.change,
     },
-    affected: { regenerate: [], review: [], downstream: [] },
+    affected: { regenerate: [], review: [] },
     gitSeeds:
       gitSeeds ??
       results.map((r) => ({

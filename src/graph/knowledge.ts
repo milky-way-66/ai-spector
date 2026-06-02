@@ -121,7 +121,7 @@ export function knowledgeToPatch(knowledge: AnalysisKnowledge): ExtractPatch {
   for (const req of knowledge.nfrs ?? []) {
     const section = req.listedInSection ?? DEFAULT_LISTED_IN.nfr;
     nodes.push(
-      pickNodeFields(req as unknown as Record<string, unknown>, req.id, "requirement"),
+      pickNodeFields(req as unknown as Record<string, unknown>, req.id, "nfr"),
     );
     edges.push({ type: "describedIn", from: req.id, to: section });
     for (const target of req.tracesTo ?? []) {

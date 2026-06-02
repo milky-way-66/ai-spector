@@ -9,6 +9,7 @@ export type NodeType =
   | "useCase"
   | "feature"
   | "requirement"
+  | "nfr"
   | "dataEntity";
 
 export type BundleRole = "source" | "business" | "spec";
@@ -23,6 +24,7 @@ export type EdgeType =
   | "describedIn"
   | "satisfies"
   | "dependsOn"
+  | "requires"
   | "tracesTo"
   | "derivedFrom"
   | "rendersTo"

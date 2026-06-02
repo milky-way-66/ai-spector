@@ -13,7 +13,7 @@ export interface AnalyzePrepOptions {
 
 /**
  * Prepare traceability graph structure (registry + bootstrap + validate).
- * Semantic knowledge extraction runs in Cursor via the analyze skill + Graphify MCP.
+ * Semantic knowledge extraction runs in Cursor via the analyze skill (agent reads docs/data-source/ markdown directly).
  */
 export async function runAnalyzePrep(
   root?: string,
@@ -74,5 +74,5 @@ export async function runAnalyzePrep(
 
   console.log("");
   console.log("Structure ready. In Cursor ask: analyze the data source");
-  console.log("(The agent runs merge, validate, and Graphify — not you.)");
+  console.log("(The agent reads docs/data-source/ markdown, runs merge and validate -- not you.)");
 }

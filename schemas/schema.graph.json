@@ -30,6 +30,7 @@
         "useCase",
         "feature",
         "requirement",
+        "nfr",
         "dataEntity"
       ]
     },

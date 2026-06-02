@@ -130,7 +130,6 @@ export function formatInboxForChat(inbox: CommentInbox): string {
 export interface ImpactSummary {
   regenerate: number;
   review: number;
-  downstream: number;
   originId?: string;
   originType?: string;
   topRegenerate: Array<{ id: string; projectionPath?: string }>;
@@ -144,7 +143,6 @@ export function summarizeImpact(impact: ImpactResult | null): ImpactSummary | nu
   return {
     regenerate: impact.affected.regenerate.length,
     review: impact.affected.review.length,
-    downstream: impact.affected.downstream.length,
     originId: impact.origin.id,
     originType: impact.origin.type,
     topRegenerate: impact.affected.regenerate.slice(0, 8).map((e) => ({
@@ -263,7 +261,6 @@ export function formatPlanForChat(plan: CommentResolvePlan): string {
       "**Impact if you change this section:**",
       `- Regenerate: ${plan.impactSummary.regenerate}`,
       `- Review: ${plan.impactSummary.review}`,
-      `- Downstream: ${plan.impactSummary.downstream}`,
     );
     if (plan.resolvedFrom) {
       lines.push(`- Graph seed: \`${plan.resolvedFrom.id}\` (${plan.resolvedFrom.reason})`);

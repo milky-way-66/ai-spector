@@ -4,7 +4,6 @@ import { buildSectionRegistry } from "../registry/build.js";
 import { bootstrapFromRegistry } from "./bootstrap.js";
 import { validateGraph, formatIssues } from "./validate.js";
 import { runGraphMerge } from "./graph-merge.js";
-import { runGraphifyUpdate } from "./graphify-update.js";
 import { runProvenanceLink } from "../graph/provenance.js";
 import { ensureBusinessBundle, ensureSourceBundle } from "../graph/bundles.js";
 import {
@@ -45,13 +44,10 @@ export interface IndexOptions {
   root?: string;
   graphOnly?: boolean;
   docsOnly?: boolean;
-  skipGraphify?: boolean;
   skipDocs?: boolean;
   skipMerge?: boolean;
   skipDocSemantics?: boolean;
   skipValidate?: boolean;
-  /** Re-run Graphify on all sources even when content hash unchanged */
-  forceGraphify?: boolean;
 }
 
 export interface IndexReport {
@@ -82,7 +78,6 @@ export async function runIndex(
 
   const runGraph = !docsOnly;
   const runDocs = !graphOnly && !opts.skipDocs;
-  const runGraphify = runGraph && !graphOnly && !opts.skipGraphify;
 
   let graphJson: TraceabilityGraph | null = null;
 
@@ -222,53 +217,6 @@ export async function runIndex(
         label: "SRS/docs → graph (body extract)",
         status: "skipped",
         detail: "--skip-doc-semantics",
-      });
-    }
-
-    if (runGraphify && !failed) {
-      try {
-        const gf = await runGraphifyUpdate({
-          root: projectRoot,
-          force: opts.forceGraphify,
-        });
-        const runDetail =
-          gf.sourcesRun.length > 0
-            ? `updated: ${gf.sourcesRun.join(", ")}`
-            : "no source changes";
-        const emptyDetail =
-          gf.sourcesEmptySkipped.length > 0
-            ? `; empty (skipped): ${gf.sourcesEmptySkipped.join(", ")}`
-            : "";
-        const noCodeDetail =
-          gf.sourcesNoCodeSkipped.length > 0
-            ? `; no code files (skipped): ${gf.sourcesNoCodeSkipped.join(", ")}`
-            : "";
-        const skipDetail =
-          gf.sourcesSkipped.length > 0
-            ? `; unchanged: ${gf.sourcesSkipped.join(", ")}`
-            : "";
-        record({
-          id: "graphify-storage",
-          label: "Graphify index & graph.json",
-          status: "ok",
-          detail: `${runDetail}${emptyDetail}${noCodeDetail}${skipDetail}`,
-        });
-      } catch (err) {
-        record({
-          id: "graphify-storage",
-          label: "Graphify index & graph.json",
-          status: "skipped",
-          detail:
-            (err instanceof Error ? err.message : String(err)) +
-            " (non-blocking sidecar; semantic/doc merges continue. retry with graphify installed, or use --skip-graphify)",
-        });
-      }
-    } else if (!runGraphify) {
-      record({
-        id: "graphify-storage",
-        label: "Graphify index & graph.json",
-        status: "skipped",
-        detail: opts.skipGraphify ? "--skip-graphify" : "graph-only / docs-only",
       });
     }
 
@@ -494,17 +442,14 @@ function printIndexSummary(steps: IndexStepResult[], failed: boolean): void {
   console.log("");
   if (failed) {
     console.log("Some steps failed. Graph/knowledge may be partially updated.");
-    console.log("Re-run after fixing, or use flags: --skip-graphify, --skip-merge, --graph-only");
+    console.log("Re-run after fixing, or use flags: --skip-merge, --graph-only");
   } else {
     console.log("All requested steps completed.");
     console.log(
-      "Graphify is a sidecar index for code paths; failures do not block semantic/doc graph updates.",
+      "Index merges existing knowledge.json plus UC/F/actor ids parsed from docs/srs and docs/basic-design bodies.",
     );
     console.log(
-      "Full semantic re-extract (actors, NFRs, data model) still uses /analyze + Graphify MCP → knowledge.json.",
-    );
-    console.log(
-      "Index merges existing knowledge plus UC/F/actor ids parsed from docs/srs and docs/basic-design bodies.",
+      "Full semantic re-extract (actors, NFRs, data model): run /analyze in Cursor → knowledge.json.",
     );
   }
 }

@@ -1,12 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  defaultGraphifyJsonPath,
-  graphifyNodeTargetId,
-  isGraphifyNodeTarget,
-  loadGraphifyIndex,
-  type GraphifyIndex,
-} from "../graphify/graph-index.js";
 import type { AnalysisKnowledge } from "./knowledge.js";
 import { isKnowledgePayload, knowledgeHasDomainEntries } from "./knowledge.js";
 import { mergePatch } from "./merge.js";
@@ -26,7 +19,6 @@ export interface ProvenanceLinkOptions {
   projectRoot: string;
   graphPath: string;
   dataSourceRoot?: string;
-  graphifyJsonPath?: string;
   knowledgePath?: string;
 }
 
@@ -62,46 +54,6 @@ function collectKnowledgeRefs(
     }
   }
   return out;
-}
-
-function resolveRefToTargets(
-  ref: string,
-  dataSourceRoot: string,
-  graphify: GraphifyIndex | null,
-): string[] {
-  const targets = new Set<string>();
-
-  if (ref.startsWith("graphify:") && graphify) {
-    const id = ref.slice("graphify:".length);
-    if (graphify.nodes.some((n) => n.id === id)) {
-      targets.add(ref);
-    }
-    return [...targets];
-  }
-
-  const normalized = normalizeDataSourcePath(ref, dataSourceRoot);
-  if (normalized) {
-    targets.add(normalized);
-    const nodeIds = graphify?.byRepoPath.get(normalized);
-    if (nodeIds?.length === 1) {
-      targets.add(graphifyNodeTargetId(nodeIds[0]!));
-    }
-    return [...targets];
-  }
-
-  if (graphify && !ref.includes("/")) {
-    const key = ref.trim().toLowerCase();
-    const byLabel = graphify.byLabel.get(key);
-    if (byLabel?.length === 1) {
-      targets.add(graphifyNodeTargetId(byLabel[0]!));
-    }
-    const idMatch = graphify.nodes.find((n) => n.id === ref);
-    if (idMatch) {
-      targets.add(graphifyNodeTargetId(idMatch.id));
-    }
-  }
-
-  return [...targets];
 }
 
 /** Normalize to repo-relative path under docs/data-source when possible. */
@@ -153,7 +105,6 @@ function domainIdFromDetailContent(
 function buildProvenancePatch(
   domainRefs: Map<string, Set<string>>,
   dataSourceRoot: string,
-  graphify: GraphifyIndex | null,
   validDomainIds: Set<string>,
   knownSourceFiles: ReadonlySet<string>,
 ): ExtractPatch {
@@ -165,21 +116,17 @@ function buildProvenancePatch(
       continue;
     }
     for (const ref of refs) {
-      for (const rawTo of resolveRefToTargets(ref, dataSourceRoot, graphify)) {
-        if (isGraphifyNodeTarget(rawTo) && !graphify) {
-          continue;
-        }
-        const to =
-          !isGraphifyNodeTarget(rawTo) && rawTo.startsWith("docs/data-source/")
-            ? provenanceTargetId(rawTo, knownSourceFiles)
-            : rawTo;
-        const key = `${domainId}|derivedFrom|${to}`;
-        if (edgeKeys.has(key)) {
-          continue;
-        }
-        edgeKeys.add(key);
-        edges.push({ type: "derivedFrom", from: domainId, to });
+      const normalized = normalizeDataSourcePath(ref, dataSourceRoot);
+      if (!normalized) {
+        continue;
       }
+      const to = provenanceTargetId(normalized, knownSourceFiles);
+      const key = `${domainId}|derivedFrom|${to}`;
+      if (edgeKeys.has(key)) {
+        continue;
+      }
+      edgeKeys.add(key);
+      edges.push({ type: "derivedFrom", from: domainId, to });
     }
   }
 
@@ -275,9 +222,6 @@ export async function runProvenanceLink(
   opts: ProvenanceLinkOptions,
 ): Promise<ProvenanceLinkResult> {
   const dataSourceRoot = opts.dataSourceRoot ?? "docs/data-source";
-  const graphifyPath =
-    opts.graphifyJsonPath ?? defaultGraphifyJsonPath(opts.projectRoot);
-  const graphify = await loadGraphifyIndex(graphifyPath, dataSourceRoot);
 
   const domainRefs = await collectDomainProvenanceRefs({
     ...opts,
@@ -299,7 +243,6 @@ export async function runProvenanceLink(
   const patch = buildProvenancePatch(
     domainRefs,
     dataSourceRoot,
-    graphify,
     validDomainIds,
     knownSourceFiles,
   );

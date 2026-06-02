@@ -5,14 +5,17 @@
     "partOf": { "direction": "out", "depth": "unbounded" },
     "contains": { "direction": "in", "depth": "unbounded" },
     "satisfies": { "direction": "in", "depth": 1 },
-    "dependsOn": { "direction": "out", "depth": "unbounded" },
+    "dependsOn": { "direction": "in", "depth": "unbounded" },
     "definedIn": { "direction": "in", "depth": 1 },
     "listedIn": { "direction": "in", "depth": 1 },
-    "derivedFrom": { "direction": "out", "depth": 1 }
+    "derivedFrom": { "direction": "out", "depth": 1 },
+    "tracesTo": { "direction": "in", "depth": 1 },
+    "describedIn": { "direction": "in", "depth": 1 },
+    "relatesTo": { "direction": "both", "depth": 1 },
+    "references": { "direction": "in", "depth": 2 }
   },
   "buckets": {
     "regenerate": ["section", "document"],
-    "review": ["useCase", "feature", "requirement"],
-    "downstream": ["document"]
+    "review": ["useCase", "feature", "requirement", "nfr", "actor", "dataEntity"]
   }
 }

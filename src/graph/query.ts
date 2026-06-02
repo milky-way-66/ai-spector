@@ -24,6 +24,8 @@ const DEFAULT_GENERATE_EDGES: EdgeType[] = [
   "describedIn",
   "satisfies",
   "dependsOn",
+  "tracesTo",
+  "relatesTo",
   "references",
   "rendersTo",
   "derivedFrom",
@@ -110,7 +112,7 @@ export function dataSourcePathsForNode(
 ): string[] {
   const paths: string[] = [];
   for (const e of g.outEdges.get(nodeId) ?? []) {
-    if (e.type === "derivedFrom" && !e.to.startsWith("graphify:")) {
+    if (e.type === "derivedFrom") {
       paths.push(e.to);
     }
   }

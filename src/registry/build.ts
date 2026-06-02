@@ -9,27 +9,22 @@ import {
 } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
 import { sectionIdFromHeading } from "./slug.js";
-
-const HEADING_RE = /^(#{2,4})\s+(.+)$/;
+import { parseMarkdown, textContent } from "../markdown/parse.js";
+import type { Heading } from "../markdown/parse.js";
 
 function parseSections(content: string): RegistrySection[] {
+  const root = parseMarkdown(content);
   const sections: RegistrySection[] = [];
   let order = 0;
-  for (const line of content.split("\n")) {
-    if (line.startsWith(">")) {
-      continue;
-    }
-    const m = HEADING_RE.exec(line.trim());
-    if (!m) {
-      continue;
-    }
-    const level = m[1].length;
-    const heading = m[2].trim();
+  for (const node of root.children) {
+    if (node.type !== "heading") continue;
+    const h = node as Heading;
+    if (h.depth < 2 || h.depth > 4) continue;
     order += 1;
     sections.push({
       id: "",
-      heading,
-      level,
+      heading: textContent(h).trim(),
+      level: h.depth,
       order,
     });
   }

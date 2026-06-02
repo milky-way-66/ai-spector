@@ -184,28 +184,29 @@ describe("detailFileToPatch", () => {
       String(n.heading).includes("Use Case Overview"),
     );
     expect(overview?.title).toBe(overview?.heading);
+    // definedIn anchors to first section only (not every section, not the doc)
+    expect(patch.edges).toContainEqual({
+      type: "definedIn",
+      from: "UC-03",
+      to: sectionNodes[0]!.id,
+    });
+    const definedInEdges = patch.edges.filter(
+      (e) => e.type === "definedIn" && e.from === "UC-03",
+    );
+    expect(definedInEdges).toHaveLength(1);
+    // describedIn to the document (not per-section)
+    expect(patch.edges).toContainEqual({
+      type: "describedIn",
+      from: "UC-03",
+      to: docId,
+    });
     for (const sec of sectionNodes) {
-      expect(patch.edges).toContainEqual({
-        type: "definedIn",
-        from: "UC-03",
-        to: sec.id,
-      });
-      expect(patch.edges).toContainEqual({
-        type: "describedIn",
-        from: "UC-03",
-        to: sec.id,
-      });
       expect(patch.edges).toContainEqual({
         type: "partOf",
         from: sec.id,
         to: docId,
       });
     }
-    expect(patch.edges).not.toContainEqual({
-      type: "definedIn",
-      from: "UC-03",
-      to: docId,
-    });
     expect(patch.edges).toContainEqual({
       type: "rendersTo",
       from: "UC-03",

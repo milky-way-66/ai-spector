@@ -61,7 +61,7 @@ describe("runInit", () => {
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-comments/SKILL.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/README.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/_skill-router.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/commands"))).toBe(false);
+    expect(await pathExists(join(root, ".cursor/commands/_workflow.md"))).toBe(true);
 
     const workflow = await readFile(join(root, ".cursor/WORKFLOW.md"), "utf8");
     expect(workflow).toContain("ai-spector-graph");

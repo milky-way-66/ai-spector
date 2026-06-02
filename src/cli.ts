@@ -17,7 +17,6 @@ import { runGraphReport } from "./commands/graph-report.js";
 import { ensureHubBundles } from "./graph/bundles.js";
 import { loadInMemoryGraph } from "./graph/loadGraph.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
-import { runGraphifyUpdate } from "./commands/graphify-update.js";
 import { runIndex } from "./commands/index.js";
 import {
   runCommentsInbox,
@@ -87,29 +86,25 @@ program
 program
   .command("index")
   .description(
-    "Refresh graph, knowledge merge, Graphify storage, and doc indexes from current project files",
+    "Refresh graph, knowledge merge, and doc indexes from current project files",
   )
-  .option("--graph-only", "Only registry + bootstrap + merge + validate (no Graphify, no doc indexes)")
+  .option("--graph-only", "Only registry + bootstrap + merge + validate (no doc indexes)")
   .option("--docs-only", "Only rebuild .ai-spector/index/*.md and state hashes")
-  .option("--skip-graphify", "Skip Graphify update (code graph / graphify-index)")
   .option("--skip-docs", "Skip .ai-spector/index document indexes")
   .option("--skip-merge", "Skip merging knowledge.json into graph")
   .option(
     "--skip-doc-semantics",
     "Skip parsing docs/srs and docs/basic-design for UC/F/actor ids into the graph",
   )
-  .option("--force-graphify", "Re-run Graphify update on all sources even when unchanged")
   .option("--skip-validate", "Skip graph validate after refresh")
   .action(async (opts, cmd) => {
     await runIndex({
       root: projectRootOpt(cmd),
       graphOnly: opts.graphOnly,
       docsOnly: opts.docsOnly,
-      skipGraphify: opts.skipGraphify,
       skipDocs: opts.skipDocs,
       skipMerge: opts.skipMerge,
       skipDocSemantics: opts.skipDocSemantics,
-      forceGraphify: opts.forceGraphify,
       skipValidate: opts.skipValidate,
     });
   });
@@ -125,29 +120,6 @@ program
   )
   .action(async (opts, cmd) => {
     await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
-  });
-
-const graphify = program
-  .command("graphify")
-  .description("Graphify CLI wrappers (sets GRAPHIFY_OUT — do not use graphify update --graph)");
-
-graphify
-  .command("update [path]")
-  .description(
-    "Run graphify update on data-source with output under .ai-spector/.docflow/graph/graphify-out",
-  )
-  .option(
-    "--keep-stale",
-    "Do not delete docs/data-source/graphify-out if Graphify wrote it there by mistake",
-  )
-  .option("--force", "Re-run update on all configured sources even when content hash unchanged")
-  .action(async (path: string | undefined, opts, cmd) => {
-    await runGraphifyUpdate({
-      root: projectRootOpt(cmd),
-      sourcePath: path,
-      removeStaleOutput: !opts.keepStale,
-      force: opts.force,
-    });
   });
 
 const graph = program.command("graph").description("Traceability graph operations");
@@ -298,7 +270,7 @@ graph
 graph
   .command("link-sources")
   .description(
-    "Add derivedFrom edges from domain nodes to docs/data-source paths (and Graphify symbols when matched)",
+    "Add derivedFrom edges from domain nodes to docs/data-source paths",
   )
   .option("-g, --graph <path>", "Graph path")
   .action(async (_opts, cmd) => {

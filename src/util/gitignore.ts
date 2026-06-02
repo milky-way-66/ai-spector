@@ -8,10 +8,6 @@ export const GITIGNORE_END = "# <<< ai-spector (end)";
 /** Lines merged into the project root .gitignore on init. */
 export const AI_SPECTOR_GITIGNORE_LINES = [
   GITIGNORE_BEGIN,
-  "# Graphify MCP + local reports (see .cursor/mcp.json)",
-  "docs/data-source/graphify-out/",
-  ".ai-spector/.docflow/graph/graphify-index/",
-  ".ai-spector/.docflow/graph/graphify-out/",
   ".ai-spector/views/",
   GITIGNORE_END,
   "",

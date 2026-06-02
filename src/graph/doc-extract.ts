@@ -719,13 +719,13 @@ function buildDetailInstancePatch(opts: {
   const sectionPatch = detailSectionsToPatch(opts.docId, sections, opts.content);
   nodes.push(...sectionPatch.nodes);
   edges.push(...sectionPatch.edges);
-  for (const sec of sections) {
-    edges.push({ type: "definedIn", from: opts.domainId, to: sec.id });
-    edges.push({ type: "describedIn", from: opts.domainId, to: sec.id });
-  }
-  if (sections.length === 0) {
-    edges.push({ type: "definedIn", from: opts.domainId, to: opts.docId });
-  }
+  // Anchor to the primary (first) section only — one definedIn is enough for validation
+  // and avoids flooding the graph with edges to every section.
+  edges.push({
+    type: "definedIn",
+    from: opts.domainId,
+    to: sections[0]?.id ?? opts.docId,
+  });
 
   return { version: 1, nodes, edges };
 }
@@ -928,7 +928,7 @@ export async function buildDocExtractPatch(
   }
   const merged = mergeParsedDomains(perFile);
 
-  const allNodes: GraphNode[] = [];
+  const allNodesMap = new Map<string, GraphNode>();
   const allEdges: GraphEdge[] = [];
   const edgeKeys = new Set<string>();
   let detailDocuments = 0;
@@ -938,8 +938,9 @@ export async function buildDocExtractPatch(
 
   const mergePatchInto = (patch: ExtractPatch) => {
     for (const n of patch.nodes) {
-      if (!allNodes.some((x) => x.id === n.id && x.type === n.type)) {
-        allNodes.push(n);
+      const existing = allNodesMap.get(n.id);
+      if (!existing) {
+        allNodesMap.set(n.id, n);
         if (n.type === "document" && n.output && !n.outputPattern) {
           const out = String(n.output).replace(/\\/g, "/");
           const isBdInstance =
@@ -965,19 +966,17 @@ export async function buildDocExtractPatch(
           detailSections++;
         }
       } else {
-        const idx = allNodes.findIndex((x) => x.id === n.id);
-        const existing = allNodes[idx]!;
-        const merged = { ...existing, ...n };
+        const merged: GraphNode = { ...existing, ...n };
         if (!n.title && existing.title) {
           merged.title = existing.title;
         }
         if (!n.description && existing.description) {
           merged.description = existing.description;
         }
-        allNodes[idx] = merged;
-        if (n.type === "document" && n.output && !existing.output) {
-          allNodes[idx] = { ...allNodes[idx]!, output: n.output };
+        if (n.type === "document" && !n.output && existing.output) {
+          merged.output = existing.output;
         }
+        allNodesMap.set(n.id, merged);
       }
     }
     for (const edge of patch.edges) {
@@ -1014,7 +1013,7 @@ export async function buildDocExtractPatch(
   }
 
   return {
-    patch: { version: 1, nodes: allNodes, edges: allEdges },
+    patch: { version: 1, nodes: [...allNodesMap.values()], edges: allEdges },
     stats: {
       useCases: merged.useCases.size,
       features: merged.features.size,

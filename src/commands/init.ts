@@ -6,7 +6,6 @@ import {
   scaffoldCursorBundleRoot,
 } from "../config/load.js";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
-import { ensureGraphifyMcpConfig } from "../util/mcp.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 
 export interface InitOptions {
@@ -14,12 +13,12 @@ export interface InitOptions {
   force?: boolean;
 }
 
-/** Copy bundled `scaffold/cursor/` → project `.cursor/`. */
+/** Copy bundled scaffold/cursor/ -> project .cursor/. */
 export async function copyCursorToProject(projectRoot: string): Promise<void> {
   await copyTree(scaffoldCursorBundleRoot(), join(projectRoot, ".cursor"));
 }
 
-/** Copy scaffold into project; `scaffold/cursor/` → `.cursor/` at project root. */
+/** Copy scaffold into project; scaffold/cursor/ -> .cursor/ at project root. */
 export async function copyScaffoldToProject(projectRoot: string): Promise<void> {
   const scaffold = scaffoldBundleRoot();
   const entries = await readdir(scaffold, { withFileTypes: true });
@@ -53,7 +52,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     ".ai-spector/registry",
     ".ai-spector/.docflow/analysis",
     ".ai-spector/.docflow/extract",
-    ".ai-spector/.docflow/graph/graphify-out",
+    ".ai-spector/.docflow/graph",
     ".ai-spector/views",
     "docs/srs",
     "docs/basic-design",
@@ -78,25 +77,21 @@ export async function runInit(opts: InitOptions): Promise<void> {
     await writeFile(gitkeep, "");
   }
 
-  const mcpPath = await ensureGraphifyMcpConfig(root);
   const gitignorePath = await ensureAiSpectorGitignore(root);
 
   console.log(`Initialized AI Spector project at ${root}`);
   console.log("");
-  console.log(`  MCP       → ${mcpPath} (Graphify server added/updated)`);
-  console.log(`  gitignore → ${gitignorePath} (ai-spector block added/updated)`);
-  console.log(`  templates → ${projectTemplates} (SRS / basic / detail design)`);
-  console.log(`  cursor    → ${join(root, ".cursor")} (from scaffold/cursor/)`);
+  console.log(`  gitignore -> ${gitignorePath} (ai-spector block added/updated)`);
+  console.log(`  templates -> ${projectTemplates} (SRS / basic / detail design)`);
+  console.log(`  cursor    -> ${join(root, ".cursor")} (from scaffold/cursor/)`);
   console.log("");
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");
-  console.log("  2. Reload MCP (Settings → MCP) or restart Cursor — needs uv + graphifyy");
-  console.log("  3. Enable all ai-spector skills (.cursor/skills/ — see README.md)");
-  console.log("  4. Add files under docs/data-source/");
-  console.log("  5. In Cursor: enable skills, then ask e.g. “analyze data source”, “generate SRS”");
+  console.log("  2. Enable all ai-spector skills (.cursor/skills/ -- see README.md)");
+  console.log("  3. Add files under docs/data-source/");
+  console.log('  4. In Cursor: ask e.g. "analyze data source", "generate SRS"');
   console.log("     Workflow: .cursor/WORKFLOW.md");
-  console.log("  6. Prototype: ai-spector prototype setup --theme vercel → “generate HTML prototype”");
-  console.log("     Or ask in chat: \"analyze data source\", \"generate SRS\", \"resolve comments\"");
+  console.log('  5. Prototype: ai-spector prototype setup --theme vercel -> "generate HTML prototype"');
   console.log("");
-  console.log("See .cursor/WORKFLOW.md — agents use skills + CLI; you rarely run CLI yourself.");
+  console.log("See .cursor/WORKFLOW.md -- agents use skills + CLI; you rarely run CLI yourself.");
 }

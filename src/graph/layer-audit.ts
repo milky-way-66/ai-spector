@@ -10,6 +10,7 @@ const DOMAIN_TYPES = new Set<NodeType>([
   "useCase",
   "feature",
   "requirement",
+  "nfr",
   "dataEntity",
 ]);
 
@@ -144,7 +145,7 @@ function listDomainsMissingProvenance(graph: InMemoryGraph): string[] {
   const withDerived = domainsWithDerivedFrom(graph);
   const missing: string[] = [];
   for (const node of graph.nodesById.values()) {
-    if (node.type === "useCase" && !withDerived.has(node.id)) {
+    if (DOMAIN_TYPES.has(node.type) && !withDerived.has(node.id)) {
       missing.push(node.id);
     }
   }
@@ -228,6 +229,9 @@ export async function auditGraphLayers(
   const useCases = countType(graph, "useCase");
   const features = countType(graph, "feature");
   const actors = countType(graph, "actor");
+  const requirements = countType(graph, "requirement");
+  const nfrs = countType(graph, "nfr");
+  const dataEntities = countType(graph, "dataEntity");
 
   const bundleSource = graph.nodesById.has(BUNDLE_SOURCE_ID);
   const sourceFiles = countType(graph, "sourceFile");
@@ -287,14 +291,12 @@ export async function auditGraphLayers(
       domainMembers,
       ok:
         bundleBusiness &&
-        domainMembers >= useCases + features + actors,
+        domainMembers >= useCases + features + actors + requirements + nfrs + dataEntities,
     },
     provenance: {
       derivedFrom,
       domainsWithoutSource,
-      ok:
-        useCases === 0 ||
-        domainsWithoutSource.length === 0,
+      ok: domainsWithoutSource.length === 0,
     },
     semanticLinks: {
       relatesTo,

@@ -1,7 +1,3 @@
 # >>> ai-spector (begin)
-# Graphify MCP + local reports (see .cursor/mcp.json)
-docs/data-source/graphify-out/
-.ai-spector/.docflow/graph/graphify-index/
-.ai-spector/.docflow/graph/graphify-out/
 .ai-spector/views/
 # <<< ai-spector (end)

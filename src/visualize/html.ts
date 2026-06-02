@@ -507,7 +507,7 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
     const sourceNodes = new Map();
     for (const e of P.graph.edges) {
       if (!edgeTypeOn.has(e.type)) continue;
-      if (e.type === "derivedFrom" && ids.has(e.from) && !e.to.startsWith("graphify:")) {
+      if (e.type === "derivedFrom" && ids.has(e.from)) {
         const sid = sourceNodeId(e.to);
         if (!sourceNodes.has(sid)) {
           const base = e.to.split("/").pop() || e.to;

@@ -147,6 +147,6 @@ export async function knowledgeStaleWarning(
   }
 
   return (
-    "docs/srs changed since last index — knowledge.json may be stale; run /analyze for full Graphify MCP re-extract, or rely on doc semantic merge from file bodies"
+    "docs/srs changed since last index — knowledge.json may be stale; run /analyze to re-extract from data source, or rely on doc semantic merge from file bodies"
   );
 }
