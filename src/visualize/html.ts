@@ -234,9 +234,9 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
     <div class="graph-toolbar">
       <label>View
         <select id="filter-view">
+          <option value="all">Full graph</option>
           <option value="domain">Domain + documents</option>
           <option value="structure">Documents + sections</option>
-          <option value="all">Full graph</option>
         </select>
       </label>
       <label>Search <input type="search" id="filter-search" placeholder="id or title…" style="width:160px" /></label>
@@ -279,11 +279,12 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
     useCase: "#22c55e",
     feature: "#f59e0b",
     requirement: "#ec4899",
+    nfr: "#f97316",
     dataEntity: "#06b6d4",
   };
 
   const STRUCTURE = new Set(["document", "section", "table", "diagram"]);
-  const DOMAIN_TYPES = new Set(["actor", "useCase", "feature", "requirement", "dataEntity"]);
+  const DOMAIN_TYPES = new Set(["actor", "useCase", "feature", "requirement", "nfr", "dataEntity"]);
 
   // All edge types in graph
   const allEdgeTypes = [...new Set(P.graph.edges.map((e) => e.type))].sort();
@@ -297,7 +298,13 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
       btn.classList.add("active");
       document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
-      if (btn.dataset.tab === "graph" && !window.__network) initGraph();
+      // Defer initGraph so the browser can reflow the panel (display:none → block)
+      // before vis-network measures the container dimensions.
+      if (btn.dataset.tab === "graph" && !window.__network) {
+        requestAnimationFrame(() => initGraph());
+      } else if (btn.dataset.tab === "graph") {
+        requestAnimationFrame(() => window.__network && window.__network.redraw());
+      }
     });
   });
 
@@ -547,8 +554,8 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
           background: isFocused ? "#facc15" : (NODE_COLORS[n.type] || "#94a3b8"),
           border: isFocused ? "#f59e0b" : (NODE_COLORS[n.type] || "#94a3b8"),
           highlight: { background: "#facc15", border: "#f59e0b" },
-          opacity: focusId && !isFocused ? 0.7 : 1,
         },
+        opacity: focusId && !isFocused ? 0.4 : 1,
         font: { color: "#e7ecf3", size: 11 },
         shape: STRUCTURE.has(n.type) || n.type === "file" || n.type === "source" ? "box" : "dot",
         size: n.type === "section" ? 10 : STRUCTURE.has(n.type) ? 12 : n.type === "file" || n.type === "source" ? 13 : 18,
@@ -580,6 +587,15 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
     return "<pre style=\\"margin:0;font-size:11px;max-width:320px;white-space:pre-wrap\\">" + escapeHtml((n.id || "") + " [" + n.type + "]\\n" + props) + "</pre>";
   }
 
+  function graphEmptyMsg() {
+    const container = document.getElementById("graph-network");
+    if (P.graph.nodes.length === 0) {
+      container.innerHTML = '<div style="color:#8b9cb3;padding:2rem;text-align:center">Graph is empty — run <code>ai-spector analyze</code> then <code>ai-spector graph merge</code></div>';
+      return true;
+    }
+    return false;
+  }
+
   function rebuildGraph() {
     if (!window.__network) return;
     const viewMode = document.getElementById("filter-view").value;
@@ -606,6 +622,7 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
   }
 
   function initGraph() {
+    if (graphEmptyMsg()) return;
     const container = document.getElementById("graph-network");
     const viewMode = document.getElementById("filter-view").value;
     const search = document.getElementById("filter-search").value;

@@ -16,6 +16,7 @@ const DOMAIN_TYPES = new Set<NodeType>([
   "useCase",
   "feature",
   "requirement",
+  "nfr",
   "dataEntity",
 ]);
 
