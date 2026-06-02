@@ -1,0 +1,53 @@
+export interface PrototypeConfig {
+  version: number;
+  listScreenDoc: string;
+  screenIndexSection: string;
+  screenDetailDir: string;
+  prototypeDir: string;
+  srcDir: string;
+  slugFrom: "screenName";
+  defaultTheme: string;
+}
+
+export interface ScreenIndexRow {
+  screenId: string;
+  displayName: string;
+  purpose?: string;
+  userRole?: string;
+  slug: string;
+  screenDoc: string;
+  prototypeStem: string;
+  prototypePath: string;
+}
+
+export interface PrototypeManifestScreen {
+  screenId: string;
+  displayName: string;
+  prototypeStem: string;
+  screenDoc: string;
+  purpose?: string;
+  userRole?: string;
+}
+
+export interface PrototypeManifest {
+  schemaVersion: 1;
+  themeName: string;
+  generatedAt: string;
+  screens: PrototypeManifestScreen[];
+}
+
+export interface PrototypeScreenMapEntry {
+  screenId: string;
+  displayName: string;
+  screenDoc: string;
+  prototypeStem: string;
+  prototypePath: string;
+  htmlExists: boolean;
+}
+
+export interface PrototypeScreenMap {
+  schemaVersion: 1;
+  themeName: string;
+  generatedAt: string;
+  screens: PrototypeScreenMapEntry[];
+}

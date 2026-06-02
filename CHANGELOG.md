@@ -8,8 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- **Skills-only Cursor bundle** — removed `.cursor/commands/`; runbooks live under each skill’s `references/`; shared docs under `ai-spector/references/`; pipeline in `.cursor/WORKFLOW.md`. Users describe tasks in natural language; agents route via skill descriptions.
+- **Generate command docs** — shared orchestration in `ai-spector/references/generate-workflow.md`; per-layer `references/runbook.md` files keep DAG/intent/waves only.
+
 - **Scaffold Cursor bundle** — slash commands and skills live in `scaffold/cursor/` (versioned); `ai-spector init` copies to project `.cursor/`.
-- **Task skills for auto-routing** — `ai-spector-graph`, `ai-spector-generate`, `ai-spector-resolve-comments` plus core `ai-spector`; router at `scaffold/cursor/skills/_skill-router.md`.
+- **Task skills split by layer** — separate skills for graph, SRS, basic design, detail design, prototype, and comments; `ai-spector-generate` is a router for ambiguous requests; `paths` frontmatter scopes file-context routing; see `.cursor/skills/README.md`.
+- **Task skills for auto-routing** — `ai-spector-graph`, `ai-spector-generate-*`, `ai-spector-resolve-comments` plus core `ai-spector`; router at `scaffold/cursor/skills/_skill-router.md`.
 - **Basic-design workflow** — screen list output is `docs/basic-design/list-screens.md` (not `screens/list-screens.md`); API and screen **detail** files expand from list-chapter tables (one file per endpoint / per screen), not one file per `F-xx` feature. Doc-extract and `/generate-basic-design` updated accordingly.
 
 ### Added

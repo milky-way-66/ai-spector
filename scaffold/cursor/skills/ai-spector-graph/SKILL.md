@@ -1,39 +1,46 @@
 ---
 name: ai-spector-graph
 description: >-
-  AI Spector graph operations — analyze docs/data-source, index refresh, validate traceability graph,
-  impact/regen scope, visualize graph, link semantic edges. Use for /analyze, /index, /validate-graph,
-  /impact, /visualize-graph, or when user asks about traceability graph, knowledge.json, Graphify, or what to regenerate.
+  Runs AI Spector traceability graph operations: analyze data-source, index refresh, graph validate,
+  impact and regen scope, visualize, semantic link-graph, Graphify sidecar, knowledge.json. Use when
+  the user asks to analyze sources, refresh or validate the graph, see impact of changes, visualize
+  traceability, or re-index after edits. Do not use for writing SRS, basic design, detail design, or
+  HTML prototype content.
+paths:
+  - ".ai-spector/graph/**"
+  - ".ai-spector/.docflow/**"
+  - "docs/data-source/**"
 ---
 
 # AI Spector — Graph
 
-**Core rules:** `.cursor/skills/ai-spector/SKILL.md` (CLI failure, graph path).
+**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md) · **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md)
 
-## Route to command doc
+## When this skill applies
 
-| Trigger | Read first | CLI |
-|---------|------------|-----|
-| `/analyze`, ingest data-source, extract knowledge | `commands/analyze.md` | `ai-spector analyze` → graphify → merge → validate |
-| `/index`, refresh graph after edits | `commands/index.md` | `ai-spector index` |
-| `/validate-graph`, graph errors | `commands/validate-graph.md` | `ai-spector graph validate` |
-| `/impact`, what breaks, regen scope, git diff impact | `commands/impact.md` | `ai-spector graph impact … --json` |
-| `/visualize-graph`, explore graph in browser | `commands/visualize-graph.md` | `ai-spector graph visualize --open` |
-| `/link-graph`, semantic relatesTo edges | `commands/link-graph.md` | `graph merge --semantic` |
-| `/sync-graph` | `commands/sync-graph.md` | per command |
-| `/summary` (index summaries only) | `commands/summary.md` | index build under `.ai-spector/index/` |
+Read **one** runbook under `references/` for the user’s intent, then execute it end-to-end:
 
-## Natural language → command
+| Intent | Runbook |
+|--------|---------|
+| Analyze / ingest data-source | [references/analyze.md](references/analyze.md) |
+| Refresh graph after doc edits | [references/index.md](references/index.md) |
+| Validate graph | [references/validate-graph.md](references/validate-graph.md) |
+| Impact / what to regenerate | [references/impact.md](references/impact.md) |
+| Visualize in browser | [references/visualize-graph.md](references/visualize-graph.md) |
+| Semantic relatesTo links | [references/link-graph.md](references/link-graph.md) |
+| Repair graph from registry | [references/sync-graph.md](references/sync-graph.md) |
+| Human doc summaries | [references/summary.md](references/summary.md) |
 
-| User says | Action |
-|-----------|--------|
-| "analyze my data source", "run analyze" | `/analyze` flow → `analyze.md` |
-| "refresh the graph", "re-index" | `/index` → `index.md` |
-| "validate graph", "graph has errors" | `/validate-graph` |
-| "what's the impact", "what do I need to regenerate" | `/impact` → `impact.md` |
-| "show the graph", "visualize traceability" | `/visualize-graph` |
+## Checklist
 
-## References
+```
+- [ ] Matched runbook read completely
+- [ ] CLI from project root (npx ai-spector)
+- [ ] On failure: stop per ai-spector/references/cli-failures.md
+```
 
-- Graph CLI details: `commands/_graph.md`
-- Generate graph patches: `commands/_generate-graph.md`
+## Shared references
+
+- [../ai-spector/references/graph.md](../ai-spector/references/graph.md)
+- [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md)
+- [references/graph-commands.md](references/graph-commands.md)

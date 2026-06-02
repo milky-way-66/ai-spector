@@ -58,6 +58,8 @@ export async function runInit(opts: InitOptions): Promise<void> {
     "docs/srs",
     "docs/basic-design",
     "docs/detail-design",
+    "prototype",
+    "prototype/src",
   ];
   for (const d of dirs) {
     await mkdir(join(root, d), { recursive: true });
@@ -89,10 +91,12 @@ export async function runInit(opts: InitOptions): Promise<void> {
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");
   console.log("  2. Reload MCP (Settings → MCP) or restart Cursor — needs uv + graphifyy");
-  console.log("  3. Enable ai-spector skills (.cursor/skills/ — see _skill-router.md)");
+  console.log("  3. Enable all ai-spector skills (.cursor/skills/ — see README.md)");
   console.log("  4. Add files under docs/data-source/");
-  console.log("  5. Run /analyze  →  /validate-graph  →  /generate-srs");
+  console.log("  5. In Cursor: enable skills, then ask e.g. “analyze data source”, “generate SRS”");
+  console.log("     Workflow: .cursor/WORKFLOW.md");
+  console.log("  6. Prototype: ai-spector prototype setup --theme vercel → “generate HTML prototype”");
   console.log("     Or ask in chat: \"analyze data source\", \"generate SRS\", \"resolve comments\"");
   console.log("");
-  console.log("See .cursor/commands/_workflow.md — you do not need other CLI commands.");
+  console.log("See .cursor/WORKFLOW.md — agents use skills + CLI; you rarely run CLI yourself.");
 }

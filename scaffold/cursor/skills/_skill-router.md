@@ -1,22 +1,41 @@
 # AI Spector skill router
 
-Cursor loads skills by **description** when the user does not use a slash command. Enable **all** skills under `.cursor/skills/` after `init`.
-
-## Skills
-
-| Skill folder | When Cursor should use it |
-|--------------|---------------------------|
-| `ai-spector` | Any ai-spector / docflow / `.ai-spector` project work; shared CLI rules |
-| `ai-spector-graph` | Analyze, index, validate, impact, visualize, Graphify, knowledge.json, regen scope |
-| `ai-spector-generate` | Generate or update SRS, basic design, detail design under `docs/` |
-| `ai-spector-resolve-comments` | Review comments in `comments/`, resolve threads, C-001 pick list |
-
-## Slash commands (explicit)
-
-When the user runs `/analyze`, `/generate-srs`, `/resolve-comments`, etc., read the matching file in `.cursor/commands/` — skills and commands share the same rules.
+Agents use this when intent is ambiguous.
 
 ## Priority
 
-1. Explicit slash command → `commands/<name>.md`
-2. Natural language → task skill above + same command doc when one exists
-3. Ambiguous → `ai-spector` core + ask which task (graph vs generate vs comments)
+1. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill).
+2. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
+3. **Still unclear** — `ai-spector` core + one question (graph vs SRS vs basic design vs detail vs prototype vs comments).
+
+## Task → skill → runbook
+
+| User intent (examples) | Skill | Read first |
+|------------------------|-------|------------|
+| analyze, ingest, data source, knowledge graph | `ai-spector-graph` | `references/analyze.md` |
+| index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
+| validate graph | `ai-spector-graph` | `references/validate-graph.md` |
+| impact, what to regenerate | `ai-spector-graph` | `references/impact.md` |
+| visualize graph | `ai-spector-graph` | `references/visualize-graph.md` |
+| link graph, semantic edges | `ai-spector-graph` | `references/link-graph.md` |
+| sync graph | `ai-spector-graph` | `references/sync-graph.md` |
+| doc summaries | `ai-spector-graph` | `references/summary.md` |
+| SRS, use cases, features, requirements | `ai-spector-generate-srs` | `references/runbook.md` |
+| screens, APIs, wireframes, basic design | `ai-spector-generate-basic-design` | `references/runbook.md` |
+| detail design, implementation spec | `ai-spector-generate-detail-design` | `references/runbook.md` |
+| HTML prototype, theme, mockup | `ai-spector-generate-prototype` | `references/runbook.md` |
+| review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
+| “generate docs” (no layer named) | `ai-spector-generate` | route to one skill above |
+
+Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-failures.md), [generate-workflow.md](./ai-spector/references/generate-workflow.md), [generate-graph.md](./ai-spector/references/generate-graph.md).
+
+## Pipeline
+
+```text
+analyze → validate graph → generate SRS → index
+  → generate basic design → index
+  → generate detail design
+  → prototype setup → generate HTML screens
+```
+
+See [../WORKFLOW.md](../WORKFLOW.md).

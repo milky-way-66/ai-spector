@@ -16,6 +16,15 @@ export function scaffoldBundleRoot(): string {
   return join(packageBundleRoot(), "scaffold");
 }
 
+/** Bundled UI themes for HTML prototypes (`assets/themes/<name>/DESIGN.md`). */
+export function themesBundleRoot(): string {
+  return join(packageBundleRoot(), "assets", "themes");
+}
+
+export function bundledPrototypeConfigPath(): string {
+  return join(scaffoldBundleRoot(), ".ai-spector/.docflow/config/prototype.config.json");
+}
+
 /** Cursor commands/skills/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
 export function scaffoldCursorBundleRoot(): string {
   return join(scaffoldBundleRoot(), "cursor");

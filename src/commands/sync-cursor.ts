@@ -7,7 +7,7 @@ export interface SyncCursorOptions {
   targetDir: string;
 }
 
-/** Refresh `.cursor/` commands and skills from bundled `scaffold/cursor/`. */
+/** Refresh `.cursor/` skills and WORKFLOW from bundled `scaffold/cursor/`. */
 export async function runSyncCursor(opts: SyncCursorOptions): Promise<void> {
   const root = resolve(opts.targetDir);
   const marker = join(root, ".ai-spector", "docflow.config.json");
@@ -22,5 +22,5 @@ export async function runSyncCursor(opts: SyncCursorOptions): Promise<void> {
   console.log(`Synced Cursor bundle at ${join(root, ".cursor")}`);
   console.log(`  source → ${scaffoldCursorBundleRoot()}`);
   console.log("");
-  console.log("Reload Cursor skills if needed; slash commands update on next use.");
+  console.log("Reload Cursor skills if needed; see .cursor/WORKFLOW.md");
 }

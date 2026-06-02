@@ -7,14 +7,13 @@ import { runSyncCursor } from "../../src/commands/sync-cursor.js";
 import { pathExists } from "../../src/util/fs.js";
 
 describe("sync-cursor", () => {
-  it("refreshes commands and skills without full re-init", async () => {
+  it("refreshes skills and WORKFLOW without full re-init", async () => {
     const root = await mkdtemp(join(tmpdir(), "ai-spector-sync-"));
     await runInit({ targetDir: root });
 
     const skillPath = join(root, ".cursor/skills/ai-spector-graph/SKILL.md");
     expect(await pathExists(skillPath)).toBe(true);
 
-    // Simulate stale install: remove a skill folder
     const { rm } = await import("node:fs/promises");
     await rm(skillPath, { force: true });
 
@@ -26,5 +25,10 @@ describe("sync-cursor", () => {
       "utf8",
     );
     expect(router).toContain("ai-spector-resolve-comments");
+    expect(router).toContain("ai-spector-generate-srs");
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
+      true,
+    );
+    expect(await pathExists(join(root, ".cursor/WORKFLOW.md"))).toBe(true);
   });
 });

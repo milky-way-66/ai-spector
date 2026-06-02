@@ -1,47 +1,47 @@
 ---
 name: ai-spector
 description: >-
-  AI Spector docflow core — traceability graph, .ai-spector project, CLI failure rules, templates.
-  Use when working in an ai-spector project but task is unclear; read _skill-router.md to pick a task skill.
+  Provides shared rules for AI Spector docflow projects: CLI failure handling, traceability graph path,
+  and routing to task skills. Use when the user mentions ai-spector, docflow, or .ai-spector but the
+  task is unclear, or for init and project layout. Do not use when the user clearly wants SRS,
+  basic design, detail design, HTML prototype, graph operations, or comment resolution — use the
+  matching task skill instead.
 ---
 
 # AI Spector (core)
 
-Shared rules for **all** ai-spector work. For a specific task, also load the matching task skill (see router below).
+**Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md) · **Router:** [_skill-router.md](../_skill-router.md)
 
-**Workflow index:** `.cursor/commands/_workflow.md`
-**Skill router:** `.cursor/skills/_skill-router.md`
+## CLI failure (non-negotiable)
 
-## CLI failure rule (non-negotiable)
+When `ai-spector` exits non-zero or required `--json` is invalid:
 
-When `ai-spector` exits non-zero or required `--json` is missing/invalid:
-
-1. **Stop** — no generate, no bulk `docs/srs/**` reads, no hand-editing the whole graph.
-2. **Report** per `.cursor/commands/_cli-failures.md` (verbatim CLI output + fix steps).
+1. **Stop** — no generation, no bulk `docs/**` reads, no hand-editing the whole graph.
+2. **Report** per [references/cli-failures.md](references/cli-failures.md).
 3. **Fix**, then **re-run the same CLI**.
 
-Never bypass CLI with manual graph edits or invented content.
+## Project anchors
 
-## Graphify MCP
+| Item | Path |
+|------|------|
+| Graph | `.ai-spector/graph/traceability.graph.json` |
+| Query | `ai-spector graph query <id> --json` |
+| Templates | `.ai-spector/templates/` |
 
-`init` writes `.cursor/mcp.json` → graph at `.ai-spector/.docflow/graph/graphify-out/graph.json`.
+## Route to a task skill
 
-## Heart of the system
+| Intent | Skill |
+|--------|-------|
+| Analyze, index, validate, impact, visualize | `ai-spector-graph` |
+| SRS | `ai-spector-generate-srs` |
+| Basic design | `ai-spector-generate-basic-design` |
+| Detail design | `ai-spector-generate-detail-design` |
+| Prototype | `ai-spector-generate-prototype` |
+| Comments | `ai-spector-resolve-comments` |
+| “Generate docs” (vague) | `ai-spector-generate` |
 
-`.ai-spector/graph/traceability.graph.json` — context via `ai-spector graph query <id> --json`.
+When a task skill applies, read its `references/` runbook fully before acting.
 
-Run CLI from project root; prefer `npx ai-spector` if not on PATH.
+## More
 
-## Task skills (auto-routing)
-
-| User intent | Skill | Command doc |
-|-------------|-------|---------------|
-| Analyze, index, validate, impact, visualize graph | `ai-spector-graph` | `commands/analyze.md`, `index.md`, `impact.md`, … |
-| Generate SRS / basic design / detail design | `ai-spector-generate` | `commands/generate-*.md` |
-| Resolve review comments under `comments/` | `ai-spector-resolve-comments` | `commands/resolve-comments.md` |
-
-When the user uses a **slash command** (`/analyze`, `/generate-srs`, `/resolve-comments`), follow that command file directly — skills reinforce the same rules.
-
-## Templates
-
-Read from `.ai-spector/templates/` before any generation. Missing templates → `npx ai-spector init --force`.
+[references/project-conventions.md](references/project-conventions.md)

@@ -1,42 +1,31 @@
 ---
 name: ai-spector-resolve-comments
 description: >-
-  AI Spector git-backed review comment resolve — list open threads, pick C-001, plan with impact,
-  propose doc fix, commit doc + comment meta. Use for /resolve-comments, comments/ folder,
-  meta_data.json, reviewer comments on SRS/basic design, or "resolve this comment thread".
+  Resolves git-backed review comment threads under comments/: inbox listing, impact plan, doc edits,
+  and meta_data.json updates with amend commits. Use when the user asks to resolve comments, address
+  review feedback, open threads, C-001 picks, or meta_data.json on SRS/basic design. Do not use for
+  greenfield generation without review threads.
+paths:
+  - "comments/**"
 ---
 
 # AI Spector — Resolve comments
 
-**Core rules:** `.cursor/skills/ai-spector/SKILL.md`
-**Full workflow:** `.cursor/commands/resolve-comments.md` (follow step-by-step)
+**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
-## Quick flow
+## Required reading
 
-1. `git pull`
-2. `ai-spector comments inbox --json` → show **`idePresentation.markdown`** only (thread table, pick ids)
-3. User picks **C-00N** → `ai-spector comments plan C-00N --json` (impact + anchor)
-4. Propose edit → user approves → apply to `docs/…`
-5. Commit doc → `comments resolve` → amend commit with **doc + `comments/…/thread/`** → push
+[references/runbook.md](references/runbook.md) — follow phases in order.
 
-## CLI
+## Checklist
 
-| Step | Command |
-|------|---------|
-| Inbox | `ai-spector comments inbox --json` |
-| Plan | `ai-spector comments plan C-001 --json` |
-| Resolve meta | `ai-spector comments resolve <threadId> --file <logical_path> --expected-version <v>` |
+```
+- [ ] git pull
+- [ ] comments inbox --json → show idePresentation.markdown only
+- [ ] user picks C-00N → comments plan
+- [ ] edit docs → commit doc + resolve meta (amend)
+```
 
-## Natural language → this skill
+## Natural language
 
-| User says | Action |
-|-----------|--------|
-| "resolve comments", "fix review comments", "open comment threads" | Start inbox flow |
-| "address C-001", "resolve thread on srs/…" | `plan` then edit + commit |
-| "comments under comments/" | Git-only F-05 flow — no Writer API |
-
-## Guardrails
-
-- Inbox: thread table only — no raw JSON or thread uuids in chat
-- Commit must include **changed doc file** and comment meta (amend pattern in `resolve-comments.md`)
-- No resolve before doc fix is applied
+“resolve comments”, “address C-001”, “review thread on srs” → this skill.

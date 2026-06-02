@@ -1,6 +1,6 @@
 # Data source
 
-Put **your** input files here (briefs, notes, exports, diagrams, legacy docs) before **`/analyze`**.
+Put **your** input files here (briefs, notes, exports, diagrams, legacy docs) before asking the agent to **analyze the data source**.
 
 ## Not your inputs: `graphify-out/`
 
@@ -13,4 +13,4 @@ If you see `docs/data-source/graphify-out/`, **Graphify `update` ran without `GR
 | `.ai-spector/.docflow/graph/graphify-out` | Preferred Graphify output (see `analyze.graphify.json`) |
 | `.ai-spector/.docflow/analysis/knowledge.json` | **AI Spector staging** → merged into the traceability graph |
 
-Override inputs: `/analyze path/to/other-folder`
+Override inputs: tell the agent to analyze a different folder path in chat

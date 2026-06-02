@@ -27,6 +27,12 @@ import {
   runCommentsShow,
 } from "./commands/comments.js";
 import { runProvenanceLink } from "./graph/provenance.js";
+import {
+  runPrototypeManifest,
+  runPrototypeSetup,
+  runPrototypeThemes,
+  runPrototypeValidate,
+} from "./commands/prototype.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -111,7 +117,7 @@ program
 program
   .command("analyze")
   .description(
-    "Prepare graph structure (registry + bootstrap). Normally invoked by /analyze, not the user.",
+    "Prepare graph structure (registry + bootstrap). Normally invoked by the analyze skill in Cursor, not the user.",
   )
   .option(
     "--merge",
@@ -422,6 +428,63 @@ comments
     });
   });
 
+const prototype = program
+  .command("prototype")
+  .description("HTML prototype workspace: themes, manifest, validation (static files under prototype/src/)");
+
+prototype
+  .command("themes")
+  .description("List bundled UI themes from assets/themes/")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    await runPrototypeThemes({ json: opts.json });
+  });
+
+prototype
+  .command("setup")
+  .description("Scaffold prototype/, install theme DESIGN.md, seed manifest when list-screens exists")
+  .option("--theme <name>", "Theme folder under assets/themes/ (default: vercel or existing manifest)")
+  .option("--no-emit-manifest", "Do not rebuild manifest from list-screens.md")
+  .option("--force-design", "Overwrite prototype/DESIGN.md from theme")
+  .action(async (opts, cmd) => {
+    await runPrototypeSetup({
+      root: projectRootOpt(cmd),
+      theme: opts.theme,
+      emitManifest: opts.emitManifest,
+      forceDesign: opts.forceDesign,
+    });
+  });
+
+prototype
+  .command("manifest")
+  .description("Rebuild prototype/manifest.json and screen-map.json from docs/basic-design/list-screens.md")
+  .option("--theme <name>", "Theme name stored in manifest")
+  .option("--dry-run", "Print planned manifest without writing")
+  .option("--json", "JSON output")
+  .action(async (opts, cmd) => {
+    await runPrototypeManifest({
+      root: projectRootOpt(cmd),
+      theme: opts.theme,
+      dryRun: opts.dryRun,
+      json: opts.json,
+    });
+  });
+
+prototype
+  .command("validate")
+  .description("Check manifest, screen docs, and prototype/src/*.html alignment")
+  .option("--strict", "Treat missing HTML as errors")
+  .option("--skip-external-check", "Do not warn on CDN/font URLs in HTML")
+  .option("--json", "JSON output")
+  .action(async (opts, cmd) => {
+    await runPrototypeValidate({
+      root: projectRootOpt(cmd),
+      strict: opts.strict,
+      json: opts.json,
+      skipExternalCheck: opts.skipExternalCheck,
+    });
+  });
+
 graph
   .command("validate")
   .description("Validate graph against bundled schema and traceability rules")
@@ -449,6 +512,6 @@ program.parseAsync(process.argv).catch((err) => {
   console.error(msg);
   console.error("");
   console.error("Fix the issue above, then re-run the same command.");
-  console.error("In Cursor, re-run the slash command (/analyze, /validate-graph, …) — see .cursor/commands/_cli-failures.md");
+  console.error("In Cursor, retry the same task — see .cursor/skills/ai-spector/references/cli-failures.md");
   process.exit(1);
 });
