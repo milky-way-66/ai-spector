@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { resolve } from "node:path";
+import { createRequire } from "node:module";
 import { writeJson, readJson } from "./util/fs.js";
 import { resolveProjectPaths } from "./util/paths.js";
 import { buildSectionRegistry } from "./registry/build.js";
@@ -29,14 +30,23 @@ import { runProvenanceLink } from "./graph/provenance.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version: string };
 
 program
   .name("ai-spector")
   .description(
     "AI Spector — init project, analyze prep, traceability graph, templates, Cursor workflow",
   )
-  .version("0.1.0")
+  .version(packageJson.version)
   .option("-r, --root <path>", "Project root (auto-detect via .ai-spector/docflow.config.json)");
+
+program
+  .command("version")
+  .description("Print ai-spector version")
+  .action(() => {
+    console.log(packageJson.version);
+  });
 
 function projectRootOpt(cmd: Command): string | undefined {
   return (cmd.optsWithGlobals() as { root?: string }).root;
