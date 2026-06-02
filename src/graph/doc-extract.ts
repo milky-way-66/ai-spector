@@ -19,6 +19,16 @@ import {
   mergeStructurePatches,
   registryDocumentToStructurePatch,
 } from "../registry/structure-patch.js";
+import {
+  extractBlockquoteAfterBoldField,
+  extractBoldFieldDeep,
+  extractBoldFieldInParagraph,
+  findHeadingText,
+  parseMarkdown,
+  textContent,
+} from "../markdown/parse.js";
+import type { Paragraph } from "../markdown/parse.js";
+import { visit } from "unist-util-visit";
 
 export interface DocExtractEntry {
   relativePath: string;
@@ -44,18 +54,8 @@ export const PER_DOMAIN_TEMPLATE_DOC = {
 
 const UC_ID_RE = /\b(UC-\d+)\b/gi;
 const F_ID_RE = /\b(F-\d+)\b/gi;
-const USE_CASE_ID_LINE = /\*\*Use Case ID:\*\*\s*(UC-\d+)/i;
-const USE_CASE_NAME_LINE = /\*\*Use Case Name:\*\*\s*(.+)/i;
-const FEATURE_ID_LINE = /\*\*Feature ID:\*\*\s*(F-\d+)/i;
-const FEATURE_NAME_HEADING = /^#{1,3}\s+(F-\d+)\s*[:\-–—]\s*(.+)$/im;
-const UC_HEADING = /^#{1,3}\s+(UC-\d+)\s*[:\-–—]\s*(.+)$/im;
 const TABLE_ROW_UC = /^\|\s*(UC-\d+)\s*\|/im;
 const TABLE_ROW_F = /^\|\s*(F-\d+)\s*\|/im;
-const BRIEF_DESCRIPTION_BLOCK =
-  /\*\*Brief Description:\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
-const FEATURE_PURPOSE_BLOCK =
-  /\*\*(?:Feature Purpose|Purpose):\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
-const PRIORITY_LINE = /\*\*Priority:\*\*\s*(High|Medium|Low)/i;
 const OVERVIEW_HEADING = /use case overview/i;
 const FEATURE_DESC_HEADING = /^1\.\s*description$/i;
 
@@ -183,9 +183,11 @@ export function extractBasicDesignDetailMeta(
       featureIds.add(id);
     }
   }
-  const idLine = content.match(FEATURE_ID_LINE);
-  if (idLine?.[1] && isRealDomainId(idLine[1])) {
-    featureIds.add(normalizeDomainId(idLine[1]));
+  const root = parseMarkdown(content);
+  const fIdVal = extractBoldFieldDeep(root, /^Feature ID$/i);
+  if (fIdVal) {
+    const m = fIdVal.match(/\b(F-\d+)\b/i);
+    if (m?.[1] && isRealDomainId(m[1])) featureIds.add(normalizeDomainId(m[1]));
   }
 
   if (kind === "apiDetail") {
@@ -262,32 +264,46 @@ function primaryDomainIdFromDetailContent(
   content: string,
   kind: DetailFileKind,
 ): { id: string; title?: string } | null {
+  const root = parseMarkdown(content);
+
   if (kind === "useCaseDetail") {
-    const idLine = content.match(USE_CASE_ID_LINE);
-    if (idLine?.[1] && isRealDomainId(idLine[1])) {
-      const nameLine = content.match(USE_CASE_NAME_LINE);
-      return {
-        id: normalizeDomainId(idLine[1]),
-        title: nameLine?.[1]?.trim(),
-      };
+    const idVal = extractBoldFieldDeep(root, /^Use Case ID$/i);
+    if (idVal) {
+      const m = idVal.match(/\b(UC-\d+)\b/i);
+      if (m?.[1] && isRealDomainId(m[1])) {
+        const nameVal = extractBoldFieldDeep(root, /^Use Case Name$/i);
+        return { id: normalizeDomainId(m[1]), title: nameVal?.trim() };
+      }
     }
-    const heading = content.match(UC_HEADING);
-    if (heading?.[1] && isRealDomainId(heading[1])) {
-      return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+    const hText = findHeadingText(root, /\bUC-\d+\b/);
+    if (hText) {
+      const hm = hText.match(/\b(UC-\d+)\b\s*[:\-–—]\s*(.+)$/i);
+      if (hm?.[1] && isRealDomainId(hm[1])) {
+        return { id: normalizeDomainId(hm[1]), title: hm[2]?.trim() };
+      }
     }
     return null;
   }
-  const idLine = content.match(FEATURE_ID_LINE);
-  if (idLine?.[1] && isRealDomainId(idLine[1])) {
-    const heading = content.match(FEATURE_NAME_HEADING);
-    return {
-      id: normalizeDomainId(idLine[1]),
-      title: heading?.[2]?.trim(),
-    };
+
+  const idVal = extractBoldFieldDeep(root, /^Feature ID$/i);
+  if (idVal) {
+    const m = idVal.match(/\b(F-\d+)\b/i);
+    if (m?.[1] && isRealDomainId(m[1])) {
+      const hText = findHeadingText(root, /\bF-\d+\b/);
+      let title: string | undefined;
+      if (hText) {
+        const hm = hText.match(/\b(F-\d+)\b\s*[:\-–—]\s*(.+)$/i);
+        title = hm?.[2]?.trim();
+      }
+      return { id: normalizeDomainId(m[1]), title };
+    }
   }
-  const heading = content.match(FEATURE_NAME_HEADING);
-  if (heading?.[1] && isRealDomainId(heading[1])) {
-    return { id: normalizeDomainId(heading[1]), title: heading[2]?.trim() };
+  const hText = findHeadingText(root, /\bF-\d+\b/);
+  if (hText) {
+    const hm = hText.match(/\b(F-\d+)\b\s*[:\-–—]\s*(.+)$/i);
+    if (hm?.[1] && isRealDomainId(hm[1])) {
+      return { id: normalizeDomainId(hm[1]), title: hm[2]?.trim() };
+    }
   }
   return null;
 }
@@ -298,63 +314,47 @@ export interface DetailDomainMeta {
   priority?: string;
 }
 
-function cleanQuotedBlock(raw: string): string {
-  return raw
-    .split(/\r?\n/)
-    .map((l) => l.replace(/^\s*>\s?/, "").trim())
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /** Rich title/description from generated detail markdown (not list-table stubs). */
 export function extractDetailDomainMeta(
   content: string,
   kind: DetailFileKind,
 ): DetailDomainMeta | null {
   const primary = primaryDomainIdFromDetailContent(content, kind);
-  if (!primary) {
-    return null;
-  }
+  if (!primary) return null;
 
+  const root = parseMarkdown(content);
   const meta: DetailDomainMeta = {};
-  if (primary.title) {
-    meta.title = primary.title;
-  }
 
-  const nameLine = content.match(USE_CASE_NAME_LINE);
-  if (nameLine?.[1]?.trim()) {
-    meta.title = nameLine[1].trim();
-  }
+  if (primary.title) meta.title = primary.title;
+
+  const nameVal = extractBoldFieldDeep(root, /^Use Case Name$/i);
+  if (nameVal?.trim()) meta.title = nameVal.trim();
 
   if (kind === "useCaseDetail") {
-    const brief = content.match(BRIEF_DESCRIPTION_BLOCK);
-    if (brief?.[1]) {
-      meta.description = cleanQuotedBlock(brief[1]);
+    const brief = extractBlockquoteAfterBoldField(root, /^Brief Description$/i);
+    if (brief) meta.description = brief;
+
+    const priorityVal = extractBoldFieldDeep(root, /^Priority$/i);
+    if (priorityVal && /^(High|Medium|Low)$/i.test(priorityVal.trim())) {
+      meta.priority = priorityVal.trim();
     }
-    const priority = content.match(PRIORITY_LINE);
-    if (priority?.[1]) {
-      meta.priority = priority[1];
-    }
+
     if (!meta.description) {
       const sections = parseDetailSections(content, "doc.temp");
       const overview = sections.find((s) => OVERVIEW_HEADING.test(s.heading));
-      if (overview) {
-        meta.description = snippetAfterHeading(content, overview.heading);
-      }
+      if (overview) meta.description = snippetAfterHeading(content, overview.heading);
     }
   } else {
-    const purpose = content.match(FEATURE_PURPOSE_BLOCK);
-    if (purpose?.[1]) {
-      meta.description = cleanQuotedBlock(purpose[1]);
-    }
+    const purpose = extractBlockquoteAfterBoldField(
+      root,
+      /^(?:Feature Purpose|Purpose)$/i,
+    );
+    if (purpose) meta.description = purpose;
+
     if (!meta.description) {
       const sections = parseDetailSections(content, "doc.temp");
       const descSec = sections.find((s) => FEATURE_DESC_HEADING.test(s.heading));
-      if (descSec) {
-        meta.description = snippetAfterHeading(content, descSec.heading);
-      }
+      if (descSec) meta.description = snippetAfterHeading(content, descSec.heading);
     }
   }
 
@@ -464,54 +464,78 @@ export function extractDomainFromMarkdown(
   relativePath: string,
 ): ParsedDomain {
   const parsed = emptyParsed();
-  const lines = content.split(/\r?\n/);
+  const root = parseMarkdown(content);
 
+  // --- 1. Headings: ## UC-01: Title, ## F-01: Title ---
+  for (const node of root.children) {
+    if (node.type !== "heading") continue;
+    const text = textContent(node);
+    const ucm = text.match(/\b(UC-\d+)\b\s*[:\-–—]\s*(.+)$/i);
+    if (ucm?.[1] && isRealDomainId(ucm[1])) {
+      addUseCase(parsed, ucm[1], { title: ucm[2]?.trim() });
+    }
+    const fm = text.match(/\b(F-\d+)\b\s*[:\-–—]\s*(.+)$/i);
+    if (fm?.[1] && isRealDomainId(fm[1])) {
+      addFeature(parsed, fm[1], { title: fm[2]?.trim() });
+    }
+  }
+
+  // --- 2. Bold field patterns in paragraphs (AST-based) ---
   let pendingUcId: string | undefined;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+  for (const node of root.children) {
+    if (node.type === "heading" && pendingUcId) {
+      pendingUcId = undefined;
+    }
+    if (node.type !== "paragraph") continue;
+    const para = node as Paragraph;
 
-    const ucIdLine = line.match(USE_CASE_ID_LINE);
-    if (ucIdLine) {
-      pendingUcId = normalizeDomainId(ucIdLine[1]!);
-      addUseCase(parsed, pendingUcId, {});
-      continue;
+    const ucIdVal = extractBoldFieldInParagraph(para, /^Use Case ID$/i);
+    if (ucIdVal) {
+      const m = ucIdVal.match(/\b(UC-\d+)\b/i);
+      if (m?.[1] && isRealDomainId(m[1])) {
+        pendingUcId = normalizeDomainId(m[1]);
+        addUseCase(parsed, pendingUcId, {});
+      }
     }
     if (pendingUcId) {
-      const nameLine = line.match(USE_CASE_NAME_LINE);
-      if (nameLine) {
-        addUseCase(parsed, pendingUcId, { title: nameLine[1] });
-        pendingUcId = undefined;
-        continue;
-      }
-      if (line.startsWith("### ") || line.startsWith("## ")) {
+      const nameVal = extractBoldFieldInParagraph(para, /^Use Case Name$/i);
+      if (nameVal) {
+        addUseCase(parsed, pendingUcId, { title: nameVal });
         pendingUcId = undefined;
       }
     }
 
-    const ucHeading = line.match(UC_HEADING);
-    if (ucHeading) {
-      addUseCase(parsed, ucHeading[1]!, { title: ucHeading[2] });
+    const fIdVal = extractBoldFieldInParagraph(para, /^Feature ID$/i);
+    if (fIdVal) {
+      const m = fIdVal.match(/\b(F-\d+)\b/i);
+      if (m?.[1] && isRealDomainId(m[1])) addFeature(parsed, m[1], {});
     }
+  }
 
-    const fHeading = line.match(FEATURE_NAME_HEADING);
-    if (fHeading) {
-      addFeature(parsed, fHeading[1]!, { title: fHeading[2] });
+  // --- 3. Actor extraction from paragraphs and list items (AST-based) ---
+  visit(root, "paragraph", (para: Paragraph) => {
+    const actorVal = extractBoldFieldInParagraph(para, /^Primary Actor$/i);
+    if (actorVal && !/^tbd$/i.test(actorVal) && actorVal.length > 1) {
+      const id = `actor.${slugActorId(actorVal)}`;
+      parsed.actors.set(id, { title: actorVal });
     }
+  });
 
+  // --- 4. Table rows (line-based: handles GFM and non-GFM pipe tables) ---
+  for (const line of content.split(/\r?\n/)) {
     const ucRow = line.match(TABLE_ROW_UC);
-    if (ucRow) {
+    if (ucRow?.[1]) {
       const cells = line.split("|").map((c) => c.trim());
       const title = cells[2] || cells[1];
-      addUseCase(parsed, ucRow[1]!, {
+      addUseCase(parsed, ucRow[1], {
         title: title && !/^UC-/i.test(title) ? title : undefined,
       });
     }
-
     const fRow = line.match(TABLE_ROW_F);
-    if (fRow) {
+    if (fRow?.[1]) {
       const cells = line.split("|").map((c) => c.trim());
       const title = cells[2] || cells[1];
-      addFeature(parsed, fRow[1]!, {
+      addFeature(parsed, fRow[1], {
         title: title && !/^F-/i.test(title) ? title : undefined,
       });
       parseTableSatisfies(line, parsed);
@@ -520,17 +544,15 @@ export function extractDomainFromMarkdown(
     }
   }
 
+  // --- 5. Global catch-all scan (picks up any remaining UC/F references) ---
   for (const m of content.matchAll(UC_ID_RE)) {
-    if (m[1] && isRealDomainId(m[1])) {
-      addUseCase(parsed, m[1], {});
-    }
+    if (m[1] && isRealDomainId(m[1])) addUseCase(parsed, m[1], {});
   }
   for (const m of content.matchAll(F_ID_RE)) {
-    if (m[1] && isRealDomainId(m[1])) {
-      addFeature(parsed, m[1], {});
-    }
+    if (m[1] && isRealDomainId(m[1])) addFeature(parsed, m[1], {});
   }
 
+  // --- 6. Rich metadata from SRS detail files ---
   const srsDetailKind = classifySrsDetailFile(relativePath);
   if (srsDetailKind) {
     const rich = extractDetailDomainMeta(content, srsDetailKind);
@@ -546,6 +568,7 @@ export function extractDomainFromMarkdown(
     }
   }
 
+  // --- 7. Basic-design detail metadata ---
   const bdKind = classifyBasicDesignDetailFile(relativePath);
   if (bdKind) {
     const meta = extractBasicDesignDetailMeta(content, bdKind, relativePath);
@@ -556,20 +579,8 @@ export function extractDomainFromMarkdown(
     }
   }
 
-  const actorSection = /(?:\*\*Primary Actor:\*\*|Primary Actor:)\s*\*?\*?\s*([^\n*]+)/gi;
-  for (const m of content.matchAll(actorSection)) {
-    const name = m[1]?.trim();
-    if (name && !/^tbd$/i.test(name) && name.length > 1) {
-      const id = `actor.${slugActorId(name)}`;
-      parsed.actors.set(id, { title: name });
-    }
-  }
-
   return parsed;
 }
-
-const SCREEN_PURPOSE_BLOCK =
-  /##\s*1\.\s*Screen:[\s\S]*?\*\*Purpose:\*\*\s*\n+>\s*([^\n]+(?:\n>[^\n]+)*)/i;
 
 function extractBasicDesignDetailDescription(
   content: string,
@@ -579,10 +590,9 @@ function extractBasicDesignDetailDescription(
     const meta = extractDetailDomainMeta(content, "featureDetail");
     return meta?.description;
   }
-  const purpose = content.match(SCREEN_PURPOSE_BLOCK);
-  if (purpose?.[1]) {
-    return cleanQuotedBlock(purpose[1]);
-  }
+  const root = parseMarkdown(content);
+  const purpose = extractBlockquoteAfterBoldField(root, /^Purpose$/i);
+  if (purpose) return purpose;
   const sections = parseDetailSections(content, "doc.temp");
   const screenHeading = sections.find((s) => /^##\s*1\.\s*screen/i.test(s.heading));
   if (screenHeading) {

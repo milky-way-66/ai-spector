@@ -60,7 +60,7 @@ After last wave ([generate-workflow.md](../../ai-spector/references/generate-wor
 ai-spector index
 ```
 
-`index` parses UC/F/actor ids and adds `doc.srs.uc-*` / `doc.srs.f-*` document + section nodes. Use `--force-graphify` only when data-source hashes must rebuild.
+`index` parses UC/F/actor ids from markdown bodies and adds `doc.srs.uc-*` / `doc.srs.f-*` document + section nodes.
 
 Suggest `/summary srs` after index. Log: `.ai-spector/.docflow/logs/generate-srs.log`.
 

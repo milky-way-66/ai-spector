@@ -7,7 +7,7 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
-- **Theme is chosen up front** — design tokens live in `prototype/DESIGN.md` (copied from bundled `assets/themes/<name>/`)
+- **Theme must be confirmed before generating** — if no theme is stored, ask the user to choose one before running setup. Once the user has chosen (stored in `prototype/theme.json` or `prototype.config.json`), never ask again.
 - **One HTML per screen** — `prototype/src/<prototypeStem>.html` must match `prototype/manifest.json`
 - **Static only** — HTML/CSS/JS under `prototype/`; no frameworks, no CDN unless the theme DESIGN allows it
 
@@ -26,21 +26,39 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 
 ## Required behavior (agent runs CLI)
 
-### 1. Choose theme and setup workspace
+### 1. Resolve theme and setup workspace
 
-List themes if the user did not specify one:
+**Resolution order** (first match wins):
 
-```bash
-ai-spector prototype themes
+1. Theme named in this request (`--theme`, “use stripe theme”, etc.)
+2. `prototype/theme.json` → `themeName`
+3. `prototype/manifest.json` → `themeName` (non-empty)
+4. `.ai-spector/.docflow/config/prototype.config.json` → `defaultTheme`
+
+**If no stored theme is found**, ask the user to choose before proceeding:
+
 ```
+No theme is saved yet. Which UI theme would you like for your prototype?
+Run `ai-spector prototype themes` to see all options, or name one (e.g. vercel, stripe, notion, linear.app).
+```
+
+Wait for the user's answer — do **not** silently default to `vercel`. Once the user names a theme, proceed with setup; the choice is persisted and will not be asked again.
 
 Setup (creates `prototype/`, copies `DESIGN.md`, seeds manifest when `list-screens.md` exists):
 
 ```bash
-ai-spector prototype setup --theme <name>
+ai-spector prototype setup --theme <resolved-name>
 ```
 
-Default theme: `vercel` (override with `--theme` or user preference).
+Omit `--theme` only when setup can infer the same name from stored files (the CLI reads `theme.json` / config automatically).
+
+**Persist** when the user explicitly names a theme in this session: `prototype setup --theme <name>` updates `prototype/theme.json` and saves `defaultTheme` in `prototype.config.json` for later runs.
+
+List themes when the user asks (“what themes?”, “list prototype themes”):
+
+```bash
+ai-spector prototype themes
+```
 
 ### 2. Plan screens
 
@@ -76,13 +94,15 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 
 | User says | Action |
 |-----------|--------|
-| “use stripe theme”, `--theme stripe` | `prototype setup --theme stripe --force-design` if switching theme mid-branch |
+| “use stripe theme”, `--theme stripe` | `prototype setup --theme stripe` (persists preference); add `--force-design` if switching theme mid-branch |
 | “what themes?” | `ai-spector prototype themes` |
-| no preference | `vercel` or project default from `prototype.config.json` |
+| no theme in message, no stored theme | **Ask the user** to name a theme before proceeding |
+| no theme in message, stored theme found | Use stored theme — do not ask |
 
 ## Accuracy checklist
 
-- [ ] `prototype setup` run with agreed theme
+- [ ] Theme resolved without blocking theme picker (unless user asked to list themes)
+- [ ] `prototype setup` run with resolved theme
 - [ ] Every generated file name matches `prototypeStem` in manifest
 - [ ] Wireframe/layout from screen detail doc reflected in HTML
 - [ ] Tokens from `prototype/DESIGN.md` only (no random CDN)

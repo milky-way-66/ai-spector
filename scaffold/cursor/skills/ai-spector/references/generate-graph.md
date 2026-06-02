@@ -3,21 +3,28 @@
 Used by **SRS**, **basic design**, and **detail design** generation skills.
 
 | Orchestration (scope, confirm, wave checklist, finish) | [generate-workflow.md](./generate-workflow.md) |
-| Per-command DAG + intent tables | `generate-srs.md`, `generate-basic-design.md`, `generate-detail-design.md` |
+| Per-command DAG + intent tables | each skill's `references/runbook.md` |
 
 **Principle:** Accuracy over speed. The graph is the planner, context loader, and registry of what was written.
 
-**Parallelism:** Allowed **only inside a DAG wave** — targets that do not depend on each other (and whose dependencies are already ingested + indexed when required). Never parallelize across waves.
+**Parallelism:** Allowed **only inside a DAG wave**. Never across waves.
 
-## Agent rules (non-negotiable)
+## Edge presets (use these in queries — don't copy-paste long lists)
 
-1. **Plan from DAG + graph** — build **waves** from `dag.*.json` (see § Waves); map each node to a graph seed via `dag.*.graph-seeds.json`.
-2. **Context before write** — for **every** target (batch or single), run CLI queries below; read `projectionPaths` and domain `nodes`/`edges`. No invented UC/F text.
-3. **Dependencies before write** — for each target’s `dependsOn`, `graph query` dependency seeds and **read existing markdown** when `rendersTo` exists.
-4. **Ingest before next wave** — after each file (or after a whole wave), merge `rendersTo` + `dependsOn` (see § Ingest), then `graph validate`. The next wave must see upstream `rendersTo` edges.
-5. **No shortcuts** — no glob `docs/srs/**`, no skipping validate/query, no index-first generation, no batching targets that have a DAG dependency on each other.
+| Preset name | Edges | Use for |
+|-------------|-------|---------|
+| `CONTEXT` | `listedIn,definedIn,describedIn,satisfies,dependsOn,rendersTo,partOf,contains` | Target neighborhood — what exists and where it lives |
+| `DEPS` | `rendersTo,dependsOn,listedIn,satisfies,partOf,contains` | Dependency context — what upstream docs look like |
+| `IMPACT` | `satisfies,tracesTo,dependsOn,references,relatesTo` | What a change would affect |
 
-## CLI workflow per target
+## Agent rules
+
+1. **Plan from DAG** — build waves from `dag.*.json`; map each DAG node → graph seed via `dag.*.graph-seeds.json`.
+2. **Context before write** — for **every** target run the CONTEXT query; read `projectionPaths`. No invented UC/F text.
+3. **Merge once per wave, not per file** — write all files in a wave, then do one batch merge + one validate. Do not merge after every file.
+4. **No shortcuts** — no glob `docs/srs/**`, no skipping validate, no batching targets that have a DAG dependency on each other.
+
+## CLI workflow
 
 ### A. Gate (once per command)
 
@@ -25,75 +32,52 @@ Used by **SRS**, **basic design**, and **detail design** generation skills.
 ai-spector graph validate
 ```
 
-### B. Plan
-
-- Load `dag.srs.json` (or matching DAG).
-- Load `dag.srs.graph-seeds.json` for `document` seeds.
-- Build **waves** (below).
-- Skip `good` files unless user asked to regenerate; use `graph impact` when replacing content.
-
-#### Waves (when batch is allowed)
+### B. Plan — waves
 
 Assign each DAG node to wave `0`, `1`, `2`, …:
 
-- **Wave 0:** nodes with empty `dependsOn`.
-- **Wave k:** nodes whose `dependsOn` are all in waves `< k` (not in the same wave).
+- **Wave 0:** nodes with empty `dependsOn`
+- **Wave k:** nodes whose `dependsOn` are all in waves `< k`
 
-**Same wave = safe to generate in parallel** (no target in the wave depends on another target in that wave).
-
-**Example** (`dag.srs.json`): after `srs.feature-details`, both `srs.data-requirements` and `srs.external-interfaces` are in the **same wave** (each depends on feature-details only, not on each other) → may generate both in one batch.
-
-**Forbidden batch:** `srs.use-cases` + `srs.features-list` (features-list depends on use-cases).
-
-**User asks for specific files** (case 2): map paths → DAG nodes; include dependency closure; batch only within same wave.
-
-**User describes scope in words** (case 3): [generate-workflow.md](./generate-workflow.md) § Case 3 — confirm before write; intent phrase tables stay in each `generate-*.md`.
+**Same wave = parallel OK.** Example: after `srs.feature-details`, both `srs.data-requirements` and `srs.external-interfaces` are in the same wave → generate both in one batch.
 
 Present plan as:
 
-| Wave | DAG ids (parallel OK within row) | Seeds | Blocked until |
-|------|----------------------------------|-------|---------------|
+| Wave | DAG ids (parallel OK) | Seeds | Blocked until |
+|------|----------------------|-------|---------------|
 | 0 | … | … | — |
 | 1 | … | … | wave 0 merged + validate |
 
-### C. Before writing file `T`
+### C. Before writing each target
 
-**1. Dependency context** (each DAG `dependsOn` id → graph seed):
-
-```bash
-ai-spector graph query <depSeedId> --direction both --depth 2 --edges rendersTo,dependsOn,listedIn,satisfies,definedIn,partOf,contains --json
-```
-
-Open existing `projectionPaths` from the JSON (already-generated SRS chapters).
-
-**2. Target neighborhood** (domain + structure):
+**Dependency context** (once per wave, for each DAG `dependsOn`):
 
 ```bash
-ai-spector graph query <targetSeedId> --direction both --depth 4 --edges listedIn,definedIn,describedIn,satisfies,dependsOn,references,rendersTo,partOf,contains --json
+ai-spector graph query <depSeedId> --direction both --depth 2 --edges DEPS --json
 ```
 
-**3. Impact scope** (when regenerating or unsure):
+**Target neighborhood:**
+
+```bash
+ai-spector graph query <targetSeedId> --direction both --depth 4 --edges CONTEXT --json
+```
+
+**When regenerating** (unsure what changed):
 
 ```bash
 ai-spector graph impact <targetSeedId> --change content_change --json
 ```
 
-Respect `regenerate` / `review` buckets; do not rewrite unrelated chapters.
-
-**4. Data-source supplement** — only for gaps after graph query succeeds; cite paths in the doc.
-
 ### D. Write
 
-- **Read the template** from `.ai-spector/templates/` (path = DAG `template` value, e.g. `srs/3-use-cases.md`, `basic_design/list-api-template.md`). If missing, stop and ask the user to run `npx ai-spector init`.
-- Fill that template for the target only — keep all required headings/sections; replace placeholders with graph-backed content.
+- Read template from `.ai-spector/templates/` (DAG `template` field). If missing → stop and ask user to run `npx ai-spector init`.
+- Fill for this target only; keep all required headings; replace placeholders with graph-backed content.
 - Cross-check every UC/F reference against `nodes` from query JSON.
 - Add section anchors `<!-- section:sec.... -->` where templates expect them.
 
-### E. Ingest (mandatory — per file or per wave)
+### E. Ingest (once per wave — not per file)
 
-After **each file**, or once at **end of a parallel wave** (single patch listing all files in that wave):
-
-Write `.ai-spector/.docflow/extract/projection-patch.json`:
+After **all files in a wave** are written, write a single patch covering the whole wave:
 
 ```json
 {
@@ -101,51 +85,46 @@ Write `.ai-spector/.docflow/extract/projection-patch.json`:
   "nodes": [],
   "edges": [
     { "type": "rendersTo", "from": "doc.srs.3-use-cases", "to": "docs/srs/3-use-cases.md" },
-    { "type": "dependsOn", "from": "doc.srs.3-use-cases", "to": "doc.srs.1-introduction" },
-    { "type": "dependsOn", "from": "doc.srs.3-use-cases", "to": "doc.srs.2-overall-description" }
+    { "type": "dependsOn", "from": "doc.srs.3-use-cases", "to": "doc.srs.1-introduction" }
   ]
 }
 ```
-
-Then:
 
 ```bash
 ai-spector graph merge .ai-spector/.docflow/extract/projection-patch.json
 ai-spector graph validate
 ```
 
-- `rendersTo`: `from` = graph `document` (or section) id, `to` = repo-relative markdown path.
-- `dependsOn`: mirror DAG edges between **document** ids (downstream queries use these for context).
-- Per-domain files (`UC-01`, `F-01`): also link `definedIn` from domain node to detail sections if applicable.
+Then — for SRS and basic-design waves — run index before starting the next wave:
 
-**Wave rule:** finish all writes in wave `k`, merge **all** `rendersTo` / `dependsOn` for that wave, `graph validate`, then **`ai-spector index`** (basic design and SRS generation — see command files), then start wave `k+1`.
+```bash
+ai-spector index
+```
 
-Alternative repair: **`/sync-graph`** — not a substitute for merge between waves.
+**Exception:** if a file within the wave is a dependency for another file in the **same** wave (unusual — check the DAG), merge that file's `rendersTo` before writing the dependent. For standard DAGs this never happens within a wave.
 
 ### F. Per-domain detail files
 
-For `mode: perFeature` / `perDomain` DAG nodes (SRS):
+For `mode: perFeature` / `perDomain` (SRS):
 
 - Seed = domain id (`UC-01`, `F-01`), not only chapter document.
-- Query with `--depth 4`; include inbound `satisfies` / `dependsOn`.
-- `rendersTo` from resolved output path (e.g. `docs/srs/03-use-cases/uc-01-....md`).
+- Query with `--depth 4` + CONTEXT edges; include inbound `satisfies`.
+- Batch all per-domain files in their wave; merge all `rendersTo` once at wave end.
 
-For `mode: perEndpoint` / `perScreen` (basic design — `dag.basic-design.graph-seeds.json`):
+For `mode: perEndpoint` / `perScreen` (basic design):
 
-- **Do not** expand one file per `F-xx` feature.
-- **perEndpoint:** read `docs/basic-design/api-list.md` §3 Endpoint Summary; one markdown file per table row under `docs/basic-design/api/<slug>.md` (`slug` from method + path, e.g. `post-resource-id`).
-- **perScreen:** read `docs/basic-design/list-screens.md` §4 Screen Index; one file per screen under `docs/basic-design/screens/<slug>.md`.
-- List chapter lives at `docs/basic-design/list-screens.md` (not under `screens/`).
-- Query SRS + related `F-xx` for context on each endpoint/screen; ingest `doc.bd.api-*` / `doc.bd.screen-*` with `contains` from list chapter.
+- **perEndpoint:** read `docs/basic-design/api-list.md` §3; one file per row under `docs/basic-design/api/<slug>.md`.
+- **perScreen:** read `docs/basic-design/list-screens.md` §4; one file per screen under `docs/basic-design/screens/<slug>.md`.
+- Ingest `doc.bd.api-*` / `doc.bd.screen-*` with `contains` from list chapter in the wave-end merge.
 
-## Accuracy checklist (before marking target done)
+## Accuracy checklist
 
 - [ ] `graph query` run for target and every DAG dependency with existing files
 - [ ] All UC/F ids in markdown exist as graph nodes
-- [ ] `rendersTo` + `dependsOn` merged for this file
-- [ ] `graph validate` passes
+- [ ] Wave-end `rendersTo` + `dependsOn` merged in one patch
+- [ ] `graph validate` passes before next wave
 - [ ] No placeholder lorem / empty tables unless marked TBD in `gaps.json`
 
 ## On CLI failure
 
-[cli-failures.md](./cli-failures.md) — pause; offer fix / workaround / pause; do not generate from memory without user-approved workaround.
+[cli-failures.md](./cli-failures.md) — pause; offer fix / workaround / pause; do not generate from memory.

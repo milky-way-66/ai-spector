@@ -2,9 +2,9 @@
 name: ai-spector-generate-prototype
 description: >-
   Generates static HTML/CSS/JS screen prototypes from basic-design screen specs and bundled UI themes.
-  Use when the user asks for HTML prototype, screen mockups, prototype/src files, or to pick a theme
-  (vercel, stripe, etc.). Do not use for markdown SRS/basic/detail design only, or graph operations
-  without HTML output.
+  Use when the user asks for HTML prototype, screen mockups, or prototype/src files. Asks user to
+  choose a theme if none is stored; uses stored preference on subsequent runs. Do not use for
+  markdown SRS/basic/detail design only, or graph operations without HTML output.
 paths:
   - "prototype/**"
 ---
@@ -15,13 +15,14 @@ paths:
 
 ## Required reading
 
-[references/runbook.md](references/runbook.md) — theme setup, manifest, HTML rules.
+[references/runbook.md](references/runbook.md) — theme resolution (no upfront picker), manifest, HTML rules.
 
 ## Checklist
 
 ```
 - [ ] list-screens + screen detail docs exist
-- [ ] prototype setup --theme <name>
+- [ ] theme resolved (request → theme.json → manifest → prototype.config.json → **ask user if none stored**)
+- [ ] prototype setup (with --theme when needed; persists when user named a theme)
 - [ ] one .html per screen; prototypeStem from manifest
 - [ ] prototype manifest && prototype validate --strict
 ```

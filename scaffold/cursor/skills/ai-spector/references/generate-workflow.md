@@ -104,7 +104,7 @@ Append one line per target to `.ai-spector/.docflow/logs/generate-<layer>.log` (
 3. Suggest the command doc’s summary command (`/summary srs`, `/summary basic-design`, …) when listed there
 4. Optional: `/visualize-graph` for review
 
-Index flags: `--skip-graphify` when only markdown under `docs/` changed; `--force-graphify` when `docs/data-source/` must rebuild.
+Index flags: `--skip-doc-semantics` to skip UC/F body parsing; `--graph-only` for structure + merge only.
 
 ## Guardrails
 

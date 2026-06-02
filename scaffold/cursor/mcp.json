@@ -1,17 +1,3 @@
 {
-  "mcpServers": {
-    "graphify": {
-      "command": "uv",
-      "args": [
-        "tool",
-        "run",
-        "--from",
-        "graphifyy",
-        "python",
-        "-m",
-        "graphify.serve",
-        "${workspaceFolder}/.ai-spector/.docflow/graph/graphify-out/graph.json"
-      ]
-    }
-  }
+  "mcpServers": {}
 }

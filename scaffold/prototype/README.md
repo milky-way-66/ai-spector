@@ -4,9 +4,11 @@ Static HTML prototypes for screens defined in basic design.
 
 ## Setup (once per project or when changing theme)
 
+The agent resolves the theme automatically (`theme.json`, manifest, or `prototype.config.json` → `defaultTheme`). You only need to name a theme when you want to switch (e.g. “prototype with stripe theme”).
+
 ```bash
-ai-spector prototype themes
-ai-spector prototype setup --theme vercel
+ai-spector prototype setup --theme vercel   # persists defaultTheme when --theme is set
+ai-spector prototype themes                 # optional: list bundled themes
 ```
 
 ## Generate screens

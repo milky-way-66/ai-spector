@@ -5,6 +5,5 @@
   "screenDetailDir": "docs/basic-design/screens/",
   "prototypeDir": "prototype",
   "srcDir": "prototype/src",
-  "slugFrom": "screenName",
-  "defaultTheme": "vercel"
+  "slugFrom": "screenName"
 }

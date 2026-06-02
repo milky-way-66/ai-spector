@@ -17,7 +17,7 @@ Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** 
 
 | You want to… | Say (examples) | Skill | Agent runs (summary) |
 |--------------|----------------|-------|----------------------|
-| Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `analyze` → Graphify → merge knowledge → validate |
+| Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `analyze` → read markdown → merge knowledge → validate |
 | Check graph | “validate the graph”, “graph errors” | `ai-spector-graph` | `graph validate` |
 | Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `ai-spector index` |
 | Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | DAG waves → docs/srs → merge → index |
@@ -54,7 +54,7 @@ analyze → validate graph → generate SRS → index
 
 | Symptom | What to say / do |
 |---------|------------------|
-| Analyze failed | Agent offers fix vs workaround; say **1** to retry or “analyze again” after fixing data-source / Graphify |
+| Analyze failed | Agent offers fix vs workaround; say **1** to retry or “analyze again” after fixing data-source |
 | Validate errors | “validate the graph” — agent explains each error |
 | Empty SRS | “analyze” then “generate SRS” — not bulk-read all docs |
 | Unsure what regen | “what’s the impact of my changes” |

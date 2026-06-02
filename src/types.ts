@@ -23,7 +23,6 @@ export type EdgeType =
   | "describedIn"
   | "satisfies"
   | "dependsOn"
-  | "requires"
   | "tracesTo"
   | "derivedFrom"
   | "rendersTo"

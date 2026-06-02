@@ -2,7 +2,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
 import { scaffoldBundleRoot } from "../config/load.js";
-import { loadPrototypeConfig, readPrototypeThemeName } from "../prototype/config.js";
+import {
+  loadPrototypeConfig,
+  persistPrototypeDefaultTheme,
+  readPrototypeThemeName,
+} from "../prototype/config.js";
 import {
   buildPrototypeManifest,
   writePrototypeManifestFiles,
@@ -79,6 +83,10 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
     installedAt: new Date().toISOString(),
     designSource: `ai-spector:assets/themes/${theme}/DESIGN.md`,
   });
+
+  if (opts.theme?.trim()) {
+    await persistPrototypeDefaultTheme(projectRoot, theme);
+  }
 
   const gitkeep = join(srcDir, ".gitkeep");
   if (!(await pathExists(gitkeep))) {

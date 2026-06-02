@@ -95,8 +95,6 @@ Use only when the user chooses **2** or explicitly accepts the trade-off. Prefer
 | `graph query` OK but thin `nodes` | Read only `projectionPaths` + cited `docs/data-source/**` | Named paths only; no `docs/srs/**` glob | `graph merge` + `validate` after draft |
 | `graph validate` — one bad id/edge | Patch **single** node/edge; re-validate | No mass graph surgery | `validate` must pass before next wave |
 | `graph merge` — one bad `listedInSection` | Fix id in `knowledge.json`; re-merge | No hand-merge of full graph | Same |
-| Graphify MCP down mid-**analyze** | Continue with existing `knowledge.json` + user sources | User accepts stale extract; document in reply | Re-run **analyze** when MCP is back |
-| `graphify update` on markdown-only path | Skip (expected); use **index** for doc semantics | Do not treat as hard failure | **index** on schedule per command doc |
 | `index` fails on one path | Skip that path if command allows; fix path and re-index | Do not skip required wave index without user OK | Re-run **index** for skipped paths |
 | Optional visualize fails | Skip open; continue pipeline | User chose workaround | None |
 | Terminal/env (not git, missing `uv`) | Agent runs install/init steps user approves | No destructive deletes without ask | Re-run failed CLI |
@@ -126,7 +124,7 @@ After any workaround that wrote docs or graph patches: **`graph validate`** (and
 ### `graph merge` — `No domain entries in knowledge.json`
 
 - **Means:** Analyze extract did not populate staging.
-- **Fix:** Re-run Graphify extract in analyze; ensure `docs/data-source/` has real files; fill `knowledge.json` with at least one `useCase` or `feature`.
+- **Fix:** Re-run `/analyze`; ensure `docs/data-source/` has real markdown files with UC/F/actor content; fill `knowledge.json` with at least one `useCase` or `feature`.
 - **Workaround (user OK):** Manually add minimal entries to `knowledge.json` then re-merge.
 
 ### `graph merge` — `Merge edge missing target node` / section id
@@ -154,27 +152,6 @@ After any workaround that wrote docs or graph patches: **`graph validate`** (and
 - **Means:** CLI crashed or wrong cwd.
 - **Fix:** Re-run from project root; if repeat, report as tool bug with full stderr.
 
-### Graphify MCP unavailable
-
-- **Means:** Analyze cannot extract.
-- **Fix:** User enables Graphify in Cursor; reload MCP.
-- **Workaround (user OK):** Proceed with existing `knowledge.json` and data-source reads; schedule re-analyze.
-
-### `graphify update` — `unknown option: --graph`
-
-- **Means:** Agent used `graphify update <path> --graph <file>`. The `update` subcommand does **not** accept `--graph` (only `query`, `explain`, `path`, `cluster-only` do).
-- **Fix:** Run **`ai-spector graphify update`** (sets absolute `GRAPHIFY_OUT` and project-root cwd). Do not pass `--graph` on `update`.
-
-### `graphify update` — `No code files found` (exit 1) on `docs/srs` / `docs/basic-design`
-
-- **Means:** Those paths are empty or markdown-only; Graphify `update` AST-indexes **code** extensions (`.py`, `.ts`, `.js`, …), not SRS markdown alone.
-- **Fix:** **`ai-spector index`** / **`ai-spector graphify update`** skip empty and markdown-only sources automatically (success, not failure). Use **`docs/data-source`** for code Graphify indexing; SRS/basic-design semantics come from index doc-extract, not `graphify update`.
-
-### `graphify update` — output under `docs/data-source/.ai-spector/...`
-
-- **Means:** `GRAPHIFY_OUT` was a **relative** path and Graphify resolved it from the **source directory** (`docs/data-source`), not the repo root.
-- **Fix:** Run **`ai-spector graphify update`** from the project root. Delete mistaken `docs/data-source/graphify-out/` or `docs/data-source/.ai-spector/.docflow/graph/graphify-out/` if present.
-
 ### `graph impact --git` — not a git repository / no changes
 
 - **Means:** `--git` needs a git working tree with staged or unstaged diffs.
@@ -188,13 +165,7 @@ After any workaround that wrote docs or graph patches: **`graph validate`** (and
 ### Stale graph or indexes after manual edits or generate SRS
 
 - **Means:** User changed `docs/data-source/`, SRS outputs, or templates without re-running ingest; graph still shows template-only domain nodes.
-- **Fix:** Run **`ai-spector index`**. Use **`--force-graphify`** if Graphify output must rebuild entirely.
-- **Still stale domain detail?** Re-run **analyze** for Graphify MCP → fresh `knowledge.json`.
-
-### Graphify wrote `docs/data-source/graphify-out/` or `docs/data-source/.ai-spector/.../graphify-out/`
-
-- **Means:** `graphify update` ran without absolute `GRAPHIFY_OUT` from project root (or used a relative env path).
-- **Fix:** Run **`ai-spector graphify update`** (absolute `GRAPHIFY_OUT`, cwd = project root, removes stale folders). Do not copy files manually unless CLI failed and user approved workaround.
+- **Fix:** Run **`ai-spector index`**. For fully stale domain detail, re-run **`/analyze`** → fresh `knowledge.json`.
 
 ---
 
@@ -203,7 +174,7 @@ After any workaround that wrote docs or graph patches: **`graph validate`** (and
 - Create missing parent dirs under `.ai-spector/` if `init` was incomplete.
 - Correct a **single** typo in `knowledge.json` id or `listedInSection` then re-run `graph merge`.
 - Re-run the **same** failed command once after an obvious fix (e.g. `cd` to project root).
-- Wrong CLI flags the agent introduced (e.g. `graphify update --graph`) — fix and retry immediately.
+- Wrong CLI flags the agent introduced — fix and retry immediately.
 
 ## Agent must ask user before
 

@@ -14,7 +14,6 @@ Run from project root: `npx ai-spector …` if needed.
 
 ```bash
 ai-spector analyze
-ai-spector graphify update
 ai-spector graph merge --from-knowledge
 ai-spector graph validate
 ai-spector graph visualize [--open]
