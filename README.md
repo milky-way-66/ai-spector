@@ -23,7 +23,7 @@ Use **slash commands** in chat (or natural language with skills on). Details: `.
 ### First run
 
 ```text
-/analyze          → Graphify + knowledge → graph
+/analyze          → semantic extract (+ Graphify sidecar) → graph
 /validate-graph   → check graph
 /generate-srs     → SRS from graph
 /index            → sync graph after generate

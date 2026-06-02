@@ -257,10 +257,10 @@ export async function runIndex(
         record({
           id: "graphify-storage",
           label: "Graphify index & graph.json",
-          status: "failed",
+          status: "skipped",
           detail:
             (err instanceof Error ? err.message : String(err)) +
-            " (retry with graphify installed, or use --skip-graphify)",
+            " (non-blocking sidecar; semantic/doc merges continue. retry with graphify installed, or use --skip-graphify)",
         });
       }
     } else if (!runGraphify) {
@@ -497,6 +497,9 @@ function printIndexSummary(steps: IndexStepResult[], failed: boolean): void {
     console.log("Re-run after fixing, or use flags: --skip-graphify, --skip-merge, --graph-only");
   } else {
     console.log("All requested steps completed.");
+    console.log(
+      "Graphify is a sidecar index for code paths; failures do not block semantic/doc graph updates.",
+    );
     console.log(
       "Full semantic re-extract (actors, NFRs, data model) still uses /analyze + Graphify MCP → knowledge.json.",
     );

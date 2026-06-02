@@ -201,7 +201,13 @@ export async function runGraphifyUpdate(
   }
 
   const graphJson = join(outputPath, "graph.json");
-  if (!(await pathExists(graphJson))) {
+  const graphJsonExists = await pathExists(graphJson);
+  const allConfiguredSourcesSkipped =
+    sourcesRun.length === 0 &&
+    toRun.length > 0 &&
+    sourcesEmptySkipped.length + sourcesNoCodeSkipped.length === toRun.length;
+
+  if (!graphJsonExists && !allConfiguredSourcesSkipped) {
     throw new Error(
       `Expected graph.json at ${g.graphJsonPath ?? graphJson} after update — check Graphify install (graphify or uv + graphifyy)`,
     );
@@ -231,7 +237,11 @@ export async function runGraphifyUpdate(
   await writeJson(statePath, state);
 
   console.log("");
-  console.log(`OK — ${g.graphJsonPath ?? ".ai-spector/.docflow/graph/graphify-out/graph.json"}`);
+  if (graphJsonExists) {
+    console.log(`OK — ${g.graphJsonPath ?? ".ai-spector/.docflow/graph/graphify-out/graph.json"}`);
+  } else if (allConfiguredSourcesSkipped) {
+    console.log("OK — no Graphify-indexable sources found; graph.json not generated");
+  }
   if (sourcesEmptySkipped.length > 0) {
     console.log(`Skipped (empty): ${sourcesEmptySkipped.join(", ")}`);
   }

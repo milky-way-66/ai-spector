@@ -19,7 +19,7 @@ Skills auto-route when you ask in natural language (e.g. “resolve this comment
 
 | Step | You run | Agent runs (CLI) |
 |------|---------|------------------|
-| 1 | **`/analyze`** | `ai-spector analyze` → `ai-spector graphify update` → Graphify MCP extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
+| 1 | **`/analyze`** | `ai-spector analyze` → `ai-spector graphify update` (sidecar) → semantic extract → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
 | 2 | **`/validate-graph`** | `ai-spector graph validate` |
 | 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |

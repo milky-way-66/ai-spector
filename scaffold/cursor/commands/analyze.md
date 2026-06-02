@@ -26,13 +26,13 @@ ai-spector analyze
 
 Creates section/document nodes from templates. Do not ask the user to run this separately.
 
-### A. Extract (Graphify)
+### A. Extract (semantic-first; Graphify sidecar)
 
 1. Load `data-source.json`, `analyze.graphify.json`.
 2. **Graphify paths (from `ai-spector init`):**
    - Output dir: `.ai-spector/.docflow/graph/graphify-out` (`GRAPHIFY_OUT`)
    - Graph file: `.ai-spector/.docflow/graph/graphify-out/graph.json` (MCP + queries use `--graph` only on `graphify query`, not on `update`)
-3. **Code ingest (CLI — agent runs):**
+3. **Code ingest sidecar (CLI — agent runs):**
 
 ```bash
 ai-spector graphify update
@@ -102,7 +102,8 @@ Run in order. If any step fails, **stop** and use [_cli-failures.md](./_cli-fail
 | B | `ai-spector graph merge --from-knowledge` |
 | B | `ai-spector graph validate` |
 
-Graphify failure counts as blocked — do not invent `knowledge.json`.
+Graphify indexing is **sidecar** for code-aware context. Markdown-only or empty sources may skip Graphify and continue.
+Only block if semantic extract / `knowledge.json` generation fails.
 
 ## If blocked
 
