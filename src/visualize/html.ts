@@ -311,6 +311,23 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
   document.getElementById("header-meta").textContent =
     P.projectRoot + " · " + new Date(P.generatedAt).toLocaleString();
 
+  const EDGE_MEANINGS = {
+    partOf: "section belongs to document",
+    contains: "document/section contains another",
+    follows: "section ordering",
+    references: "cross-reference",
+    listedIn: "domain node listed in section",
+    definedIn: "domain node detailed in section",
+    describedIn: "domain node described by section",
+    satisfies: "feature satisfies use case",
+    dependsOn: "document depends on another document",
+    requires: "domain node requires another",
+    tracesTo: "requirement traces to document",
+    derivedFrom: "node derived from source file",
+    rendersTo: "graph node renders to markdown path",
+    relatesTo: "semantic link (evidence)",
+  };
+
   // ---- OVERVIEW ----
   const ov = document.getElementById("panel-overview");
   const gs = P.graphStats;
@@ -345,22 +362,6 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
       Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([t, n]) => '<tr><td>' + t + '</td><td>' + n + '</td><td style="color:var(--muted);font-size:0.78rem">' + EDGE_MEANINGS[t] + "</td></tr>").join("") +
       '</tbody></table>';
   }
-
-  const EDGE_MEANINGS = {
-    partOf: "section belongs to document",
-    contains: "document/section contains another",
-    follows: "section ordering",
-    references: "cross-reference",
-    listedIn: "domain node listed in section",
-    definedIn: "domain node detailed in section",
-    describedIn: "domain node described by section",
-    satisfies: "feature satisfies use case",
-    dependsOn: "document depends on another document",
-    tracesTo: "requirement traces to document",
-    derivedFrom: "node derived from source file",
-    rendersTo: "graph node renders to markdown path",
-    relatesTo: "semantic link (evidence)",
-  };
 
   // ---- EDGE FILTER CHIPS ----
   const efBar = document.getElementById("edge-filter-bar");
