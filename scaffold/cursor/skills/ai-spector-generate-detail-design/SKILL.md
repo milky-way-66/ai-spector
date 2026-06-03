@@ -10,24 +10,22 @@ paths:
   - ".ai-spector/templates/detail_design/**"
 ---
 
-# AI Spector — Generate detail design
+# Generate Detail Design
 
-**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
-
-## Required reading
-
+## Load at start
 1. [references/runbook.md](references/runbook.md)
 2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md)
-3. [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md)
 
-## Checklist
+## Load when needed
 
-```
-- [ ] language confirmed (language-picker.md — check before first write)
-- [ ] graph validate; SRS + basic design present
-- [ ] generate-workflow waves + merge per target
-```
+| Situation | Load |
+|---|---|
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| Graph queries / merge | [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) |
+| CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
+| Run of 5+ files | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 
-## Natural language
+## On CLI failure
+Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-“detail design”, “implementation spec”, “feature detail for F-03” → this skill.
+"detail design", "implementation spec", "feature detail for F-03" → this skill.

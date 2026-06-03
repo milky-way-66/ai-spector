@@ -10,25 +10,27 @@ paths:
   - ".ai-spector/templates/basic_design/**"
 ---
 
-# AI Spector — Generate basic design
+# Generate Basic Design
 
-**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
-
-## Required reading
-
+## Load at start
 1. [references/runbook.md](references/runbook.md)
 2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md)
-3. [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) § perEndpoint / perScreen
 
-## Checklist
+## Load when needed
 
-```
-- [ ] language confirmed (language-picker.md — check before first write)
-- [ ] graph validate; SRS on disk
-- [ ] index after every wave (mandatory)
-- [ ] one file per endpoint row / Screen Index row — not per F-xx
-```
+| Situation | Load |
+|---|---|
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| Writing DB design | [references/bd-context/db-design.md](references/bd-context/db-design.md) |
+| Writing API list | [references/bd-context/api-list.md](references/bd-context/api-list.md) |
+| Writing API detail (per endpoint) | [references/bd-context/api-detail.md](references/bd-context/api-detail.md) |
+| Writing screen list | [references/bd-context/screen-list.md](references/bd-context/screen-list.md) |
+| Writing screen detail (per screen) | [references/bd-context/screen-detail.md](references/bd-context/screen-detail.md) |
+| Graph queries / merge | [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) |
+| CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
+| Run of 5+ files | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 
-## Natural language
+## On CLI failure
+Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-“basic design”, “screen list”, “API list”, “wireframe for login” → this skill.
+"basic design", "screen list", "API list", "wireframe for login" → this skill.

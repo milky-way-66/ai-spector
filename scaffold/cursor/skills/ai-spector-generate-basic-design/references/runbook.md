@@ -8,6 +8,7 @@ Generate basic design markdown **from the traceability graph** and upstream SRS.
 |-----------------|----------|
 | Scope cases, waves, merge, finish, guardrails | [generate-workflow.md](../../ai-spector/references/generate-workflow.md) |
 | Graph query, ingest, perEndpoint/perScreen | [generate-graph.md](../../ai-spector/references/generate-graph.md) |
+| **Graph → template section mapping** | **[bd-context/](./bd-context/) — load the matching section file before writing each doc type** |
 
 **Upstream:** SRS on disk (minimum per `workflow.dependencies.json`). Do not invent APIs/screens not grounded in graph + SRS.
 
@@ -42,6 +43,20 @@ Templates: `.ai-spector/templates/basic_design/`
 | 2 | `bd.detail-screen` (+ one file per Screen Index row) | merge → validate → **`ai-spector index`** |
 
 **Reindex every wave (mandatory):** `graph merge` does not parse markdown bodies. Without index after wave 0, wave 1 cannot expand endpoint rows; without index after wave 1, wave 2 cannot expand Screen Index rows.
+
+## Graph context (required before writing each file)
+
+After running queries ([generate-graph.md](../../ai-spector/references/generate-graph.md) § C), load the matching file from `bd-context/` for the doc type being written:
+
+| Writing | Load |
+|---|---|
+| DB design | `bd-context/db-design.md` |
+| API list | `bd-context/api-list.md` |
+| API detail (per endpoint) | `bd-context/api-detail.md` |
+| Screen list | `bd-context/screen-list.md` |
+| Screen detail (per screen) | `bd-context/screen-detail.md` |
+
+Every endpoint, table, and screen must trace to graph nodes. No invented structure.
 
 ## Basic-design-specific write rules
 

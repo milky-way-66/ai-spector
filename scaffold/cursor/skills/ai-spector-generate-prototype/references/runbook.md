@@ -4,6 +4,13 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 
 **User runs this command;** the agent runs CLI. On CLI failure: [cli-failures.md](../../ai-spector/references/cli-failures.md).
 
+## Context hygiene
+
+For runs of 5+ screens, follow [context-management.md](../../ai-spector/references/context-management.md):
+- **Sub-agent per screen** — delegate graph queries + screen doc reads for each screen; receive a ≤400-word summary (fields, flows, roles, errors); main agent writes from the summary.
+- **Compact every 5 screens** — after writing and validating a batch of 5, `/compact` with the plan summary (remaining screens, written paths) before continuing.
+- After writing a screen HTML file, discard its content from context — record only the path.
+
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
@@ -87,11 +94,25 @@ ai-spector prototype manifest --dry-run
 
 Read each target’s `docs/basic-design/screens/<slug>.md` — wireframe (§1.1), layout (§1.2), interactions. Read `prototype/DESIGN.md` for colors, type, spacing.
 
+### 2b. Load graph context per screen
+
+**Required before writing each screen’s HTML.** Run the queries in [prototype-graph-context.md](./prototype-graph-context.md) for the screen being generated.
+
+This step pulls:
+- The F-xx / UC-xx the screen satisfies → business rules, required fields, flow steps, error states
+- The API endpoints the screen depends on → exact form fields, response columns, error codes
+- Actor roles → role-based UI sections
+
+Do not skip this step. Screen detail docs summarize the spec; the graph has the authoritative detail. Any form field, table column, button, or error state **must be traceable to graph data** before you write it into the HTML.
+
 ### 3. Generate HTML
 
 For each screen in scope:
 
 - Write `prototype/src/<prototypeStem>.html` (self-contained or with sibling `.css`/`.js` in `prototype/src/`)
+- All content derived from graph context (step 2b) + screen detail doc — no invented fields or labels
+- Include error states and empty states for every exception flow found in the graph
+- Render role-specific sections when multiple actors satisfy the screen
 - Link navigation using relative paths between screens when `list-screens.md` §2 defines flow
 - Do **not** edit `docs/**`
 
@@ -125,6 +146,12 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 - [ ] If no stored basic auth: [auth picker](auth-picker.md) run — username/password collected, `prototype auth` executed, `prototype/htpasswd` present
 - [ ] If no stored theme: [theme picker](theme-picker.md) run — 3 recommendations, previews opened, user confirmed
 - [ ] `prototype setup` run with resolved theme
+- [ ] Graph context queries run per screen ([prototype-graph-context.md](./prototype-graph-context.md)) before writing HTML
+- [ ] Every form field traces to an API request field or F-xx/UC-xx field definition
+- [ ] Every table column traces to an API response field or data entity
+- [ ] Every button/action label matches the spec's verb (not generic copy)
+- [ ] Error states and empty states included for all UC exception flows + API error codes
+- [ ] Role-based sections rendered when multiple actors satisfy the screen
 - [ ] Every generated file name matches `prototypeStem` in manifest
 - [ ] Wireframe/layout from screen detail doc reflected in HTML
 - [ ] Tokens from `prototype/DESIGN.md` only (no random CDN)

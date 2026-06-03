@@ -10,33 +10,24 @@ paths:
   - "prototype/**"
 ---
 
-# AI Spector — Generate prototype
+# Generate Prototype
 
-**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
+## Load at start
+1. [references/runbook.md](references/runbook.md)
 
-## Required reading
+## Load when needed
 
-- [references/runbook.md](references/runbook.md) — manifest, HTML rules, theme resolution
-- [references/auth-picker.md](references/auth-picker.md) — **when no basic auth stored**: ask username/password, create htpasswd
-- [references/theme-picker.md](references/theme-picker.md) — **when no theme stored**: recommend 3, preview, confirm
+| Situation | Load |
+|---|---|
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| No theme stored | [references/theme-picker.md](references/theme-picker.md) |
+| No basic auth stored | [references/auth-picker.md](references/auth-picker.md) |
+| Before writing each screen HTML | [references/prototype-graph-context.md](references/prototype-graph-context.md) |
+| Run of 5+ screens | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
+| CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
 
-## Checklist
+## On CLI failure
+Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-```
-- [ ] language confirmed (language-picker.md — check before writing any screen text content)
-- [ ] list-screens + screen detail docs exist
-- [ ] basic auth resolved (config basicAuth + prototype/htpasswd → **auth picker if none**)
-- [ ] theme resolved (request → theme.json → manifest → config → **theme picker if none**)
-- [ ] if picker: 3 recommendations + previews opened + user confirmed before setup
-- [ ] prototype setup (with --theme when needed; persists when user named a theme)
-- [ ] one .html per screen; prototypeStem from manifest
-- [ ] prototype manifest && prototype validate --strict
-```
-
-## Natural language
-
-“HTML prototype”, “mockup screens”, “prototype with stripe theme” → this skill.
-
-“Help me pick a theme”, “what theme fits my app?”, “show me theme options” → [theme-picker.md](references/theme-picker.md) (even before generating).
-
-Constraints: `prototype/CLAUDE.md` in the project repo.
+"HTML prototype", "mockup screens", "prototype with stripe theme" → this skill.
+"Help me pick a theme" → load theme-picker.md directly.

@@ -1,128 +1,68 @@
-# Document generation workflow (shared)
+# Document generation workflow
 
-Used by **SRS**, **basic design**, and **detail design** generation skills.
+Used by SRS, basic design, and detail design skills.
 
-| Topic | Document |
-|-------|----------|
-| Graph query, merge patch shape, waves algorithm | [generate-graph.md](./generate-graph.md) |
-| CLI failure recovery (fix / workaround / pause) | [cli-failures.md](./cli-failures.md) |
-| Layer-specific DAG, intent tables, waves | each skill’s `references/runbook.md` |
+**References (load when needed):**
+- Graph queries / merge / ingest → [generate-graph.md](./generate-graph.md)
+- Context compaction / sub-agents → [context-management.md](./context-management.md)
+- CLI failures → [cli-failures.md](./cli-failures.md)
 
-**Not used by** HTML prototype generation (`ai-spector-generate-prototype` runbook).
+## Language check (before first write)
 
-## Language — check before any write
+Read `.ai-spector/.docflow/config/language.json`. If `documentLanguage` is empty or missing, load [language-picker.md](./language-picker.md) and run the picker. All content in the chosen language; IDs, paths, code never translated.
 
-**Read [language-picker.md](./language-picker.md) before generating any document content.**
+## Context hygiene (always)
 
-1. Check `.ai-spector/.docflow/config/language.json` for `documentLanguage`.
-2. If missing, run the language-picker flow (ask → persist → continue). Do not write until confirmed.
-3. Apply the enforcement rules in language-picker.md to every file written: all content in the target language, IDs/paths/code never translated, no mixing.
+1. Only read files listed in `projectionPaths` — no `docs/**` glob.
+2. Raw graph JSON stays in the sub-agent, not main context.
+3. After writing a file, record path + status only; discard content.
+4. For runs of 5+ files: compact after every wave + every 5 per-domain files. Load [context-management.md](./context-management.md) for the sub-agent pattern.
 
-## Philosophy
+## Scope
 
-- **Accuracy over speed** — full graph context before every write; ingest before the next wave.
-- **Graph in, graph out** — query neighbors + dependencies before; `rendersTo` + `dependsOn` after ([generate-graph.md](./generate-graph.md) § E).
-- **Parallel when safe** — only targets in the **same DAG wave** with dependencies already merged + validated (and **indexed** when the command doc requires it).
+| Case | User input | Behavior |
+|---|---|---|
+| **1 — All** | "generate all SRS" | Every DAG node. Skip `good` files unless user asked to regenerate. |
+| **2 — Explicit** | file paths in chat | Map → DAG nodes → dependency closure. Same wave only. |
+| **3 — Words** | "API list and screens" | Scope table → user confirms → generate. No write before yes. |
 
-## Scope — three ways to choose targets
-
-Each generate command defines its DAG and intent hints. The pattern is always:
-
-| Case | User input | Agent behavior |
-|------|------------|----------------|
-| **1 — All** | “generate all SRS” / full layer | Plan every DAG node (+ per-domain expansions). Respect `good` on disk unless user asked to regenerate. |
-| **2 — Explicit paths** | paths in chat (`docs/…/file.md`) | Map paths → DAG nodes → seeds. Include **dependency closure**. Batch only within the same wave. |
-| **3 — Words** | “API list and screens” | Proposed scope table → **user confirms** → generate. **Do not write until approved.** |
-
-Paths are repo-relative. Mixed args: treat paths as case 2, free text as case 3.
-
-## Case 3 — confirm before write (mandatory)
-
-1. Parse the request against that command’s `dag.*.json`, `dag.*.graph-seeds.json`, and graph domain nodes.
-2. Build a **proposed scope** table (columns: DAG id, output path, seed, reason, prerequisites / deps).
-3. Include **dependency closure** — ancestors that are `missing_file` / `missing_content` run in earlier waves unless the user skips deps.
-4. Ask:
-
-```text
-I plan to generate the following (N items, waves X–Y). Prerequisites run first.
-Reply **yes** to proceed, **no** to cancel, or edit the list.
-```
-
-5. **Stop** without explicit **yes**. Do not write on assumption.
-6. If ambiguous (e.g. “features” = list vs all detail files), ask **one** clarifying question before the table.
-
-Command-specific phrase → DAG mappings live in each `generate-*.md` (not here).
-
-## Prerequisites (all DAG generate commands)
-
-1. Merged graph — normally after **analyze** (data-source ingest).
-2. Gate:
-
-```bash
-ai-spector graph validate
-```
-
-On errors, pause and follow recovery in [cli-failures.md](./cli-failures.md).
-
-3. `workflow.dependencies.json` entry for that command (SRS minimum, etc.).
+Case 3: build scope table (DAG id, output path, seed, reason, deps) → ask → stop until confirmed.
 
 ## Plan (once per invocation)
 
-1. **Select targets** (case 1 / 2 / 3; case 3 = confirm first).
-2. Topological sort selected nodes + required dependency ancestors.
-3. Map each node via `dag.*.graph-seeds.json` → query seeds + ingest document ids.
-4. Classify disk per output: `good` | `missing_content` | `missing_file` — do not overwrite `good` without user intent.
-5. Assign **waves** ([generate-graph.md](./generate-graph.md) § Waves). Present wave table (brief for cases 1–2; case 3 table already confirmed).
+1. Select targets (case 1/2/3).
+2. Topological sort + dependency closure.
+3. Map DAG nodes → seeds via `dag.*.graph-seeds.json`.
+4. Classify disk: `good` | `missing_content` | `missing_file`.
+5. Assign waves; present wave table.
 
-## Per wave, then per target
-
-For **each wave** in order:
-
-### Wave checklist
+## Wave checklist
 
 ```
-- [ ] All targets in this wave identified (parallel OK within wave only)
-- [ ] For each target: graph query deps + target (_generate-graph § C)
+- [ ] Targets for this wave identified (parallel OK within wave only)
+- [ ] Per target: delegate graph queries to sub-agent; receive ≤400-word summary
+- [ ] Load matching srs-context/ or bd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
-- [ ] Write file(s)
-- [ ] Merge projection patch (rendersTo + dependsOn) for this wave
-- [ ] ai-spector graph validate — pass before next wave
-- [ ] ai-spector index when command doc requires (basic design: every wave; SRS: see generate-srs.md)
+- [ ] Write file from summary + template
+- [ ] Merge projection patch (rendersTo + dependsOn) for the wave
+- [ ] ai-spector graph validate
+- [ ] ai-spector index (basic design: every wave; SRS: see runbook)
+- [ ] /compact with plan summary before next wave
 ```
 
-### Per target (summary)
-
-Details: [generate-graph.md](./generate-graph.md) § C–E.
-
-1. **Query** — dependency seeds (depth 2) + target seed (depth 4); `graph impact` when regenerating.
-2. **Read** — `projectionPaths` and cited `docs/data-source/**` only; no glob of entire `docs/`.
-3. **Write** — from DAG template; graph-backed UC/F/API/screen names only.
-4. **Ingest** — merge patch; validate before leaving the wave.
-
-**Forbidden:** targets from different waves in one batch; next wave before merge + validate; skipping `rendersTo` on generated docs.
-
-### Log (optional)
-
-Append one line per target to `.ai-spector/.docflow/logs/generate-<layer>.log` (create dir if needed): timestamp, seed, path, validate OK.
-
-## Finish (end of command)
-
-1. `ai-spector graph validate`
-2. `ai-spector index` if not already run after the last wave (required for SRS — see `generate-srs.md`)
-3. Suggest the command doc’s summary command (`/summary srs`, `/summary basic-design`, …) when listed there
-4. Optional: `/visualize-graph` for review
-
-Index flags: `--skip-doc-semantics` to skip UC/F body parsing; `--graph-only` for structure + merge only.
+Per target: Delegate → Receive summary → Write → Log path/status → Ingest.
 
 ## Guardrails
 
-- **Parallel only within a wave** — never across waves; never when A `dependsOn` B in the DAG.
-- **Every target** gets its own `graph query` + dependency queries before write.
-- **Every wave** ends with merge + validate (and **index** when the command doc says so) before the next wave.
-- **Case 3** requires explicit user **yes** before any write.
-- On `graph query` / `merge` / `validate` / `index` failure → pause and recover per [cli-failures.md](./cli-failures.md).
-- Prefer graph `nodes`/`edges` over stale `knowledge.json` for generation text.
+- Parallel only within a wave.
+- Sub-agent per target — never reuse a previous target's summary.
+- No raw graph JSON in main context.
+- No speculative reads — projectionPaths only.
+- Case 3 requires explicit yes before any write.
+- On CLI failure → load [cli-failures.md](./cli-failures.md).
 
-## If blocked
+## Finish
 
-[cli-failures.md](./cli-failures.md). Re-run the same task after fixes. Common upstream fix: **analyze** first, or generate SRS before basic design.
+1. `ai-spector graph validate`
+2. `ai-spector index` if not already run after last wave
+3. Suggest summary command when runbook lists one

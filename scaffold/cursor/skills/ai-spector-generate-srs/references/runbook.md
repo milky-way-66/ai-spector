@@ -8,6 +8,7 @@ Generate SRS markdown **from the traceability graph** in DAG order.
 |-----------------|----------|
 | Scope cases, waves, merge, finish, guardrails | [generate-workflow.md](../../ai-spector/references/generate-workflow.md) |
 | Graph query, ingest patch, parallelism | [generate-graph.md](../../ai-spector/references/generate-graph.md) |
+| **Graph → template section mapping** | **[srs-context/](./srs-context/) — load the matching section file before writing each doc type** |
 
 ## Intent → DAG hints
 
@@ -45,6 +46,22 @@ Templates: `.ai-spector/templates/srs/`
 | 4 | data, interfaces, NFR, i18n, other | deps via `dependsOn` queries |
 
 Follow [generate-workflow.md](../../ai-spector/references/generate-workflow.md) for planning and per-wave execution.
+
+## Graph context (required before writing each file)
+
+After running queries ([generate-graph.md](../../ai-spector/references/generate-graph.md) § C), load the matching file from `srs-context/` for the doc type being written:
+
+| Writing | Load |
+|---|---|
+| §1 Introduction | `srs-context/introduction.md` |
+| §2 Overall Description | `srs-context/overall-description.md` |
+| §3 UC list or UC-xx detail | `srs-context/use-case-detail.md` |
+| §4 feature list or F-xx detail | `srs-context/feature-detail.md` |
+| §5 Data Requirements | `srs-context/data-requirements.md` |
+| §6 External Interfaces | `srs-context/external-interfaces.md` |
+| §7 Quality Attributes | `srs-context/quality-attributes.md` |
+
+Every UC-xx, F-xx, and actor in output must exist as a graph node. No invented identifiers.
 
 ## SRS-specific ingest notes
 
