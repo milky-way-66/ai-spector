@@ -1,5 +1,7 @@
 # Theme picker — recommend, preview, confirm
 
+> **Hard rule: never auto-select a theme.** Inferring from project context is allowed only to produce 3 *recommendations*. The user must explicitly choose (by number, name, or "use that one") before `prototype setup` runs. Auto-picking and explaining the choice afterward is not acceptable.
+
 When **no theme is stored** and the user did **not** name one in this request, run this flow **before** `prototype setup`. Do not generate HTML until the user confirms a theme.
 
 Skip this flow when:

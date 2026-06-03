@@ -1,6 +1,6 @@
 # Document generation workflow
 
-Used by SRS, basic design, and detail design skills.
+Used by SRS and basic design skills.
 
 **References (load when needed):**
 - Graph queries / merge / ingest → [generate-graph.md](./generate-graph.md)

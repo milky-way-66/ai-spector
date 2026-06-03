@@ -36,7 +36,7 @@ ai-spector graph query F-<n> --direction both --depth 3 --edges CONTEXT --json
 
 Extract:
 - **Functional requirements** listed under the feature → must-have UI behaviours
-- **Field definitions** (`rendersTo` → detail design docs if present)
+- **Field definitions** (`rendersTo` → docs if present)
 - **Business rules** (validation, conditional visibility, permissions)
 - **Actor** that performs / views this feature → drives role-based UI variants
 

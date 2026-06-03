@@ -1,6 +1,6 @@
 # Graph-first generation (shared)
 
-Used by **SRS**, **basic design**, and **detail design** generation skills.
+Used by **SRS** and **basic design** generation skills.
 
 | Orchestration (scope, confirm, wave checklist, finish) | [generate-workflow.md](./generate-workflow.md) |
 | Per-command DAG + intent tables | each skill's `references/runbook.md` |
@@ -71,9 +71,9 @@ ai-spector graph impact <targetSeedId> --change content_change --json
 ### D. Write
 
 - Read template from `.ai-spector/templates/` (DAG `template` field). If missing → stop and ask user to run `npx ai-spector init`.
-- **Before filling the template**, apply the layer-specific graph extraction map:
-  - SRS targets → [srs-graph-context.md](../../ai-spector-generate-srs/references/srs-graph-context.md)
-  - Basic design targets → [basic-design-graph-context.md](../../ai-spector-generate-basic-design/references/basic-design-graph-context.md)
+- **Before filling the template**, load the matching context section for this doc type:
+  - SRS targets → `srs-context/<section>.md` (see SRS runbook for the table)
+  - Basic design targets → `bd-context/<doc-type>.md` (see BD runbook for the table)
   - Prototype screens → [prototype-graph-context.md](../../ai-spector-generate-prototype/references/prototype-graph-context.md)
 - Fill for this target only; keep all required headings; replace placeholders with graph-backed content.
 - Cross-check every UC/F reference against `nodes` from query JSON.

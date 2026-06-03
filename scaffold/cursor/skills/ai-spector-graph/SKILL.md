@@ -4,8 +4,7 @@ description: >-
   Runs AI Spector traceability graph operations: analyze data-source, index refresh, graph validate,
   impact and regen scope, visualize, semantic link-graph, knowledge.json. Use when
   the user asks to analyze sources, refresh or validate the graph, see impact of changes, visualize
-  traceability, or re-index after edits. Do not use for writing SRS, basic design, detail design, or
-  HTML prototype content.
+  traceability, or re-index after edits. Do not use for writing SRS, basic design, or HTML prototype content.
 paths:
   - ".ai-spector/graph/**"
   - ".ai-spector/.docflow/**"

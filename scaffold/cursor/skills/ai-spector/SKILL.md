@@ -4,7 +4,7 @@ description: >-
   Provides shared rules for AI Spector docflow projects: CLI failure handling, traceability graph path,
   and routing to task skills. Use when the user mentions ai-spector, docflow, or .ai-spector but the
   task is unclear, or for init and project layout. Do not use when the user clearly wants SRS,
-  basic design, detail design, HTML prototype, graph operations, or comment resolution — use the
+  basic design, HTML prototype, graph operations, or comment resolution — use the
   matching task skill instead.
 ---
 
@@ -36,7 +36,6 @@ When `ai-spector` exits non-zero, required `--json` is invalid, or a required MC
 | Analyze, index, validate, impact, visualize | `ai-spector-graph` |
 | SRS | `ai-spector-generate-srs` |
 | Basic design | `ai-spector-generate-basic-design` |
-| Detail design | `ai-spector-generate-detail-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
 | “Generate docs” (vague) | `ai-spector-generate` |

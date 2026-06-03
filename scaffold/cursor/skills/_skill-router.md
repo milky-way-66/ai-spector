@@ -6,7 +6,7 @@ Agents use this when intent is ambiguous.
 
 1. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill).
 2. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
-3. **Still unclear** — `ai-spector` core + one question (graph vs SRS vs basic design vs detail vs prototype vs comments).
+3. **Still unclear** — `ai-spector` core + one question (graph vs SRS vs basic design vs prototype vs comments).
 
 ## Task → skill → runbook
 
@@ -22,8 +22,7 @@ Agents use this when intent is ambiguous.
 | doc summaries | `ai-spector-graph` | `references/summary.md` |
 | SRS, use cases, features, requirements | `ai-spector-generate-srs` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate-basic-design` | `references/runbook.md` |
-| detail design, implementation spec | `ai-spector-generate-detail-design` | `references/runbook.md` |
-| HTML prototype | “HTML prototype”, “mockup screens”, “prototype with stripe theme” | `ai-spector-generate-prototype` | `references/runbook.md`, `references/theme-picker.md` |
+| HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | route to one skill above |
 
@@ -34,7 +33,6 @@ Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-fail
 ```text
 analyze → validate graph → generate SRS → index
   → generate basic design → index
-  → generate detail design
   → prototype setup → generate HTML screens
 ```
 

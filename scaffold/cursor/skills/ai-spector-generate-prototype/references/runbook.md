@@ -53,14 +53,16 @@ ai-spector prototype auth --from-config
 3. `prototype/manifest.json` → `themeName` (non-empty)
 4. `.ai-spector/.docflow/config/prototype.config.json` → `defaultTheme`
 
-**If no stored theme is found** and the user did **not** name one in this request, run the **[theme picker](theme-picker.md)** — do **not** ask a bare “which theme?” without recommendations.
+**If no stored theme is found** and the user did **not** name one in this request, run the **[theme picker](theme-picker.md)**.
+
+> **Do not auto-select.** Using project context to guess a theme and proceeding without a user reply is wrong — even if the rationale seems obvious. The agent's job is to recommend, not decide.
 
 Summary of the picker:
 
 1. Read project context (SRS, list-screens §1, knowledge, data-source).
 2. `ai-spector prototype themes --json` — pick **3 best-fit** themes with one-line rationale each.
 3. `ai-spector prototype preview <name> --open` for all 3 — user compares in the browser.
-4. Post a numbered table; **wait for user to choose** before setup.
+4. Post a numbered table; **stop and wait for user reply** — a number, a name, or “use that one” — before running any further command.
 
 Once the user confirms (or named a theme upfront), proceed with setup; the choice is persisted and will not be asked again.
 

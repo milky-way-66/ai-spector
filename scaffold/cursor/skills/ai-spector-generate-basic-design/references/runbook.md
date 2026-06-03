@@ -89,7 +89,7 @@ Execution checklist: [generate-workflow.md](../../ai-spector/references/generate
 ## Finish
 
 - Last wave already ran validate + index → final validate only; else run both again.
-- Suggest **`/summary basic-design`** (required before detail design per workflow).
+- Suggest **`/summary basic-design`** when workflow lists it.
 
 Log: `.ai-spector/.docflow/logs/generate-basic-design.log`.
 

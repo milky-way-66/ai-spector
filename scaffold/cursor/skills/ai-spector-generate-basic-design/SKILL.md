@@ -4,7 +4,7 @@ description: >-
   Generates or updates basic design documents from the traceability graph and SRS: screen list and
   screen details, API list and endpoint details, database design under docs/basic-design/. Use when
   the user asks for basic design, wireframes, screen map, API design, ERD, or list-screens.md. Do not
-  use for SRS-only work, detail design, HTML prototype, or graph analyze/index without doc generation.
+  use for SRS-only work, HTML prototype, or graph analyze/index without doc generation.
 paths:
   - "docs/basic-design/**"
   - ".ai-spector/templates/basic_design/**"

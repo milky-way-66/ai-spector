@@ -16,7 +16,6 @@ Missing templates → `npx ai-spector init --force`.
 | Source input | `docs/data-source/` |
 | SRS | `docs/srs/` |
 | Basic design | `docs/basic-design/` |
-| Detail design | `docs/detail-design/` |
 | HTML prototype | `prototype/src/` |
 
 ## Document language

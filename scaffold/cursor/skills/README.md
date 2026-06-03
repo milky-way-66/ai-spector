@@ -14,7 +14,6 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings â†’ Rules â†
 | Analyze, index, validate graph, impact, visualize | `ai-spector-graph` |
 | SRS / requirements | `ai-spector-generate-srs` |
 | Screens, APIs, DB basic design | `ai-spector-generate-basic-design` |
-| Detail / implementation design | `ai-spector-generate-detail-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
 | Review comments | `ai-spector-resolve-comments` |
 | Unsure | `ai-spector` (core) |

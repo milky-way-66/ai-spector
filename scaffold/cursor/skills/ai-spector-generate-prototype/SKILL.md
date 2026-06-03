@@ -5,7 +5,7 @@ description: >-
   Use when the user asks for HTML prototype, screen mockups, or prototype/src files. When no theme is
   stored, recommends 3 best-fit themes from project context, opens preview samples in the browser,
   and waits for the user to choose before setup. Uses stored preference on subsequent runs. Do not use
-  for markdown SRS/basic/detail design only, or graph operations without HTML output.
+  for markdown SRS/basic design only, or graph operations without HTML output.
 paths:
   - "prototype/**"
 ---
@@ -20,7 +20,7 @@ paths:
 | Situation | Load |
 |---|---|
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
-| No theme stored | [references/theme-picker.md](references/theme-picker.md) |
+| No theme stored — **must confirm before setup** | [references/theme-picker.md](references/theme-picker.md) |
 | No basic auth stored | [references/auth-picker.md](references/auth-picker.md) |
 | Before writing each screen HTML | [references/prototype-graph-context.md](references/prototype-graph-context.md) |
 | Run of 5+ screens | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |

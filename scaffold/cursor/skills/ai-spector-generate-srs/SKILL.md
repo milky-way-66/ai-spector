@@ -4,7 +4,7 @@ description: >-
   Generates or updates the System Requirements Specification from the traceability graph and
   docs/data-source context. Use when the user asks to generate or update SRS, requirements, use cases
   (UC-xx), features (F-xx), or files under docs/srs/. Do not use for basic design screens/APIs,
-  detail design, HTML prototype, or graph-only analyze/index tasks.
+  HTML prototype, or graph-only analyze/index tasks.
 paths:
   - "docs/srs/**"
   - ".ai-spector/templates/srs/**"
