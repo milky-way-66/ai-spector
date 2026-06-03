@@ -27,7 +27,9 @@ import {
 } from "./commands/comments.js";
 import { runProvenanceLink } from "./graph/provenance.js";
 import {
+  runPrototypeInstallPreviews,
   runPrototypeManifest,
+  runPrototypePreview,
   runPrototypeSetup,
   runPrototypeThemes,
   runPrototypeValidate,
@@ -410,6 +412,30 @@ prototype
   .option("--json", "JSON output")
   .action(async (opts) => {
     await runPrototypeThemes({ json: opts.json });
+  });
+
+prototype
+  .command("preview")
+  .description("Show (and optionally open) a theme preview.html from assets/themes/<name>/")
+  .argument("<theme>", "Theme folder name (e.g. stripe, vercel)")
+  .option("--open", "Open preview in the default browser")
+  .option("--json", "JSON output with file path")
+  .action(async (theme: string, opts) => {
+    await runPrototypePreview({ theme, open: opts.open, json: opts.json });
+  });
+
+prototype
+  .command("install-previews")
+  .description("Move staged preview HTML files into assets/themes/<name>/preview.html (maintainers)")
+  .option("--from <path>", "Staging folder (default: assets/preview/themes/)")
+  .option("--dry-run", "List moves without writing")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    await runPrototypeInstallPreviews({
+      from: opts.from,
+      dryRun: opts.dryRun,
+      json: opts.json,
+    });
   });
 
 prototype

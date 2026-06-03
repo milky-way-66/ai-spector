@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Theme: Preview (browser)",
+      "type": "shell",
+      "command": "npm run build && node dist/cli.js prototype preview ${input:themeName} --open",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Theme: List with previews",
+      "type": "shell",
+      "command": "npm run build && node dist/cli.js prototype themes",
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Theme: Install staged previews",
+      "type": "shell",
+      "command": "npm run build && node dist/cli.js prototype install-previews",
+      "group": "none",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "themeName",
+      "type": "promptString",
+      "description": "Theme name (e.g. stripe, vercel, notion)",
+      "default": "stripe"
+    }
+  ]
+}

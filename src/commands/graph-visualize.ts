@@ -1,6 +1,5 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { join } from "node:path";
+import { openInBrowser } from "../util/open-browser.js";
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { pathExists, readJson } from "../util/fs.js";
@@ -12,8 +11,6 @@ import {
 } from "../graph/knowledge.js";
 import { buildVisualizationHtml } from "../visualize/html.js";
 import { computeGraphStats, computeKnowledgeStats } from "../visualize/stats.js";
-
-const execAsync = promisify(exec);
 
 export interface GraphVisualizeOptions {
   root?: string;
@@ -74,23 +71,4 @@ export async function runGraphVisualize(opts: GraphVisualizeOptions): Promise<st
   }
 
   return outputPath;
-}
-
-async function openInBrowser(filePath: string): Promise<void> {
-  const url = `file://${filePath}`;
-  const platform = process.platform;
-  try {
-    if (platform === "darwin") {
-      await execAsync(`open "${filePath}"`);
-    } else if (platform === "win32") {
-      await execAsync(`start "" "${filePath}"`, { shell: "cmd.exe" });
-    } else {
-      await execAsync(`xdg-open "${filePath}"`);
-    }
-    console.log(`Opened ${url}`);
-  } catch (e) {
-    console.warn(
-      `Could not open browser automatically: ${e instanceof Error ? e.message : e}`,
-    );
-  }
 }

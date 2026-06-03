@@ -53,7 +53,9 @@
     "graph:validate": "node dist/cli.js -r example graph validate",
     "graph:merge": "node dist/cli.js -r example graph merge --from-knowledge",
     "graph:visualize": "node dist/cli.js -r example graph visualize --open",
-    "ai-spector": "node dist/cli.js"
+    "ai-spector": "node dist/cli.js",
+    "themes:install-previews": "node dist/cli.js prototype install-previews",
+    "themes:preview": "node dist/cli.js prototype preview"
   },
   "dependencies": {
     "@types/mdast": "^4.0.4",

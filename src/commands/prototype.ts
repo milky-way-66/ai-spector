@@ -18,6 +18,12 @@ import {
   readThemeSummary,
 } from "../prototype/themes.js";
 import {
+  installThemePreviews,
+  resolveThemePreviewPath,
+  themeHasPreview,
+} from "../prototype/theme-preview.js";
+import { openInBrowser } from "../util/open-browser.js";
+import {
   formatPrototypeIssues,
   validatePrototype,
 } from "../prototype/validate.js";
@@ -29,15 +35,24 @@ export interface PrototypeThemesOptions {
 export async function runPrototypeThemes(opts: PrototypeThemesOptions = {}): Promise<void> {
   const themes = await listBundledThemes();
   if (opts.json) {
-    console.log(JSON.stringify({ themes }, null, 2));
+    const withPreview = await Promise.all(
+      themes.map(async (name) => ({
+        name,
+        summary: await readThemeSummary(name),
+        preview: await themeHasPreview(name),
+      })),
+    );
+    console.log(JSON.stringify({ themes: withPreview }, null, 2));
     return;
   }
   console.log(`Bundled prototype themes (${themes.length}):`);
   for (const name of themes) {
     const summary = await readThemeSummary(name);
-    console.log(summary ? `  ${name} — ${summary}` : `  ${name}`);
+    const preview = (await themeHasPreview(name)) ? " [preview]" : "";
+    console.log(summary ? `  ${name} — ${summary}${preview}` : `  ${name}${preview}`);
   }
   console.log("");
+  console.log("Preview a theme: ai-spector prototype preview <name> [--open]");
   console.log("Use: ai-spector prototype setup --theme <name>");
 }
 
@@ -213,5 +228,74 @@ export async function runPrototypeValidate(
 
   if (errors.length > 0) {
     throw new Error(`Prototype validation failed (${errors.length} error(s))`);
+  }
+}
+
+export interface PrototypePreviewOptions {
+  theme: string;
+  open?: boolean;
+  json?: boolean;
+}
+
+export async function runPrototypePreview(opts: PrototypePreviewOptions): Promise<string> {
+  const theme = opts.theme.trim();
+  await assertThemeExists(theme);
+
+  const previewPath = resolveThemePreviewPath(theme);
+  if (!(await pathExists(previewPath))) {
+    throw new Error(
+      `No preview for theme "${theme}". Expected ${previewPath}`,
+    );
+  }
+
+  const fileUrl = `file://${previewPath}`;
+  if (opts.json) {
+    console.log(JSON.stringify({ theme, previewPath, fileUrl }, null, 2));
+    return previewPath;
+  }
+
+  console.log(`Theme preview: ${theme}`);
+  console.log(`  ${previewPath}`);
+  console.log("");
+  console.log("Open in browser:");
+  console.log(`  ${fileUrl}`);
+
+  if (opts.open) {
+    await openInBrowser(previewPath);
+  }
+
+  return previewPath;
+}
+
+export interface PrototypeInstallPreviewsOptions {
+  from?: string;
+  dryRun?: boolean;
+  json?: boolean;
+}
+
+export async function runPrototypeInstallPreviews(
+  opts: PrototypeInstallPreviewsOptions = {},
+): Promise<void> {
+  const result = await installThemePreviews({
+    from: opts.from,
+    dryRun: opts.dryRun,
+  });
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  const label = opts.dryRun ? "Would install" : "Installed";
+  console.log(`${label} theme previews from ${result.stagingRoot}`);
+  console.log(`  moved: ${result.moved.length}`);
+  if (result.moved.length > 0) {
+    console.log(`    ${result.moved.join(", ")}`);
+  }
+  if (result.skipped.length > 0) {
+    console.log(`  skipped (preview.html exists): ${result.skipped.join(", ")}`);
+  }
+  if (result.missingTheme.length > 0) {
+    console.log(`  no theme folder: ${result.missingTheme.join(", ")}`);
   }
 }

@@ -23,7 +23,7 @@ Agents use this when intent is ambiguous.
 | SRS, use cases, features, requirements | `ai-spector-generate-srs` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate-basic-design` | `references/runbook.md` |
 | detail design, implementation spec | `ai-spector-generate-detail-design` | `references/runbook.md` |
-| HTML prototype, theme, mockup | `ai-spector-generate-prototype` | `references/runbook.md` |
+| HTML prototype | “HTML prototype”, “mockup screens”, “prototype with stripe theme” | `ai-spector-generate-prototype` | `references/runbook.md`, `references/theme-picker.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | route to one skill above |
 

@@ -17,3 +17,12 @@ export async function withTempProject(
     await rm(root, { recursive: true, force: true });
   }
 }
+
+export async function withTempDir(fn: (root: string) => Promise<void>): Promise<void> {
+  const root = await mkdtemp(join(tmpdir(), "ai-spector-tmp-"));
+  try {
+    await fn(root);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}

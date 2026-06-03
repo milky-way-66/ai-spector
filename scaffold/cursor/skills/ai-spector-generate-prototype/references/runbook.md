@@ -7,7 +7,7 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
-- **Theme must be confirmed before generating** — if no theme is stored, ask the user to choose one before running setup. Once the user has chosen (stored in `prototype/theme.json` or `prototype.config.json`), never ask again.
+- **Theme must be confirmed before generating** — if no theme is stored, run the [theme picker](theme-picker.md): recommend 3 fits from project context, open previews, wait for user choice. Once chosen (stored in `prototype/theme.json` or config), never ask again.
 - **One HTML per screen** — `prototype/src/<prototypeStem>.html` must match `prototype/manifest.json`
 - **Static only** — HTML/CSS/JS under `prototype/`; no frameworks, no CDN unless the theme DESIGN allows it
 
@@ -35,14 +35,16 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 3. `prototype/manifest.json` → `themeName` (non-empty)
 4. `.ai-spector/.docflow/config/prototype.config.json` → `defaultTheme`
 
-**If no stored theme is found**, ask the user to choose before proceeding:
+**If no stored theme is found** and the user did **not** name one in this request, run the **[theme picker](theme-picker.md)** — do **not** ask a bare “which theme?” without recommendations.
 
-```
-No theme is saved yet. Which UI theme would you like for your prototype?
-Run `ai-spector prototype themes` to see all options, or name one (e.g. vercel, stripe, notion, linear.app).
-```
+Summary of the picker:
 
-Wait for the user's answer — do **not** silently default to `vercel`. Once the user names a theme, proceed with setup; the choice is persisted and will not be asked again.
+1. Read project context (SRS, list-screens §1, knowledge, data-source).
+2. `ai-spector prototype themes --json` — pick **3 best-fit** themes with one-line rationale each.
+3. `ai-spector prototype preview <name> --open` for all 3 — user compares in the browser.
+4. Post a numbered table; **wait for user to choose** before setup.
+
+Once the user confirms (or named a theme upfront), proceed with setup; the choice is persisted and will not be asked again.
 
 Setup (creates `prototype/`, copies `DESIGN.md`, seeds manifest when `list-screens.md` exists):
 
@@ -54,10 +56,16 @@ Omit `--theme` only when setup can infer the same name from stored files (the CL
 
 **Persist** when the user explicitly names a theme in this session: `prototype setup --theme <name>` updates `prototype/theme.json` and saves `defaultTheme` in `prototype.config.json` for later runs.
 
-List themes when the user asks (“what themes?”, “list prototype themes”):
+List all themes:
 
 ```bash
 ai-spector prototype themes
+```
+
+Themes with a visual sample show `[preview]`. Open any theme sample:
+
+```bash
+ai-spector prototype preview <name> --open
 ```
 
 ### 2. Plan screens
@@ -96,12 +104,14 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 |-----------|--------|
 | “use stripe theme”, `--theme stripe` | `prototype setup --theme stripe` (persists preference); add `--force-design` if switching theme mid-branch |
 | “what themes?” | `ai-spector prototype themes` |
-| no theme in message, no stored theme | **Ask the user** to name a theme before proceeding |
+| “preview stripe theme”, “show me vercel theme” | `ai-spector prototype preview <name> --open` |
+| no theme in message, no stored theme | **[theme picker](theme-picker.md)**: recommend 3 → open previews → wait for choice |
 | no theme in message, stored theme found | Use stored theme — do not ask |
+| “help me pick a theme”, “which theme fits?” | Full [theme picker](theme-picker.md) even if not generating yet |
 
 ## Accuracy checklist
 
-- [ ] Theme resolved without blocking theme picker (unless user asked to list themes)
+- [ ] If no stored theme: [theme picker](theme-picker.md) run — 3 recommendations, previews opened, user confirmed
 - [ ] `prototype setup` run with resolved theme
 - [ ] Every generated file name matches `prototypeStem` in manifest
 - [ ] Wireframe/layout from screen detail doc reflected in HTML

@@ -23,7 +23,8 @@ Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** 
 | Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | DAG waves → docs/srs → merge → index |
 | Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | docs/basic-design → merge → index each wave |
 | Detail design | “detail design for checkout” | `ai-spector-generate-detail-design` | docs/detail-design |
-| HTML prototype | “HTML mockup”, “prototype with stripe theme” | `ai-spector-generate-prototype` | `prototype setup` → HTML → manifest → validate |
+| HTML prototype | “HTML mockup”, “prototype with stripe theme” | `ai-spector-generate-prototype` | theme picker (if needed) → setup → HTML → validate |
+| Pick / preview UI theme | “help me pick a theme”, “show me themes”, “what fits my app?” | `ai-spector-generate-prototype` | read project context → recommend 3 → `prototype preview` ×3 |
 | What to redo | “what’s impacted”, “what should I regenerate” | `ai-spector-graph` | `graph impact` / git diff |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
 | Explore graph | “show the graph” | `ai-spector-graph` | `graph visualize --open` |
