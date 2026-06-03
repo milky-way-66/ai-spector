@@ -23,6 +23,7 @@ paths:
 ## Checklist
 
 ```
+- [ ] language confirmed (language-picker.md — check before first write)
 - [ ] graph validate; SRS on disk
 - [ ] index after every wave (mandatory)
 - [ ] one file per endpoint row / Screen Index row — not per F-xx

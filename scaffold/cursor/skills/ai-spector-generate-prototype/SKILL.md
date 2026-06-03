@@ -22,6 +22,7 @@ paths:
 ## Checklist
 
 ```
+- [ ] language confirmed (language-picker.md — check before writing any screen text content)
 - [ ] list-screens + screen detail docs exist
 - [ ] theme resolved (request → theme.json → manifest → config → **theme picker if none**)
 - [ ] if picker: 3 recommendations + previews opened + user confirmed before setup

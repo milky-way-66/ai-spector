@@ -23,6 +23,7 @@ paths:
 ## Checklist
 
 ```
+- [ ] language confirmed (language-picker.md — check before first write)
 - [ ] graph validate
 - [ ] runbook + generate-workflow followed
 - [ ] templates from .ai-spector/templates/srs/

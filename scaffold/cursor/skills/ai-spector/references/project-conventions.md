@@ -19,9 +19,18 @@ Missing templates → `npx ai-spector init --force`.
 | Detail design | `docs/detail-design/` |
 | HTML prototype | `prototype/src/` |
 
+## Document language
+
+Stored in `.ai-spector/.docflow/config/language.json` (`documentLanguage` field).
+
+- **Before the first write** in any session, check this file. If `documentLanguage` is `null` or missing, run the language-picker flow ([language-picker.md](./language-picker.md)) — ask the user, persist the answer, then continue.
+- **All generated content** (headings, body, tables, labels) must be in `documentLanguage`. Identifiers (UC-01, F-02, API paths, code) are never translated.
+- Change with: edit `language.json` directly; already-generated files are not auto-updated.
+
 ## Generation discipline (all layers)
 
-1. Read template from `.ai-spector/templates/` — never invent section structure.
-2. Query graph before writing (`ai-spector graph query`).
-3. Merge projection patches after each wave (`graph merge`).
-4. Validate when the command doc requires it.
+1. **Check document language** ([language-picker.md](./language-picker.md)) before any write.
+2. Read template from `.ai-spector/templates/` — never invent section structure.
+3. Query graph before writing (`ai-spector graph query`).
+4. Merge projection patches after each wave (`graph merge`).
+5. Validate when the command doc requires it.

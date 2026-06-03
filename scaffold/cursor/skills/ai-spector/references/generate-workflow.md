@@ -10,6 +10,14 @@ Used by **SRS**, **basic design**, and **detail design** generation skills.
 
 **Not used by** HTML prototype generation (`ai-spector-generate-prototype` runbook).
 
+## Language — check before any write
+
+**Read [language-picker.md](./language-picker.md) before generating any document content.**
+
+1. Check `.ai-spector/.docflow/config/language.json` for `documentLanguage`.
+2. If missing, run the language-picker flow (ask → persist → continue). Do not write until confirmed.
+3. Apply the enforcement rules in language-picker.md to every file written: all content in the target language, IDs/paths/code never translated, no mixing.
+
 ## Philosophy
 
 - **Accuracy over speed** — full graph context before every write; ingest before the next wave.

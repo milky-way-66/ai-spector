@@ -23,6 +23,7 @@ paths:
 ## Checklist
 
 ```
+- [ ] language confirmed (language-picker.md — check before first write)
 - [ ] graph validate; SRS + basic design present
 - [ ] generate-workflow waves + merge per target
 ```
