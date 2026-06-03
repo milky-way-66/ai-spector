@@ -1,3 +1,5 @@
-node_modules/
-dist/
-*.tsbuildinfo
+# >>> ai-spector (begin)
+.ai-spector/views/
+# <<< ai-spector (end)
+
+node_modules

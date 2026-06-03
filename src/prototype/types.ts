@@ -13,6 +13,8 @@ export interface PrototypeConfig {
   srcDir: string;
   slugFrom: "screenName";
   defaultTheme: string;
+  /** Screen Index id used as prototype entry / nginx default route. */
+  defaultScreenId?: string;
   /** Repo-relative path to Apache htpasswd file (nginx basic auth). */
   htpasswdFile: string;
   basicAuth?: PrototypeBasicAuth;
@@ -58,5 +60,7 @@ export interface PrototypeScreenMap {
   schemaVersion: 1;
   themeName: string;
   generatedAt: string;
+  /** Entry screen at generation time (from screens with HTML when any exist). */
+  defaultScreenId?: string;
   screens: PrototypeScreenMapEntry[];
 }

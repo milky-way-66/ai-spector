@@ -67,6 +67,29 @@ export async function readPrototypeThemeName(
   return undefined;
 }
 
+/** Persist default entry screen for prototype hosting / screen-map. */
+export async function persistPrototypeDefaultScreen(
+  projectRoot: string,
+  screenId: string,
+): Promise<void> {
+  const id = screenId.trim();
+  if (!id) {
+    return;
+  }
+  const projectConfig = join(
+    projectRoot,
+    ".ai-spector/.docflow/config/prototype.config.json",
+  );
+  let raw: Partial<PrototypeConfig> = {};
+  if (await pathExists(projectConfig)) {
+    raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
+  } else if (await pathExists(bundledPrototypeConfigPath())) {
+    raw = await readJson<Partial<PrototypeConfig>>(bundledPrototypeConfigPath());
+  }
+  const next: PrototypeConfig = { ...DEFAULT_CONFIG, ...raw, defaultScreenId: id };
+  await writeJson(projectConfig, next);
+}
+
 /** Persist explicit theme choice for future prototype runs (no re-prompt). */
 export async function persistPrototypeDefaultTheme(
   projectRoot: string,

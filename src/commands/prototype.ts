@@ -6,6 +6,7 @@ import {
   isPrototypeBasicAuthConfigured,
   loadPrototypeConfig,
   persistPrototypeBasicAuth,
+  persistPrototypeDefaultScreen,
   persistPrototypeDefaultTheme,
   readPrototypeThemeName,
 } from "../prototype/config.js";
@@ -190,6 +191,7 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
 export interface PrototypeManifestOptions {
   root?: string;
   theme?: string;
+  defaultScreen?: string;
   dryRun?: boolean;
   json?: boolean;
 }
@@ -204,10 +206,17 @@ export async function runPrototypeManifest(
     config.defaultTheme;
   await assertThemeExists(theme);
 
+  const defaultScreen = opts.defaultScreen?.trim();
+  if (defaultScreen) {
+    await persistPrototypeDefaultScreen(projectRoot, defaultScreen);
+  }
+  const { config: configAfterDefault } = await loadPrototypeConfig(projectRoot);
+
   const built = await buildPrototypeManifest({
     projectRoot,
-    config,
+    config: configAfterDefault,
     themeName: theme,
+    defaultScreenId: defaultScreen,
   });
 
   if (opts.dryRun) {
@@ -240,6 +249,13 @@ export async function runPrototypeManifest(
 
   console.log(`Wrote ${paths.manifestPath} (${built.screenCount} screens)`);
   console.log(`Wrote ${paths.screenMapPath} (${built.htmlCount}/${built.screenCount} HTML present)`);
+  if (built.screenMap.defaultScreenId) {
+    const entry = built.screenMap.screens.find(
+      (s) => s.screenId === built.screenMap.defaultScreenId,
+    );
+    const label = entry ? `${entry.displayName} (${entry.prototypeStem}.html)` : built.screenMap.defaultScreenId;
+    console.log(`  default screen: ${label}`);
+  }
 }
 
 export interface PrototypeValidateOptions {

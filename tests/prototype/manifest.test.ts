@@ -14,6 +14,7 @@ const config: PrototypeConfig = {
   srcDir: "prototype/src",
   slugFrom: "screenName",
   defaultTheme: "stripe",
+  htpasswdFile: "prototype/.htpasswd",
 };
 
 const LIST = `## 4. Screen Index
@@ -21,6 +22,14 @@ const LIST = `## 4. Screen Index
 | Screen | Section (Detail Screen) | User Role | Purpose |
 |--------|-------------------------|-----------|---------|
 | Home | 5 | All | Landing |
+`;
+
+const LIST_TWO = `## 4. Screen Index
+
+| Screen | Section (Detail Screen) | User Role | Purpose |
+|--------|-------------------------|-----------|---------|
+| Home | 5 | All | Landing |
+| Login | 6 | All | Sign in |
 `;
 
 describe("buildPrototypeManifest", () => {
@@ -42,6 +51,61 @@ describe("buildPrototypeManifest", () => {
       expect(result.manifest.themeName).toBe("stripe");
       expect(result.manifest.screens[0]!.prototypeStem).toBe("home");
       expect(result.screenMap.screens[0]!.htmlExists).toBe(true);
+      expect(result.screenMap.defaultScreenId).toBe("home");
+    });
+  });
+
+  it("sets defaultScreenId to first index row with HTML when several exist", async () => {
+    await withTempProject(async (root) => {
+      await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
+      await writeFile(join(root, "docs/basic-design/list-screens.md"), LIST_TWO, "utf8");
+      await mkdir(join(root, "prototype/src"), { recursive: true });
+      await writeFile(join(root, "prototype/src/home.html"), "<!DOCTYPE html>", "utf8");
+      await writeFile(join(root, "prototype/src/login.html"), "<!DOCTYPE html>", "utf8");
+
+      const result = await buildPrototypeManifest({
+        projectRoot: root,
+        config,
+        themeName: "stripe",
+      });
+
+      expect(result.screenMap.defaultScreenId).toBe("home");
+    });
+  });
+
+  it("defaults to the only screen with HTML when others are pending", async () => {
+    await withTempProject(async (root) => {
+      await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
+      await writeFile(join(root, "docs/basic-design/list-screens.md"), LIST_TWO, "utf8");
+      await mkdir(join(root, "prototype/src"), { recursive: true });
+      await writeFile(join(root, "prototype/src/login.html"), "<!DOCTYPE html>", "utf8");
+
+      const result = await buildPrototypeManifest({
+        projectRoot: root,
+        config,
+        themeName: "stripe",
+      });
+
+      expect(result.screenMap.defaultScreenId).toBe("login");
+    });
+  });
+
+  it("respects explicit defaultScreenId override", async () => {
+    await withTempProject(async (root) => {
+      await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
+      await writeFile(join(root, "docs/basic-design/list-screens.md"), LIST_TWO, "utf8");
+      await mkdir(join(root, "prototype/src"), { recursive: true });
+      await writeFile(join(root, "prototype/src/home.html"), "<!DOCTYPE html>", "utf8");
+      await writeFile(join(root, "prototype/src/login.html"), "<!DOCTYPE html>", "utf8");
+
+      const result = await buildPrototypeManifest({
+        projectRoot: root,
+        config,
+        themeName: "stripe",
+        defaultScreenId: "login",
+      });
+
+      expect(result.screenMap.defaultScreenId).toBe("login");
     });
   });
 });

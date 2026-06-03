@@ -7,7 +7,11 @@ import type {
   PrototypeScreenMap,
 } from "./types.js";
 import { parseScreenIndexFromList } from "./parse-screen-index.js";
-import { pathExists, writeJson } from "../util/fs.js";
+import {
+  assertDefaultScreenInPool,
+  resolveDefaultScreenId,
+} from "./resolve-default-screen.js";
+import { pathExists, readJson, writeJson } from "../util/fs.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -22,6 +26,8 @@ export interface BuildPrototypeManifestOptions {
   projectRoot: string;
   config: PrototypeConfig;
   themeName: string;
+  /** Override default entry screen (Screen Index id). */
+  defaultScreenId?: string;
 }
 
 export interface BuildPrototypeManifestResult {
@@ -88,10 +94,32 @@ export async function buildPrototypeManifest(
     screens: manifestScreens,
   };
 
+  let previousDefault: string | undefined;
+  const screenMapPath = join(
+    opts.projectRoot,
+    opts.config.prototypeDir,
+    "screen-map.json",
+  );
+  if (await pathExists(screenMapPath)) {
+    const prior = await readJson<PrototypeScreenMap>(screenMapPath);
+    previousDefault = prior.defaultScreenId;
+  }
+
+  if (opts.defaultScreenId?.trim()) {
+    assertDefaultScreenInPool(opts.defaultScreenId, mapScreens);
+  }
+
+  const defaultScreenId = resolveDefaultScreenId(mapScreens, {
+    explicit: opts.defaultScreenId,
+    previous: previousDefault,
+    configDefault: opts.config.defaultScreenId,
+  });
+
   const screenMap: PrototypeScreenMap = {
     schemaVersion: 1,
     themeName: opts.themeName,
     generatedAt,
+    ...(defaultScreenId ? { defaultScreenId } : {}),
     screens: mapScreens,
   };
 

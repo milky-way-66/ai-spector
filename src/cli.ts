@@ -473,12 +473,17 @@ prototype
   .command("manifest")
   .description("Rebuild prototype/manifest.json and screen-map.json from docs/basic-design/list-screens.md")
   .option("--theme <name>", "Theme name stored in manifest")
+  .option(
+    "--default-screen <id>",
+    "Default entry screen (Screen Index id); picks from screens with HTML when omitted",
+  )
   .option("--dry-run", "Print planned manifest without writing")
   .option("--json", "JSON output")
   .action(async (opts, cmd) => {
     await runPrototypeManifest({
       root: projectRootOpt(cmd),
       theme: opts.theme,
+      defaultScreen: opts.defaultScreen,
       dryRun: opts.dryRun,
       json: opts.json,
     });

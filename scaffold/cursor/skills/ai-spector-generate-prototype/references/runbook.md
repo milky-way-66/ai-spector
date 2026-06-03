@@ -125,6 +125,14 @@ ai-spector prototype manifest
 ai-spector prototype validate --strict
 ```
 
+`screen-map.json` gets `defaultScreenId` — the entry screen for hosting. The CLI picks the first screen that already has HTML (or the first row in the index if none do yet). When several screens have HTML and you need a specific landing page, set it explicitly:
+
+```bash
+ai-spector prototype manifest --default-screen login
+```
+
+That id must match a Screen Index row and (when any HTML exists) a screen that already has `prototype/src/<stem>.html`.
+
 ### 5. Suggest commit
 
 ```text
