@@ -21,6 +21,28 @@ Skip when:
 | SvelteKit | `svelte` | `spa` | `routes/<slug>/+page.svelte` per screen |
 | Angular | `angular` | `spa` | component per screen |
 
+## Required: relative base path for Vite-based stacks (vue, react, svelte)
+
+> Vite defaults to `base: '/'` which generates **absolute** asset URLs (`/assets/app.js`). When the built `dist/` is served from a subdirectory (e.g. `/project-id/1.4/dist/`), all asset requests hit the server root and return 403/404.
+
+**Always set `base: './'` in `vite.config.ts` before the first build:**
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  base: './',   // relative paths — works at any subdirectory depth
+})
+```
+
+After adding this, rebuild and resync:
+
+```bash
+npm run build
+npx ai-spector prototype sync --clean
+```
+
+When the agent sets up a Vite-based stack (vue / react / svelte), it **must** write or verify `base: './'` in `vite.config.ts` before generating any other files. Flag it explicitly to the user if the config is missing or set to `'/'`.
+
 ## Step 1 — Check stored stack
 
 Read `.ai-spector/.docflow/config/prototype.config.json`. If `techStack` is set, skip this entire flow.

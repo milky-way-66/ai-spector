@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@types/mdast": "^4.0.4",
+    "ai-spector": "^0.4.8",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",

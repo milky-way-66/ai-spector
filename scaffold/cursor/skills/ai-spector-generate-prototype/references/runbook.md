@@ -260,9 +260,23 @@ npx ai-spector prototype sync --json
 
 Output includes each screen's `screenDoc → uri` mapping.
 
+### Vite base path — required before first build
+
+Vite defaults to `base: '/'`, generating absolute asset URLs (`/assets/app.js`). When `dist/` is deployed to a subdirectory, all asset requests resolve from the server root and return 403/404.
+
+**Set `base: './'` in `vite.config.ts` before building:**
+
+```ts
+export default defineConfig({
+  base: './',   // relative paths — works at any subdirectory depth
+})
+```
+
 ### Full SPA workflow
 
 ```bash
+# 0. Ensure vite.config.ts has base: './'  ← required or assets will 403
+
 # 1. Build the SPA
 cd frontend && npm run build && cd ..
 
