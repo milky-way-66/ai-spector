@@ -17,7 +17,7 @@ const config: PrototypeConfig = {
   srcDir: "prototype/src",
   slugFrom: "screenName",
   defaultTheme: "vercel",
-  htpasswdFile: "prototype/htpasswd",
+  htpasswdFile: "prototype/.htpasswd",
 };
 
 describe("readPrototypeThemeName", () => {

@@ -12,7 +12,7 @@ const DEFAULT_CONFIG: PrototypeConfig = {
   srcDir: "prototype/src",
   slugFrom: "screenName",
   defaultTheme: "vercel",
-  htpasswdFile: "prototype/htpasswd",
+  htpasswdFile: "prototype/.htpasswd",
 };
 
 export function isPrototypeBasicAuthConfigured(

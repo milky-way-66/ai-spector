@@ -2,7 +2,10 @@ import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
-/** Apache apr1 MD5 via `openssl passwd -apr1` (nginx/Apache compatible). */
+/**
+ * Apache apr1 MD5 via `openssl passwd -apr1`.
+ * Nginx `auth_basic_user_file` expects `username:$apr1$...` lines (same as htpasswd -m).
+ */
 export function apr1Hash(password: string, salt?: string): string {
   const args = ["passwd", "-apr1"];
   if (salt) {

@@ -36,9 +36,9 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 
 ### 0. Resolve basic auth
 
-**If `prototype.config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/htpasswd` exists.
+**If `prototype.config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/.htpasswd` exists.
 
-If credentials exist but `prototype/htpasswd` is missing:
+If credentials exist but `prototype/.htpasswd` is missing:
 
 ```bash
 ai-spector prototype auth --from-config
@@ -145,7 +145,7 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 
 ## Accuracy checklist
 
-- [ ] If no stored basic auth: [auth picker](auth-picker.md) run — username/password collected, `prototype auth` executed, `prototype/htpasswd` present
+- [ ] If no stored basic auth: [auth picker](auth-picker.md) run — username/password collected, `prototype auth` executed, `prototype/.htpasswd` present
 - [ ] If no stored theme: [theme picker](theme-picker.md) run — 3 recommendations, previews opened, user confirmed
 - [ ] `prototype setup` run with resolved theme
 - [ ] Graph context queries run per screen ([prototype-graph-context.md](./prototype-graph-context.md)) before writing HTML

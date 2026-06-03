@@ -441,10 +441,10 @@ prototype
 
 prototype
   .command("auth")
-  .description("Configure HTTP basic auth (credentials in prototype.config.json, htpasswd under prototype/)")
+  .description("Configure HTTP basic auth (credentials in prototype.config.json, .htpasswd under prototype/)")
   .option("--username <name>", "Basic auth username")
   .option("--password <secret>", "Basic auth password")
-  .option("--from-config", "Regenerate htpasswd from stored prototype.config.json basicAuth")
+  .option("--from-config", "Regenerate .htpasswd from stored prototype.config.json basicAuth")
   .action(async (opts, cmd) => {
     await runPrototypeAuth({
       root: projectRootOpt(cmd),

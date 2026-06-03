@@ -18,7 +18,7 @@ describe("runPrototypeAuth", () => {
       expect(config.basicAuth?.username).toBe("reviewer");
       expect(config.basicAuth?.password).toBe("s3cret!");
 
-      const htpasswd = await readFile(join(root, "prototype/htpasswd"), "utf8");
+      const htpasswd = await readFile(join(root, "prototype/.htpasswd"), "utf8");
       expect(htpasswd.trim()).toMatch(/^reviewer:\$apr1\$/);
     });
   });
@@ -31,7 +31,7 @@ describe("runPrototypeAuth", () => {
         password: "pass",
       });
 
-      const htpasswdPath = join(root, "prototype/htpasswd");
+      const htpasswdPath = join(root, "prototype/.htpasswd");
       const { unlink } = await import("node:fs/promises");
       await unlink(htpasswdPath);
 

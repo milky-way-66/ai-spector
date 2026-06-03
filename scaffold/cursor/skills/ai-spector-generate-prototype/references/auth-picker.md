@@ -4,12 +4,12 @@ Before **any** prototype HTML is generated, the project must have HTTP basic aut
 
 Skip when:
 
-- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype.config.json` — run `ai-spector prototype auth --from-config` only if `prototype/htpasswd` is missing
+- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype.config.json` — run `ai-spector prototype auth --from-config` only if `prototype/.htpasswd` is missing
 - User is only previewing themes (no generation)
 
 ## Step 1 — Check stored credentials
 
-Read `.ai-spector/.docflow/config/prototype.config.json`. If `basicAuth.username` and `basicAuth.password` are non-empty, skip asking. Ensure `prototype/htpasswd` exists; if not:
+Read `.ai-spector/.docflow/config/prototype.config.json`. If `basicAuth.username` and `basicAuth.password` are non-empty, skip asking. Ensure `prototype/.htpasswd` exists; if not:
 
 ```bash
 ai-spector prototype auth --from-config
@@ -27,7 +27,7 @@ Prototype hosting uses HTTP basic auth. Choose credentials for reviewers:
 
 Reply with both values (e.g. "username: demo / password: …").
 
-Credentials are saved in `.ai-spector/.docflow/config/prototype.config.json` and hashed into `prototype/htpasswd` for nginx/Apache.
+Credentials are saved in `.ai-spector/.docflow/config/prototype.config.json` and hashed into `prototype/.htpasswd` for nginx/Apache.
 ```
 
 If the user gives only one field, ask for the missing one and wait.
@@ -45,7 +45,7 @@ This writes:
 | Artifact | Purpose |
 |----------|---------|
 | `prototype.config.json` → `basicAuth` | Plain username/password for regeneration and team reference |
-| `prototype/htpasswd` | Apache apr1 hash for web server `auth_basic` |
+| `prototype/.htpasswd` | Apache apr1 hash for web server `auth_basic` |
 
 Then continue with theme resolution and [runbook.md](runbook.md) §1 (setup).
 
