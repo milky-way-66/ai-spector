@@ -40,6 +40,7 @@ npx ai-spector prototype themes
 Ask in chat: **“generate HTML prototype”** — if no theme is saved, the agent recommends 3 themes, opens previews in your browser, and waits for you to pick. Or name one upfront: “prototype with stripe theme”.
 
 ```bash
+npx ai-spector prototype auth --username demo --password '<secret>'  # once per project
 npx ai-spector prototype preview stripe --open   # optional: preview yourself
 npx ai-spector prototype setup --theme vercel    # after you choose
 ```
@@ -70,7 +71,7 @@ docs/data-source/  →  analyze  →  validate graph  →  generate SRS  →  in
 
 ## CLI (optional)
 
-For scripts or debugging: `npx ai-spector index`, `graph validate`, `graph visualize --open`, `graph impact --git`, `prototype themes|preview|setup|manifest|validate`. See `npx ai-spector --help`.
+For scripts or debugging: `npx ai-spector index`, `graph validate`, `graph visualize --open`, `graph impact --git`, `prototype auth|themes|preview|setup|manifest|validate`. See `npx ai-spector --help`.
 
 ## If something breaks
 

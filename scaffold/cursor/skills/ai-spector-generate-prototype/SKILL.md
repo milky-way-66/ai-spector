@@ -17,6 +17,7 @@ paths:
 ## Required reading
 
 - [references/runbook.md](references/runbook.md) — manifest, HTML rules, theme resolution
+- [references/auth-picker.md](references/auth-picker.md) — **when no basic auth stored**: ask username/password, create htpasswd
 - [references/theme-picker.md](references/theme-picker.md) — **when no theme stored**: recommend 3, preview, confirm
 
 ## Checklist
@@ -24,6 +25,7 @@ paths:
 ```
 - [ ] language confirmed (language-picker.md — check before writing any screen text content)
 - [ ] list-screens + screen detail docs exist
+- [ ] basic auth resolved (config basicAuth + prototype/htpasswd → **auth picker if none**)
 - [ ] theme resolved (request → theme.json → manifest → config → **theme picker if none**)
 - [ ] if picker: 3 recommendations + previews opened + user confirmed before setup
 - [ ] prototype setup (with --theme when needed; persists when user named a theme)

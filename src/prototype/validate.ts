@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { PrototypeConfig, PrototypeManifest } from "./types.js";
+import { isPrototypeBasicAuthConfigured } from "./config.js";
 import { pathExists, readJson } from "../util/fs.js";
 
 const EXTERNAL_ASSET_RE =
@@ -24,6 +25,26 @@ export async function validatePrototype(
   opts: ValidatePrototypeOptions,
 ): Promise<PrototypeValidationIssue[]> {
   const issues: PrototypeValidationIssue[] = [];
+
+  if (!isPrototypeBasicAuthConfigured(opts.config)) {
+    issues.push({
+      severity: "error",
+      code: "BASIC_AUTH_MISSING",
+      message:
+        "Prototype basic auth not configured — ask the user for username/password, then: ai-spector prototype auth --username <u> --password <p>",
+    });
+  } else {
+    const htpasswdPath = join(opts.projectRoot, opts.config.htpasswdFile);
+    if (!(await pathExists(htpasswdPath))) {
+      issues.push({
+        severity: "error",
+        code: "HTPASSWD_MISSING",
+        message: `Missing ${opts.config.htpasswdFile} — run: ai-spector prototype auth --from-config`,
+        path: htpasswdPath,
+      });
+    }
+  }
+
   const manifestPath = join(opts.projectRoot, opts.config.prototypeDir, "manifest.json");
   if (!(await pathExists(manifestPath))) {
     issues.push({

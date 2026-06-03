@@ -33,6 +33,7 @@ import {
   runPrototypeSetup,
   runPrototypeThemes,
   runPrototypeValidate,
+  runPrototypeAuth,
 } from "./commands/prototype.js";
 import type { SectionRegistry } from "./types.js";
 
@@ -435,6 +436,21 @@ prototype
       from: opts.from,
       dryRun: opts.dryRun,
       json: opts.json,
+    });
+  });
+
+prototype
+  .command("auth")
+  .description("Configure HTTP basic auth (credentials in prototype.config.json, htpasswd under prototype/)")
+  .option("--username <name>", "Basic auth username")
+  .option("--password <secret>", "Basic auth password")
+  .option("--from-config", "Regenerate htpasswd from stored prototype.config.json basicAuth")
+  .action(async (opts, cmd) => {
+    await runPrototypeAuth({
+      root: projectRootOpt(cmd),
+      username: opts.username,
+      password: opts.password,
+      fromConfig: opts.fromConfig,
     });
   });
 

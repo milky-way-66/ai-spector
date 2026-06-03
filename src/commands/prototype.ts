@@ -3,10 +3,13 @@ import { join } from "node:path";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
 import { scaffoldBundleRoot } from "../config/load.js";
 import {
+  isPrototypeBasicAuthConfigured,
   loadPrototypeConfig,
+  persistPrototypeBasicAuth,
   persistPrototypeDefaultTheme,
   readPrototypeThemeName,
 } from "../prototype/config.js";
+import { writeHtpasswdFile } from "../prototype/htpasswd.js";
 import {
   buildPrototypeManifest,
   writePrototypeManifestFiles,
@@ -54,6 +57,44 @@ export async function runPrototypeThemes(opts: PrototypeThemesOptions = {}): Pro
   console.log("");
   console.log("Preview a theme: ai-spector prototype preview <name> [--open]");
   console.log("Use: ai-spector prototype setup --theme <name>");
+}
+
+export interface PrototypeAuthOptions {
+  root?: string;
+  username?: string;
+  password?: string;
+  fromConfig?: boolean;
+}
+
+export async function runPrototypeAuth(opts: PrototypeAuthOptions = {}): Promise<void> {
+  const { projectRoot, config } = await loadPrototypeConfig(opts.root);
+
+  let username = opts.username?.trim();
+  let password = opts.password;
+
+  if (opts.fromConfig) {
+    if (!isPrototypeBasicAuthConfigured(config)) {
+      throw new Error(
+        "No basicAuth in prototype.config.json — run: ai-spector prototype auth --username <u> --password <p>",
+      );
+    }
+    username = config.basicAuth.username;
+    password = config.basicAuth.password;
+  }
+
+  if (!username || !password) {
+    throw new Error(
+      "username and password required: ai-spector prototype auth --username <u> --password <p>",
+    );
+  }
+
+  const next = await persistPrototypeBasicAuth(projectRoot, { username, password });
+  const htpasswdPath = join(projectRoot, next.htpasswdFile);
+  await writeHtpasswdFile(htpasswdPath, username, password);
+
+  console.log(`Prototype basic auth configured for user "${username}"`);
+  console.log(`  credentials: .ai-spector/.docflow/config/prototype.config.json (basicAuth)`);
+  console.log(`  htpasswd: ${next.htpasswdFile}`);
 }
 
 export interface PrototypeSetupOptions {

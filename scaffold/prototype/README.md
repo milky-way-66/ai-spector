@@ -2,6 +2,22 @@
 
 Static HTML prototypes for screens defined in basic design.
 
+## Basic auth (once per project)
+
+Before generating HTML, configure HTTP basic auth (credentials in config, hash in htpasswd):
+
+```bash
+ai-spector prototype auth --username <user> --password '<secret>'
+```
+
+Stored in `.ai-spector/.docflow/config/prototype.config.json` (`basicAuth`) and `prototype/htpasswd`.
+
+Regenerate htpasswd after cloning if the file is missing:
+
+```bash
+ai-spector prototype auth --from-config
+```
+
 ## Setup (once per project or when changing theme)
 
 The agent resolves the theme automatically (`theme.json`, manifest, or `prototype.config.json` → `defaultTheme`).

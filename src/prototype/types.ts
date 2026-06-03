@@ -1,3 +1,9 @@
+export interface PrototypeBasicAuth {
+  username: string;
+  password: string;
+  setAt: string;
+}
+
 export interface PrototypeConfig {
   version: number;
   listScreenDoc: string;
@@ -7,6 +13,9 @@ export interface PrototypeConfig {
   srcDir: string;
   slugFrom: "screenName";
   defaultTheme: string;
+  /** Repo-relative path to Apache htpasswd file (nginx basic auth). */
+  htpasswdFile: string;
+  basicAuth?: PrototypeBasicAuth;
 }
 
 export interface ScreenIndexRow {

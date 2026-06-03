@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { bundledPrototypeConfigPath, findProjectRoot } from "../config/load.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
-import type { PrototypeConfig } from "./types.js";
+import type { PrototypeBasicAuth, PrototypeConfig } from "./types.js";
 
 const DEFAULT_CONFIG: PrototypeConfig = {
   version: 1,
@@ -12,7 +12,15 @@ const DEFAULT_CONFIG: PrototypeConfig = {
   srcDir: "prototype/src",
   slugFrom: "screenName",
   defaultTheme: "vercel",
+  htpasswdFile: "prototype/htpasswd",
 };
+
+export function isPrototypeBasicAuthConfigured(
+  config: PrototypeConfig,
+): config is PrototypeConfig & { basicAuth: PrototypeBasicAuth } {
+  const auth = config.basicAuth;
+  return Boolean(auth?.username?.trim() && auth.password);
+}
 
 export async function loadPrototypeConfig(
   root?: string,
@@ -80,4 +88,34 @@ export async function persistPrototypeDefaultTheme(
   }
   const next: PrototypeConfig = { ...DEFAULT_CONFIG, ...raw, defaultTheme: name };
   await writeJson(projectConfig, next);
+}
+
+/** Persist HTTP basic auth credentials for prototype hosting. */
+export async function persistPrototypeBasicAuth(
+  projectRoot: string,
+  creds: { username: string; password: string },
+): Promise<PrototypeConfig> {
+  const username = creds.username.trim();
+  const password = creds.password;
+  if (!username || !password) {
+    throw new Error("username and password are required");
+  }
+  const projectConfig = join(
+    projectRoot,
+    ".ai-spector/.docflow/config/prototype.config.json",
+  );
+  let raw: Partial<PrototypeConfig> = {};
+  if (await pathExists(projectConfig)) {
+    raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
+  } else if (await pathExists(bundledPrototypeConfigPath())) {
+    raw = await readJson<Partial<PrototypeConfig>>(bundledPrototypeConfigPath());
+  }
+  const basicAuth: PrototypeBasicAuth = {
+    username,
+    password,
+    setAt: new Date().toISOString(),
+  };
+  const next: PrototypeConfig = { ...DEFAULT_CONFIG, ...raw, basicAuth };
+  await writeJson(projectConfig, next);
+  return next;
 }

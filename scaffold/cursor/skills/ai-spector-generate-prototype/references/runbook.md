@@ -7,6 +7,7 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
+- **Basic auth must be configured before generating** — if `prototype.config.json` has no `basicAuth`, run the [auth picker](auth-picker.md): ask for username/password, then `ai-spector prototype auth`. Once saved, do not ask again unless the user wants to rotate credentials.
 - **Theme must be confirmed before generating** — if no theme is stored, run the [theme picker](theme-picker.md): recommend 3 fits from project context, open previews, wait for user choice. Once chosen (stored in `prototype/theme.json` or config), never ask again.
 - **One HTML per screen** — `prototype/src/<prototypeStem>.html` must match `prototype/manifest.json`
 - **Static only** — HTML/CSS/JS under `prototype/`; no frameworks, no CDN unless the theme DESIGN allows it
@@ -25,6 +26,16 @@ Generate **static HTML** prototypes from basic-design screen specs. All setup an
 - Recommended: `ai-spector graph validate` passes
 
 ## Required behavior (agent runs CLI)
+
+### 0. Resolve basic auth
+
+**If `prototype.config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/htpasswd` exists.
+
+If credentials exist but `prototype/htpasswd` is missing:
+
+```bash
+ai-spector prototype auth --from-config
+```
 
 ### 1. Resolve theme and setup workspace
 
@@ -111,6 +122,7 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 
 ## Accuracy checklist
 
+- [ ] If no stored basic auth: [auth picker](auth-picker.md) run — username/password collected, `prototype auth` executed, `prototype/htpasswd` present
 - [ ] If no stored theme: [theme picker](theme-picker.md) run — 3 recommendations, previews opened, user confirmed
 - [ ] `prototype setup` run with resolved theme
 - [ ] Every generated file name matches `prototypeStem` in manifest
