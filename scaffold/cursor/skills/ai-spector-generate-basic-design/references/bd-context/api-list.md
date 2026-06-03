@@ -2,8 +2,8 @@
 
 Queries:
 ```bash
-ai-spector graph query doc.bd.list-api --direction both --depth 3 --edges CONTEXT --json
-ai-spector graph query doc.srs.6-external-interfaces --direction both --depth 2 --edges DEPS --json
+npx ai-spector graph query doc.bd.list-api --direction both --depth 3 --edges CONTEXT --json
+npx ai-spector graph query doc.srs.6-external-interfaces --direction both --depth 2 --edges DEPS --json
 ```
 
 Derive each endpoint — **no invented endpoints**:

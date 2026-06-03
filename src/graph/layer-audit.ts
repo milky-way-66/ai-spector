@@ -206,12 +206,12 @@ function suggestCommands(layers: LayerAuditLayers): {
     suggestedAgentCommand = seed ? `/link-graph ${seed}` : "/link-graph";
   }
   if (!layers.specInstances.ok && layers.domain.useCases > 0) {
-    suggestedCommand = "ai-spector index";
+    suggestedCommand = "npx ai-spector index";
   } else if (!layers.sourceHub.ok && layers.domain.ok) {
-    suggestedCommand = "ai-spector index";
+    suggestedCommand = "npx ai-spector index";
   } else if (layers.provenance.domainsWithoutSource.length > 0) {
     suggestedAgentCommand = suggestedAgentCommand ?? "/analyze";
-    suggestedCommand = "ai-spector index";
+    suggestedCommand = "npx ai-spector index";
   }
 
   return { suggestedCommand, suggestedAgentCommand };

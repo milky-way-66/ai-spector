@@ -1,6 +1,6 @@
 # Graph → §7 Quality Attributes / NFR
 
-Query: `ai-spector graph query nfr --direction both --depth 2 --json` (or NFR bundle node).
+Query: `npx ai-spector graph query nfr --direction both --depth 2 --json` (or NFR bundle node).
 
 | Template section | Graph source |
 |---|---|

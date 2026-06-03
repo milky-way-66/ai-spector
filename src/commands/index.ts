@@ -340,7 +340,7 @@ export async function runIndex(
           id: "docs-index",
           label: "Document indexes (.ai-spector/index/)",
           status: "skipped",
-          detail: `Missing ${configPath} — run ai-spector init`,
+          detail: `Missing ${configPath} — run npx ai-spector init`,
         });
       } else {
         const config = await readJson<IndexDocsConfig>(configPath);
@@ -419,7 +419,7 @@ export async function runIndex(
   if (failed) {
     const first = steps.find((s) => s.status === "failed");
     throw new Error(
-      `Index refresh incomplete${first ? ` (${first.label})` : ""}. Fix errors above and re-run: ai-spector index`,
+      `Index refresh incomplete${first ? ` (${first.label})` : ""}. Fix errors above and re-run: npx ai-spector index`,
     );
   }
 

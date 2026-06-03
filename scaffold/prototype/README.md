@@ -7,7 +7,7 @@ Static HTML prototypes for screens defined in basic design.
 Before generating HTML, configure HTTP basic auth (credentials in config, hash in `.htpasswd`):
 
 ```bash
-ai-spector prototype auth --username <user> --password '<secret>'
+npx ai-spector prototype auth --username <user> --password '<secret>'
 ```
 
 Stored in `.ai-spector/.docflow/config/prototype.config.json` (`basicAuth`) and `prototype/.htpasswd`.
@@ -15,7 +15,7 @@ Stored in `.ai-spector/.docflow/config/prototype.config.json` (`basicAuth`) and 
 Regenerate `.htpasswd` after cloning if the file is missing:
 
 ```bash
-ai-spector prototype auth --from-config
+npx ai-spector prototype auth --from-config
 ```
 
 ## Setup (once per project or when changing theme)
@@ -27,9 +27,9 @@ The agent resolves the theme automatically (`theme.json`, manifest, or `prototyp
 You can also name a theme directly (e.g. “prototype with stripe theme”) to skip recommendations.
 
 ```bash
-ai-spector prototype themes                 # full list ([preview] = visual sample)
-ai-spector prototype preview stripe --open  # open one theme sample
-ai-spector prototype setup --theme vercel   # after you choose — persists defaultTheme
+npx ai-spector prototype themes                 # full list ([preview] = visual sample)
+npx ai-spector prototype preview stripe --open  # open one theme sample
+npx ai-spector prototype setup --theme vercel   # after you choose — persists defaultTheme
 ```
 
 ## Generate screens
@@ -45,11 +45,11 @@ Output: `prototype/src/<prototypeStem>.html` (one file per Screen Index row).
 ## After generation
 
 ```bash
-ai-spector prototype manifest
-ai-spector prototype validate --strict
+npx ai-spector prototype manifest
+npx ai-spector prototype validate --strict
 git add prototype/
 ```
 
 ## Screen → file mapping
 
-See `prototype/manifest.json` and `prototype/screen-map.json` (rebuilt by `ai-spector prototype manifest`).
+See `prototype/manifest.json` and `prototype/screen-map.json` (rebuilt by `npx ai-spector prototype manifest`).

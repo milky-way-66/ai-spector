@@ -1,6 +1,6 @@
 # Generate prototype
 
-Generate **static HTML** prototypes from basic-design screen specs. All setup and manifest tooling is built into **ai-spector** (no external scripts).
+Generate prototypes from basic-design screen specs — either **static HTML** (one file per screen) or **SPA-aware** (single entrypoint, route per screen for React/Vue/etc.). All setup and manifest tooling is built into **ai-spector** (no external scripts).
 
 **User runs this command;** the agent runs CLI. On CLI failure: [cli-failures.md](../../ai-spector/references/cli-failures.md).
 
@@ -14,10 +14,42 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
-- **Basic auth must be configured before generating** — if `prototype.config.json` has no `basicAuth`, run the [auth picker](auth-picker.md): ask for username/password, then `ai-spector prototype auth`. Once saved, do not ask again unless the user wants to rotate credentials.
+- **Tech stack must be confirmed first** — if `prototype.config.json` has no `techStack`, run the [stack picker](stack-picker.md): check for existing framework in the project, present ranked options, wait for user choice. Once chosen, never ask again.
+- **Basic auth must be configured before generating** — if `prototype.config.json` has no `basicAuth`, run the [auth picker](auth-picker.md): ask for username/password, then `npx ai-spector prototype auth`. Once saved, do not ask again unless the user wants to rotate credentials.
 - **Theme must be confirmed before generating** — if no theme is stored, run the [theme picker](theme-picker.md): recommend 3 fits from project context, open previews, wait for user choice. Once chosen (stored in `prototype/theme.json` or config), never ask again.
-- **One HTML per screen** — `prototype/src/<prototypeStem>.html` must match `prototype/manifest.json`
-- **Static only** — HTML/CSS/JS under `prototype/`; no frameworks, no CDN unless the theme DESIGN allows it
+- **One file per screen** — file type determined by `techStack`; filename must match `prototypeStem` in `prototype/manifest.json`
+- **Stack drives buildMode** — `html` → `static`; all framework stacks → `spa` (unless `buildMode` is explicitly overridden in config)
+- **`screen-map.json` uses URI, not file path** — each screen entry has a `uri` field for navigation; file path is still present as `prototypePath` for validation only
+
+## Build modes
+
+| Mode | `buildMode` in config | URI format | When to use |
+|------|-----------------------|------------|-------------|
+| **static** (default) | `"static"` or omitted | `/src/<stem>.html` | Plain HTML files served directly |
+| **spa** | `"spa"` | `/<slug>` | Single-page app (React, Vue, etc.) with client-side routing |
+
+**How to set SPA mode:** add `"buildMode": "spa"` to `.ai-spector/.docflow/config/prototype.config.json`.
+
+**Config fields for the sync workflow:**
+
+```json
+{
+  "buildMode": "spa",
+  "buildSrc": "frontend/dist",
+  "buildDest": "prototype/dist"
+}
+```
+
+| Field | Description | Default |
+|-------|-------------|---------|
+| `buildSrc` | Repo-relative path to framework build output (e.g. `frontend/dist`) | — (must set or pass `--from`) |
+| `buildDest` | Where to place the build inside the project (e.g. `prototype/dist`) | `prototype/dist` |
+
+In SPA mode:
+- The agent still generates one component/view file per screen (e.g. `prototype/src/<stem>.vue` or `prototype/src/<stem>.tsx`)
+- Navigation links between screens must use `<slug>`-based routes (e.g. `<router-link to="/login">`)
+- The `screen-map.json` `uri` values are route paths — the hosting layer (dev server or `serve -s dist`) handles routing
+- The agent must **not** generate a separate `.html` per screen; there is one `index.html` entrypoint
 
 ## Usage — three ways to choose targets
 
@@ -30,18 +62,30 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 ## Prerequisites
 
 - Basic design screens exist: `/generate-basic-design` (at least `list-screens.md` + detail files)
-- Recommended: `ai-spector graph validate` passes
+- Recommended: `npx ai-spector graph validate` passes
 
 ## Required behavior (agent runs CLI)
 
-### 0. Resolve basic auth
+### 0. Resolve tech stack
+
+**If `prototype.config.json` → `techStack` is missing**, run the **[stack picker](stack-picker.md)** — do not run setup or generate files until the user confirms a stack.
+
+When the user confirms:
+
+```bash
+npx ai-spector prototype stack <chosen-stack>
+```
+
+This persists `techStack` and sets `buildMode` (`html` → `static`, all others → `spa`) in config. Skip if `techStack` is already set.
+
+### 0b. Resolve basic auth
 
 **If `prototype.config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/.htpasswd` exists.
 
 If credentials exist but `prototype/.htpasswd` is missing:
 
 ```bash
-ai-spector prototype auth --from-config
+npx ai-spector prototype auth --from-config
 ```
 
 ### 1. Resolve theme and setup workspace
@@ -60,8 +104,8 @@ ai-spector prototype auth --from-config
 Summary of the picker:
 
 1. Read project context (SRS, list-screens §1, knowledge, data-source).
-2. `ai-spector prototype themes --json` — pick **3 best-fit** themes with one-line rationale each.
-3. `ai-spector prototype preview <name> --open` for all 3 — user compares in the browser.
+2. `npx ai-spector prototype themes --json` — pick **3 best-fit** themes with one-line rationale each.
+3. `npx ai-spector prototype preview <name> --open` for all 3 — user compares in the browser.
 4. Post a numbered table; **stop and wait for user reply** — a number, a name, or “use that one” — before running any further command.
 
 Once the user confirms (or named a theme upfront), proceed with setup; the choice is persisted and will not be asked again.
@@ -69,7 +113,7 @@ Once the user confirms (or named a theme upfront), proceed with setup; the choic
 Setup (creates `prototype/`, copies `DESIGN.md`, seeds manifest when `list-screens.md` exists):
 
 ```bash
-ai-spector prototype setup --theme <resolved-name>
+npx ai-spector prototype setup --theme <resolved-name>
 ```
 
 Omit `--theme` only when setup can infer the same name from stored files (the CLI reads `theme.json` / config automatically).
@@ -79,19 +123,19 @@ Omit `--theme` only when setup can infer the same name from stored files (the CL
 List all themes:
 
 ```bash
-ai-spector prototype themes
+npx ai-spector prototype themes
 ```
 
 Themes with a visual sample show `[preview]`. Open any theme sample:
 
 ```bash
-ai-spector prototype preview <name> --open
+npx ai-spector prototype preview <name> --open
 ```
 
 ### 2. Plan screens
 
 ```bash
-ai-spector prototype manifest --dry-run
+npx ai-spector prototype manifest --dry-run
 ```
 
 Read each target’s `docs/basic-design/screens/<slug>.md` — wireframe (§1.1), layout (§1.2), interactions. Read `prototype/DESIGN.md` for colors, type, spacing.
@@ -107,28 +151,50 @@ This step pulls:
 
 Do not skip this step. Screen detail docs summarize the spec; the graph has the authoritative detail. Any form field, table column, button, or error state **must be traceable to graph data** before you write it into the HTML.
 
-### 3. Generate HTML
+### 3. Generate prototype files
 
-For each screen in scope:
+Read `techStack` (and `buildMode`) from `prototype.config.json`. File type and structure depend on the stack:
 
-- Write `prototype/src/<prototypeStem>.html` (self-contained or with sibling `.css`/`.js` in `prototype/src/`)
+| `techStack` | File per screen | Route / nav pattern | Entrypoint |
+|-------------|-----------------|---------------------|------------|
+| `html` | `prototype/src/<stem>.html` | `href="/src/<stem>.html"` | each `.html` |
+| `vue` | `prototype/src/<stem>.vue` | `<router-link to="/<slug>">` | `prototype/src/main.ts` + `router.ts` |
+| `react` | `prototype/src/pages/<stem>.tsx` | `<Link to="/<slug>">` | `prototype/src/main.tsx` + router config |
+| `nuxt` | `prototype/src/pages/<slug>.vue` | `<NuxtLink to="/<slug>">` | Nuxt file-system routing |
+| `next` | `prototype/src/app/<slug>/page.tsx` | `<Link href="/<slug>">` | Next.js file-system routing |
+| `svelte` | `prototype/src/routes/<slug>/+page.svelte` | `<a href="/<slug>">` | SvelteKit file-system routing |
+| `angular` | `prototype/src/<stem>/<stem>.component.ts` | `routerLink="/<slug>"` | `app.routes.ts` |
+
+**HTML (`techStack: html`, static mode):**
+
+- Write `prototype/src/<prototypeStem>.html` (self-contained or with sibling `.css`/`.js`)
+- Navigation links use `href` values from `uri` in `screen-map.json`
+
+**Framework stacks (spa mode):**
+
+- Write one component/view file per screen using the path pattern in the table above
+- There is **one** `index.html` entrypoint — do **not** create per-screen HTML files
+- Generate a route config file (`router.ts`, `app.routes.ts`, or equivalent) mapping each screen slug to its component
+- Navigation between screens uses the framework's router component with `uri` from `screen-map.json` as the path
+
+**All stacks:**
+
 - All content derived from graph context (step 2b) + screen detail doc — no invented fields or labels
 - Include error states and empty states for every exception flow found in the graph
 - Render role-specific sections when multiple actors satisfy the screen
-- Link navigation using relative paths between screens when `list-screens.md` §2 defines flow
 - Do **not** edit `docs/**`
 
 ### 4. Refresh manifest and validate
 
 ```bash
-ai-spector prototype manifest
-ai-spector prototype validate --strict
+npx ai-spector prototype manifest
+npx ai-spector prototype validate --strict
 ```
 
 `screen-map.json` gets `defaultScreenId` — the entry screen for hosting. The CLI picks the first screen that already has HTML (or the first row in the index if none do yet). When several screens have HTML and you need a specific landing page, set it explicitly:
 
 ```bash
-ai-spector prototype manifest --default-screen login
+npx ai-spector prototype manifest --default-screen login
 ```
 
 That id must match a Screen Index row and (when any HTML exists) a screen that already has `prototype/src/<stem>.html`.
@@ -140,19 +206,89 @@ git add prototype/
 git commit -m "chore(prototype): add HTML screens (<theme>)"
 ```
 
+## Sync build output (SPA / external build)
+
+Use this workflow when the prototype files are built in a separate folder (e.g. a Vue or React project at `frontend/`) and must be moved into `prototype/` before serving.
+
+### One-time config
+
+Add to `.ai-spector/.docflow/config/prototype.config.json`:
+
+```json
+{
+  "buildMode": "spa",
+  "buildSrc": "frontend/dist",
+  "buildDest": "prototype/dist"
+}
+```
+
+### Sync command
+
+After running the framework build (`npm run build` in the SPA project):
+
+```bash
+npx ai-spector prototype sync
+```
+
+This will:
+1. Copy everything from `buildSrc` → `buildDest`
+2. Regenerate `prototype/manifest.json` and `prototype/screen-map.json` with correct `uri` values
+
+**Override source/dest without editing config:**
+
+```bash
+npx ai-spector prototype sync --from frontend/dist --to prototype/dist
+```
+
+**Clean sync** (wipe dest first — useful after a full rebuild):
+
+```bash
+npx ai-spector prototype sync --clean
+```
+
+**Only regenerate screen-map** (files already in place):
+
+```bash
+npx ai-spector prototype sync --skip-copy
+```
+
+**Inspect the URI mapping:**
+
+```bash
+npx ai-spector prototype sync --json
+```
+
+Output includes each screen's `screenDoc → uri` mapping.
+
+### Full SPA workflow
+
+```bash
+# 1. Build the SPA
+cd frontend && npm run build && cd ..
+
+# 2. Sync build output + refresh screen-map
+npx ai-spector prototype sync
+
+# 3. Validate
+npx ai-spector prototype validate --strict
+```
+
+If the agent is asked to "sync prototype", "copy build output", or "update screen map after build", run `prototype sync` (with any flags the user specified) and report the URI mapping table.
+
 ## Theme selection
 
 | User says | Action |
 |-----------|--------|
 | “use stripe theme”, `--theme stripe` | `prototype setup --theme stripe` (persists preference); add `--force-design` if switching theme mid-branch |
-| “what themes?” | `ai-spector prototype themes` |
-| “preview stripe theme”, “show me vercel theme” | `ai-spector prototype preview <name> --open` |
+| “what themes?” | `npx ai-spector prototype themes` |
+| “preview stripe theme”, “show me vercel theme” | `npx ai-spector prototype preview <name> --open` |
 | no theme in message, no stored theme | **[theme picker](theme-picker.md)**: recommend 3 → open previews → wait for choice |
 | no theme in message, stored theme found | Use stored theme — do not ask |
 | “help me pick a theme”, “which theme fits?” | Full [theme picker](theme-picker.md) even if not generating yet |
 
 ## Accuracy checklist
 
+- [ ] If no stored tech stack: [stack picker](stack-picker.md) run — existing framework detected, options presented, user confirmed; `prototype stack <name>` executed
 - [ ] If no stored basic auth: [auth picker](auth-picker.md) run — username/password collected, `prototype auth` executed, `prototype/.htpasswd` present
 - [ ] If no stored theme: [theme picker](theme-picker.md) run — 3 recommendations, previews opened, user confirmed
 - [ ] `prototype setup` run with resolved theme
@@ -166,6 +302,11 @@ git commit -m "chore(prototype): add HTML screens (<theme>)"
 - [ ] Wireframe/layout from screen detail doc reflected in HTML
 - [ ] Tokens from `prototype/DESIGN.md` only (no random CDN)
 - [ ] `prototype validate --strict` passes
+- [ ] `screen-map.json` entries have correct `uri` values:
+  - static mode → `/src/<stem>.html`
+  - spa mode → `/<slug>`
+- [ ] SPA mode only: single `index.html` entrypoint exists; route config generated; navigation uses route paths (not file paths)
+- [ ] External build workflow: `prototype sync` run after framework build; `buildDest` contains the copied files
 
 ## On failure
 

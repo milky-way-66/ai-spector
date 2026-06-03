@@ -1,6 +1,6 @@
 # AI Spector workflow
 
-**You describe what you need in chat.** Cursor picks the right **skill**; the agent runs `ai-spector` CLI. You do not need to memorize command names.
+**You describe what you need in chat.** Cursor picks the right **skill**; the agent runs **`npx ai-spector`** CLI. You do not need to memorize command names.
 
 Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
 
@@ -11,7 +11,7 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** (`.cursor/mcp.json`), enable **all ai-spector skills**.
+Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** (`.cursor/mcp.json`), enable **all npx ai-spector skills**.
 
 ## What to say → skill → agent does
 
@@ -19,7 +19,7 @@ Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** 
 |--------------|----------------|-------|----------------------|
 | Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `analyze` → read markdown → merge knowledge → validate |
 | Check graph | “validate the graph”, “graph errors” | `ai-spector-graph` | `graph validate` |
-| Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `ai-spector index` |
+| Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `npx ai-spector index` |
 | Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | DAG waves → docs/srs → merge → index |
 | Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | docs/basic-design → merge → index each wave |
 | Detail design | “detail design for checkout” | `ai-spector-generate-detail-design` | docs/detail-design |

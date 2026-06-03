@@ -81,17 +81,17 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   console.log(`Initialized AI Spector project at ${root}`);
   console.log("");
-  console.log(`  gitignore -> ${gitignorePath} (ai-spector block added/updated)`);
+  console.log(`  gitignore -> ${gitignorePath} (npx ai-spector block added/updated)`);
   console.log(`  templates -> ${projectTemplates} (SRS / basic / detail design)`);
   console.log(`  cursor    -> ${join(root, ".cursor")} (from scaffold/cursor/)`);
   console.log("");
   console.log("Next steps (Cursor):");
   console.log("  1. Open this folder in Cursor");
-  console.log("  2. Enable all ai-spector skills (.cursor/skills/ -- see README.md)");
+  console.log("  2. Enable all npx ai-spector skills (.cursor/skills/ -- see README.md)");
   console.log("  3. Add files under docs/data-source/");
   console.log('  4. In Cursor: ask e.g. "analyze data source", "generate SRS"');
   console.log("     Workflow: .cursor/WORKFLOW.md");
-  console.log('  5. Prototype: ai-spector prototype setup --theme vercel -> "generate HTML prototype"');
+  console.log('  5. Prototype: npx ai-spector prototype setup --theme vercel -> "generate HTML prototype"');
   console.log("");
   console.log("See .cursor/WORKFLOW.md -- agents use skills + CLI; you rarely run CLI yourself.");
 }

@@ -4,7 +4,7 @@ Add **meaning (agent)** edges (`relatesTo`) that CLI/index cannot infer. Do **no
 
 ## Prerequisites
 
-- `ai-spector index` completed (spec sections + `derivedFrom` when possible)
+- `npx ai-spector index` completed (spec sections + `derivedFrom` when possible)
 - Seed id (e.g. `UC-03`) or `--file` + heading
 
 ## Steps

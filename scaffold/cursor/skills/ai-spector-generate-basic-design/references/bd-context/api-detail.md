@@ -2,9 +2,9 @@
 
 Queries:
 ```bash
-ai-spector graph query <F-xx> --direction both --depth 4 --edges CONTEXT --json
-ai-spector graph query <UC-xx> --direction both --depth 3 --edges CONTEXT --json
-ai-spector graph query <entityId> --direction both --depth 2 --edges CONTEXT --json
+npx ai-spector graph query <F-xx> --direction both --depth 4 --edges CONTEXT --json
+npx ai-spector graph query <UC-xx> --direction both --depth 3 --edges CONTEXT --json
+npx ai-spector graph query <entityId> --direction both --depth 2 --edges CONTEXT --json
 ```
 
 | Template section | Graph source |

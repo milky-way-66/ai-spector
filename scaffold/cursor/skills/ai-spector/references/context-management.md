@@ -58,8 +58,8 @@ Required output shape:
 - Gaps: any required graph node that is missing or empty
 
 Queries to run:
-  ai-spector graph query <seedId> --direction both --depth 4 --edges CONTEXT --json
-  ai-spector graph query <depId> --direction both --depth 2 --edges DEPS --json
+  npx ai-spector graph query <seedId> --direction both --depth 4 --edges CONTEXT --json
+  npx ai-spector graph query <depId> --direction both --depth 2 --edges DEPS --json
   [read projectionPaths files listed in query result]
 
 Max summary length: 400 words. No raw JSON in the response.

@@ -45,8 +45,8 @@ Case 3: build scope table (DAG id, output path, seed, reason, deps) → ask → 
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write file from summary + template
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave
-- [ ] ai-spector graph validate
-- [ ] ai-spector index (basic design: every wave; SRS: see runbook)
+- [ ] npx ai-spector graph validate
+- [ ] npx ai-spector index (basic design: every wave; SRS: see runbook)
 - [ ] /compact with plan summary before next wave
 ```
 
@@ -63,6 +63,6 @@ Per target: Delegate → Receive summary → Write → Log path/status → Inges
 
 ## Finish
 
-1. `ai-spector graph validate`
-2. `ai-spector index` if not already run after last wave
+1. `npx ai-spector graph validate`
+2. `npx ai-spector index` if not already run after last wave
 3. Suggest summary command when runbook lists one

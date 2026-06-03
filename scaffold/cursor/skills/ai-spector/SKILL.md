@@ -2,7 +2,7 @@
 name: ai-spector
 description: >-
   Provides shared rules for AI Spector docflow projects: CLI failure handling, traceability graph path,
-  and routing to task skills. Use when the user mentions ai-spector, docflow, or .ai-spector but the
+  and routing to task skills. Use when the user mentions ai-spector, docflow, or .npx ai-spector but the
   task is unclear, or for init and project layout. Do not use when the user clearly wants SRS,
   basic design, HTML prototype, graph operations, or comment resolution — use the
   matching task skill instead.
@@ -14,7 +14,7 @@ description: >-
 
 ## CLI and tool failure (non-negotiable)
 
-When `ai-spector` exits non-zero, required `--json` is invalid, or a required MCP/terminal step fails:
+When `npx ai-spector` exits non-zero, required `--json` is invalid, or a required MCP/terminal step fails:
 
 1. **Pause** — no generation, no bulk `docs/**` reads, no silent workarounds.
 2. **Report** per [references/cli-failures.md](references/cli-failures.md) (include full output).
@@ -26,7 +26,7 @@ When `ai-spector` exits non-zero, required `--json` is invalid, or a required MC
 | Item | Path |
 |------|------|
 | Graph | `.ai-spector/graph/traceability.graph.json` |
-| Query | `ai-spector graph query <id> --json` |
+| Query | `npx ai-spector graph query <id> --json` |
 | Templates | `.ai-spector/templates/` |
 
 ## Route to a task skill

@@ -107,7 +107,7 @@ export async function runCommentsPlan(opts: CommentsPlanOptions): Promise<void> 
     });
     const item = resolvePickId(inbox, token);
     if (!item) {
-      throw new Error(`Unknown pick id or thread: ${token}. Run: ai-spector comments inbox --json`);
+      throw new Error(`Unknown pick id or thread: ${token}. Run: npx ai-spector comments inbox --json`);
     }
     threadId = item.threadId;
     filePath = item.filePath;

@@ -9,7 +9,7 @@ Gate before generation. **User runs this command;** agent runs the CLI.
 ## Required Behavior
 
 ```bash
-ai-spector graph validate
+npx ai-spector graph validate
 ```
 
 - **Exit 0** → tell the user OK; if domain nodes exist, suggest `/generate-srs`; if only section shells, explain they need `/analyze` first.
@@ -22,7 +22,7 @@ ai-spector graph validate
 Follow [cli-failures.md](../../ai-spector/references/cli-failures.md). Typical fixes:
 
 - `DOMAIN-ANCHORED` → domain node missing `listedIn` / `describedIn` → re-run `/analyze` or fix one node and `graph merge` again.
-- `SECTION-TREE` → structure edge wrong → re-run `ai-spector analyze` (agent), not manual graph surgery at scale.
-- `REGISTRY-COMPLETE` → re-run `/analyze` step 0 (`ai-spector analyze`).
+- `SECTION-TREE` → structure edge wrong → re-run `npx ai-spector analyze` (agent), not manual graph surgery at scale.
+- `REGISTRY-COMPLETE` → re-run `/analyze` step 0 (`npx ai-spector analyze`).
 
 After fix, user re-runs **`/validate-graph`**.

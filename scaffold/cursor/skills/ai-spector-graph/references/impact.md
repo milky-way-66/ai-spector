@@ -13,7 +13,7 @@ Scope regen after a change. **You describe what changed** — not a graph node i
 
 ## Prerequisites
 
-- `ai-spector graph validate` passes
+- `npx ai-spector graph validate` passes
 
 ## Current git change (default when no args)
 
@@ -37,7 +37,7 @@ git diff --cached
 Optional CLI (same resolution + merged buckets):
 
 ```bash
-ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --change content_change --json
 ```
 
 **Not a git repo** or **clean working tree** → tell the user clearly; suggest `/impact <short description>`, editor selection, or `@path`.
@@ -61,13 +61,13 @@ Map regions with the same rules as below (`resolveImpactOrigins` / graph JSON). 
 For each file/region, pick the **most specific** seed (`section` > domain > `document`). Dedupe seeds by id, then:
 
 ```bash
-ai-spector graph impact <originId> --change content_change --json
+npx ai-spector graph impact <originId> --change content_change --json
 ```
 
 Or once for all seeds:
 
 ```bash
-ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --change content_change --json
 ```
 
 Merge `regenerate` / `review` / `downstream` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
@@ -80,10 +80,10 @@ Gather context from the message (priority order):
 2. **Explicit graph id** in text only if it clearly is one (`sec.srs.3.2`, `UC-01`, `doc.srs.3-use-cases`) — verify with graph JSON or `graph query <id> --json`
 3. **File path** — `@docs/srs/3-use-cases.md`, path in user text, or file from open editor
    - Document: match `output` / `outputPattern` on `document` nodes (same rules as index)
-   - Optional CLI: `ai-spector graph impact --file <path> --json`
+   - Optional CLI: `npx ai-spector graph impact --file <path> --json`
 4. **Section anchor** — `<!-- section:sec.uc01.main-flow -->` in the file body
 5. **Heading / selection** — map heading text to `section` nodes (`heading` field); scope by file when known
-   - Optional CLI: `ai-spector graph impact --file <path> --heading "<heading fragment>" --json`
+   - Optional CLI: `npx ai-spector graph impact --file <path> --heading "<heading fragment>" --json`
 6. **Domain entity** — `UC-3`, `F-12`, feature title from user text → `useCase` / `feature` nodes via label/id search in graph or registry
 7. **New / added file** — treat as `content_change` on the **document** node for that path, or the parent section if the file is a per-domain detail doc (`docs/srs/uc-*.md`)
 
@@ -94,19 +94,19 @@ If several nodes match, pick the **most specific** seed: `section` > domain (`us
 After resolving `originId` (one primary seed per region; run again for unrelated regions if needed):
 
 ```bash
-ai-spector graph impact <originId> --change content_change --json
+npx ai-spector graph impact <originId> --change content_change --json
 ```
 
 Or resolver flags (optional verification):
 
 ```bash
-ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
+npx ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
 ```
 
 Optional report file:
 
 ```bash
-ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<timestamp>.json
+npx ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<timestamp>.json
 ```
 
 1. Parse JSON buckets: `regenerate`, `review`, `downstream` (and `resolvedFrom` / `gitSeeds` when using `--file` / `--heading` / `--git`).
@@ -114,7 +114,7 @@ ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<timestamp
 3. For each **regenerate** id, suggest `/generate-srs` or `/generate-basic-design` using:
 
 ```bash
-ai-spector graph query <thatId> --json
+npx ai-spector graph query <thatId> --json
 ```
 
 **Do not** implement impact BFS in the agent.

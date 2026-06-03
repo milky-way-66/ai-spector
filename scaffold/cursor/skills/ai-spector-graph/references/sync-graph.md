@@ -24,7 +24,7 @@ Reconcile **disk projections** (`docs/srs/`, etc.) with **graph nodes** — add 
    - Match to `document` node by `output` path; if missing, create `document` + link sections from registry where possible.
    - Add **`rendersTo`** from document (or primary section) → file path.
 4. For each graph `document` with `output` missing on disk → mark orphan in report (do not delete nodes without user confirm).
-5. Run **`ai-spector graph validate`**.
+5. Run **`npx ai-spector graph validate`**.
 6. Summarize: added nodes, added edges, orphans, stale projections.
 
 ## Guardrails

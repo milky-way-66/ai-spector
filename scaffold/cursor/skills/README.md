@@ -31,3 +31,5 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules �
 ## Per-skill runbooks
 
 When a skill activates, read its `references/` runbook **before** running CLI or editing docs.
+
+**CLI:** agents run **`npx ai-spector …`** (see [../rules/ai-spector-cli.mdc](../rules/ai-spector-cli.mdc)).

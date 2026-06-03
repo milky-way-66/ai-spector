@@ -1,6 +1,6 @@
 # AI Spector workflow (Cursor)
 
-**You use slash commands.** The agent runs `ai-spector` CLI in the terminal. Do not ask the user to run `analyze`, `graph merge`, or `graph query` manually.
+**You use slash commands.** The agent runs **`npx ai-spector`** CLI in the terminal. Do not ask the user to run `analyze`, `graph merge`, or `graph query` manually.
 
 If CLI or a required tool fails: agent **pauses**, shows output, and offers **fix and retry**, an **approved workaround**, or **pause** — see [**_cli-failures.md**](./_cli-failures.md). No silent fallbacks.
 
@@ -11,7 +11,7 @@ npm install ai-spector
 npx ai-spector init
 ```
 
-Add source material under `docs/data-source/`, open the project in Cursor, and **enable all ai-spector skills** under `.cursor/skills/` (see `.cursor/skills/README.md`).
+Add source material under `docs/data-source/`, open the project in Cursor, and **enable all npx ai-spector skills** under `.cursor/skills/` (see `.cursor/skills/README.md`).
 
 Skills auto-route for natural language; **slash commands stay the source of truth** for step-by-step work (see [commands/README.md](./README.md)). Slash commands win over skills when both apply.
 
@@ -19,14 +19,14 @@ Skills auto-route for natural language; **slash commands stay the source of trut
 
 | Step | You run | Agent runs (CLI) |
 |------|---------|------------------|
-| 1 | **`/analyze`** | `ai-spector analyze` → read markdown from `docs/data-source/` → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
-| 2 | **`/validate-graph`** | `ai-spector graph validate` |
+| 1 | **`/analyze`** | `npx ai-spector analyze` → read markdown from `docs/data-source/` → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
+| 2 | **`/validate-graph`** | `npx ai-spector graph validate` |
 | 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
-| — | **`/index`** | After manual edits or **`/generate-srs`**: `ai-spector index` (structure + knowledge merge + **SRS body extract** + doc indexes) |
+| — | **`/index`** | After manual edits or **`/generate-srs`**: `npx ai-spector index` (structure + knowledge merge + **SRS body extract** + doc indexes) |
 | 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
-| 7 | **`/generate-prototype`** [--theme name] | `ai-spector prototype setup --theme …` → agent writes `prototype/src/*.html` → `prototype manifest` → `prototype validate --strict` |
+| 7 | **`/generate-prototype`** [--theme name] | `npx ai-spector prototype setup --theme …` → agent writes `prototype/src/*.html` → `prototype manifest` → `prototype validate --strict` |
 | After edits | **`/impact`** [what changed] | Empty args → `git diff` + resolve seeds; else describe change → `graph impact <id> --json` (or `--git` / `--file`) |
 | Review comments | **`/resolve-comments`** [pick or file] | `comments inbox` (show table only) → plan → apply → **one commit: doc + comment meta** (amend) → push |
 | Inspect graph | **`/visualize-graph`** | `graph visualize --open` |

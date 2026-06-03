@@ -31,7 +31,7 @@ export async function validatePrototype(
       severity: "error",
       code: "BASIC_AUTH_MISSING",
       message:
-        "Prototype basic auth not configured — ask the user for username/password, then: ai-spector prototype auth --username <u> --password <p>",
+        "Prototype basic auth not configured — ask the user for username/password, then: npx ai-spector prototype auth --username <u> --password <p>",
     });
   } else {
     const htpasswdPath = join(opts.projectRoot, opts.config.htpasswdFile);
@@ -39,7 +39,7 @@ export async function validatePrototype(
       issues.push({
         severity: "error",
         code: "HTPASSWD_MISSING",
-        message: `Missing ${opts.config.htpasswdFile} — run: ai-spector prototype auth --from-config`,
+        message: `Missing ${opts.config.htpasswdFile} — run: npx ai-spector prototype auth --from-config`,
         path: htpasswdPath,
       });
     }
@@ -50,7 +50,7 @@ export async function validatePrototype(
     issues.push({
       severity: "error",
       code: "MANIFEST_MISSING",
-      message: `Missing ${opts.config.prototypeDir}/manifest.json — run: ai-spector prototype setup`,
+      message: `Missing ${opts.config.prototypeDir}/manifest.json — run: npx ai-spector prototype setup`,
       path: manifestPath,
     });
     return issues;
@@ -69,7 +69,7 @@ export async function validatePrototype(
     issues.push({
       severity: "error",
       code: "THEME_MISSING",
-      message: "manifest.json themeName is empty — run: ai-spector prototype setup --theme <name>",
+      message: "manifest.json themeName is empty — run: npx ai-spector prototype setup --theme <name>",
     });
   }
 

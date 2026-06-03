@@ -38,9 +38,9 @@ Templates: `.ai-spector/templates/basic_design/`
 
 | Wave | DAG nodes (parallel within wave) | After wave |
 |------|----------------------------------|------------|
-| 0 | `bd.db-design`, `bd.list-api`, `bd.list-screen` | merge → validate → **`ai-spector index`** |
-| 1 | `bd.detail-api` (+ one file per api-list §3 row) | merge → validate → **`ai-spector index`** |
-| 2 | `bd.detail-screen` (+ one file per Screen Index row) | merge → validate → **`ai-spector index`** |
+| 0 | `bd.db-design`, `bd.list-api`, `bd.list-screen` | merge → validate → **`npx ai-spector index`** |
+| 1 | `bd.detail-api` (+ one file per api-list §3 row) | merge → validate → **`npx ai-spector index`** |
+| 2 | `bd.detail-screen` (+ one file per Screen Index row) | merge → validate → **`npx ai-spector index`** |
 
 **Reindex every wave (mandatory):** `graph merge` does not parse markdown bodies. Without index after wave 0, wave 1 cannot expand endpoint rows; without index after wave 1, wave 2 cannot expand Screen Index rows.
 

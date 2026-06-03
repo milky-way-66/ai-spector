@@ -22,6 +22,6 @@ All files must be **Markdown (`.md`)** format. The agent reads them directly usi
 - **NFRs** (`NFR-01`, …)
 - **Data entities** (`ENT-Order`, …)
 
-Staged to `.ai-spector/.docflow/analysis/knowledge.json` → merged into the traceability graph via `ai-spector graph merge --from-knowledge`.
+Staged to `.ai-spector/.docflow/analysis/knowledge.json` → merged into the traceability graph via `npx ai-spector graph merge --from-knowledge`.
 
 Override inputs: tell the agent to analyze a different folder path in chat.

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
 import { scaffoldBundleRoot } from "../config/load.js";
@@ -8,8 +8,10 @@ import {
   persistPrototypeBasicAuth,
   persistPrototypeDefaultScreen,
   persistPrototypeDefaultTheme,
+  persistPrototypeTechStack,
   readPrototypeThemeName,
 } from "../prototype/config.js";
+import type { PrototypeTechStack } from "../prototype/types.js";
 import { writeHtpasswdFile } from "../prototype/htpasswd.js";
 import {
   buildPrototypeManifest,
@@ -56,8 +58,36 @@ export async function runPrototypeThemes(opts: PrototypeThemesOptions = {}): Pro
     console.log(summary ? `  ${name} — ${summary}${preview}` : `  ${name}${preview}`);
   }
   console.log("");
-  console.log("Preview a theme: ai-spector prototype preview <name> [--open]");
-  console.log("Use: ai-spector prototype setup --theme <name>");
+  console.log("Preview a theme: npx ai-spector prototype preview <name> [--open]");
+  console.log("Use: npx ai-spector prototype setup --theme <name>");
+}
+
+const SUPPORTED_STACKS: PrototypeTechStack[] = [
+  "html",
+  "vue",
+  "react",
+  "nuxt",
+  "next",
+  "svelte",
+  "angular",
+];
+
+export interface PrototypeStackOptions {
+  root?: string;
+  stack: string;
+}
+
+export async function runPrototypeStack(opts: PrototypeStackOptions): Promise<void> {
+  const stack = opts.stack.trim().toLowerCase() as PrototypeTechStack;
+  if (!SUPPORTED_STACKS.includes(stack)) {
+    throw new Error(
+      `Unknown tech stack "${stack}". Supported: ${SUPPORTED_STACKS.join(", ")}`,
+    );
+  }
+  const { projectRoot } = await loadPrototypeConfig(opts.root);
+  const config = await persistPrototypeTechStack(projectRoot, stack);
+  console.log(`Tech stack set to "${stack}" (buildMode: ${config.buildMode})`);
+  console.log(`  saved to .ai-spector/.docflow/config/prototype.config.json`);
 }
 
 export interface PrototypeAuthOptions {
@@ -76,7 +106,7 @@ export async function runPrototypeAuth(opts: PrototypeAuthOptions = {}): Promise
   if (opts.fromConfig) {
     if (!isPrototypeBasicAuthConfigured(config)) {
       throw new Error(
-        "No basicAuth in prototype.config.json — run: ai-spector prototype auth --username <u> --password <p>",
+        "No basicAuth in prototype.config.json — run: npx ai-spector prototype auth --username <u> --password <p>",
       );
     }
     username = config.basicAuth.username;
@@ -85,7 +115,7 @@ export async function runPrototypeAuth(opts: PrototypeAuthOptions = {}): Promise
 
   if (!username || !password) {
     throw new Error(
-      "username and password required: ai-spector prototype auth --username <u> --password <p>",
+      "username and password required: npx ai-spector prototype auth --username <u> --password <p>",
     );
   }
 
@@ -174,7 +204,7 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
       generatedAt,
       screens: [],
     });
-    manifestDetail = "empty manifest (add list-screens.md, then: ai-spector prototype manifest)";
+    manifestDetail = "empty manifest (add list-screens.md, then: npx ai-spector prototype manifest)";
   }
 
   console.log(`Prototype workspace ready at ${prototypeRoot}`);
@@ -184,8 +214,8 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
   console.log(`  manifest: ${manifestDetail}`);
   console.log("");
   console.log("Next: run /generate-prototype in Cursor, then:");
-  console.log("  ai-spector prototype manifest");
-  console.log("  ai-spector prototype validate --strict");
+  console.log("  npx ai-spector prototype manifest");
+  console.log("  npx ai-spector prototype validate --strict");
 }
 
 export interface PrototypeManifestOptions {
@@ -322,6 +352,88 @@ export async function runPrototypePreview(opts: PrototypePreviewOptions): Promis
   }
 
   return previewPath;
+}
+
+export interface PrototypeSyncOptions {
+  root?: string;
+  /** Override config.buildSrc */
+  from?: string;
+  /** Override config.buildDest */
+  to?: string;
+  /** Do not copy files — only regenerate screen-map.json */
+  skipCopy?: boolean;
+  /** Remove buildDest before copying (clean sync) */
+  clean?: boolean;
+  json?: boolean;
+}
+
+export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise<void> {
+  const { projectRoot, config } = await loadPrototypeConfig(opts.root);
+
+  const buildSrc = opts.from?.trim() || config.buildSrc?.trim();
+  const buildDest =
+    opts.to?.trim() || config.buildDest?.trim() || `${config.prototypeDir}/dist`;
+
+  if (!opts.skipCopy) {
+    if (!buildSrc) {
+      throw new Error(
+        "No build source configured. Pass --from <path> or set buildSrc in prototype.config.json.",
+      );
+    }
+    const srcAbs = join(projectRoot, buildSrc);
+    if (!(await pathExists(srcAbs))) {
+      throw new Error(
+        `Build source not found: ${buildSrc}\nRun your framework build first (e.g. npm run build), then retry.`,
+      );
+    }
+    const destAbs = join(projectRoot, buildDest);
+    if (opts.clean && (await pathExists(destAbs))) {
+      await rm(destAbs, { recursive: true, force: true });
+    }
+    await mkdir(destAbs, { recursive: true });
+    await copyTree(srcAbs, destAbs);
+    if (!opts.json) {
+      console.log(`Copied ${buildSrc} → ${buildDest}`);
+    }
+  }
+
+  // Regenerate manifest + screen-map with updated htmlExists / URIs
+  const theme =
+    (await readPrototypeThemeName(projectRoot, config)) || config.defaultTheme;
+  const built = await buildPrototypeManifest({ projectRoot, config, themeName: theme });
+  const paths = await writePrototypeManifestFiles(projectRoot, config, built);
+
+  if (opts.json) {
+    console.log(
+      JSON.stringify(
+        {
+          buildSrc: buildSrc ?? null,
+          buildDest,
+          skipCopy: opts.skipCopy ?? false,
+          screenMapPath: paths.screenMapPath,
+          screenCount: built.screenCount,
+          screens: built.screenMap.screens.map((s) => ({
+            screenId: s.screenId,
+            screenDoc: s.screenDoc,
+            uri: s.uri,
+            buildDest,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  console.log(`Updated ${paths.screenMapPath}`);
+  console.log(`  buildMode: ${config.buildMode ?? "static"}`);
+  console.log(`  buildDest: ${buildDest}`);
+  console.log("");
+  console.log("Screen URI mapping:");
+  for (const s of built.screenMap.screens) {
+    console.log(`  ${s.screenDoc.padEnd(40)} → ${s.uri}`);
+  }
 }
 
 export interface PrototypeInstallPreviewsOptions {

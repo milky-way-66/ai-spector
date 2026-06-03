@@ -9,7 +9,7 @@ Skip this document only when the graph has zero nodes for the screen (brand-new 
 ## Step 1 — Screen node + neighborhood
 
 ```bash
-ai-spector graph query doc.bd.screen-<slug> --direction both --depth 4 --edges CONTEXT --json
+npx ai-spector graph query doc.bd.screen-<slug> --direction both --depth 4 --edges CONTEXT --json
 ```
 
 What to extract from the result:
@@ -31,7 +31,7 @@ If `doc.bd.screen-<slug>` is not found in the graph, try `screen-<slug>` or the 
 For each F-xx found in Step 1 `satisfies` edges:
 
 ```bash
-ai-spector graph query F-<n> --direction both --depth 3 --edges CONTEXT --json
+npx ai-spector graph query F-<n> --direction both --depth 3 --edges CONTEXT --json
 ```
 
 Extract:
@@ -47,7 +47,7 @@ Extract:
 For each UC-xx found in Step 1 `satisfies` edges:
 
 ```bash
-ai-spector graph query UC-<n> --direction both --depth 3 --edges CONTEXT --json
+npx ai-spector graph query UC-<n> --direction both --depth 3 --edges CONTEXT --json
 ```
 
 Extract:
@@ -63,7 +63,7 @@ Extract:
 For each `doc.bd.api-*` node found in Step 1 `dependsOn` edges:
 
 ```bash
-ai-spector graph query doc.bd.api-<slug> --direction both --depth 2 --edges DEPS --json
+npx ai-spector graph query doc.bd.api-<slug> --direction both --depth 2 --edges DEPS --json
 ```
 
 Extract:
@@ -79,7 +79,7 @@ Extract:
 If the screen serves multiple actors (e.g. Admin + End User):
 
 ```bash
-ai-spector graph query <actorId> --direction both --depth 2 --edges CONTEXT --json
+npx ai-spector graph query <actorId> --direction both --depth 2 --edges CONTEXT --json
 ```
 
 Use actor data to:

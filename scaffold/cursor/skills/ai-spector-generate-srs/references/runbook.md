@@ -74,7 +74,7 @@ Every UC-xx, F-xx, and actor in output must exist as a graph node. No invented i
 After last wave ([generate-workflow.md](../../ai-spector/references/generate-workflow.md) § Finish):
 
 ```bash
-ai-spector index
+npx ai-spector index
 ```
 
 `index` parses UC/F/actor ids from markdown bodies and adds `doc.srs.uc-*` / `doc.srs.f-*` document + section nodes.

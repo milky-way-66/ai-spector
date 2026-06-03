@@ -19,6 +19,7 @@ paths:
 
 | Situation | Load |
 |---|---|
+| No tech stack stored — **must confirm before setup** | [references/stack-picker.md](references/stack-picker.md) |
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
 | No theme stored — **must confirm before setup** | [references/theme-picker.md](references/theme-picker.md) |
 | No basic auth stored | [references/auth-picker.md](references/auth-picker.md) |

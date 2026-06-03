@@ -2,8 +2,8 @@
 
 Queries:
 ```bash
-ai-spector graph query doc.bd.list-screen --direction both --depth 3 --edges CONTEXT --json
-ai-spector graph query doc.srs.3-use-cases --direction both --depth 2 --edges DEPS --json
+npx ai-spector graph query doc.bd.list-screen --direction both --depth 3 --edges CONTEXT --json
+npx ai-spector graph query doc.srs.3-use-cases --direction both --depth 2 --edges DEPS --json
 ```
 
 Derive each screen — **no invented screens**:

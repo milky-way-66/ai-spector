@@ -2,7 +2,7 @@
 
 Build **searchable summaries** under `.ai-spector/index/`. This is a **secondary** aid — prefer **`graph_neighbors`** for generation context when the graph has domain nodes.
 
-**Not** the same as **`/index`** (`ai-spector index`), which rebuilds graph, knowledge merge, and can also refresh doc indexes via CLI.
+**Not** the same as **`/index`** (`npx ai-spector index`), which rebuilds graph, knowledge merge, and can also refresh doc indexes via CLI.
 
 ## Usage
 

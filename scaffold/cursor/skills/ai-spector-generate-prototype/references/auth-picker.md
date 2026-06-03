@@ -4,7 +4,7 @@ Before **any** prototype HTML is generated, the project must have HTTP basic aut
 
 Skip when:
 
-- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype.config.json` — run `ai-spector prototype auth --from-config` only if `prototype/.htpasswd` is missing
+- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype.config.json` — run `npx ai-spector prototype auth --from-config` only if `prototype/.htpasswd` is missing
 - User is only previewing themes (no generation)
 
 ## Step 1 — Check stored credentials
@@ -12,7 +12,7 @@ Skip when:
 Read `.ai-spector/.docflow/config/prototype.config.json`. If `basicAuth.username` and `basicAuth.password` are non-empty, skip asking. Ensure `prototype/.htpasswd` exists; if not:
 
 ```bash
-ai-spector prototype auth --from-config
+npx ai-spector prototype auth --from-config
 ```
 
 ## Step 2 — Ask the user
@@ -37,7 +37,7 @@ If the user gives only one field, ask for the missing one and wait.
 When both values are known, run (replace placeholders; never log the password in chat after this step):
 
 ```bash
-ai-spector prototype auth --username <username> --password '<password>'
+npx ai-spector prototype auth --username <username> --password '<password>'
 ```
 
 This writes:
@@ -54,7 +54,7 @@ Then continue with theme resolution and [runbook.md](runbook.md) §1 (setup).
 If the user asks to rotate credentials:
 
 1. Collect new username/password (or reuse username with new password).
-2. Run `ai-spector prototype auth --username … --password …` again (overwrites config and htpasswd).
+2. Run `npx ai-spector prototype auth --username … --password …` again (overwrites config and htpasswd).
 
 ## Security note
 

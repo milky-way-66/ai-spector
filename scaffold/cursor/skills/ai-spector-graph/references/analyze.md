@@ -21,7 +21,7 @@ The agent runs all CLI steps below — see [WORKFLOW.md](../../WORKFLOW.md).
 ### 0. Prepare graph structure
 
 ```bash
-ai-spector analyze
+npx ai-spector analyze
 ```
 
 Creates section/document nodes from templates. Do not ask the user to run this separately.
@@ -49,14 +49,14 @@ Creates section/document nodes from templates. Do not ask the user to run this s
 ### B. Commit to graph
 
 ```bash
-ai-spector graph merge --from-knowledge
-ai-spector graph validate
+npx ai-spector graph merge --from-knowledge
+npx ai-spector graph validate
 ```
 
 Optional for the user:
 
 ```bash
-ai-spector graph visualize --open
+npx ai-spector graph visualize --open
 ```
 
 ### C. State
@@ -65,7 +65,7 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 
 ## Success Criteria
 
-- `ai-spector graph validate` passes with domain nodes (`useCase`, `feature`, …) anchored to sections.
+- `npx ai-spector graph validate` passes with domain nodes (`useCase`, `feature`, …) anchored to sections.
 - `knowledge.json` mirrors extract; graph is authoritative for `/generate-srs`.
 - Gaps recorded in `gaps.json`.
 
@@ -73,9 +73,9 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 
 | Step | Command |
 |------|---------|
-| 0 | `ai-spector analyze` |
-| B | `ai-spector graph merge --from-knowledge` |
-| B | `ai-spector graph validate` |
+| 0 | `npx ai-spector analyze` |
+| B | `npx ai-spector graph merge --from-knowledge` |
+| B | `npx ai-spector graph validate` |
 
 If any step fails, **pause** and use [cli-failures.md](../../ai-spector/references/cli-failures.md). Do not skip to generate SRS without user choice.
 

@@ -31,6 +31,8 @@ import {
   runPrototypeManifest,
   runPrototypePreview,
   runPrototypeSetup,
+  runPrototypeStack,
+  runPrototypeSync,
   runPrototypeThemes,
   runPrototypeValidate,
   runPrototypeAuth,
@@ -440,6 +442,16 @@ prototype
   });
 
 prototype
+  .command("stack")
+  .description(
+    "Set the prototype tech stack (html | vue | react | nuxt | next | svelte | angular) and derive buildMode",
+  )
+  .argument("<stack>", "Tech stack name")
+  .action(async (stack: string, _opts, cmd) => {
+    await runPrototypeStack({ root: projectRootOpt(cmd), stack });
+  });
+
+prototype
   .command("auth")
   .description("Configure HTTP basic auth (credentials in prototype.config.json, .htpasswd under prototype/)")
   .option("--username <name>", "Basic auth username")
@@ -485,6 +497,27 @@ prototype
       theme: opts.theme,
       defaultScreen: opts.defaultScreen,
       dryRun: opts.dryRun,
+      json: opts.json,
+    });
+  });
+
+prototype
+  .command("sync")
+  .description(
+    "Copy SPA/framework build output into prototype dest dir and regenerate screen-map.json",
+  )
+  .option("--from <path>", "Source build output dir (overrides config.buildSrc)")
+  .option("--to <path>", "Destination dir inside project (overrides config.buildDest)")
+  .option("--skip-copy", "Only regenerate screen-map.json — do not copy files")
+  .option("--clean", "Remove destination dir before copying (clean sync)")
+  .option("--json", "JSON output")
+  .action(async (opts, cmd) => {
+    await runPrototypeSync({
+      root: projectRootOpt(cmd),
+      from: opts.from,
+      to: opts.to,
+      skipCopy: opts.skipCopy,
+      clean: opts.clean,
       json: opts.json,
     });
   });

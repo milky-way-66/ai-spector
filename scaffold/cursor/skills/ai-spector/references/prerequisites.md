@@ -12,8 +12,8 @@ Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active ste
 
 ## Graph context (only after CLI succeeds)
 
-1. **`ai-spector graph validate`** — exit 0 required before generate.
-2. Per target: **`ai-spector graph query <seedId> --json`** — parse JSON; use `projectionPaths` and `nodes`.
+1. **`npx ai-spector graph validate`** — exit 0 required before generate.
+2. Per target: **`npx ai-spector graph query <seedId> --json`** — parse JSON; use `projectionPaths` and `nodes`.
 3. Open **only** those paths (+ targeted `docs/data-source/**` if still insufficient).
 
 **If validate or query fails:** follow [cli-failures.md](./cli-failures.md) — do **not** fall back to index or full-tree reads unless the user approves a listed workaround.

@@ -70,18 +70,23 @@ export async function buildPrototypeManifest(
     ...(r.userRole ? { userRole: r.userRole } : {}),
   }));
 
+  const buildMode = opts.config.buildMode ?? "static";
+
   const mapScreens = await Promise.all(
     rows.map(async (r) => {
       const exists = await htmlExists(opts.projectRoot, r.prototypePath);
       if (exists) {
         htmlCount++;
       }
+      const uri =
+        buildMode === "spa" ? `/${r.slug}` : `/src/${r.prototypeStem}.html`;
       return {
         screenId: r.screenId,
         displayName: r.displayName,
         screenDoc: r.screenDoc,
         prototypeStem: r.prototypeStem,
         prototypePath: r.prototypePath,
+        uri,
         htmlExists: exists,
       };
     }),
@@ -118,6 +123,7 @@ export async function buildPrototypeManifest(
   const screenMap: PrototypeScreenMap = {
     schemaVersion: 1,
     themeName: opts.themeName,
+    buildMode,
     generatedAt,
     ...(defaultScreenId ? { defaultScreenId } : {}),
     screens: mapScreens,

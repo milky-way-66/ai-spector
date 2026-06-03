@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { bundledPrototypeConfigPath, findProjectRoot } from "../config/load.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
-import type { PrototypeBasicAuth, PrototypeConfig } from "./types.js";
+import type { PrototypeBasicAuth, PrototypeConfig, PrototypeTechStack } from "./types.js";
 
 const DEFAULT_CONFIG: PrototypeConfig = {
   version: 1,
@@ -111,6 +111,33 @@ export async function persistPrototypeDefaultTheme(
   }
   const next: PrototypeConfig = { ...DEFAULT_CONFIG, ...raw, defaultTheme: name };
   await writeJson(projectConfig, next);
+}
+
+/** Persist the chosen tech stack and derive buildMode when not explicitly set. */
+export async function persistPrototypeTechStack(
+  projectRoot: string,
+  techStack: PrototypeTechStack,
+): Promise<PrototypeConfig> {
+  const projectConfig = join(
+    projectRoot,
+    ".ai-spector/.docflow/config/prototype.config.json",
+  );
+  let raw: Partial<PrototypeConfig> = {};
+  if (await pathExists(projectConfig)) {
+    raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
+  } else if (await pathExists(bundledPrototypeConfigPath())) {
+    raw = await readJson<Partial<PrototypeConfig>>(bundledPrototypeConfigPath());
+  }
+  // html is static; all framework stacks are spa — only override if not explicitly set
+  const derivedBuildMode = techStack === "html" ? "static" : "spa";
+  const next: PrototypeConfig = {
+    ...DEFAULT_CONFIG,
+    ...raw,
+    techStack,
+    buildMode: raw.buildMode ?? derivedBuildMode,
+  };
+  await writeJson(projectConfig, next);
+  return next;
 }
 
 /** Persist HTTP basic auth credentials for prototype hosting. */

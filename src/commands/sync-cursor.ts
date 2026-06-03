@@ -13,7 +13,7 @@ export async function runSyncCursor(opts: SyncCursorOptions): Promise<void> {
   const marker = join(root, ".ai-spector", "docflow.config.json");
   if (!(await pathExists(marker))) {
     throw new Error(
-      `Project not initialized (${marker}). Run: ai-spector init`,
+      `Project not initialized (${marker}). Run: npx ai-spector init`,
     );
   }
 

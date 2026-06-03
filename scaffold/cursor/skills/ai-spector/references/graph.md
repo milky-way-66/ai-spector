@@ -2,7 +2,7 @@
 
 **Users do not run these.** Slash commands invoke CLI. Workflow: [_workflow.md](./_workflow.md). **On failure:** [cli-failures.md](./cli-failures.md).
 
-Run from project root: `npx ai-spector …` if needed.
+Run from project root: always `npx ai-spector …` (see [project-conventions.md](./project-conventions.md)).
 
 ## Every CLI invocation
 
@@ -13,22 +13,22 @@ Run from project root: `npx ai-spector …` if needed.
 ## Commands
 
 ```bash
-ai-spector analyze
-ai-spector graph merge --from-knowledge
-ai-spector graph validate
-ai-spector graph visualize [--open]
-ai-spector graph query <nodeId> --json
-ai-spector graph impact <nodeId> --json
-ai-spector graph impact --file <path> [--heading <text>] --json
-ai-spector graph impact --git --json
+npx ai-spector analyze
+npx ai-spector graph merge --from-knowledge
+npx ai-spector graph validate
+npx ai-spector graph visualize [--open]
+npx ai-spector graph query <nodeId> --json
+npx ai-spector graph impact <nodeId> --json
+npx ai-spector graph impact --file <path> [--heading <text>] --json
+npx ai-spector graph impact --git --json
 ```
 
 ## `graph query`
 
 ```bash
-ai-spector graph query <seedId> --direction both --depth 4 --json
-ai-spector graph query <depDocId> --edges rendersTo,dependsOn,listedIn,satisfies --depth 2 --json
-ai-spector graph impact <seedId> --change content_change --json
+npx ai-spector graph query <seedId> --direction both --depth 4 --json
+npx ai-spector graph query <depDocId> --edges rendersTo,dependsOn,listedIn,satisfies --depth 2 --json
+npx ai-spector graph impact <seedId> --change content_change --json
 ```
 
 **Generate:** query **before** write; **`graph merge`** projection patch **after** each file (`rendersTo` + `dependsOn`). See `generate-graph.md`.
@@ -42,19 +42,19 @@ Use `projectionPaths`, `nodes`, `edges` from JSON. **If command fails or JSON in
 Resolve the seed in the agent (see `/impact`), then:
 
 ```bash
-ai-spector graph impact <nodeId> --change content_change --json
+npx ai-spector graph impact <nodeId> --change content_change --json
 ```
 
 Optional resolver flags (verify path/heading → id):
 
 ```bash
-ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
+npx ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
 ```
 
 Current working tree (staged + unstaged vs `HEAD`, or unstaged + `--cached` before first commit):
 
 ```bash
-ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --change content_change --json
 ```
 
 If this fails, do not guess impact scope — show CLI output and fix.

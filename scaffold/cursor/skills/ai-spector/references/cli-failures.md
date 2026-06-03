@@ -2,7 +2,7 @@
 
 **Load this file only when a CLI command fails.** Do not pre-load.
 
-When any `ai-spector` command exits non-zero or returns invalid JSON:
+When any `npx ai-spector` command exits non-zero or returns invalid JSON:
 
 1. **Pause** — no writing, no silent fallbacks.
 2. **Report** with the format below.
@@ -18,7 +18,7 @@ Must ask user: deleting graph files, large manual edits, any workaround not list
 
 ```
 ## Blocked: <command> failed
-**Command:** `ai-spector <subcommand>`  **Exit:** <n>
+**Command:** `npx ai-spector <subcommand>`  **Exit:** <n>
 **Output:** <paste stdout/stderr>
 **Means:** <one sentence>
 **Fix:** <steps> then re-run `<same command>`
@@ -38,12 +38,12 @@ Reply: 1 Fix & retry  2 Workaround  3 Pause
 | `analyze` fails | Show full error; check registry exists; re-run init if corrupt |
 | `merge` — no domain entries | Re-run `/analyze`; ensure data-source has UC/F/actor content |
 | `merge` — missing target node | Fix section id from `section-registry.json`; re-merge |
-| `validate` — DOC-SECTION-COVERAGE | Run `ai-spector index` then re-merge and re-validate |
+| `validate` — DOC-SECTION-COVERAGE | Run `npx ai-spector index` then re-merge and re-validate |
 | `validate` — DOMAIN-ANCHORED / SCHEMA | Re-run analyze; patch only the single bad node/edge |
 | `graph query` — empty subgraph | Wrong id or domain not merged; run analyze first |
 | `graph query` — invalid JSON | Re-run from project root; report as bug if repeats |
 | `index` fails on one path | Fix the path; re-index; do not skip required wave index without user OK |
-| Stale graph after manual edits | `ai-spector index`; re-run `/analyze` for fully stale domain |
+| Stale graph after manual edits | `npx ai-spector index`; re-run `/analyze` for fully stale domain |
 
 ---
 

@@ -23,7 +23,7 @@ git pull
 ### Phase 1 — Show thread pick list in chat (user selects)
 
 ```bash
-ai-spector comments inbox --json
+npx ai-spector comments inbox --json
 ```
 
 **IDE presentation (required):**
@@ -47,7 +47,7 @@ Do not start editing until the user picks (unless they already passed `C-001` in
 ### Phase 2 — Plan + impact (after pick)
 
 ```bash
-ai-spector comments plan C-001 --json
+npx ai-spector comments plan C-001 --json
 ```
 
 **Show in chat:** full thread comments, anchored doc text, impact summary, regen targets.
@@ -74,7 +74,7 @@ git add docs/srs/....md
 git commit -m "fix(docs): address comment C-001 on srs/01-overview lines 12-14"
 
 # 2) Write resolve meta pointing at that doc commit
-ai-spector comments resolve <threadId> --file srs/01-overview \
+npx ai-spector comments resolve <threadId> --file srs/01-overview \
   --expected-version <v from plan> --json
 
 # 3) Stage comment meta AND re-include doc in the same final commit
@@ -103,7 +103,7 @@ If HEAD moved before resolve, pass `--commit-sha <doc-fix-sha>` explicitly.
 ### Phase 6 — Optional follow-up
 
 ```bash
-ai-spector index
+npx ai-spector index
 ```
 
 Or targeted `/generate-srs` / `/generate-basic-design` when plan lists regen targets.

@@ -27,7 +27,7 @@ If context is thin, infer from screen names (e.g. checkout → commerce; admin d
 ## Step 2 — Load theme catalog
 
 ```bash
-ai-spector prototype themes --json
+npx ai-spector prototype themes --json
 ```
 
 Each entry has `name`, `summary` (first line of SUMMARY.md), and `preview` (visual sample available).
@@ -76,9 +76,9 @@ Write one sentence **why** for each of the 3 picks tied to **this project** (not
 Open all 3 recommended themes in the browser so the user can compare:
 
 ```bash
-ai-spector prototype preview <pick-1> --open
-ai-spector prototype preview <pick-2> --open
-ai-spector prototype preview <pick-3> --open
+npx ai-spector prototype preview <pick-1> --open
+npx ai-spector prototype preview <pick-2> --open
+npx ai-spector prototype preview <pick-3> --open
 ```
 
 If a pick has no preview (`preview: false`), say so and still include it if it is the best domain match.
@@ -96,7 +96,7 @@ No prototype theme is saved yet. Based on **[project/domain]**, here are 3 fits:
 | 2 | **wise** | Cross-border money — similar trust/minimal fintech tone | opened in browser |
 | 3 | **shopify** | Merchant commerce — if storefront is primary | opened in browser |
 
-Three preview tabs should be open. Reply with **1**, **2**, **3**, or another theme name (`ai-spector prototype themes` lists all).
+Three preview tabs should be open. Reply with **1**, **2**, **3**, or another theme name (`npx ai-spector prototype themes` lists all).
 
 I will run setup after you choose.
 ```
@@ -108,7 +108,7 @@ I will run setup after you choose.
 When the user picks (number or name):
 
 ```bash
-ai-spector prototype setup --theme <chosen-name>
+npx ai-spector prototype setup --theme <chosen-name>
 ```
 
 Then continue the generate-prototype runbook (manifest → HTML → validate).

@@ -2,9 +2,9 @@
 
 Queries:
 ```bash
-ai-spector graph query doc.bd.db-design --direction both --depth 4 --edges CONTEXT --json
-ai-spector graph query <entityId> --direction both --depth 3 --edges CONTEXT --json  # per entity
-ai-spector graph query doc.srs.5-data-requirements --direction both --depth 2 --edges DEPS --json
+npx ai-spector graph query doc.bd.db-design --direction both --depth 4 --edges CONTEXT --json
+npx ai-spector graph query <entityId> --direction both --depth 3 --edges CONTEXT --json  # per entity
+npx ai-spector graph query doc.srs.5-data-requirements --direction both --depth 2 --edges DEPS --json
 ```
 
 | Template section | Graph source |

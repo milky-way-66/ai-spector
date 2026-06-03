@@ -151,7 +151,7 @@ export async function buildDocIndex(params: {
   const lines: string[] = [
     `# ${title}`,
     "",
-    `Last indexed: ${indexedAt} (ai-spector index)`,
+    `Last indexed: ${indexedAt} (npx ai-spector index)`,
     "",
   ];
 

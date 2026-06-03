@@ -22,18 +22,18 @@ Rebuild **graph**, re-merge **knowledge** staging, and update **document indexes
 ## Required Behavior (agent runs CLI)
 
 ```bash
-ai-spector index
+npx ai-spector index
 ```
 
 After **`/generate-srs`** (recommended):
 
 ```bash
-ai-spector index
+npx ai-spector index
 ```
 
 Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → **source hub** → **provenance (`derivedFrom`)** → **business hub** → validate → doc indexes.
 
-**CLI alone is not full semantics:** Index builds structure + parseable meaning. For cross-hub evidence links (`relatesTo`), run **`/link-graph`** after index, then `ai-spector graph merge --semantic`. Check gaps with `ai-spector graph report --json`.
+**CLI alone is not full semantics:** Index builds structure + parseable meaning. For cross-hub evidence links (`relatesTo`), run **`/link-graph`** after index, then `npx ai-spector graph merge --semantic`. Check gaps with `npx ai-spector graph report --json`.
 
 **Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` `sourceRef` / `sourceRefs` / `derivedFrom`, SRS detail `Source:` lines, or inline `docs/data-source/…` mentions). No evidence → no edge.
 
@@ -47,13 +47,13 @@ Flags:
 Structure + merge only:
 
 ```bash
-ai-spector index --graph-only
+npx ai-spector index --graph-only
 ```
 
 Doc indexes only:
 
 ```bash
-ai-spector index --docs-only
+npx ai-spector index --docs-only
 ```
 
 ## Stop on failure
@@ -63,5 +63,5 @@ Follow [cli-failures.md](../../ai-spector/references/cli-failures.md). Do not ha
 ## Success
 
 - Summary shows ✓ for requested steps
-- `ai-spector graph validate` passes (unless `--skip-validate`)
+- `npx ai-spector graph validate` passes (unless `--skip-validate`)
 - Suggest `/visualize-graph` or `/validate-graph` if user wants to inspect

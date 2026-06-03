@@ -29,7 +29,7 @@ Used by **SRS** and **basic design** generation skills.
 ### A. Gate (once per command)
 
 ```bash
-ai-spector graph validate
+npx ai-spector graph validate
 ```
 
 ### B. Plan — waves
@@ -53,19 +53,19 @@ Present plan as:
 **Dependency context** (once per wave, for each DAG `dependsOn`):
 
 ```bash
-ai-spector graph query <depSeedId> --direction both --depth 2 --edges DEPS --json
+npx ai-spector graph query <depSeedId> --direction both --depth 2 --edges DEPS --json
 ```
 
 **Target neighborhood:**
 
 ```bash
-ai-spector graph query <targetSeedId> --direction both --depth 4 --edges CONTEXT --json
+npx ai-spector graph query <targetSeedId> --direction both --depth 4 --edges CONTEXT --json
 ```
 
 **When regenerating** (unsure what changed):
 
 ```bash
-ai-spector graph impact <targetSeedId> --change content_change --json
+npx ai-spector graph impact <targetSeedId> --change content_change --json
 ```
 
 ### D. Write
@@ -96,14 +96,14 @@ After **all files in a wave** are written, write a single patch covering the who
 ```
 
 ```bash
-ai-spector graph merge .ai-spector/.docflow/extract/projection-patch.json
-ai-spector graph validate
+npx ai-spector graph merge .ai-spector/.docflow/extract/projection-patch.json
+npx ai-spector graph validate
 ```
 
 Then — for SRS and basic-design waves — run index before starting the next wave:
 
 ```bash
-ai-spector index
+npx ai-spector index
 ```
 
 **Exception:** if a file within the wave is a dependency for another file in the **same** wave (unusual — check the DAG), merge that file's `rendersTo` before writing the dependent. For standard DAGs this never happens within a wave.

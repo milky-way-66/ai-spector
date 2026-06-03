@@ -1,5 +1,9 @@
 # AI Spector project conventions
 
+## CLI (agents)
+
+Always invoke **`npx ai-spector <subcommand>`** in the terminal. Do not use bare `ai-spector` — projects may lack a global install.
+
 ## Init and upgrades
 
 ```bash
@@ -30,6 +34,6 @@ Stored in `.ai-spector/.docflow/config/language.json` (`documentLanguage` field)
 
 1. **Check document language** ([language-picker.md](./language-picker.md)) before any write.
 2. Read template from `.ai-spector/templates/` — never invent section structure.
-3. Query graph before writing (`ai-spector graph query`).
+3. Query graph before writing (`npx ai-spector graph query`).
 4. Merge projection patches after each wave (`graph merge`).
 5. Validate when the command doc requires it.
