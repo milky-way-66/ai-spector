@@ -48,7 +48,7 @@ docs/basic-design/jp/api/post-checkout.md
 
 Never write directly to `docs/basic-design/{filename}` — the language subfolder is always required.
 
-**Multi-language order:** generate the primary language file first (from graph + template). Then translate that file to each secondary language. Secondary languages are never generated independently from the graph — they are always translated from the finished primary file.
+**Multi-language order:** generate the primary language file first (from graph + template). After writing it, follow the **translation prompt** from [generate-workflow.md](../../ai-spector/references/generate-workflow.md#translation-prompt-mandatory-pause-after-each-primary-file-write) — ask the user whether to update translations before continuing. Secondary languages are always translated from the finished primary file, never generated independently from the graph.
 
 ## Waves (reference)
 

@@ -45,6 +45,21 @@ After the table, list actionable items:
 - Files that are MISSING: "Generate: `docs/srs/jp/02-actors.md`"
 - Files that are STALE: "Update: `docs/basic-design/vi/db-design.md` (primary changed 2026-06-01, translation last updated 2026-05-10)"
 
+## After any primary file edit (outside of generate skills)
+
+If the user edits a primary language file directly (not via a generate skill), and secondary languages are configured, ask:
+
+```
+You've edited `docs/{docType}/{primaryLang.code}/{filename}`.
+Do you want me to update the translation(s) now?
+
+  1. Yes, update all translations now
+  2. Yes, but only: [specific languages]
+  3. No — I'll handle it later
+```
+
+Wait for reply. On yes: read the updated primary file and re-translate to each approved secondary language. On no: note the file as stale so the user can run `ai-spector-lang-status` later.
+
 ## Updating stale translations
 
 If the user says "update stale JP" or "regenerate missing VI docs":

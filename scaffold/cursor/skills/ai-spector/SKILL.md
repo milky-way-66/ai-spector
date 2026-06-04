@@ -25,9 +25,11 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 
 | Item | Path |
 |------|------|
+| Config (languages, paths) | `.ai-spector/docflow.config.json` |
 | Graph | `.ai-spector/graph/traceability.graph.json` |
 | Query | `npx ai-spector graph query <id> --json` |
 | Templates | `.ai-spector/templates/` |
+| Doc output | `docs/srs/{lang.code}/` · `docs/basic-design/{lang.code}/` |
 
 ## Route to a task skill
 
@@ -38,10 +40,12 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Basic design | `ai-spector-generate-basic-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
+| Translation status / stale languages | `ai-spector-lang-status` |
 | “Generate docs” (vague) | `ai-spector-generate` |
 
 When a task skill applies, read its `references/` runbook fully before acting.
 
 ## More
 
-[references/project-conventions.md](references/project-conventions.md)
+- [references/cli-reference.md](references/cli-reference.md) — full command reference (all options + examples)
+- [references/project-conventions.md](references/project-conventions.md)

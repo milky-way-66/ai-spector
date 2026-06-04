@@ -71,18 +71,43 @@ Case 3: build scope table (DAG id, output path, seed, reason, deps) → ask → 
 - [ ] Load matching srs-context/ or bd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write primary language file from summary + template
-- [ ] If secondary languages configured:
-        For each secondary language (can parallelize across languages):
-          Read the finished primary file from disk
-          Translate prose to target language (IDs/paths/code unchanged)
-          Write to docs/{docType}/{lang.code}/{filename}
+- [ ] [PAUSE — translation prompt] (see below)
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave
 - [ ] npx ai-spector graph validate
 - [ ] npx ai-spector index (basic design: every wave; SRS: see runbook)
 - [ ] /compact with plan summary before next wave
 ```
 
-Per target: Delegate → Receive summary → Write primary → Translate to secondaries → Log path/status → Ingest.
+Per target: Delegate → Receive summary → Write primary → Translation prompt → Translate if approved → Log path/status → Ingest.
+
+## Translation prompt (mandatory pause after each primary file write)
+
+After writing or updating **any primary language file**, and when secondary languages are configured in `docflow.config.json`, you **must** stop and ask:
+
+```
+I've updated `docs/{docType}/{primaryLang.code}/{filename}`.
+
+This project also has translations configured: {secondaryLangs joined by ", "}.
+Do you want me to update the translation(s) now?
+
+  1. Yes, update all translations now
+  2. Yes, but only: [user can name specific languages]
+  3. No, I'll handle translations separately
+```
+
+**Wait for the user's reply before proceeding.**
+
+- **Reply 1 or 2** → for each approved secondary language: read the finished primary file, translate prose, write to `docs/{docType}/{lang.code}/{filename}`. Then continue the checklist.
+- **Reply 3** → note which files have stale translations (so the user can run `ai-spector-lang-status` later), then continue the checklist without translating.
+
+### When to skip the prompt
+
+Skip the prompt (proceed directly to translation) only when the user has **already pre-approved** translations in this session with a phrase like:
+- "generate everything in all languages"
+- "update all translations automatically"
+- "yes to all translations"
+
+If pre-approved, translate immediately after each primary write without asking again for the rest of the session.
 
 ## Guardrails
 

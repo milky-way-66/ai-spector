@@ -42,6 +42,7 @@ Read **one** runbook under `references/` for the user’s intent, then execute i
 
 ## Shared references
 
+- [../ai-spector/references/cli-reference.md](../ai-spector/references/cli-reference.md) — full CLI options + examples
 - [../ai-spector/references/graph.md](../ai-spector/references/graph.md)
 - [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md)
 - [references/graph-commands.md](references/graph-commands.md)
