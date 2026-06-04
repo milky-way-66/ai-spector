@@ -1,5 +1,7 @@
 # Language picker — ask, store, enforce
 
+> **Multi-language projects:** If `.ai-spector/docflow.config.json` contains a non-empty `languages[]` array, skip this entire file. Use those languages and write to `docs/srs/{lang.code}/`. This picker is a legacy fallback for projects without `languages` in config.
+
 When **no document language is stored** and the user did not name one in this request, run this flow **before any document write**. Do not generate document content until the user confirms a language.
 
 Skip this flow when:

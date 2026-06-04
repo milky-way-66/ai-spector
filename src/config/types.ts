@@ -5,8 +5,17 @@ export interface DocflowProjectPaths {
   templates?: string;
 }
 
+export interface LanguageConfig {
+  /** BCP-47 language code, e.g. "en", "jp", "vi" */
+  code: string;
+  /** Human-readable display name, e.g. "English" */
+  label: string;
+}
+
 export interface DocflowConfig {
   version: number;
+  /** Configured languages. First entry is the primary language. */
+  languages: LanguageConfig[];
   paths: DocflowProjectPaths;
 }
 

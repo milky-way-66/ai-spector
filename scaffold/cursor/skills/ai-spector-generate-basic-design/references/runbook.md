@@ -31,8 +31,24 @@ Generate basic design markdown **from the traceability graph** and upstream SRS.
 - `dag.basic-design.graph-seeds.json` — seeds + `documentNodes` for ingest
 - `completeness-rules.basic-design.json`
 - `workflow.dependencies.json` → `generate-basic-design`
+- `.ai-spector/docflow.config.json` → `languages[]` — output language(s) and folders
 
 Templates: `.ai-spector/templates/basic_design/`
+
+## Output paths
+
+Always write to `docs/basic-design/{lang.code}/{filename}`. Examples:
+
+```
+docs/basic-design/en/db-design.md
+docs/basic-design/jp/db-design.md
+docs/basic-design/en/api/post-checkout.md
+docs/basic-design/jp/api/post-checkout.md
+```
+
+Never write directly to `docs/basic-design/{filename}` — the language subfolder is always required.
+
+**Multi-language order:** generate the primary language file first (from graph + template). Then translate that file to each secondary language. Secondary languages are never generated independently from the graph — they are always translated from the finished primary file.
 
 ## Waves (reference)
 

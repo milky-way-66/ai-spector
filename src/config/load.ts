@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DocflowConfig, DocumentsManifest } from "./types.js";
+import type { DocflowConfig, DocumentsManifest, LanguageConfig } from "./types.js";
 import { readJson } from "../util/fs.js";
 
 const CONFIG_NAME = "docflow.config.json";
@@ -64,6 +64,8 @@ const DEFAULT_PATHS = {
   templates: ".ai-spector/templates",
 } as const;
 
+const DEFAULT_LANGUAGE: LanguageConfig = { code: "en", label: "English" };
+
 export async function loadDocflowConfig(
   root = findProjectRoot(),
 ): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
@@ -71,6 +73,10 @@ export async function loadDocflowConfig(
   const raw = await readJson<Partial<DocflowConfig>>(configFile);
   const config: DocflowConfig = {
     version: raw.version ?? 1,
+    languages:
+      Array.isArray(raw.languages) && raw.languages.length > 0
+        ? raw.languages
+        : [DEFAULT_LANGUAGE],
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
@@ -78,6 +84,11 @@ export async function loadDocflowConfig(
     },
   };
   return { root, config, configFile };
+}
+
+/** Returns the primary (first) language from config. */
+export function primaryLanguage(config: DocflowConfig): LanguageConfig {
+  return config.languages[0] ?? DEFAULT_LANGUAGE;
 }
 
 /** Resolved absolute path to project-local templates (`.ai-spector/templates`). */

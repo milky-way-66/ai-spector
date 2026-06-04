@@ -150,6 +150,12 @@ export async function runGraphImpactFromGit(
       console.log(`  - ${e.id} (${e.type})${path}`);
     }
   }
+  if (result.staleTranslations && result.staleTranslations.length > 0) {
+    console.log("\nstale translations (may need update):");
+    for (const e of result.staleTranslations) {
+      console.log(`  - ${e.id} (${e.reason})`);
+    }
+  }
 }
 
 export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<void> {
@@ -187,6 +193,12 @@ export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<void>
     for (const e of entries) {
       const path = e.projectionPath ? ` → ${e.projectionPath}` : "";
       console.log(`  - ${e.id} (${e.type})${path}`);
+    }
+  }
+  if (result.staleTranslations && result.staleTranslations.length > 0) {
+    console.log("\nstale translations (may need update):");
+    for (const e of result.staleTranslations) {
+      console.log(`  - ${e.id} (${e.reason})`);
     }
   }
 }

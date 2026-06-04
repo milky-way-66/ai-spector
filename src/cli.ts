@@ -8,6 +8,7 @@ import { buildSectionRegistry } from "./registry/build.js";
 import { bootstrapFromRegistry } from "./commands/bootstrap.js";
 import { validateGraph, formatIssues } from "./commands/validate.js";
 import { runInit } from "./commands/init.js";
+import { runLangAdd } from "./commands/lang.js";
 import { runSyncCursor } from "./commands/sync-cursor.js";
 import { runAnalyzePrep } from "./commands/analyze.js";
 import { runGraphQuery } from "./commands/graph-query.js";
@@ -71,10 +72,34 @@ program
   .description("Scaffold .ai-spector, Cursor commands/skills, and docs layout")
   .option("-f, --force", "Overwrite existing scaffold files")
   .option("-C, --cwd <path>", "Target directory", process.cwd())
+  .option(
+    "-l, --languages <codes>",
+    "Comma-separated language codes to set up (e.g. en,jp,vi)",
+    "en",
+  )
   .action(async (opts) => {
+    const langCodes = (opts.languages as string)
+      .split(",")
+      .map((c: string) => c.trim())
+      .filter(Boolean);
     await runInit({
       targetDir: resolve(opts.cwd ?? process.cwd()),
       force: opts.force,
+      languages: langCodes,
+    });
+  });
+
+const lang = program.command("lang").description("Manage project languages");
+
+lang
+  .command("add <code>")
+  .description("Add a language to the project (e.g. jp, vi)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--label <label>", "Display name for the language")
+  .action(async (code: string, opts) => {
+    await runLangAdd(code, {
+      root: resolve(opts.cwd ?? process.cwd()),
+      label: opts.label,
     });
   });
 

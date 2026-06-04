@@ -28,7 +28,8 @@ export type EdgeType =
   | "tracesTo"
   | "derivedFrom"
   | "rendersTo"
-  | "relatesTo";
+  | "relatesTo"
+  | "translationOf";
 
 export interface GraphNode {
   id: string;

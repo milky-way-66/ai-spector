@@ -25,6 +25,8 @@ export interface ImpactResult {
     regenerate: ImpactEntry[];
     review: ImpactEntry[];
   };
+  /** Translation document nodes that may be stale after this change. */
+  staleTranslations?: ImpactEntry[];
   /** Present when CLI resolved origin via --file / --heading */
   resolvedFrom?: { id: string; type: string; reason: string };
   /** Present when multiple seeds were analyzed (e.g. --git) */
@@ -159,6 +161,35 @@ export function computeImpact(
 
   for (const key of Object.keys(result.affected) as (keyof ImpactResult["affected"])[]) {
     result.affected[key].sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  // Collect translation nodes that are stale (reverse translationOf from affected documents)
+  const staleTranslations: ImpactEntry[] = [];
+  const affectedDocIds = new Set(
+    [...result.affected.regenerate, ...result.affected.review]
+      .filter((e) => g.nodesById.get(e.id)?.type === "document")
+      .map((e) => e.id),
+  );
+  // Also include origin if it's a document
+  if (origin.type === "document") {
+    affectedDocIds.add(originId);
+  }
+  for (const docId of affectedDocIds) {
+    for (const e of g.inEdges.get(docId) ?? []) {
+      if (e.type !== "translationOf") continue;
+      const translationNode = g.nodesById.get(e.from);
+      if (!translationNode) continue;
+      staleTranslations.push({
+        id: e.from,
+        type: translationNode.type,
+        reason: `translationOf ${docId}`,
+        projectionPath: projectionPathForNode(g, e.from),
+      });
+    }
+  }
+  if (staleTranslations.length > 0) {
+    staleTranslations.sort((a, b) => a.id.localeCompare(b.id));
+    result.staleTranslations = staleTranslations;
   }
 
   return result;

@@ -5,12 +5,15 @@ import {
   scaffoldBundleRoot,
   scaffoldCursorBundleRoot,
 } from "../config/load.js";
-import { copyTree, pathExists, writeJson } from "../util/fs.js";
+import { copyTree, pathExists, readJson, writeJson } from "../util/fs.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
+import type { LanguageConfig } from "../config/types.js";
 
 export interface InitOptions {
   targetDir: string;
   force?: boolean;
+  /** Language codes to set up, e.g. ["en", "jp"]. Defaults to ["en"]. */
+  languages?: string[];
 }
 
 /** Copy bundled scaffold/cursor/ -> project .cursor/. */
@@ -31,6 +34,26 @@ export async function copyScaffoldToProject(projectRoot: string): Promise<void> 
   await copyCursorToProject(projectRoot);
 }
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  jp: "Japanese",
+  ja: "Japanese",
+  vi: "Vietnamese",
+  zh: "Chinese",
+  ko: "Korean",
+  fr: "French",
+  de: "German",
+  es: "Spanish",
+  pt: "Portuguese",
+};
+
+function buildLanguageConfigs(codes: string[]): LanguageConfig[] {
+  return codes.map((code) => ({
+    code,
+    label: LANGUAGE_LABELS[code] ?? code,
+  }));
+}
+
 export async function runInit(opts: InitOptions): Promise<void> {
   const root = resolve(opts.targetDir);
   const marker = join(root, ".ai-spector", "docflow.config.json");
@@ -41,27 +64,43 @@ export async function runInit(opts: InitOptions): Promise<void> {
     );
   }
 
+  const langCodes = opts.languages && opts.languages.length > 0 ? opts.languages : ["en"];
+  const languages = buildLanguageConfigs(langCodes);
+
   await copyScaffoldToProject(root);
+
+  // Patch languages into the scaffold-copied config (which must exist at this point)
+  const configPath = join(root, ".ai-spector", "docflow.config.json");
+  const existingConfig = await readJson<Record<string, unknown>>(configPath);
+  await writeJson(configPath, { ...existingConfig, languages });
 
   const projectTemplates = join(root, ".ai-spector", "templates");
   await mkdir(projectTemplates, { recursive: true });
   await copyTree(join(packageBundleRoot(), "templates"), projectTemplates);
 
-  const dirs = [
+  const baseDirs = [
     ".ai-spector/graph",
     ".ai-spector/registry",
     ".ai-spector/.docflow/analysis",
     ".ai-spector/.docflow/extract",
     ".ai-spector/.docflow/graph",
     ".ai-spector/views",
-    "docs/srs",
-    "docs/basic-design",
     "docs/detail-design",
     "prototype",
     "prototype/src",
   ];
-  for (const d of dirs) {
+  for (const d of baseDirs) {
     await mkdir(join(root, d), { recursive: true });
+  }
+
+  // Create per-language doc folders
+  for (const lang of languages) {
+    await mkdir(join(root, `docs/srs/${lang.code}`), { recursive: true });
+    await mkdir(join(root, `docs/basic-design/${lang.code}`), { recursive: true });
+    const gitkeep = join(root, `docs/srs/${lang.code}/.gitkeep`);
+    if (!(await pathExists(gitkeep))) {
+      await writeFile(gitkeep, "");
+    }
   }
 
   const statePath = join(root, ".ai-spector/.docflow/state.json");
@@ -72,15 +111,11 @@ export async function runInit(opts: InitOptions): Promise<void> {
     index: { lastRunAt: null },
   });
 
-  const gitkeep = join(root, "docs/srs/.gitkeep");
-  if (!(await pathExists(gitkeep))) {
-    await writeFile(gitkeep, "");
-  }
-
   const gitignorePath = await ensureAiSpectorGitignore(root);
 
   console.log(`Initialized AI Spector project at ${root}`);
   console.log("");
+  console.log(`  languages -> ${langCodes.join(", ")}`);
   console.log(`  gitignore -> ${gitignorePath} (npx ai-spector block added/updated)`);
   console.log(`  templates -> ${projectTemplates} (SRS / basic / detail design)`);
   console.log(`  cursor    -> ${join(root, ".cursor")} (from scaffold/cursor/)`);
@@ -92,6 +127,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   console.log('  4. In Cursor: ask e.g. "analyze data source", "generate SRS"');
   console.log("     Workflow: .cursor/WORKFLOW.md");
   console.log('  5. Prototype: npx ai-spector prototype setup --theme vercel -> "generate HTML prototype"');
+  console.log('  6. Add languages: npx ai-spector lang add <code>  (e.g. jp, vi)');
   console.log("");
   console.log("See .cursor/WORKFLOW.md -- agents use skills + CLI; you rarely run CLI yourself.");
 }

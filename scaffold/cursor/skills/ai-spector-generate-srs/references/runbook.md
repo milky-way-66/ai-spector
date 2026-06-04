@@ -32,8 +32,23 @@ Generate SRS markdown **from the traceability graph** in DAG order.
 - `dag.srs.graph-seeds.json` — DAG id → `doc.srs.*` seed
 - `completeness-rules.srs.json`
 - `workflow.dependencies.json` → `generate-srs`
+- `.ai-spector/docflow.config.json` → `languages[]` — output language(s) and folders
 
 Templates: `.ai-spector/templates/srs/`
+
+## Output paths
+
+Always write to `docs/srs/{lang.code}/{filename}`. Examples:
+
+```
+docs/srs/en/01-introduction.md   ← English
+docs/srs/jp/01-introduction.md   ← Japanese
+docs/srs/vi/01-introduction.md   ← Vietnamese
+```
+
+Never write directly to `docs/srs/{filename}` — the language subfolder is always required.
+
+**Multi-language order:** generate the primary language file first (from graph + template). Then translate that file to each secondary language. Secondary languages are never generated independently from the graph — they are always translated from the finished primary file.
 
 ## Waves (reference)
 
