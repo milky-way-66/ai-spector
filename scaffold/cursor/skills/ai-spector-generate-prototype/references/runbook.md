@@ -50,6 +50,7 @@ In SPA mode:
 - Navigation links between screens must use `<slug>`-based routes (e.g. `<router-link to="/login">`)
 - The `screen-map.json` `uri` values are route paths — the hosting layer (dev server or `serve -s dist`) handles routing
 - The agent must **not** generate a separate `.html` per screen; there is one `index.html` entrypoint
+- **Prototype routing:** follow [spa-prototype.md](spa-prototype.md) — bypass login redirects for direct review, and set default path/query params in `prototype/route-defaults.json` so `previewUri` deep links work for detail screens
 
 ## Usage — three ways to choose targets
 
@@ -177,6 +178,8 @@ Read `techStack` (and `buildMode`) from `prototype.config.json`. File type and s
 - There is **one** `index.html` entrypoint — do **not** create per-screen HTML files
 - Generate a route config file (`router.ts`, `app.routes.ts`, or equivalent) mapping each screen slug to its component
 - Navigation between screens uses the framework's router component with `uri` from `screen-map.json` as the path
+- **Direct access (no login redirect):** router guards must honor `prototypeBypassAuth` on `screen-map.json` — see [spa-prototype.md](spa-prototype.md)
+- **Param routes:** copy `route-defaults.example.json` → `route-defaults.json`, set `routeParams` / `queryParams` per screen id, run `prototype manifest`, give users the generated `previewUri` links
 
 **All stacks:**
 
@@ -344,6 +347,8 @@ If the agent is asked to "sync prototype", "copy build output", or "update scree
   - static mode → `/src/<stem>.html`
   - spa mode → `/<slug>`
 - [ ] SPA mode only: single `index.html` entrypoint exists; route config generated; navigation uses route paths (not file paths)
+- [ ] SPA mode only: `prototypeBypassAuth` honored in router — reviewers can open any `previewUri` without login
+- [ ] SPA mode only: param/detail screens have `route-defaults.json` entries and non-empty `previewUri` in `screen-map.json`
 - [ ] External build workflow: `prototype sync` run after framework build; `buildDest` contains the copied files
 
 ## On failure

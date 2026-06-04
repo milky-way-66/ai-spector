@@ -24,6 +24,7 @@ paths:
 | No theme stored — **must confirm before setup** | [references/theme-picker.md](references/theme-picker.md) |
 | No basic auth stored | [references/auth-picker.md](references/auth-picker.md) |
 | Before writing each screen HTML | [references/prototype-graph-context.md](references/prototype-graph-context.md) |
+| SPA buildMode (vue, react, nuxt, …) | [references/spa-prototype.md](references/spa-prototype.md) |
 | Run of 5+ screens | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 | CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
 

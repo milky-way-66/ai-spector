@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "prototypeBypassAuth": true,
+  "screens": {
+    "order-detail": {
+      "routePattern": "/orders/:id",
+      "routeParams": { "id": "demo-001" },
+      "queryParams": { "tab": "summary" },
+      "requiresAuth": true
+    },
+    "login": {
+      "requiresAuth": false
+    }
+  }
+}

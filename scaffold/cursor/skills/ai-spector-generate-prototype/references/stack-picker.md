@@ -53,6 +53,13 @@ npx ai-spector prototype sync --clean
 
 When the agent sets up a Vite-based stack (vue / react / svelte), it **must** write or verify `base: './'` in `vite.config.ts` before generating any other files. Flag it explicitly to the user if the config is missing or set to `'/'`.
 
+## SPA-only: direct routes and param defaults
+
+Framework stacks use `buildMode: spa`. After stack selection, follow [spa-prototype.md](spa-prototype.md):
+
+- Router must allow **direct navigation** to any screen without login redirect (`prototypeBypassAuth`).
+- Detail screens with URL params need defaults in `prototype/route-defaults.json` → `previewUri` in `screen-map.json`.
+
 ## Step 1 — Check stored stack
 
 Read `.ai-spector/.docflow/config/prototype.config.json`. If `techStack` is set, skip this entire flow.

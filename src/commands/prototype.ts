@@ -151,7 +151,7 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
 
   const scaffoldProto = join(scaffoldBundleRoot(), "prototype");
   if (await pathExists(scaffoldProto)) {
-    for (const name of ["README.md", "CLAUDE.md"]) {
+    for (const name of ["README.md", "CLAUDE.md", "route-defaults.example.json"]) {
       const dest = join(prototypeRoot, name);
       const src = join(scaffoldProto, name);
       if (await pathExists(src) && !(await pathExists(dest))) {
@@ -419,10 +419,12 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
           skipCopy: opts.skipCopy ?? false,
           screenMapPath: paths.screenMapPath,
           screenCount: built.screenCount,
+          prototypeBypassAuth: built.screenMap.prototypeBypassAuth,
           screens: built.screenMap.screens.map((s) => ({
             screenId: s.screenId,
             screenDoc: s.screenDoc,
             uri: s.uri,
+            previewUri: s.previewUri ?? s.uri,
             buildDest,
           })),
         },
@@ -439,7 +441,13 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
   console.log("");
   console.log("Screen URI mapping:");
   for (const s of built.screenMap.screens) {
-    console.log(`  ${s.screenDoc.padEnd(40)} → ${s.uri}`);
+    const open = s.previewUri ?? s.uri;
+    const suffix = open !== s.uri ? ` (pattern: ${s.uri})` : "";
+    console.log(`  ${s.screenDoc.padEnd(40)} → ${open}${suffix}`);
+  }
+  if (built.screenMap.prototypeBypassAuth) {
+    console.log("");
+    console.log("  prototypeBypassAuth: true — SPA should allow direct previewUri access without login");
   }
 }
 

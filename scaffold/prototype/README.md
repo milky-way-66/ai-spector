@@ -53,3 +53,12 @@ git add prototype/
 ## Screen → file mapping
 
 See `prototype/manifest.json` and `prototype/screen-map.json` (rebuilt by `npx ai-spector prototype manifest`).
+
+## SPA prototypes (Vue, React, …)
+
+When `buildMode` is `spa`:
+
+1. **Direct routes** — `screen-map.json` sets `prototypeBypassAuth: true` so the app router must not force login before showing a deep-linked screen.
+2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Open each screen via its `previewUri` in `screen-map.json`.
+
+Starter patterns: `prototype/spa/vue/` (router guard helper).

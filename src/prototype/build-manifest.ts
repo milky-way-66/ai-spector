@@ -5,12 +5,14 @@ import type {
   PrototypeConfig,
   PrototypeManifest,
   PrototypeScreenMap,
+  PrototypeScreenMapEntry,
 } from "./types.js";
 import { parseScreenIndexFromList } from "./parse-screen-index.js";
 import {
   assertDefaultScreenInPool,
   resolveDefaultScreenId,
 } from "./resolve-default-screen.js";
+import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
@@ -71,6 +73,27 @@ export async function buildPrototypeManifest(
   }));
 
   const buildMode = opts.config.buildMode ?? "static";
+  const routeDefaults = await loadRouteDefaults(
+    opts.projectRoot,
+    opts.config.prototypeDir,
+  );
+
+  const screenMapPath = join(
+    opts.projectRoot,
+    opts.config.prototypeDir,
+    "screen-map.json",
+  );
+  let previousDefault: string | undefined;
+  let previousBypassAuth: boolean | undefined;
+  const previousScreensById = new Map<string, PrototypeScreenMapEntry>();
+  if (await pathExists(screenMapPath)) {
+    const prior = await readJson<PrototypeScreenMap>(screenMapPath);
+    previousDefault = prior.defaultScreenId;
+    previousBypassAuth = prior.prototypeBypassAuth;
+    for (const s of prior.screens ?? []) {
+      previousScreensById.set(s.screenId, s);
+    }
+  }
 
   const mapScreens = await Promise.all(
     rows.map(async (r) => {
@@ -78,16 +101,25 @@ export async function buildPrototypeManifest(
       if (exists) {
         htmlCount++;
       }
-      const uri =
+      const baseUri =
         buildMode === "spa" ? `/${r.slug}` : `/src/${r.prototypeStem}.html`;
+      const prior = previousScreensById.get(r.screenId);
+      const routeApplied = applyRouteDefaults({
+        screenId: r.screenId,
+        slug: r.slug,
+        buildMode,
+        baseUri,
+        fromFile: routeDefaults?.screens[r.screenId],
+        fromPriorEntry: prior,
+      });
       return {
         screenId: r.screenId,
         displayName: r.displayName,
         screenDoc: r.screenDoc,
         prototypeStem: r.prototypeStem,
         prototypePath: r.prototypePath,
-        uri,
         htmlExists: exists,
+        ...routeApplied,
       };
     }),
   );
@@ -99,17 +131,6 @@ export async function buildPrototypeManifest(
     screens: manifestScreens,
   };
 
-  let previousDefault: string | undefined;
-  const screenMapPath = join(
-    opts.projectRoot,
-    opts.config.prototypeDir,
-    "screen-map.json",
-  );
-  if (await pathExists(screenMapPath)) {
-    const prior = await readJson<PrototypeScreenMap>(screenMapPath);
-    previousDefault = prior.defaultScreenId;
-  }
-
   if (opts.defaultScreenId?.trim()) {
     assertDefaultScreenInPool(opts.defaultScreenId, mapScreens);
   }
@@ -120,12 +141,18 @@ export async function buildPrototypeManifest(
     configDefault: opts.config.defaultScreenId,
   });
 
+  const prototypeBypassAuth =
+    routeDefaults?.prototypeBypassAuth ??
+    previousBypassAuth ??
+    (buildMode === "spa" ? opts.config.prototypeBypassAuth ?? true : undefined);
+
   const screenMap: PrototypeScreenMap = {
     schemaVersion: 1,
     themeName: opts.themeName,
     buildMode,
     generatedAt,
     ...(defaultScreenId ? { defaultScreenId } : {}),
+    ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
     screens: mapScreens,
   };
 

@@ -63,6 +63,11 @@ export interface PrototypeConfig {
   /** Repo-relative path to Apache htpasswd file (nginx basic auth). */
   htpasswdFile: string;
   basicAuth?: PrototypeBasicAuth;
+  /**
+   * When true (default for SPA prototypes), router auth guards must allow direct navigation
+   * to any screen without forcing login first. Set false to test real auth flows.
+   */
+  prototypeBypassAuth?: boolean;
 }
 
 export interface ScreenIndexRow {
@@ -99,12 +104,28 @@ export interface PrototypeScreenMapEntry {
   prototypeStem: string;
   prototypePath: string;
   /**
-   * URI for navigating to this screen.
+   * Route path for this screen.
    * - static mode: "/src/<stem>.html"
-   * - spa mode: "/<slug>"
+   * - spa mode: "/<slug>" or a pattern with params (e.g. "/orders/:id")
    */
   uri: string;
   htmlExists: boolean;
+  /**
+   * SPA only: explicit router pattern when it differs from the slug-only path.
+   * Usually the same as `uri`; set when the app uses param segments.
+   */
+  routePattern?: string;
+  /** SPA only: default path-param values for prototype deep links (e.g. `{ "id": "demo-001" }`). */
+  routeParams?: Record<string, string>;
+  /** SPA only: default query params appended to `previewUri`. */
+  queryParams?: Record<string, string>;
+  /**
+   * SPA only: concrete URL to open this screen in a browser (params substituted, query appended).
+   * Hosting and reviewers use this instead of typing IDs manually.
+   */
+  previewUri?: string;
+  /** SPA only: production would require login; prototype still allows direct `previewUri` access. */
+  requiresAuth?: boolean;
 }
 
 export interface PrototypeScreenMap {
@@ -114,5 +135,10 @@ export interface PrototypeScreenMap {
   generatedAt: string;
   /** Entry screen at generation time (from screens with HTML when any exist). */
   defaultScreenId?: string;
+  /**
+   * SPA only: when true, generated router must not redirect unauthenticated users to login
+   * when opening a deep-linked route (prototype review mode).
+   */
+  prototypeBypassAuth?: boolean;
   screens: PrototypeScreenMapEntry[];
 }
