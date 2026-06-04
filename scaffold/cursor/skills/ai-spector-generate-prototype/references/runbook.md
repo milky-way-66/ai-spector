@@ -169,6 +169,7 @@ Read `techStack` (and `buildMode`) from `prototype.config.json`. File type and s
 
 - Write `prototype/src/<prototypeStem>.html` (self-contained or with sibling `.css`/`.js`)
 - Navigation links use `href` values from `uri` in `screen-map.json`
+- **Script, stylesheet, and image refs to local files must use relative paths** from the current HTML file — e.g. `<script src="./assets/app.js">`, `<link href="./styles.css">`. Do **not** use root-absolute paths like `/assets/app.js`; they resolve from the server root and break when deployed under a subdirectory.
 
 **Framework stacks (spa mode):**
 
@@ -232,7 +233,8 @@ npx ai-spector prototype sync
 
 This will:
 1. Copy everything from `buildSrc` → `buildDest`
-2. Regenerate `prototype/manifest.json` and `prototype/screen-map.json` with correct `uri` values
+2. Rewrite root-absolute asset paths in HTML to `./`-relative paths (e.g. `/assets/app.js` → `./assets/app.js`)
+3. Regenerate `prototype/manifest.json` and `prototype/screen-map.json` with correct `uri` values
 
 **Override source/dest without editing config:**
 
@@ -259,6 +261,27 @@ npx ai-spector prototype sync --json
 ```
 
 Output includes each screen's `screenDoc → uri` mapping.
+
+### Relative asset paths — required for all web builds
+
+When HTML references another local file (script, stylesheet, image, favicon), the URL must be **relative to the current HTML file**, starting with `./`:
+
+```html
+<script type="module" crossorigin src="./assets/index-uOr-eA2t.js"></script>
+<link rel="stylesheet" href="./assets/index.css">
+```
+
+Root-absolute paths like `/assets/app.js` resolve from the server root. When `dist/` is deployed to a subdirectory (e.g. `/project-id/1.4/dist/`), those requests hit the wrong URL and return 403/404.
+
+> **`prototype sync` rewrites paths in copied HTML only.** Bundled JS chunks still use whatever paths Vite emitted at build time. Always set `base: './'` (or the equivalent below) **before** `npm run build`.
+
+| Stack | How to get relative paths at build time |
+|-------|----------------------------------------|
+| Plain HTML | Write `./`-prefixed paths directly in each `.html` file |
+| **Vite** (vue / react / svelte) | **`base: './'` in `vite.config.ts`** — required before `npm run build` |
+| Nuxt 3 | `app: { baseURL: './' }` in `nuxt.config.ts` |
+| Next.js | `basePath` + `assetPrefix: './'` in `next.config.js` (when deploying under a subpath) |
+| After any framework build | `prototype sync` rewrites absolute refs in copied **HTML only** — still configure the build tool above |
 
 ### Vite base path — required before first build
 
@@ -314,6 +337,7 @@ If the agent is asked to "sync prototype", "copy build output", or "update scree
 - [ ] Role-based sections rendered when multiple actors satisfy the screen
 - [ ] Every generated file name matches `prototypeStem` in manifest
 - [ ] Wireframe/layout from screen detail doc reflected in HTML
+- [ ] Local asset refs use `./`-relative paths (not `/assets/...`) — static HTML in source; SPA via `base: './'` or `prototype sync`
 - [ ] Tokens from `prototype/DESIGN.md` only (no random CDN)
 - [ ] `prototype validate --strict` passes
 - [ ] `screen-map.json` entries have correct `uri` values:

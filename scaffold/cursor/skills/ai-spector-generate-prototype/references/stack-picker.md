@@ -21,6 +21,16 @@ Skip when:
 | SvelteKit | `svelte` | `spa` | `routes/<slug>/+page.svelte` per screen |
 | Angular | `angular` | `spa` | component per screen |
 
+## Required: relative asset paths for all web builds
+
+> When HTML references a local file (script, stylesheet, image), use a path **relative to the current HTML file** (`./assets/app.js`), not a root-absolute path (`/assets/app.js`). Root-absolute URLs break when the prototype is served from a subdirectory on deploy.
+
+Example (correct):
+
+```html
+<script type="module" crossorigin src="./assets/index-uOr-eA2t.js"></script>
+```
+
 ## Required: relative base path for Vite-based stacks (vue, react, svelte)
 
 > Vite defaults to `base: '/'` which generates **absolute** asset URLs (`/assets/app.js`). When the built `dist/` is served from a subdirectory (e.g. `/project-id/1.4/dist/`), all asset requests hit the server root and return 403/404.

@@ -29,6 +29,7 @@ import {
   themeHasPreview,
 } from "../prototype/theme-preview.js";
 import { openInBrowser } from "../util/open-browser.js";
+import { rewriteBuildAssetRefs } from "../prototype/rewrite-build-assets.js";
 import {
   formatPrototypeIssues,
   validatePrototype,
@@ -392,8 +393,14 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
     }
     await mkdir(destAbs, { recursive: true });
     await copyTree(srcAbs, destAbs);
+    const rewriteResult = await rewriteBuildAssetRefs(destAbs);
     if (!opts.json) {
       console.log(`Copied ${buildSrc} → ${buildDest}`);
+      if (rewriteResult.filesRewritten > 0) {
+        console.log(
+          `Rewrote root-absolute asset paths in ${rewriteResult.filesRewritten} HTML file(s) (./ relative)`,
+        );
+      }
     }
   }
 

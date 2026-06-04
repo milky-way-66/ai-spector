@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { PrototypeConfig, PrototypeManifest } from "./types.js";
 import { isPrototypeBasicAuthConfigured } from "./config.js";
+import { findAbsoluteLocalRefs } from "./relative-assets.js";
+import { checkViteRelativeBase, formatViteBasePathHint } from "./build-base-path.js";
 import { pathExists, readJson } from "../util/fs.js";
 
 const EXTERNAL_ASSET_RE =
@@ -102,6 +104,15 @@ export async function validatePrototype(
           path: htmlPath,
         });
       }
+      const absoluteRefs = findAbsoluteLocalRefs(html);
+      if (absoluteRefs.length > 0) {
+        issues.push({
+          severity: opts.strict ? "error" : "warn",
+          code: "ABSOLUTE_ASSET_PATH",
+          message: `Root-absolute asset refs in ${screen.prototypeStem}.html (${absoluteRefs.slice(0, 3).join(", ")}${absoluteRefs.length > 3 ? ", …" : ""}) — use relative paths from the current file (e.g. ./assets/app.js)`,
+          path: htmlPath,
+        });
+      }
     }
 
     const docPath = join(opts.projectRoot, screen.screenDoc);
@@ -112,6 +123,35 @@ export async function validatePrototype(
         message: `Screen design doc missing: ${screen.screenDoc}`,
         path: docPath,
       });
+    }
+  }
+
+  const buildMode = opts.config.buildMode ?? "static";
+  if (buildMode === "spa") {
+    const viteCheck = await checkViteRelativeBase(opts.projectRoot, opts.config.techStack);
+    if (viteCheck?.needsRelativeBase) {
+      issues.push({
+        severity: opts.strict ? "error" : "warn",
+        code: "VITE_BASE_PATH",
+        message: `Vite build will emit root-absolute asset URLs — ${formatViteBasePathHint(viteCheck)}`,
+        path: viteCheck.configPath ?? undefined,
+      });
+    }
+
+    const buildDest =
+      opts.config.buildDest?.trim() || `${opts.config.prototypeDir}/dist`;
+    const indexPath = join(opts.projectRoot, buildDest, "index.html");
+    if (await pathExists(indexPath)) {
+      const html = await readFile(indexPath, "utf8");
+      const absoluteRefs = findAbsoluteLocalRefs(html);
+      if (absoluteRefs.length > 0) {
+        issues.push({
+          severity: opts.strict ? "error" : "warn",
+          code: "ABSOLUTE_ASSET_PATH",
+          message: `Root-absolute asset refs in ${buildDest}/index.html (${absoluteRefs.slice(0, 3).join(", ")}${absoluteRefs.length > 3 ? ", …" : ""}) — set Vite base: './' and rebuild, or run prototype sync to rewrite paths`,
+          path: indexPath,
+        });
+      }
     }
   }
 
