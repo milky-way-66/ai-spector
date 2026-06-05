@@ -103,13 +103,16 @@ export interface PrototypeManifest {
 export interface PrototypeScreenMapEntry {
   screenId: string;
   displayName: string;
-  /** Primary screen design doc path (language-specific from primary lang, or slug-derived). */
+  /**
+   * Language-neutral screen design doc path (no `docs/` prefix, no language segment).
+   * e.g. "basic-design/screens/login.md"
+   * Single-language full path: `docs/${screenDoc}`.
+   */
   screenDoc: string;
   /**
-   * Per-language screen design doc paths, relative to docs/<lang>/.
+   * Per-language repo-relative screen design doc paths.
    * Present when the project has multiple docflow languages.
-   * Resolve full path as: docs/<lang>/<screenDocs[lang]>
-   * e.g. { en: "basic-design/screens/login.md", vi: "basic-design/screens/login.md" }
+   * e.g. { en: "docs/basic-design/en/screens/login.md", vi: "docs/basic-design/vi/screens/login.md" }
    */
   screenDocs?: Record<string, string>;
   prototypeStem: string;

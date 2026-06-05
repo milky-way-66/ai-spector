@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.5.7",
+  "version": "0.5.9",
   "workspaces": [
     "packages/*"
   ],
@@ -48,7 +48,8 @@
     "build": "npm run build -w ai-spector-graph && tsc",
     "build:graph": "npm run build -w ai-spector-graph",
     "prepack": "npm run build",
-    "prepublishOnly": "npm run build",
+    "prepublish:check-deps": "node --input-type=module -e \"import { readFileSync } from 'node:fs'; const p = JSON.parse(readFileSync('package.json','utf8')); for (const [name, range] of Object.entries({ ...p.dependencies, ...p.optionalDependencies, ...p.peerDependencies })) { if (String(range).startsWith('workspace:')) { console.error('Cannot publish: ' + name + ' uses ' + range); process.exit(1); } }\"",
+    "prepublishOnly": "npm run build && npm run prepublish:check-deps",
     "start": "node dist/cli.js",
     "pack:check": "npm pack --dry-run",
     "prepublish:check": "npm run build && npm pack --dry-run",
@@ -62,7 +63,7 @@
     "themes:preview": "node dist/cli.js prototype preview"
   },
   "dependencies": {
-    "ai-spector-graph": "workspace:*",
+    "ai-spector-graph": "^0.4.1",
     "@types/mdast": "^4.0.4",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

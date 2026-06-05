@@ -1,7 +1,7 @@
 import type { NodeType } from "./types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import { projectionPathForNode } from "./query.js";
-import defaultImpactRules from "./rules/default-impact.json";
+import defaultImpactRules from "./rules/default-impact.json" with { type: "json" };
 
 type EdgeRule = { direction: "in" | "out"; depth: number | "unbounded" };
 

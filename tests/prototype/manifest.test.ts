@@ -50,6 +50,7 @@ describe("buildPrototypeManifest", () => {
       expect(result.htmlCount).toBe(1);
       expect(result.manifest.themeName).toBe("stripe");
       expect(result.manifest.screens[0]!.prototypeStem).toBe("home");
+      expect(result.screenMap.screens[0]!.screenDoc).toBe("basic-design/screens/home.md");
       expect(result.screenMap.screens[0]!.htmlExists).toBe(true);
       expect(result.screenMap.defaultScreenId).toBe("home");
     });

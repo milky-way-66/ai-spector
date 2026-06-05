@@ -15,6 +15,7 @@ import {
 import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { loadDocflowConfig } from "../config/load.js";
+import { buildScreenDocPaths } from "./screen-doc-paths.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -144,34 +145,17 @@ export async function buildPrototypeManifest(
         fromPriorEntry: prior,
       });
 
-      // Build per-language screenDocs map when project has multiple doc languages.
-      // Values are paths relative to docs/<lang>/ so consumers resolve as:
-      //   docs/<lang>/<screenDocs[lang]>   e.g. docs/vi/basic-design/screens/login.md
-      let screenDocs: Record<string, string> | undefined;
-      if (docLanguages.length > 1) {
-        const docFilename = r.specFile ?? `${r.slug}.md`;
-        // Strip "docs/" prefix and the lang segment from screenDetailDir to get the
-        // lang-neutral relative path. e.g. "docs/basic-design/en/screens" → "basic-design/screens"
-        const detailDir = opts.config.screenDetailDir.replace(/\\/g, "/").replace(/\/$/, "");
-        const escapedCodes = docLanguages.map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-        const langSegmentRe = new RegExp(`(.*/)(?:${escapedCodes.join("|")})(/.*)$`);
-        const match = langSegmentRe.exec(detailDir);
-        if (match) {
-          // prefix is everything before the lang segment (e.g. "docs/basic-design"),
-          // suffix is everything after (e.g. "/screens").
-          // Strip leading "docs" or "docs/" so the stored value is relative to docs/<lang>/.
-          const prefix = match[1]!.replace(/\/$/, "").replace(/^docs(\/|$)/, "");
-          const suffix = match[2]!; // e.g. "/screens"
-          const langRelDir = prefix ? `${prefix}${suffix}` : suffix.replace(/^\//, "");
-          const langRelPath = join(langRelDir, docFilename).replace(/\\/g, "/");
-          screenDocs = Object.fromEntries(docLanguages.map((lang) => [lang, langRelPath]));
-        }
-      }
+      const docFilename = r.specFile ?? `${r.slug}.md`;
+      const { screenDoc, screenDocs } = buildScreenDocPaths({
+        screenDetailDir: opts.config.screenDetailDir,
+        docFilename,
+        docLanguages,
+      });
 
       return {
         screenId: r.screenId,
         displayName: r.displayName,
-        screenDoc: r.screenDoc,
+        screenDoc,
         ...(screenDocs ? { screenDocs } : {}),
         prototypeStem: r.prototypeStem,
         prototypePath: effectivePath,

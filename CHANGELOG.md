@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **Node 22 CLI crash** — `ai-spector-graph` imports `default-impact.json` with `with { type: "json" }` so the CLI loads on Node 22 (`ERR_IMPORT_ATTRIBUTE_MISSING`). Bumped `ai-spector-graph` to `0.4.1`.
+- **Screen-map doc paths** — `screen-map.json` `screenDoc` is now the language-neutral logical path (e.g. `basic-design/screens/login.md`); `screenDocs` holds full repo-relative paths per language when multi-lang.
+
+
 - **DOC-SECTION-COVERAGE for basic-design list chapters** — `documents-basic-design.json` registers list chapters at bootstrap/index; **doc-extract** now parses `.ai-spector/templates/basic_design/` and emits `contains` → `section` edges for `doc.bd.list-api`, `doc.bd.list-screen`, and `doc.bd.db-design` during `index` (fixes validate failure when an older global CLI omitted basic-design from the registry).
 - **Basic-design doc extract** — emit list + template `document` nodes in the same patch before detail edges (one index pass); still skip edges only when an endpoint is genuinely missing (fallback).
 - **DOC-SECTION-COVERAGE** — exempt `document` nodes with `outputPattern` (SRS/BD templates) and basic-design instance docs; sections live on generated instance files.
