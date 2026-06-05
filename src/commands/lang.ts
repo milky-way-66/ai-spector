@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
+import { loadInMemoryGraph } from "../graph/loadGraph.js";
+import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translation.js";
 import { addLangToPendingJobs, reconcileTranslationQueue } from "../lang/queue.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import type { LanguageConfig } from "../config/types.js";
@@ -54,9 +56,9 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   const languages = Array.isArray(raw.languages) ? [...raw.languages, newLang] : [newLang];
   await writeJson(configFile, { ...raw, languages });
 
-  // Add translationOf edges to graph
+  // Wire translation document nodes and edges in graph
   const existingLangCodes = config.languages.map((l) => l.code);
-  await registerTranslationEdges(projectRoot, config.paths.graph, code, existingLangCodes);
+  await registerTranslationEdges(projectRoot, config.paths.graph, newLang, existingLangCodes);
 
   const updatedConfig = { ...config, languages: [...config.languages, newLang] };
   await addLangToPendingJobs(projectRoot, code, updatedConfig);
@@ -77,7 +79,7 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
 async function registerTranslationEdges(
   projectRoot: string,
   graphRelPath: string,
-  langCode: string,
+  lang: LanguageConfig,
   existingLangCodes: string[],
 ): Promise<void> {
   const graphPath = join(projectRoot, graphRelPath);
@@ -85,40 +87,15 @@ async function registerTranslationEdges(
     return;
   }
 
-  const graph = await readJson<{
-    version: number;
-    nodes: Array<{ id: string; type: string; lang?: string }>;
-    edges: Array<{ type: string; from: string; to: string }>;
-  }>(graphPath);
-
-  // Primary doc nodes are identified by NOT having a "doc:{langCode}:" prefix.
-  // Using ID-prefix matching is reliable; the `lang` attribute is not (may be absent on primary nodes).
-  const allLangCodes = [...existingLangCodes, langCode];
-  const translationPrefixes = allLangCodes.map((c) => `doc:${c}:`);
-  const primaryDocNodes = graph.nodes.filter(
-    (n) => n.type === "document" && !translationPrefixes.some((p) => n.id.startsWith(p)),
-  );
-
-  const newEdges: Array<{ type: string; from: string; to: string }> = [];
-  const newNodes: Array<{ id: string; type: string; lang: string }> = [];
+  const allLangCodes = [...existingLangCodes, lang.code];
+  const graphMem = await loadInMemoryGraph(graphPath);
+  const primaryDocNodes = primaryDocumentNodes(graphMem, allLangCodes);
+  if (primaryDocNodes.length === 0) {
+    return;
+  }
 
   for (const primary of primaryDocNodes) {
-    const translatedId = `doc:${langCode}:${primary.id}`;
-    const alreadyExists = graph.nodes.some((n) => n.id === translatedId);
-    if (!alreadyExists) {
-      newNodes.push({ id: translatedId, type: "document", lang: langCode });
-    }
-    const edgeExists = graph.edges.some(
-      (e) => e.type === "translationOf" && e.from === translatedId && e.to === primary.id,
-    );
-    if (!edgeExists) {
-      newEdges.push({ type: "translationOf", from: translatedId, to: primary.id });
-    }
+    wireTranslationDocNode(graphMem, primary, lang);
   }
-
-  if (newNodes.length > 0 || newEdges.length > 0) {
-    graph.nodes.push(...newNodes);
-    graph.edges.push(...newEdges);
-    await writeJson(graphPath, graph);
-  }
+  await writeJson(graphPath, graphMem.toTraceabilityGraph());
 }

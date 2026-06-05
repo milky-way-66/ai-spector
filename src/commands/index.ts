@@ -20,6 +20,7 @@ import {
 } from "../graph/knowledge.js";
 import { computeKnowledgeStats } from "../visualize/stats.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
+import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translation.js";
 import type { TraceabilityGraph } from "../types.js";
 import {
   indexDocsConfigPath,
@@ -124,36 +125,27 @@ export async function runIndex(
         const secondaryLangs = docflowConfig.languages.filter((l) => l.code !== primary.code);
         if (secondaryLangs.length > 0 && graphJson) {
           const graphMem = await loadInMemoryGraph(paths.graph);
-          // Only select nodes that are not already translation nodes (ID does not start with "doc:{langCode}:")
-          const translationPrefixes = docflowConfig.languages.map((l) => `doc:${l.code}:`);
-          const primaryDocNodes = graphMem.toTraceabilityGraph().nodes.filter(
-            (n) => n.type === "document" && !translationPrefixes.some((p) => n.id.startsWith(p)),
-          );
+          const allLangCodes = docflowConfig.languages.map((l) => l.code);
+          const primaryDocNodes = primaryDocumentNodes(graphMem, allLangCodes);
           let added = 0;
+          let updated = 0;
           for (const lang of secondaryLangs) {
             for (const docNode of primaryDocNodes) {
-              const translatedId = `doc:${lang.code}:${docNode.id}`;
-              if (!graphMem.nodesById.has(translatedId)) {
-                graphMem.addNode({ id: translatedId, type: "document", lang: lang.code, label: lang.label });
-                added++;
-              }
-              // Check via inEdges on the primary node — avoids re-serializing the full edge list each iteration
-              const inEdges = graphMem.inEdges.get(docNode.id) ?? [];
-              const edgeExists = inEdges.some(
-                (e) => e.type === "translationOf" && e.from === translatedId,
-              );
-              if (!edgeExists) {
-                graphMem.addEdge({ type: "translationOf", from: translatedId, to: docNode.id });
-              }
+              const outcome = wireTranslationDocNode(graphMem, docNode, lang);
+              if (outcome === "created") added++;
+              else updated++;
             }
           }
           await writeJson(paths.graph, graphMem.toTraceabilityGraph());
           graphJson = graphMem.toTraceabilityGraph();
+          const detailParts = [`${secondaryLangs.map((l) => l.code).join(", ")}`];
+          if (added > 0) detailParts.push(`${added} node(s) added`);
+          if (updated > 0) detailParts.push(`${updated} refreshed`);
           record({
             id: "language-nodes",
             label: "Multi-language translation nodes",
             status: "ok",
-            detail: `${secondaryLangs.map((l) => l.code).join(", ")} — ${added} node(s) added`,
+            detail: detailParts.join(" — "),
           });
         } else {
           record({
