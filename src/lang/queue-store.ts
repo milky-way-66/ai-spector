@@ -1,6 +1,14 @@
-import { mkdir, unlink } from "node:fs/promises";
-import { join } from "node:path";
-import { readJson, writeJson } from "../util/fs.js";
+import { mkdir, rename, unlink } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { pathExists, readJson, writeJson } from "../util/fs.js";
+import {
+  dateFolder,
+  failedJobFileName,
+  historyEntryFileName,
+  jobIdMatchesFileName,
+  listJsonFilesRecursive,
+  resolvedJobFileName,
+} from "./queue-layout.js";
 import { fileChangesFileName } from "./paths.js";
 import type {
   ChangeHistoryFile,
@@ -23,9 +31,9 @@ export function queuePaths(projectRoot: string): QueuePaths {
     dir,
     fingerprints: join(dir, "fingerprints.json"),
     pending: join(dir, "pending.json"),
-    resolved: join(dir, "resolved.json"),
-    failed: join(dir, "failed.json"),
-    changeHistory: join(dir, "change-history.json"),
+    resolved: join(dir, "resolved"),
+    failed: join(dir, "failed"),
+    changeHistory: join(dir, "history"),
     changesDir: join(dir, "changes"),
   };
 }
@@ -38,18 +46,61 @@ export function fileChangesPath(
   return join(paths.changesDir, fileChangesFileName(docType, relativePath));
 }
 
+async function ensureArchiveDirs(paths: QueuePaths): Promise<void> {
+  await mkdir(paths.resolved, { recursive: true });
+  await mkdir(paths.failed, { recursive: true });
+  await mkdir(paths.changeHistory, { recursive: true });
+  await mkdir(paths.changesDir, { recursive: true });
+}
+
+/** One-time migration from monolithic resolved/failed/history JSON files. */
+async function migrateLegacyQueueFiles(paths: QueuePaths): Promise<void> {
+  await ensureArchiveDirs(paths);
+
+  const legacyResolved = join(paths.dir, "resolved.json");
+  if (await pathExists(legacyResolved)) {
+    const raw = await readJson<Partial<ResolvedQueueFile>>(legacyResolved).catch(() => null);
+    for (const job of raw?.jobs ?? []) {
+      await writeResolvedJob(paths, job);
+    }
+    await rename(legacyResolved, `${legacyResolved}.migrated`).catch(() => undefined);
+  }
+
+  const legacyFailed = join(paths.dir, "failed.json");
+  if (await pathExists(legacyFailed)) {
+    const raw = await readJson<Partial<FailedQueueFile>>(legacyFailed).catch(() => null);
+    for (const job of raw?.jobs ?? []) {
+      await writeFailedJob(paths, job);
+    }
+    await rename(legacyFailed, `${legacyFailed}.migrated`).catch(() => undefined);
+  }
+
+  const legacyHistory = join(paths.dir, "change-history.json");
+  if (await pathExists(legacyHistory)) {
+    const raw = await readJson<Partial<ChangeHistoryFile>>(legacyHistory).catch(() => null);
+    for (const entry of raw?.entries ?? []) {
+      const outDir = join(paths.changeHistory, dateFolder(entry.changedAt));
+      const fileName = historyEntryFileName(
+        entry.changedAt,
+        entry.sequence,
+        entry.lang,
+        entry.jobId,
+      );
+      await writeJson(join(outDir, fileName), { version: 1, entry });
+    }
+    await rename(legacyHistory, `${legacyHistory}.migrated`).catch(() => undefined);
+  }
+}
+
 export async function ensureQueueDir(projectRoot: string): Promise<QueuePaths> {
   const paths = queuePaths(projectRoot);
   await mkdir(paths.dir, { recursive: true });
-  await mkdir(paths.changesDir, { recursive: true });
+  await migrateLegacyQueueFiles(paths);
   return paths;
 }
 
 const EMPTY_FINGERPRINTS: FingerprintsFile = { version: 1, files: {} };
 const EMPTY_PENDING: PendingQueueFile = { version: 1, jobs: [] };
-const EMPTY_RESOLVED: ResolvedQueueFile = { version: 1, jobs: [] };
-const EMPTY_FAILED: FailedQueueFile = { version: 1, jobs: [] };
-const EMPTY_CHANGE_HISTORY: ChangeHistoryFile = { version: 1, entries: [] };
 
 export async function loadFingerprints(path: string): Promise<FingerprintsFile> {
   const raw = await readJson<
@@ -67,21 +118,43 @@ export async function loadFingerprints(path: string): Promise<FingerprintsFile> 
   return { version: 1, files };
 }
 
-export async function loadChangeHistory(path: string): Promise<ChangeHistoryFile> {
-  const raw = await readJson<Partial<ChangeHistoryFile>>(path).catch(() => EMPTY_CHANGE_HISTORY);
-  return { version: 1, entries: Array.isArray(raw.entries) ? raw.entries : [] };
+export async function loadChangeHistory(dir: string): Promise<ChangeHistoryFile> {
+  const files = await listJsonFilesRecursive(dir);
+  const entries: ChangeHistoryFile["entries"] = [];
+  for (const file of files) {
+    const raw = await readJson<{ entry?: ChangeHistoryFile["entries"][number] }>(file).catch(
+      () => null,
+    );
+    if (raw?.entry) {
+      entries.push(raw.entry);
+    }
+  }
+  entries.sort((a, b) => {
+    const time = a.changedAt.localeCompare(b.changedAt);
+    if (time !== 0) return time;
+    return a.sequence - b.sequence;
+  });
+  return { version: 1, entries };
 }
 
 export async function appendChangeHistory(
-  path: string,
+  dir: string,
   entries: Array<FileChangeRecord & { docType: DocType; relativePath: string; jobId?: string }>,
 ): Promise<void> {
   if (entries.length === 0) {
     return;
   }
-  const history = await loadChangeHistory(path);
-  history.entries.push(...entries);
-  await writeJson(path, history);
+  await mkdir(dir, { recursive: true });
+  for (const entry of entries) {
+    const outDir = join(dir, dateFolder(entry.changedAt));
+    const fileName = historyEntryFileName(
+      entry.changedAt,
+      entry.sequence,
+      entry.lang,
+      entry.jobId,
+    );
+    await writeJson(join(outDir, fileName), { version: 1, entry });
+  }
 }
 
 type StoredPendingJob = Omit<TranslationJob, "changes"> & { changes?: FileChangeRecord[] };
@@ -158,14 +231,63 @@ export async function loadPendingQueue(pathOrPaths: string | QueuePaths): Promis
   return { version: 1, jobs };
 }
 
-export async function loadResolvedQueue(path: string): Promise<ResolvedQueueFile> {
-  const raw = await readJson<Partial<ResolvedQueueFile>>(path).catch(() => EMPTY_RESOLVED);
-  return { version: 1, jobs: Array.isArray(raw.jobs) ? raw.jobs : [] };
+async function loadArchivedJobs<T>(dir: string): Promise<T[]> {
+  const files = await listJsonFilesRecursive(dir);
+  const jobs: T[] = [];
+  for (const file of files) {
+    const raw = await readJson<{ job?: T } & T>(file).catch(() => null);
+    if (!raw) continue;
+    if (raw.job) {
+      jobs.push(raw.job);
+    } else if (typeof (raw as { id?: string }).id === "string") {
+      jobs.push(raw as T);
+    }
+  }
+  return jobs;
 }
 
-export async function loadFailedQueue(path: string): Promise<FailedQueueFile> {
-  const raw = await readJson<Partial<FailedQueueFile>>(path).catch(() => EMPTY_FAILED);
-  return { version: 1, jobs: Array.isArray(raw.jobs) ? raw.jobs : [] };
+function sortByIso<T>(jobs: T[], field: keyof T): T[] {
+  return [...jobs].sort((a, b) =>
+    String(a[field] ?? "").localeCompare(String(b[field] ?? "")),
+  );
+}
+
+export async function loadResolvedQueue(dir: string): Promise<ResolvedQueueFile> {
+  const jobs = sortByIso(
+    await loadArchivedJobs<ResolvedTranslationJob>(dir),
+    "resolvedAt",
+  );
+  return { version: 1, jobs };
+}
+
+export async function loadFailedQueue(dir: string): Promise<FailedQueueFile> {
+  const jobs = sortByIso(await loadArchivedJobs<FailedTranslationJob>(dir), "failedAt");
+  return { version: 1, jobs };
+}
+
+async function writeResolvedJob(paths: QueuePaths, job: ResolvedTranslationJob): Promise<void> {
+  const outDir = join(paths.resolved, dateFolder(job.resolvedAt));
+  const fileName = resolvedJobFileName(job.resolvedAt, job.id);
+  await writeJson(join(outDir, fileName), { version: 1, job });
+}
+
+async function writeFailedJob(paths: QueuePaths, job: FailedTranslationJob): Promise<void> {
+  const outDir = join(paths.failed, dateFolder(job.failedAt));
+  const fileName = failedJobFileName(job.failedAt, job.id);
+  await writeJson(join(outDir, fileName), { version: 1, job });
+}
+
+async function findArchivedJobFile(
+  dir: string,
+  jobId: string,
+): Promise<string | null> {
+  const files = await listJsonFilesRecursive(dir);
+  for (const file of files) {
+    if (jobIdMatchesFileName(basename(file), jobId)) {
+      return file;
+    }
+  }
+  return null;
 }
 
 export async function saveFingerprints(path: string, data: FingerprintsFile): Promise<void> {
@@ -189,20 +311,11 @@ export async function savePendingQueue(
   });
 }
 
-export async function saveResolvedQueue(path: string, data: ResolvedQueueFile): Promise<void> {
-  await writeJson(path, data);
-}
-
-export async function saveFailedQueue(path: string, data: FailedQueueFile): Promise<void> {
-  await writeJson(path, data);
-}
-
 export async function moveJobToResolved(
   paths: QueuePaths,
   job: TranslationJob,
 ): Promise<void> {
   const pending = await loadPendingQueue(paths);
-  const resolved = await loadResolvedQueue(paths.resolved);
   const now = new Date().toISOString();
   const syncedLangs = job.targets.filter((t) => t.status === "synced").map((t) => t.lang);
   const resolvedJob: ResolvedTranslationJob = {
@@ -211,10 +324,9 @@ export async function moveJobToResolved(
     syncedLangs,
   };
   pending.jobs = pending.jobs.filter((j) => j.id !== job.id);
-  resolved.jobs.push(resolvedJob);
   await savePendingQueue(paths, pending);
   await deleteFileChangesDocument(paths, job.docType, job.relativePath);
-  await saveResolvedQueue(paths.resolved, resolved);
+  await writeResolvedJob(paths, resolvedJob);
 }
 
 export async function moveJobToFailed(
@@ -225,7 +337,6 @@ export async function moveJobToFailed(
   changedLangs?: string[],
 ): Promise<void> {
   const pending = await loadPendingQueue(paths);
-  const failed = await loadFailedQueue(paths.failed);
   const now = new Date().toISOString();
   const failedJob: FailedTranslationJob = {
     ...job,
@@ -235,19 +346,18 @@ export async function moveJobToFailed(
     changedLangs,
   };
   pending.jobs = pending.jobs.filter((j) => j.id !== job.id);
-  failed.jobs.push(failedJob);
   await savePendingQueue(paths, pending);
-  await saveFailedQueue(paths.failed, failed);
+  await writeFailedJob(paths, failedJob);
 }
 
 export async function retryFailedJob(paths: QueuePaths, jobId: string): Promise<TranslationJob | null> {
-  const failed = await loadFailedQueue(paths.failed);
-  const pending = await loadPendingQueue(paths);
-  const idx = failed.jobs.findIndex((j) => j.id === jobId);
-  if (idx < 0) {
+  const failedFile = await findArchivedJobFile(paths.failed, jobId);
+  if (!failedFile) {
     return null;
   }
-  const failedJob = failed.jobs[idx]!;
+  const raw = await readJson<{ job: FailedTranslationJob }>(failedFile);
+  const failedJob = raw.job;
+  const pending = await loadPendingQueue(paths);
   const now = new Date().toISOString();
   const fileDoc = await loadFileChangesDocument(
     paths,
@@ -270,14 +380,13 @@ export async function retryFailedJob(paths: QueuePaths, jobId: string): Promise<
     createdAt: failedJob.createdAt,
     updatedAt: now,
   };
-  failed.jobs.splice(idx, 1);
-  const existing = pending.jobs.findIndex((j) => j.id === jobId);
+  await unlink(failedFile).catch(() => undefined);
+  const existing = pending.jobs.findIndex((j) => j.id === jobId || j.id.startsWith(jobId));
   if (existing >= 0) {
     pending.jobs[existing] = job;
   } else {
     pending.jobs.push(job);
   }
-  await saveFailedQueue(paths.failed, failed);
   await savePendingQueue(paths, pending);
   return job;
 }

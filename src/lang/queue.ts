@@ -17,13 +17,11 @@ import type {
 import {
   appendChangeHistory,
   ensureQueueDir,
-  loadFailedQueue,
   loadFingerprints,
   loadPendingQueue,
   moveJobToFailed,
   moveJobToResolved,
   queuePaths,
-  saveFailedQueue,
   saveFingerprints,
   savePendingQueue,
 } from "./queue-store.js";
@@ -84,7 +82,6 @@ export async function reconcileTranslationQueue(
   const paths = await ensureQueueDir(root);
   const fingerprints = await loadFingerprints(paths.fingerprints);
   const pending = await loadPendingQueue(paths);
-  const failed = await loadFailedQueue(paths.failed);
 
   const primary = primaryLanguage(config);
 
@@ -231,7 +228,6 @@ export async function reconcileTranslationQueue(
 
   updateFingerprints(fingerprints, scans, changes);
   await saveFingerprints(paths.fingerprints, fingerprints);
-  await saveFailedQueue(paths.failed, failed);
 
   const pendingAfter = await loadPendingQueue(paths);
 

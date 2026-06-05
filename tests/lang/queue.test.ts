@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
@@ -12,9 +12,8 @@ import {
   loadResolvedQueue,
   queuePaths,
 } from "../../src/lang/queue-store.js";
-import { readJson } from "../../src/util/fs.js";
+import { pathExists, readJson, writeJson } from "../../src/util/fs.js";
 import { reconcileTranslationQueue } from "../../src/lang/queue.js";
-import { writeJson } from "../../src/util/fs.js";
 
 async function setupMultiLangProject(
   root: string,
@@ -323,6 +322,50 @@ describe("translation queue (file-level)", () => {
       expect(result.resolved).toBe(1);
       expect(resolved.jobs).toHaveLength(1);
       expect(pendingAfter.jobs).toHaveLength(0);
+
+      const dateDirs = await readdir(paths.resolved);
+      expect(dateDirs.length).toBeGreaterThan(0);
+      const dayDir = join(paths.resolved, dateDirs[0]!);
+      const archiveFiles = (await readdir(dayDir)).filter((f) => f.endsWith(".json"));
+      expect(archiveFiles).toHaveLength(1);
+    });
+  });
+
+  it("migrates legacy monolithic queue files into date folders", async () => {
+    await withTempProject(async (root) => {
+      await setupMultiLangProject(root, [
+        { code: "en", label: "English" },
+        { code: "jp", label: "Japanese" },
+      ]);
+      const paths = queuePaths(root);
+      const legacyJob = {
+        id: "legacy-job-id",
+        docType: "srs" as const,
+        relativePath: "01-overview.md",
+        direction: "outbound" as const,
+        origin: {
+          lang: "en",
+          path: "docs/srs/en/01-overview.md",
+          hash: "abc",
+          changedAt: "2026-06-01T10:00:00.000Z",
+        },
+        targets: [],
+        changes: [],
+        createdAt: "2026-06-01T10:00:00.000Z",
+        updatedAt: "2026-06-01T10:00:00.000Z",
+        resolvedAt: "2026-06-01T12:00:00.000Z",
+        syncedLangs: ["jp"],
+      };
+      await writeJson(join(paths.dir, "resolved.json"), { version: 1, jobs: [legacyJob] });
+
+      const { config } = await loadDocflowConfig(root);
+      await reconcileTranslationQueue(root, config);
+
+      const resolved = await loadResolvedQueue(paths.resolved);
+      expect(resolved.jobs).toHaveLength(1);
+      expect(resolved.jobs[0]!.id).toBe("legacy-job-id");
+      expect(await pathExists(join(paths.dir, "resolved.json"))).toBe(false);
+      expect(await pathExists(join(paths.dir, "resolved.json.migrated"))).toBe(true);
     });
   });
 });
