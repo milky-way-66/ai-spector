@@ -12,6 +12,7 @@ Agents use this when intent is ambiguous.
 
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
+| setup, init, bootstrap, get started | `ai-spector-setup` | `references/runbook.md` |
 | analyze, ingest, data source, knowledge graph | `ai-spector-graph` | `references/analyze.md` |
 | index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
 | validate graph | `ai-spector-graph` | `references/validate-graph.md` |
@@ -24,6 +25,8 @@ Agents use this when intent is ambiguous.
 | screens, APIs, wireframes, basic design | `ai-spector-generate-basic-design` | `references/runbook.md` |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
+| translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
+| resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | route to one skill above |
 
 Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-failures.md), [generate-workflow.md](./ai-spector/references/generate-workflow.md), [generate-graph.md](./ai-spector/references/generate-graph.md).

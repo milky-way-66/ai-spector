@@ -1,13 +1,14 @@
 ---
 name: ai-spector-lang-status
 description: >-
-  Shows which translated documents are potentially stale compared to the primary language version.
+  Shows pending, failed, and resolved translation sync jobs from the translation queue.
   Use when the user asks about translation status, which docs need updating after a change, or
   "what's stale in JP/VI". Do not use for generating or editing documents.
 paths:
   - "docs/srs/**"
   - "docs/basic-design/**"
   - ".ai-spector/docflow.config.json"
+  - ".ai-spector/.docflow/translation-queue/**"
 ---
 
 # Language Status Check
@@ -17,52 +18,97 @@ paths:
 1. Read `.ai-spector/docflow.config.json`. Extract `languages[]`.
    - If only one language, reply: "Only one language configured — nothing to compare."
 
-2. Identify the primary language (first entry in `languages[]`).
+2. Run the translation queue CLI (primary source of truth):
 
-3. For each secondary language, compare files under `docs/srs/{lang.code}/` and `docs/basic-design/{lang.code}/` against the primary language folder.
+```bash
+npx ai-spector lang queue pending --json
+npx ai-spector lang queue failed --json
+```
 
-4. For each doc type, build a status table:
+3. Render a table from `pending` jobs:
 
 ```
-Document                   EN (primary)   JP         VI
-srs/01-introduction.md     2026-06-01     MISSING    OK
-srs/02-actors.md           2026-06-01     OK         STALE
-basic-design/db-design.md  2026-06-01     STALE      MISSING
+ID       Document              Dir       Origin  Outdated targets
+a1b2     srs/02-actors.md      outbound  en      jp, vi
+c3d4     srs/03-glossary.md    inbound   jp      en, vi
 ```
-(Actual paths: `docs/{docType}/{lang.code}/{filename}`, e.g. `docs/srs/jp/01-introduction.md`)
 
-Status rules (based on file mtime from `git log -1 --format=%cI -- <path>`):
-- **OK** — file exists and its last-modified date is ≥ the primary language file's date (translation is up to date with the primary).
-- **STALE** — file exists but the primary language file was modified after the translation was last written (primary drifted; translation needs re-translation).
-- **MISSING** — file does not exist in the language folder.
+4. When `origin.mergedLangs` is set (or any pending job needs merge context), read the **per-document changes file**:
 
-5. Run `npx ai-spector graph impact --json` if the user wants graph-level stale translation nodes (requires an origin node ID).
+```
+.ai-spector/.docflow/translation-queue/changes/srs--01-overview.md.json
+```
+
+Filename pattern: `{docType}--{relativePath with / → --}.json`
+
+```json
+{
+  "version": 1,
+  "docType": "srs",
+  "relativePath": "01-overview.md",
+  "jobId": "a1b2c3d4-...",
+  "updatedAt": "2026-06-05T10:00:00.000Z",
+  "changes": [
+    {
+      "lang": "en",
+      "path": "docs/srs/en/01-overview.md",
+      "previousVersion": 2,
+      "version": 3,
+      "sequence": 1,
+      "mtimeMs": 1710000000000,
+      "changedAt": "2026-06-05T10:00:00.000Z",
+      "diff": "5 - English overview text.\n5 + Updated English overview.",
+      "linesRemoved": 1,
+      "linesAdded": 1
+    },
+    {
+      "lang": "jp",
+      "path": "docs/srs/jp/01-overview.md",
+      "previousVersion": 1,
+      "version": 2,
+      "sequence": 2,
+      "mtimeMs": 1710000001000,
+      "changedAt": "2026-06-05T10:00:00.000Z",
+      "diff": "5 - 日本語の概要です。\n5 + 更新された JP 概要。"
+    }
+  ]
+}
+```
+
+- **`changes/`** — one file per logical document; canonical merge context (not inlined in `pending.json`).
+- **`sequence` + `mtimeMs`** — edit order when multiple langs changed the same file.
+- **`diff`** — line-level context for merge (`{line} -` removed, `{line} +` added).
+- **Latest file** (`origin.lang`, by mtime) is the default sync source.
+- Use each lang's `diff` to see what changed where; combine non-overlapping edits manually.
+- Full append-only audit: `change-history.json`. Resolved jobs remove their `changes/` file.
+
+6. List **failed** jobs (dismissed, errors):
+
+```
+ID       Document            Reason     Message
+e5f6     srs/04-scope.md     conflict   en and jp both changed section before sync
+```
+
+5. For **how to fix** pending jobs (writes, merge, translate), use **`ai-spector-resolve-translation`** — this skill is status/report only.
+
+## Fallback (queue empty or missing)
+
+If `.ai-spector/.docflow/translation-queue/` does not exist or pending is empty after `npx ai-spector lang queue scan`, fall back to git mtime comparison across language folders (legacy behavior).
 
 ## Output format
 
-Print the status table per doc type (SRS, Basic Design).
-After the table, list actionable items:
-- Files that are MISSING: "Generate: `docs/srs/jp/02-actors.md`"
-- Files that are STALE: "Update: `docs/basic-design/vi/db-design.md` (primary changed 2026-06-01, translation last updated 2026-05-10)"
+Print pending jobs grouped by `direction`, then failed jobs.
+List actionable items per job:
+- **outbound:** "Translate section in `docs/srs/jp/02-actors.md` from primary `docs/srs/en/02-actors.md`"
+- **inbound:** "Backport section from `docs/srs/jp/03-glossary.md` to primary and other langs"
+- **merged:** sync from `origin.lang` (latest) to all `pending` targets; other langs in `mergedLangs` also need the latest content
 
-## After any primary file edit (outside of generate skills)
+## After any file edit (outside of generate skills)
 
-If the user edits a primary language file directly (not via a generate skill), and secondary languages are configured, ask:
+When the user edits any language file directly, run `npx ai-spector index` (or `lang queue scan`). The queue enqueues section-level sync jobs automatically — no manual stale notes needed.
 
-```
-You've edited `docs/{docType}/{primaryLang.code}/{filename}`.
-Do you want me to update the translation(s) now?
+If the user defers translation, the job stays in `pending.json` until processed.
 
-  1. Yes, update all translations now
-  2. Yes, but only: [specific languages]
-  3. No — I'll handle it later
-```
+## Resolve (writes)
 
-Wait for reply. On yes: read the updated primary file and re-translate to each approved secondary language. On no: note the file as stale so the user can run `ai-spector-lang-status` later.
-
-## Updating stale translations
-
-If the user says "update stale JP" or "regenerate missing VI docs":
-- For **STALE** files: read the current primary language file from disk and re-translate it to the target language. Do not re-query the graph — the primary file is the source of truth.
-- For **MISSING** files: check if the primary language file exists. If yes, translate it. If no, switch to `ai-spector-generate-srs` or `ai-spector-generate-basic-design` to generate the primary first, then translate.
-- Apply the same translation enforcement rules from `generate-workflow.md` (IDs never translated, all prose in target language).
+When the user wants to **sync** or **update** translations (not just status), switch to **`ai-spector-resolve-translation`**.

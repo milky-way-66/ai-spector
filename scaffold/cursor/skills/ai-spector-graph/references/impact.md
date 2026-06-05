@@ -134,6 +134,10 @@ npx ai-spector graph query <thatId> --json
 
 Use [cli-failures.md](../../ai-spector/references/cli-failures.md). If resolve or `graph impact` fails, show CLI output and fix — do not invent regenerate lists.
 
+## After doc edits (automatic rule)
+
+When finishing edits under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`, agents should run this impact flow per `.cursor/rules/ai-spector-after-doc-edit.mdc`, then `npx ai-spector index`.
+
 ## Guardrails
 
 - No whole-repo regen outside CLI buckets.

@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
+import { addLangToPendingJobs, reconcileTranslationQueue } from "../lang/queue.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import type { LanguageConfig } from "../config/types.js";
 
@@ -57,10 +58,19 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   const existingLangCodes = config.languages.map((l) => l.code);
   await registerTranslationEdges(projectRoot, config.paths.graph, code, existingLangCodes);
 
+  const updatedConfig = { ...config, languages: [...config.languages, newLang] };
+  await addLangToPendingJobs(projectRoot, code, updatedConfig);
+  const queueResult = await reconcileTranslationQueue(projectRoot, updatedConfig);
+
   console.log(`Added language: ${label} (${code})`);
   console.log(`  docs/srs/${code}/`);
   console.log(`  docs/basic-design/${code}/`);
   console.log(`  translationOf edges registered in graph`);
+  if (!queueResult.skipped) {
+    console.log(
+      `  translation queue: ${queueResult.pendingCount} pending, +${queueResult.enqueued} enqueued`,
+    );
+  }
   console.log(`Run 'npx ai-spector index' to refresh the full graph.`);
 }
 

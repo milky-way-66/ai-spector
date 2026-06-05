@@ -30,6 +30,7 @@ import {
   computeIndexSourceHash,
   discoverMarkdownFiles,
 } from "../index/docs-build.js";
+import { reconcileTranslationQueue } from "../lang/queue.js";
 
 export type IndexStepStatus = "ok" | "skipped" | "failed";
 
@@ -489,6 +490,32 @@ export async function runIndex(
       label: "Document indexes (.ai-spector/index/)",
       status: "skipped",
       detail: graphOnly || opts.skipDocs ? "--graph-only or --skip-docs" : "docs-only graph skipped",
+    });
+  }
+
+  try {
+    const queueResult = await reconcileTranslationQueue(projectRoot, docflowConfig);
+    if (queueResult.skipped) {
+      record({
+        id: "translation-queue",
+        label: "Translation queue",
+        status: "skipped",
+        detail: queueResult.skipReason ?? "single language",
+      });
+    } else {
+      record({
+        id: "translation-queue",
+        label: "Translation queue",
+        status: "ok",
+        detail: `${queueResult.pendingCount} pending, +${queueResult.enqueued} enqueued, ${queueResult.resolved} resolved, ${queueResult.failed} failed`,
+      });
+    }
+  } catch (err) {
+    record({
+      id: "translation-queue",
+      label: "Translation queue",
+      status: "failed",
+      detail: err instanceof Error ? err.message : String(err),
     });
   }
 

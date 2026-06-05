@@ -6,17 +6,24 @@ Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/READM
 
 ## One-time setup
 
+**In chat (easiest):** say **"setup ai-spector project"** — agent uses `ai-spector-setup` skill.
+
+**CLI (guided):**
+
 ```bash
-npm install ai-spector
-npx ai-spector init
+npm install -D ai-spector
+npx ai-spector setup              # interactive wizard
+npx ai-spector setup -y -l en,jp  # non-interactive
+npx ai-spector setup --check      # audit only
 ```
 
-Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** (`.cursor/mcp.json`), enable **all npx ai-spector skills**.
+Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/skills/`, reload MCP.
 
 ## What to say → skill → agent does
 
 | You want to… | Say (examples) | Skill | Agent runs (summary) |
 |--------------|----------------|-------|----------------------|
+| **Setup project** | “setup ai-spector”, “initialize project”, “get started” | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
 | Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `analyze` → read markdown → merge knowledge → validate |
 | Check graph | “validate the graph”, “graph errors” | `ai-spector-graph` | `graph validate` |
 | Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `npx ai-spector index` |
@@ -26,6 +33,8 @@ Add files under `docs/data-source/`, open the project in Cursor, **reload MCP** 
 | HTML prototype | “HTML mockup”, “prototype with stripe theme” | `ai-spector-generate-prototype` | auth picker (if needed) → theme picker → setup → HTML → validate |
 | Pick / preview UI theme | “help me pick a theme”, “show me themes”, “what fits my app?” | `ai-spector-generate-prototype` | read project context → recommend 3 → `prototype preview` ×3 |
 | What to redo | “what’s impacted”, “what should I regenerate” | `ai-spector-graph` | `graph impact` / git diff |
+| Translation status | “what’s stale in JP”, “pending translations” | `ai-spector-lang-status` | `lang queue pending` |
+| Sync translations | “resolve translations”, “update JP from EN” | `ai-spector-resolve-translation` | read queue → translate → `index` |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
 | Explore graph | “show the graph” | `ai-spector-graph` | `graph visualize --open` |
 

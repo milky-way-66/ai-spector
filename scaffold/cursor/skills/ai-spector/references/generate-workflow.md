@@ -98,7 +98,7 @@ Do you want me to update the translation(s) now?
 **Wait for the user's reply before proceeding.**
 
 - **Reply 1 or 2** → for each approved secondary language: read the finished primary file, translate prose, write to `docs/{docType}/{lang.code}/{filename}`. Then continue the checklist.
-- **Reply 3** → note which files have stale translations (so the user can run `ai-spector-lang-status` later), then continue the checklist without translating.
+- **Reply 3** → defer translation; after `npx ai-spector index`, pending jobs are tracked in `.ai-spector/.docflow/translation-queue/pending.json`. User can check with `ai-spector-lang-status` and sync later with `ai-spector-resolve-translation`.
 
 ### When to skip the prompt
 
@@ -109,6 +109,13 @@ Skip the prompt (proceed directly to translation) only when the user has **alrea
 
 If pre-approved, translate immediately after each primary write without asking again for the rest of the session.
 
+## Translation queue (automatic)
+
+After any language file write, `npx ai-spector index` reconciles the translation queue:
+- File-level jobs in `pending.json` / `resolved.json` / `failed.json` (whole document per job)
+- Direct edits to secondary language files create **inbound** jobs
+- Query: `npx ai-spector lang queue pending --json`
+
 ## Guardrails
 
 - Parallel only within a wave.
@@ -117,6 +124,13 @@ If pre-approved, translate immediately after each primary write without asking a
 - No speculative reads — projectionPaths only.
 - Case 3 requires explicit yes before any write.
 - On CLI failure → load [cli-failures.md](./cli-failures.md).
+
+## After manual doc edits
+
+When any doc under `docs/` is edited outside generate skills, follow `.cursor/rules/ai-spector-after-doc-edit.mdc`:
+
+1. `npx ai-spector graph impact --git --change content_change --json` (or `--file`)
+2. `npx ai-spector index` (refreshes translation queue)
 
 ## Finish
 

@@ -6,15 +6,21 @@ Documentation workflow in **Cursor**: traceability graph, SRS / basic / detail d
 
 ## Setup (once)
 
+**In Cursor:** ask **"setup ai-spector project"** (agent runs the setup skill).
+
+**CLI:**
+
 ```bash
 npm install -D ai-spector
-npx ai-spector init
+npx ai-spector setup              # guided wizard
+npx ai-spector setup -y -l en,jp  # non-interactive
+npx ai-spector setup --check      # audit checklist
 ```
 
-1. Open the project in Cursor → reload **MCP** → enable **all** skills under `.cursor/skills/` (see `README.md` there).
+1. Open the project in Cursor → reload **MCP** → enable **all** skills under `.cursor/skills/`.
 2. Put source material in `docs/data-source/`.
 
-Re-init scaffold: `npx ai-spector init --force`. After upgrading the package: `npx ai-spector sync-cursor`.
+Re-init scaffold: `npx ai-spector init --force` or `npx ai-spector setup -y --force`. After upgrading: `npx ai-spector sync-cursor`.
 
 ## Workflow
 

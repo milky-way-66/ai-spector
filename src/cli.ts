@@ -9,6 +9,16 @@ import { bootstrapFromRegistry } from "./commands/bootstrap.js";
 import { validateGraph, formatIssues } from "./commands/validate.js";
 import { runInit } from "./commands/init.js";
 import { runLangAdd } from "./commands/lang.js";
+import {
+  runLangQueueFailed,
+  runLangQueueFail,
+  runLangQueuePending,
+  runLangQueueResolved,
+  runLangQueueRetry,
+  runLangQueueScan,
+} from "./commands/lang-queue.js";
+import { runHooksInstall, runHooksPreCommit } from "./commands/hooks.js";
+import { runSetup, runSetupCheck } from "./commands/setup.js";
 import { runSyncCursor } from "./commands/sync-cursor.js";
 import { runAnalyzePrep } from "./commands/analyze.js";
 import { runGraphQuery } from "./commands/graph-query.js";
@@ -89,6 +99,35 @@ program
     });
   });
 
+program
+  .command("setup")
+  .description("Guided project setup (or audit with --check)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--check", "Audit only — do not change files")
+  .option("-l, --languages <codes>", "Comma-separated language codes (e.g. en,jp,vi)")
+  .option("-y, --yes", "Non-interactive; use defaults or provided flags")
+  .option("-f, --force", "Re-run init (overwrite scaffold)")
+  .option("--install-dep", "Run npm install -D ai-spector when package.json exists")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const root = resolve(opts.cwd ?? process.cwd());
+    if (opts.check) {
+      await runSetupCheck({ root, json: opts.json });
+      return;
+    }
+    const languages = opts.languages
+      ? (opts.languages as string).split(",").map((c: string) => c.trim()).filter(Boolean)
+      : undefined;
+    await runSetup({
+      root,
+      languages,
+      yes: opts.yes,
+      force: opts.force,
+      installDep: opts.installDep,
+      json: opts.json,
+    });
+  });
+
 const lang = program.command("lang").description("Manage project languages");
 
 lang
@@ -103,6 +142,80 @@ lang
     });
   });
 
+const langQueue = lang.command("queue").description("Translation sync job queue");
+
+langQueue
+  .command("pending")
+  .description("List pending translation sync jobs")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--lang <code>", "Filter jobs affecting a language")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    await runLangQueuePending({
+      root: resolve(opts.cwd ?? process.cwd()),
+      lang: opts.lang,
+      json: opts.json,
+    });
+  });
+
+langQueue
+  .command("resolved")
+  .description("List resolved translation sync jobs")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--limit <n>", "Max entries to show", (v) => parseInt(v, 10))
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    await runLangQueueResolved({
+      root: resolve(opts.cwd ?? process.cwd()),
+      limit: opts.limit,
+      json: opts.json,
+    });
+  });
+
+langQueue
+  .command("failed")
+  .description("List failed translation sync jobs")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--limit <n>", "Max entries to show", (v) => parseInt(v, 10))
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    await runLangQueueFailed({
+      root: resolve(opts.cwd ?? process.cwd()),
+      limit: opts.limit,
+      json: opts.json,
+    });
+  });
+
+langQueue
+  .command("scan")
+  .description("Reconcile translation queue without full index")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .action(async (opts) => {
+    await runLangQueueScan({ root: resolve(opts.cwd ?? process.cwd()) });
+  });
+
+langQueue
+  .command("fail <jobId>")
+  .description("Move a pending job to failed")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--reason <reason>", "dismissed | sync_error | timeout", "dismissed")
+  .option("--message <text>", "Failure message")
+  .action(async (jobId: string, opts) => {
+    await runLangQueueFail(jobId, {
+      root: resolve(opts.cwd ?? process.cwd()),
+      reason: opts.reason,
+      message: opts.message,
+    });
+  });
+
+langQueue
+  .command("retry <jobId>")
+  .description("Move a failed job back to pending")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .action(async (jobId: string, opts) => {
+    await runLangQueueRetry(jobId, { root: resolve(opts.cwd ?? process.cwd()) });
+  });
+
 program
   .command("sync-cursor")
   .description("Refresh .cursor/commands and .cursor/skills from scaffold/cursor/ (no full re-init)")
@@ -110,6 +223,32 @@ program
   .action(async (opts) => {
     await runSyncCursor({
       targetDir: resolve(opts.cwd ?? process.cwd()),
+    });
+  });
+
+const hooks = program.command("hooks").description("Git hooks for local doc workflow checks");
+
+hooks
+  .command("install")
+  .description("Install pre-commit hook (graph validate, translation queue, impact warnings)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .action(async (opts) => {
+    await runHooksInstall({ root: resolve(opts.cwd ?? process.cwd()) });
+  });
+
+hooks
+  .command("pre-commit")
+  .description("Run pre-commit checks (used by git hook; also runnable manually)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--strict", "Treat warnings as errors")
+  .option("--skip-impact", "Skip graph impact advisory")
+  .option("--skip-queue", "Skip translation queue check")
+  .action(async (opts) => {
+    await runHooksPreCommit({
+      root: resolve(opts.cwd ?? process.cwd()),
+      strict: opts.strict,
+      skipImpact: opts.skipImpact,
+      skipQueue: opts.skipQueue,
     });
   });
 

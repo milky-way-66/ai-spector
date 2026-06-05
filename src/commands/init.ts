@@ -6,6 +6,7 @@ import {
   scaffoldCursorBundleRoot,
 } from "../config/load.js";
 import { copyTree, pathExists, readJson, writeJson } from "../util/fs.js";
+import { ensureGitRepository, installGitHooks } from "./hooks.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import type { LanguageConfig } from "../config/types.js";
 
@@ -113,14 +114,32 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   const gitignorePath = await ensureAiSpectorGitignore(root);
 
+  let gitInitialized = false;
+  let hookPath: string | undefined;
+  try {
+    gitInitialized = await ensureGitRepository(root);
+    hookPath = await installGitHooks(root);
+  } catch {
+    hookPath = undefined;
+  }
+
   console.log(`Initialized AI Spector project at ${root}`);
   console.log("");
   console.log(`  languages -> ${langCodes.join(", ")}`);
   console.log(`  gitignore -> ${gitignorePath} (npx ai-spector block added/updated)`);
+  if (gitInitialized) {
+    console.log(`  git       -> initialized new repository at ${root}`);
+  }
+  if (hookPath) {
+    console.log(`  git hook  -> ${hookPath} (pre-commit: validate + translation + impact)`);
+  } else {
+    console.log("  git hook  -> not installed (run: npx ai-spector hooks install)");
+  }
   console.log(`  templates -> ${projectTemplates} (SRS / basic / detail design)`);
   console.log(`  cursor    -> ${join(root, ".cursor")} (from scaffold/cursor/)`);
   console.log("");
   console.log("Next steps (Cursor):");
+  console.log("  0. Re-audit setup: npx ai-spector setup --check");
   console.log("  1. Open this folder in Cursor");
   console.log("  2. Enable all npx ai-spector skills (.cursor/skills/ -- see README.md)");
   console.log("  3. Add files under docs/data-source/");

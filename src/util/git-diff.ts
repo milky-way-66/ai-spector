@@ -64,3 +64,42 @@ export async function collectGitDiff(cwd: string): Promise<CollectedGitDiff> {
 
   return { diff, empty: !diff.trim() };
 }
+
+/** Staged changes only (for pre-commit). */
+export async function collectStagedGitDiff(cwd: string): Promise<CollectedGitDiff> {
+  try {
+    const { stdout } = await exec("git", ["rev-parse", "--is-inside-work-tree"], {
+      cwd,
+      encoding: "utf8",
+    });
+    if (stdout.trim() !== "true") {
+      return { diff: "", empty: true, notRepo: true };
+    }
+  } catch {
+    return { diff: "", empty: true, notRepo: true };
+  }
+
+  try {
+    const { stdout } = await exec("git", ["diff", "--cached"], { cwd, encoding: "utf8" });
+    return { diff: stdout, empty: !stdout.trim() };
+  } catch {
+    return { diff: "", empty: true };
+  }
+}
+
+/** Repo-relative paths staged for commit (added, copied, modified, renamed). */
+export async function collectStagedFileNames(cwd: string): Promise<string[]> {
+  try {
+    const { stdout } = await exec(
+      "git",
+      ["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+      { cwd, encoding: "utf8" },
+    );
+    return stdout
+      .split("\n")
+      .map((line) => line.trim().replace(/\\/g, "/"))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}

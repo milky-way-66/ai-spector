@@ -29,6 +29,34 @@ Complete command reference for AI agents. Run all commands from the project root
 
 ---
 
+## `setup`
+
+**Recommended** one-command setup (interactive or scripted).
+
+```bash
+npx ai-spector setup [options]
+
+Options:
+  --check           Audit only (no file changes)
+  -l, --languages   Comma-separated codes (e.g. en,jp,vi)
+  -y, --yes         Non-interactive defaults
+  -f, --force       Re-run init (overwrite scaffold)
+  --install-dep     npm install -D ai-spector when package.json exists
+  --json            JSON audit output
+  -C, --cwd         Project root
+```
+
+**Examples:**
+```bash
+npx ai-spector setup                    # interactive wizard
+npx ai-spector setup -y -l en,jp,vi    # CI / agent-friendly
+npx ai-spector setup --check --json    # status for IDE agent
+```
+
+Runs: audit → init or sync-cursor → git + pre-commit hook → `docs/data-source/` → Cursor checklist.
+
+---
+
 ## `init`
 
 Scaffold a new project: creates `.ai-spector/`, `docs/srs/{lang}/`, `docs/basic-design/{lang}/`, Cursor skills.
@@ -55,6 +83,9 @@ npx ai-spector init --force                # re-scaffold in place
 - `docs/srs/{lang}/` and `docs/basic-design/{lang}/` for each language
 - `.cursor/skills/` — Cursor agent skills
 - `.ai-spector/templates/` — SRS + basic design templates
+- **Git** — runs `git init` when the target dir is not already in a repo
+- **Pre-commit hook** — `graph validate` (block), translation queue + impact (warn); re-run with `npx ai-spector hooks install`
+- `git init` (if not already a repo) + **pre-commit hook** (`hooks pre-commit` on staged docs/graph)
 
 ---
 
@@ -86,6 +117,38 @@ npx ai-spector lang add vi --label Vietnamese
 4. Prints: "Run `npx ai-spector index` to refresh the full graph."
 
 After running, always follow with `npx ai-spector index`.
+
+---
+
+## `lang queue`
+
+Translation sync job queue (file-level, bidirectional). State files under `.ai-spector/.docflow/translation-queue/`:
+
+| File | Contents |
+|------|----------|
+| `pending.json` | Open sync jobs |
+| `resolved.json` | Completed jobs |
+| `failed.json` | Conflicts / dismissed / errors |
+| `fingerprints.json` | File hash + version baseline (internal) |
+| `changes/` | Per-document merge context (`{docType}--{path}.json` with `changes[]`, diffs) |
+| `change-history.json` | Append-only log of all file edits (lang, version, hashes) |
+
+```bash
+npx ai-spector lang queue pending [--lang jp] [--json]
+npx ai-spector lang queue resolved [--limit 20] [--json]
+npx ai-spector lang queue failed [--limit 20] [--json]
+npx ai-spector lang queue scan
+npx ai-spector lang queue fail <jobId> [--reason dismissed] [--message <text>]
+npx ai-spector lang queue retry <jobId>
+```
+
+Reconciliation runs automatically at the end of `npx ai-spector index` when multiple languages are configured.
+
+**Job directions:**
+- `outbound` — primary changed → sync to secondary languages
+- `inbound` — secondary changed → sync back to primary + other languages
+
+**Merge resolution:** read `changes/{docType}--{relativePath}.json` for per-lang diffs and edit order. When `origin.mergedLangs` is set, merge using each lang's `diff` (latest file is default origin). Full audit: `change-history.json`.
 
 ---
 
@@ -327,6 +390,29 @@ Mark a thread resolved.
 ```bash
 npx ai-spector comments resolve <threadId>
 ```
+
+---
+
+## `hooks`
+
+Git pre-commit checks for doc edits (local safety net).
+
+```bash
+npx ai-spector hooks install [-C <path>]
+npx ai-spector hooks pre-commit [--strict] [--skip-impact] [--skip-queue]
+```
+
+**On commit** (when `docs/**` or `.ai-spector/graph/**` files are staged):
+
+| Check | Behavior |
+|-------|----------|
+| Graph validate | Blocks commit on errors |
+| Translation queue | Warns if pending jobs match staged docs |
+| Graph impact | Warns if downstream regenerate/review needed |
+
+`--strict` turns warnings into errors. Bypass once: `git commit --no-verify`.
+
+Installed automatically by `init` when the project is already a git repo.
 
 ---
 

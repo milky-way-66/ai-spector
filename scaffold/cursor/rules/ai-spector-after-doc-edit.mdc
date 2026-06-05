@@ -1,0 +1,73 @@
+---
+description: After editing SRS or basic design docs, run graph impact and refresh the translation queue
+globs: docs/srs/**,docs/basic-design/**,docs/detail-design/**
+alwaysApply: false
+---
+
+# After doc edits — impact + queue
+
+When you **finish editing** any file under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`:
+
+## 1. Check traceability impact
+
+Before closing the task, run impact for what changed:
+
+```bash
+git diff HEAD
+```
+
+If the repo has no commits yet:
+
+```bash
+git diff
+git diff --cached
+```
+
+Then:
+
+```bash
+npx ai-spector graph impact --git --change content_change --json
+```
+
+Or for a single file:
+
+```bash
+npx ai-spector graph impact --file <repo-relative-path> --json
+```
+
+Present `regenerate` / `review` / `downstream` buckets with `projectionPath`. Do not invent regen lists — use CLI output only.
+
+Full runbook: `.cursor/skills/ai-spector-graph/references/impact.md`
+
+## 2. Refresh index and translation queue
+
+```bash
+npx ai-spector index
+```
+
+This updates fingerprints and reconciles `.ai-spector/.docflow/translation-queue/`. New pending jobs mean other languages are stale.
+
+## 3. Tell the user
+
+- **Impact summary** — what may need regeneration downstream
+- **Translation queue** — pending job count; offer `resolve-translation` if multi-lang and jobs exist
+
+Skip impact only when the user explicitly asked for a typo-only fix with no traceability concern, or when `graph validate` is known broken and user chose to defer.
+
+## Pre-commit hook (local)
+
+Install once (also runs on `npx ai-spector init` in a git repo):
+
+```bash
+npx ai-spector hooks install
+```
+
+On `git commit`, staged `docs/**` or `.ai-spector/graph/**` changes trigger:
+
+| Check | Result |
+|-------|--------|
+| `graph validate` | **Blocks** commit on errors |
+| Translation queue | **Warns** if pending jobs match staged docs |
+| Graph impact | **Warns** if downstream regen/review needed |
+
+Strict mode (warnings block): edit hook to pass `--strict`, or run `npx ai-spector hooks pre-commit --strict` before commit. Bypass once: `git commit --no-verify`.

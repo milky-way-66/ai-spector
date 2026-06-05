@@ -35,12 +35,14 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 
 | Intent | Skill |
 |--------|-------|
+| Setup / bootstrap project | `ai-spector-setup` |
 | Analyze, index, validate, impact, visualize | `ai-spector-graph` |
 | SRS | `ai-spector-generate-srs` |
 | Basic design | `ai-spector-generate-basic-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
 | Translation status / stale languages | `ai-spector-lang-status` |
+| Resolve / sync translations | `ai-spector-resolve-translation` |
 | “Generate docs” (vague) | `ai-spector-generate` |
 
 When a task skill applies, read its `references/` runbook fully before acting.
