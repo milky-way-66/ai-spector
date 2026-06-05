@@ -70,7 +70,7 @@ Or once for all seeds:
 npx ai-spector graph impact --git --change content_change --json
 ```
 
-Merge `regenerate` / `review` / `downstream` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
+Merge `regenerate` / `review` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
 
 ## Resolve change → graph seed (agent)
 
@@ -109,7 +109,11 @@ Optional report file:
 npx ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<timestamp>.json
 ```
 
-1. Parse JSON buckets: `regenerate`, `review`, `downstream` (and `resolvedFrom` / `gitSeeds` when using `--file` / `--heading` / `--git`).
+1. Parse JSON output:
+   - `regenerate` / `review` arrays — traceability impact buckets
+   - `noTraceabilityImpact: true` — changed files are not in the graph (e.g. config, prototype, source code); tell the user "no doc traceability impact found" and skip regen suggestions
+   - `truncated: true` — BFS hit the propagation cap; warn the user results may be incomplete
+   - `resolvedFrom` / `gitSeeds` — which file/heading each seed came from (present with `--file` / `--heading` / `--git`)
 2. Present a table with `projectionPath` per entry.
 3. For each **regenerate** id, suggest `/generate-srs` or `/generate-basic-design` using:
 

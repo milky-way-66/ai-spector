@@ -141,15 +141,15 @@ export function summarizeImpact(impact: ImpactResult | null): ImpactSummary | nu
     return null;
   }
   return {
-    regenerate: impact.affected.regenerate.length,
-    review: impact.affected.review.length,
+    regenerate: impact.regenerate.length,
+    review: impact.review.length,
     originId: impact.origin.id,
     originType: impact.origin.type,
-    topRegenerate: impact.affected.regenerate.slice(0, 8).map((e) => ({
+    topRegenerate: impact.regenerate.slice(0, 8).map((e) => ({
       id: e.id,
       projectionPath: e.projectionPath,
     })),
-    topReview: impact.affected.review.slice(0, 5).map((e) => ({
+    topReview: impact.review.slice(0, 5).map((e) => ({
       id: e.id,
       projectionPath: e.projectionPath,
     })),
@@ -189,10 +189,10 @@ export function buildResolvePlan(
   const ask = firstComment?.body ?? "(no comment body)";
 
   const regenerateCommands =
-    impact && impact.affected.regenerate.length > 0
+    impact && impact.regenerate.length > 0
       ? [
           ...new Set(
-            impact.affected.regenerate
+            impact.regenerate
               .slice(0, 5)
               .map((e) => `/generate-srs from ${e.id}`),
           ),
@@ -223,7 +223,7 @@ export function buildResolvePlan(
         instruction: `Address reviewer comment at lines ${thread.anchor.startLine}-${thread.anchor.endLine}: ${previewCommentBody(ask, 200)}`,
       },
       afterApply: {
-        indexRefresh: impact != null && (impact.affected.regenerate.length > 0 || impact.affected.review.length > 0),
+        indexRefresh: impact != null && (impact.regenerate.length > 0 || impact.review.length > 0),
         regenerateCommands,
       },
     },

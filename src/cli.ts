@@ -348,12 +348,11 @@ graph
 graph
   .command("impact [id]")
   .description(
-    "Impact analysis: regenerate / review / downstream buckets (id optional with --file / --heading / --git)",
+    "Impact analysis: regenerate / review buckets (id optional with --file / --heading / --git)",
   )
   .option("--file <path>", "Resolve origin from repo-relative doc path")
   .option("--heading <text>", "Resolve section by heading (optionally scoped with --file)")
   .option("--git", "Resolve seeds from current git diff (staged + unstaged) and merge impact")
-  .option("--change <type>", "Change type", "content_change")
   .option("-o, --output <path>", "Write impact report JSON")
   .option("--json", "Print JSON")
   .action(async (id: string | undefined, opts, cmd) => {
@@ -373,7 +372,7 @@ graph
       file: opts.file,
       heading: opts.heading,
       git: opts.git,
-      change: opts.change,
+      change: "content_change",
       output: opts.output,
       json: opts.json,
     });

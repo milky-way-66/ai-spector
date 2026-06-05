@@ -70,10 +70,25 @@ export async function runGraphImpactFromGit(
   const origins = resolveFromGitDiff(g, collected.diff);
   if (origins.length === 0) {
     const files = parseGitDiffRegions(collected.diff).map((r) => r.file);
-    throw new Error(
-      `Could not map git diff to graph seeds. Changed files: ${files.join(", ") || "(none)"}. ` +
-        "Try /impact with a path or short description.",
-    );
+    const noImpact = {
+      origin: { id: "(git diff)", type: "none", change: opts.change },
+      regenerate: [],
+      review: [],
+      affectedOutputPaths: [],
+      noTraceabilityImpact: true,
+      changedFiles: files,
+    };
+    if (opts.json || opts.output) {
+      if (opts.output) {
+        await mkdir(dirname(opts.output), { recursive: true });
+        await writeJson(opts.output, noImpact);
+      }
+      console.log(JSON.stringify(noImpact, null, 2));
+    } else {
+      const fileList = files.length > 0 ? files.join(", ") : "(none matched)";
+      console.log(`No traceability impact found.\nChanged files not in graph: ${fileList}`);
+    }
+    return;
   }
 
   const rules = await loadImpactRules(opts.rulesPath);
@@ -139,7 +154,8 @@ export async function runGraphImpactFromGit(
   }
 
   console.log(`Impact from git diff (${uniqueSeeds.size} seed(s))`);
-  for (const [bucket, entries] of Object.entries(result.affected)) {
+  for (const bucket of ["regenerate", "review"] as const) {
+    const entries = result[bucket];
     console.log(`\n${bucket}:`);
     if (entries.length === 0) {
       console.log("  (none)");
@@ -148,6 +164,12 @@ export async function runGraphImpactFromGit(
     for (const e of entries) {
       const path = e.projectionPath ? ` → ${e.projectionPath}` : "";
       console.log(`  - ${e.id} (${e.type})${path}`);
+    }
+  }
+  if (result.affectedOutputPaths.length > 0) {
+    console.log("\naffected output paths:");
+    for (const p of result.affectedOutputPaths) {
+      console.log(`  - ${p}`);
     }
   }
   if (result.staleTranslations && result.staleTranslations.length > 0) {
@@ -184,7 +206,8 @@ export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<void>
   }
 
   console.log(`Impact from ${result.origin.id} (${result.origin.change})`);
-  for (const [bucket, entries] of Object.entries(result.affected)) {
+  for (const bucket of ["regenerate", "review"] as const) {
+    const entries = result[bucket];
     console.log(`\n${bucket}:`);
     if (entries.length === 0) {
       console.log("  (none)");
@@ -193,6 +216,12 @@ export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<void>
     for (const e of entries) {
       const path = e.projectionPath ? ` → ${e.projectionPath}` : "";
       console.log(`  - ${e.id} (${e.type})${path}`);
+    }
+  }
+  if (result.affectedOutputPaths.length > 0) {
+    console.log("\naffected output paths:");
+    for (const p of result.affectedOutputPaths) {
+      console.log(`  - ${p}`);
     }
   }
   if (result.staleTranslations && result.staleTranslations.length > 0) {

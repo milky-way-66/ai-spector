@@ -138,8 +138,8 @@ export async function runPreCommitCheck(opts: PreCommitOptions = {}): Promise<Pr
             computeImpact(g, origin.id, "content_change", rules),
           );
           const merged = mergeImpactResults(results);
-          const regen = merged.affected.regenerate.length;
-          const review = merged.affected.review.length;
+          const regen = merged.regenerate.length;
+          const review = merged.review.length;
           if (regen > 0 || review > 0) {
             warnings.push(
               `Graph impact: ${regen} regenerate, ${review} review downstream of staged doc edits.`,

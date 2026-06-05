@@ -408,7 +408,7 @@ npx ai-spector hooks pre-commit [--strict] [--skip-impact] [--skip-queue]
 |-------|----------|
 | Graph validate | Blocks commit on errors |
 | Translation queue | Warns if pending jobs match staged docs |
-| Graph impact | Warns if downstream regenerate/review needed |
+| Graph impact | Warns if regenerate/review needed |
 
 `--strict` turns warnings into errors. Bypass once: `git commit --no-verify`.
 

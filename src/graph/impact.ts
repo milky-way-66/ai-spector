@@ -3,13 +3,13 @@ import type { NodeType } from "../types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import { projectionPathForNode } from "./query.js";
 
+type EdgeRule = { direction: "in" | "out"; depth: number | "unbounded" };
+
 export interface ImpactRulesFile {
-  version: number;
-  edgePropagation: Record<
-    string,
-    { direction: "in" | "out" | "both"; depth: number | "unbounded" }
-  >;
-  buckets: Record<string, NodeType[]>;
+  version: 2;
+  pass1_expand: Record<string, EdgeRule>;
+  pass2_downstream: Record<string, EdgeRule>;
+  buckets: { regenerate: NodeType[]; review: NodeType[] };
 }
 
 export interface ImpactEntry {
@@ -21,15 +21,13 @@ export interface ImpactEntry {
 
 export interface ImpactResult {
   origin: { id: string; type: string; change: string };
-  affected: {
-    regenerate: ImpactEntry[];
-    review: ImpactEntry[];
-  };
-  /** Translation document nodes that may be stale after this change. */
+  regenerate: ImpactEntry[];
+  review: ImpactEntry[];
+  affectedOutputPaths: string[];
   staleTranslations?: ImpactEntry[];
-  /** Present when CLI resolved origin via --file / --heading */
   resolvedFrom?: { id: string; type: string; reason: string };
-  /** Present when multiple seeds were analyzed (e.g. --git) */
+  truncated?: boolean;
+  noTraceabilityImpact?: boolean;
   gitSeeds?: Array<{
     id: string;
     type: string;
@@ -43,84 +41,62 @@ function maxDepth(d: number | "unbounded"): number {
   return d === "unbounded" ? 10_000 : d;
 }
 
-export interface ImpactProvenance {
+interface Provenance {
   fromId: string;
   edgeType: string;
 }
 
-/** Returns the set of reached node IDs (excludes origin). Public API for callers that only need reachability. */
-export function propagateImpact(
+function runBfs(
   g: InMemoryGraph,
-  originId: string,
-  rules: ImpactRulesFile,
-): Set<string> {
-  const map = propagateImpactWithProvenance(g, originId, rules);
-  return new Set(map.keys());
-}
-
-/** Internal: returns provenance (immediate predecessor + edge type) for each reached node. */
-function propagateImpactWithProvenance(
-  g: InMemoryGraph,
-  originId: string,
-  rules: ImpactRulesFile,
-): Map<string, ImpactProvenance> {
-  const provenance = new Map<string, ImpactProvenance>();
-  const seen = new Set<string>([originId]);
-  const queue: { id: string; depth: number }[] = [{ id: originId, depth: 0 }];
+  seeds: string[],
+  rules: Record<string, EdgeRule>,
+  globalSeen: Set<string>,
+): { provenance: Map<string, Provenance>; capped: boolean } {
+  const provenance = new Map<string, Provenance>();
+  const queue: { id: string; depth: number }[] = seeds.map((id) => ({ id, depth: 0 }));
   const cap = 500;
+  let capped = false;
 
   while (queue.length > 0) {
     const { id: current, depth } = queue.shift()!;
     if (depth >= cap) {
+      capped = true;
       continue;
     }
 
-    for (const [edgeType, rule] of Object.entries(rules.edgePropagation)) {
+    for (const [edgeType, rule] of Object.entries(rules)) {
       const limit = maxDepth(rule.depth);
-      if (depth >= limit) {
-        continue;
-      }
+      if (depth >= limit) continue;
 
-      if (rule.direction === "out" || rule.direction === "both") {
+      if (rule.direction === "out") {
         for (const e of g.outEdges.get(current) ?? []) {
-          if (e.type !== edgeType) {
-            continue;
-          }
-          if (!seen.has(e.to)) {
-            seen.add(e.to);
-            provenance.set(e.to, { fromId: current, edgeType });
-            queue.push({ id: e.to, depth: depth + 1 });
-          }
+          if (e.type !== edgeType || globalSeen.has(e.to)) continue;
+          globalSeen.add(e.to);
+          provenance.set(e.to, { fromId: current, edgeType });
+          queue.push({ id: e.to, depth: depth + 1 });
         }
-      }
-      if (rule.direction === "in" || rule.direction === "both") {
+      } else {
         for (const e of g.inEdges.get(current) ?? []) {
-          if (e.type !== edgeType) {
-            continue;
-          }
-          if (!seen.has(e.from)) {
-            seen.add(e.from);
-            provenance.set(e.from, { fromId: current, edgeType });
-            queue.push({ id: e.from, depth: depth + 1 });
-          }
+          if (e.type !== edgeType || globalSeen.has(e.from)) continue;
+          globalSeen.add(e.from);
+          provenance.set(e.from, { fromId: current, edgeType });
+          queue.push({ id: e.from, depth: depth + 1 });
         }
       }
     }
   }
 
-  return provenance;
+  return { provenance, capped };
 }
 
-function bucketForType(
-  type: string,
-  buckets: ImpactRulesFile["buckets"],
-): keyof ImpactResult["affected"] | null {
-  for (const [name, types] of Object.entries(buckets)) {
-    if (types.includes(type as NodeType)) {
-      return name as keyof ImpactResult["affected"];
-    }
-  }
-  return null;
+function makeEntry(g: InMemoryGraph, id: string, prov: Provenance): ImpactEntry {
+  const node = g.nodesById.get(id)!;
+  return {
+    id,
+    type: node.type,
+    reason: `${prov.edgeType} from ${prov.fromId}`,
+    projectionPath: projectionPathForNode(g, id),
+  };
 }
 
 export function computeImpact(
@@ -130,58 +106,97 @@ export function computeImpact(
   rules: ImpactRulesFile,
 ): ImpactResult {
   const origin = g.nodesById.get(originId);
-  if (!origin) {
-    throw new Error(`Unknown node: ${originId}`);
-  }
-
-  const provenance = propagateImpactWithProvenance(g, originId, rules);
+  if (!origin) throw new Error(`Unknown node: ${originId}`);
 
   const result: ImpactResult = {
     origin: { id: originId, type: origin.type, change },
-    affected: { regenerate: [], review: [] },
+    regenerate: [],
+    review: [],
+    affectedOutputPaths: [],
   };
 
-  for (const [id, prov] of provenance) {
-    const node = g.nodesById.get(id);
-    if (!node) {
-      continue;
-    }
-    const bucket = bucketForType(node.type, rules.buckets);
-    if (!bucket || !(bucket in result.affected)) {
-      continue;
-    }
-    const entry: ImpactEntry = {
-      id,
-      type: node.type,
-      reason: `${prov.edgeType} from ${prov.fromId}`,
-      projectionPath: projectionPathForNode(g, id),
-    };
-    result.affected[bucket as keyof ImpactResult["affected"]].push(entry);
-  }
+  const regenerateTypes = new Set<string>(rules.buckets.regenerate);
+  const reviewTypes = new Set<string>(rules.buckets.review);
 
-  for (const key of Object.keys(result.affected) as (keyof ImpactResult["affected"])[]) {
-    result.affected[key].sort((a, b) => a.id.localeCompare(b.id));
-  }
+  const globalSeen = new Set<string>([originId]);
+  let truncated = false;
 
-  // Collect translation nodes that are stale (reverse translationOf from affected documents)
-  const staleTranslations: ImpactEntry[] = [];
-  const affectedDocIds = new Set(
-    [...result.affected.regenerate, ...result.affected.review]
-      .filter((e) => g.nodesById.get(e.id)?.type === "document")
-      .map((e) => e.id),
+  // Pass 1 — expand upward from origin
+  const { provenance: p1, capped: c1 } = runBfs(
+    g,
+    [originId],
+    rules.pass1_expand,
+    globalSeen,
   );
-  // Also include origin if it's a document
-  if (origin.type === "document") {
-    affectedDocIds.add(originId);
+  if (c1) truncated = true;
+
+  const domainSeeds: string[] = [];
+
+  for (const [id, prov] of p1) {
+    const node = g.nodesById.get(id);
+    if (!node) continue;
+    if (regenerateTypes.has(node.type)) {
+      result.regenerate.push(makeEntry(g, id, prov));
+    } else if (reviewTypes.has(node.type)) {
+      result.review.push(makeEntry(g, id, prov));
+      domainSeeds.push(id);
+    }
   }
+
+  // Also seed pass 2 from origin itself if it's a domain node
+  if (reviewTypes.has(origin.type)) {
+    domainSeeds.push(originId);
+  }
+
+  // Pass 2 — propagate downstream from domain nodes
+  if (domainSeeds.length > 0) {
+    const { provenance: p2, capped: c2 } = runBfs(
+      g,
+      domainSeeds,
+      rules.pass2_downstream,
+      globalSeen,
+    );
+    if (c2) truncated = true;
+
+    for (const [id, prov] of p2) {
+      const node = g.nodesById.get(id);
+      if (!node) continue;
+      if (regenerateTypes.has(node.type)) {
+        result.regenerate.push(makeEntry(g, id, prov));
+      } else if (reviewTypes.has(node.type)) {
+        result.review.push(makeEntry(g, id, prov));
+      }
+    }
+  }
+
+  if (truncated) result.truncated = true;
+
+  result.regenerate.sort((a, b) => a.id.localeCompare(b.id));
+  result.review.sort((a, b) => a.id.localeCompare(b.id));
+
+  // Pass 3 — collect output paths from rendersTo edges on regenerate nodes
+  for (const entry of result.regenerate) {
+    for (const e of g.outEdges.get(entry.id) ?? []) {
+      if (e.type === "rendersTo") result.affectedOutputPaths.push(e.to);
+    }
+  }
+  result.affectedOutputPaths.sort();
+
+  // Collect stale translation nodes
+  const affectedDocIds = new Set(
+    result.regenerate.filter((e) => g.nodesById.get(e.id)?.type === "document").map((e) => e.id),
+  );
+  if (origin.type === "document") affectedDocIds.add(originId);
+
+  const staleTranslations: ImpactEntry[] = [];
   for (const docId of affectedDocIds) {
     for (const e of g.inEdges.get(docId) ?? []) {
       if (e.type !== "translationOf") continue;
-      const translationNode = g.nodesById.get(e.from);
-      if (!translationNode) continue;
+      const n = g.nodesById.get(e.from);
+      if (!n) continue;
       staleTranslations.push({
         id: e.from,
-        type: translationNode.type,
+        type: n.type,
         reason: `translationOf ${docId}`,
         projectionPath: projectionPathForNode(g, e.from),
       });
@@ -199,14 +214,10 @@ export function mergeImpactResults(
   results: ImpactResult[],
   gitSeeds?: ImpactResult["gitSeeds"],
 ): ImpactResult {
-  if (results.length === 0) {
-    throw new Error("mergeImpactResults requires at least one result");
-  }
+  if (results.length === 0) throw new Error("mergeImpactResults requires at least one result");
   if (results.length === 1) {
     const single = { ...results[0] };
-    if (gitSeeds?.length) {
-      single.gitSeeds = gitSeeds;
-    }
+    if (gitSeeds?.length) single.gitSeeds = gitSeeds;
     return single;
   }
 
@@ -216,7 +227,9 @@ export function mergeImpactResults(
       type: "multi",
       change: results[0].origin.change,
     },
-    affected: { regenerate: [], review: [] },
+    regenerate: [],
+    review: [],
+    affectedOutputPaths: [],
     gitSeeds:
       gitSeeds ??
       results.map((r) => ({
@@ -226,24 +239,41 @@ export function mergeImpactResults(
       })),
   };
 
+  if (results.some((r) => r.truncated)) merged.truncated = true;
+
   const seen = new Set<string>();
-  for (const key of Object.keys(merged.affected) as (keyof ImpactResult["affected"])[]) {
+  for (const key of ["regenerate", "review"] as const) {
     for (const r of results) {
-      for (const e of r.affected[key]) {
-        const dedupeKey = `${key}:${e.id}`;
-        if (seen.has(dedupeKey)) {
-          continue;
-        }
-        seen.add(dedupeKey);
-        merged.affected[key].push(e);
+      for (const e of r[key]) {
+        const dk = `${key}:${e.id}`;
+        if (seen.has(dk)) continue;
+        seen.add(dk);
+        merged[key].push(e);
       }
     }
-    merged.affected[key].sort((a, b) => a.id.localeCompare(b.id));
+    merged[key].sort((a, b) => a.id.localeCompare(b.id));
   }
+
+  const pathSeen = new Set<string>();
+  for (const r of results) {
+    for (const p of r.affectedOutputPaths) {
+      if (!pathSeen.has(p)) {
+        pathSeen.add(p);
+        merged.affectedOutputPaths.push(p);
+      }
+    }
+  }
+  merged.affectedOutputPaths.sort();
 
   return merged;
 }
 
 export async function loadImpactRules(path: string): Promise<ImpactRulesFile> {
-  return readJson<ImpactRulesFile>(path);
+  const raw = await readJson<{ version: number }>(path);
+  if (raw.version !== 2) {
+    throw new Error(
+      `rules.impact.json version ${raw.version} is not supported. Expected version 2. Update your rules file.`,
+    );
+  }
+  return raw as ImpactRulesFile;
 }

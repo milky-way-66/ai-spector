@@ -60,7 +60,9 @@ npx ai-spector graph impact --file <repo-relative-path> --json
 npx ai-spector graph impact <originId> --change content_change --json
 ```
 
-Output buckets: `regenerate` (must redo), `review` (may need update), `downstream` (informational).
+Output buckets: `regenerate` (must redo), `review` (may need update).
+- `noTraceabilityImpact: true` → changed files not in graph (config, source code, etc.) — no doc regen needed
+- `truncated: true` → BFS hit propagation cap — results may be incomplete, warn user
 
 Report the table with `projectionPath`. For each `regenerate` entry, suggest the appropriate generate skill.
 
