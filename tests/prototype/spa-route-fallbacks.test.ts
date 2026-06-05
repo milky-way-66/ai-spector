@@ -1,13 +1,26 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
 import {
+  baseHrefForRouteDepth,
+  injectSpaFallbackBaseHref,
   spaFallbackDeployPaths,
   writeSpaRouteFallbacks,
 } from "../../src/prototype/spa-route-fallbacks.js";
 
 describe("spa route fallbacks", () => {
+  it("computes base href depth for nested routes", () => {
+    expect(baseHrefForRouteDepth(0)).toBe("./");
+    expect(baseHrefForRouteDepth(3)).toBe("../../../");
+  });
+
+  it("injects base href so assets resolve from dist root", () => {
+    const html = `<!DOCTYPE html><html><head></head><body><script src="./assets/index.js"></script></body></html>`;
+    const out = injectSpaFallbackBaseHref(html, "../../../");
+    expect(out).toContain('<base href="../../../">');
+  });
+
   it("lists every path segment for nested routes", () => {
     expect(spaFallbackDeployPaths("dist", "/trip/acme-march-2026/print")).toEqual([
       "dist/trip",
@@ -34,7 +47,7 @@ describe("spa route fallbacks", () => {
             screenDoc: "docs/x.md",
             screenDocPath: "x.md",
             prototypeStem: "print",
-            prototypePath: "dist/trip/acme-march-2026/print",
+            prototypePath: "dist/trip/acme-march-2026/print/",
             uri: "/trip/:id/print",
             previewUri: "/trip/acme-march-2026/print",
             htmlExists: true,
@@ -46,6 +59,12 @@ describe("spa route fallbacks", () => {
       expect(result.paths).toContain(
         "prototype/dist/trip/acme-march-2026/print/index.html",
       );
+
+      const nested = await readFile(
+        join(dist, "trip/acme-march-2026/print/index.html"),
+        "utf8",
+      );
+      expect(nested).toContain('<base href="../../../">');
     });
   });
 });

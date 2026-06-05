@@ -12,9 +12,9 @@ describe("deploy path helpers", () => {
   });
 
   it("builds per-screen SPA prototypePath from previewUri", () => {
-    expect(toSpaScreenPrototypePath("dist", "/schedules/new")).toBe("dist/schedules/new");
+    expect(toSpaScreenPrototypePath("dist", "/schedules/new")).toBe("dist/schedules/new/");
     expect(toSpaScreenPrototypePath("dist", "/orders/demo-001?tab=1")).toBe(
-      "dist/orders/demo-001",
+      "dist/orders/demo-001/",
     );
   });
 });

@@ -120,7 +120,7 @@ export interface PrototypeScreenMapEntry {
   /**
    * Path to open this screen in the deployed prototype.
    * - static mode: repo-relative HTML file, e.g. "prototype/src/<stem>.html"
-   * - spa mode: deploy-relative route path, e.g. "dist/schedules/new" (no index.html)
+   * - spa mode: deploy-relative route directory, e.g. "dist/schedules/new/" (trailing slash)
    */
   prototypePath: string;
   /**

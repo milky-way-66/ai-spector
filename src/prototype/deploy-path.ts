@@ -16,7 +16,7 @@ export function toDeployBasePath(
   return normalized || "dist";
 }
 
-/** Per-screen deploy path: `<deployBase>/<route>` from previewUri or uri. */
+/** Per-screen deploy path: `<deployBase>/<route>/` from previewUri or uri (trailing slash for static directory index). */
 export function toSpaScreenPrototypePath(
   deployBase: string,
   previewOrRoute: string,
@@ -24,5 +24,5 @@ export function toSpaScreenPrototypePath(
   const pathname = previewOrRoute.split("?")[0]!.split("#")[0]!;
   const route = pathname.startsWith("/") ? pathname.slice(1) : pathname;
   const base = deployBase.replace(/\/$/, "");
-  return route ? `${base}/${route}` : base;
+  return route ? `${base}/${route.replace(/\/+$/, "")}/` : base;
 }

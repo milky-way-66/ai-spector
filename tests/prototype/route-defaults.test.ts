@@ -58,7 +58,7 @@ describe("route defaults in screen-map", () => {
       const detail = result.screenMap.screens.find((s) => s.screenId === "order-detail");
       expect(detail?.uri).toBe("/orders/:id");
       expect(detail?.previewUri).toBe("/orders/demo-001");
-      expect(detail?.prototypePath).toBe("dist/orders/demo-001");
+      expect(detail?.prototypePath).toBe("dist/orders/demo-001/");
       expect(detail?.requiresAuth).toBe(true);
       expect(result.screenMap.buildDest).toBe("dist");
       expect(result.screenMap.prototypeBypassAuth).toBe(true);

@@ -23,20 +23,51 @@ export function spaFallbackDeployPaths(
   return paths;
 }
 
+function routePartFromDeployPath(deployPath: string, deployBase: string): string {
+  const normalizedDeploy = deployPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  const base = deployBase.replace(/\/$/, "");
+  if (normalizedDeploy === base) {
+    return "";
+  }
+  if (normalizedDeploy.startsWith(`${base}/`)) {
+    return normalizedDeploy.slice(base.length + 1);
+  }
+  return normalizedDeploy;
+}
+
 function deployPathToRepoIndexPath(
   deployPath: string,
   repoBuildDest: string,
   deployBase: string,
 ): string {
-  const normalizedDeploy = deployPath.replace(/\\/g, "/");
-  const base = deployBase.replace(/\/$/, "");
-  const routePart =
-    normalizedDeploy === base
-      ? ""
-      : normalizedDeploy.startsWith(`${base}/`)
-        ? normalizedDeploy.slice(base.length + 1)
-        : normalizedDeploy;
+  const routePart = routePartFromDeployPath(deployPath, deployBase);
   return join(repoBuildDest, routePart, "index.html").replace(/\\/g, "/");
+}
+
+/** Relative base href so `./assets/…` resolves to the SPA build root, not the nested folder. */
+export function baseHrefForRouteDepth(routeSegmentCount: number): string {
+  if (routeSegmentCount <= 0) {
+    return "./";
+  }
+  return "../".repeat(routeSegmentCount);
+}
+
+export function injectSpaFallbackBaseHref(html: string, baseHref: string): string {
+  const baseTag = `<base href="${baseHref.replace(/"/g, "&quot;")}">`;
+  if (/<base\s[\s\S]*?\/?>/i.test(html)) {
+    return html.replace(/<base\s[\s\S]*?\/?>/i, baseTag);
+  }
+  if (/<head(\s[^>]*)?>/i.test(html)) {
+    return html.replace(/<head(\s[^>]*)?>/i, (match) => `${match}\n    ${baseTag}`);
+  }
+  return `${baseTag}\n${html}`;
+}
+
+function fallbackIndexHtml(rootIndexHtml: string, deployPath: string, deployBase: string): string {
+  const depth = routePartFromDeployPath(deployPath, deployBase)
+    .split("/")
+    .filter(Boolean).length;
+  return injectSpaFallbackBaseHref(rootIndexHtml, baseHrefForRouteDepth(depth));
 }
 
 /**
@@ -83,7 +114,11 @@ export async function writeSpaRouteFallbacks(opts: {
       continue;
     }
     await mkdir(dirname(absIndex), { recursive: true });
-    await writeFile(absIndex, indexHtml, "utf8");
+    await writeFile(
+      absIndex,
+      fallbackIndexHtml(indexHtml, deployPath, deployBase),
+      "utf8",
+    );
     written.push(relIndex.replace(/\\/g, "/"));
   }
 
