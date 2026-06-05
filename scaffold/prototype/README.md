@@ -60,5 +60,6 @@ When `buildMode` is `spa`:
 
 1. **Direct routes** — `screen-map.json` sets `prototypeBypassAuth: true` so the app router must not force login before showing a deep-linked screen.
 2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Open each screen via its `previewUri` in `screen-map.json`.
+3. **Zip / static hosting** — deep links like `dist/trip/.../print` are not real files. After `prototype sync` or `prototype manifest`, the CLI copies `dist/index.html` into each route folder (e.g. `dist/trip/.../print/index.html`) so uploaded zips work without nginx config.
 
 Starter patterns: `prototype/spa/vue/` (router guard helper).

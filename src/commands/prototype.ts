@@ -30,10 +30,32 @@ import {
 } from "../prototype/theme-preview.js";
 import { openInBrowser } from "../util/open-browser.js";
 import { rewriteBuildAssetRefs } from "../prototype/rewrite-build-assets.js";
+import { writeSpaRouteFallbacks } from "../prototype/spa-route-fallbacks.js";
 import {
   formatPrototypeIssues,
   validatePrototype,
 } from "../prototype/validate.js";
+import type { PrototypeConfig } from "../prototype/types.js";
+import type { BuildPrototypeManifestResult } from "../prototype/build-manifest.js";
+
+async function writeSpaFallbacksIfNeeded(
+  projectRoot: string,
+  config: PrototypeConfig,
+  built: BuildPrototypeManifestResult,
+): Promise<{ filesWritten: number; paths: string[] } | null> {
+  if (built.screenMap.buildMode !== "spa" || !built.screenMap.buildDest) {
+    return null;
+  }
+  const repoBuildDest =
+    config.buildDest?.trim() || `${config.prototypeDir}/dist`;
+  return writeSpaRouteFallbacks({
+    projectRoot,
+    repoBuildDest,
+    prototypeDir: config.prototypeDir,
+    deployBase: built.screenMap.buildDest,
+    screens: built.screenMap.screens,
+  });
+}
 
 export interface PrototypeThemesOptions {
   json?: boolean;
@@ -264,6 +286,7 @@ export async function runPrototypeManifest(
   }
 
   const paths = await writePrototypeManifestFiles(projectRoot, config, built);
+  const fallbacks = await writeSpaFallbacksIfNeeded(projectRoot, configAfterDefault, built);
   if (opts.json) {
     console.log(
       JSON.stringify(
@@ -287,6 +310,11 @@ export async function runPrototypeManifest(
       : `${built.htmlCount}/${built.screenCount} HTML present`;
   console.log(`Wrote ${paths.manifestPath} (${built.screenCount} screens)`);
   console.log(`Wrote ${paths.screenMapPath} (${htmlLabel})`);
+  if (fallbacks && fallbacks.filesWritten > 0) {
+    console.log(
+      `Wrote ${fallbacks.filesWritten} SPA route index.html fallback(s) for zip/static hosting`,
+    );
+  }
   for (const warning of built.warnings) {
     console.warn(`Warning: ${warning}`);
   }
@@ -442,6 +470,7 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
     (await readPrototypeThemeName(projectRoot, config)) || config.defaultTheme;
   const built = await buildPrototypeManifest({ projectRoot, config, themeName: theme });
   const paths = await writePrototypeManifestFiles(projectRoot, config, built);
+  const fallbacks = await writeSpaFallbacksIfNeeded(projectRoot, config, built);
 
   if (opts.json) {
     console.log(
@@ -471,6 +500,9 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
   console.log(`Updated ${paths.screenMapPath}`);
   console.log(`  buildMode: ${config.buildMode ?? "static"}`);
   console.log(`  buildDest: ${buildDest}`);
+  if (fallbacks && fallbacks.filesWritten > 0) {
+    console.log(`  SPA route fallbacks: ${fallbacks.filesWritten} index.html cop(ies) for zip hosting`);
+  }
   console.log("");
   console.log("Screen URI mapping:");
   for (const s of built.screenMap.screens) {
