@@ -103,12 +103,13 @@ export interface PrototypeManifest {
 export interface PrototypeScreenMapEntry {
   screenId: string;
   displayName: string;
+  /** Primary screen design doc — full repo-relative path (primary language). */
+  screenDoc: string;
   /**
    * Language-neutral screen design doc path (no `docs/` prefix, no language segment).
    * e.g. "basic-design/screens/login.md"
-   * Single-language full path: `docs/${screenDoc}`.
    */
-  screenDoc: string;
+  screenDocPath: string;
   /**
    * Per-language repo-relative screen design doc paths.
    * Present when the project has multiple docflow languages.
@@ -117,9 +118,9 @@ export interface PrototypeScreenMapEntry {
   screenDocs?: Record<string, string>;
   prototypeStem: string;
   /**
-   * Path to the prototype file for this screen.
-   * - static mode: "prototype/src/<stem>.html"
-   * - spa mode: "<buildDest>/index.html" (same entrypoint for all screens)
+   * Path to open this screen in the deployed prototype.
+   * - static mode: repo-relative HTML file, e.g. "prototype/src/<stem>.html"
+   * - spa mode: deploy-relative route path, e.g. "dist/schedules/new" (no index.html)
    */
   prototypePath: string;
   /**
@@ -160,8 +161,8 @@ export interface PrototypeScreenMap {
    */
   prototypeBypassAuth?: boolean;
   /**
-   * SPA only: repo-relative path to the build output directory (e.g. "prototype/dist").
-   * The single entrypoint for all screens is at <buildDest>/index.html.
+   * SPA only: deploy-relative build output directory (e.g. "dist").
+   * Served at domain/prefix/<buildDest>/; repo sync path may include a prototype/ prefix.
    */
   buildDest?: string;
   /**

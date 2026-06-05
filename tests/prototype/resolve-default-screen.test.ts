@@ -7,6 +7,7 @@ function entry(
 ): PrototypeScreenMapEntry {
   return {
     screenDoc: "docs/basic-design/screens/x.md",
+    screenDocPath: "basic-design/screens/x.md",
     prototypeStem: partial.screenId.toLowerCase(),
     prototypePath: `prototype/src/${partial.screenId.toLowerCase()}.html`,
     htmlExists: false,

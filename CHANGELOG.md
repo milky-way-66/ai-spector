@@ -27,9 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- **Node 22 CLI crash** — `ai-spector-graph` imports `default-impact.json` with `with { type: "json" }` so the CLI loads on Node 22 (`ERR_IMPORT_ATTRIBUTE_MISSING`). Bumped `ai-spector-graph` to `0.4.1`.
-- **Screen-map doc paths** — `screen-map.json` `screenDoc` is now the language-neutral logical path (e.g. `basic-design/screens/login.md`); `screenDocs` holds full repo-relative paths per language when multi-lang.
-
+- **Node 22 / Node 20.20+ CLI crash** — `ai-spector-graph@0.4.1` imports `default-impact.json` with `with { type: "json" }` (`ERR_IMPORT_ATTRIBUTE_MISSING`). **Publish `ai-spector-graph@0.4.1` before `ai-spector@0.6.0`.**
+- **Screen-map doc paths** — `screenDoc` is the full primary-language repo path; new `screenDocPath` is the language-neutral logical path (e.g. `basic-design/screens/login.md`); `screenDocs` has distinct full paths per language (`docs/basic-design/en/...`, `docs/basic-design/vi/...`).
+- **`setup --check`** — reports missing `prototype/screen-map.json` when `manifest.json` exists.
+- **Missing screen design docs** — `prototype manifest` warns when a screen doc file is missing and suggests the Screen Index "Spec file" column.
 
 - **DOC-SECTION-COVERAGE for basic-design list chapters** — `documents-basic-design.json` registers list chapters at bootstrap/index; **doc-extract** now parses `.ai-spector/templates/basic_design/` and emits `contains` → `section` edges for `doc.bd.list-api`, `doc.bd.list-screen`, and `doc.bd.db-design` during `index` (fixes validate failure when an older global CLI omitted basic-design from the registry).
 - **Basic-design doc extract** — emit list + template `document` nodes in the same patch before detail edges (one index pass); still skip edges only when an endpoint is genuinely missing (fallback).

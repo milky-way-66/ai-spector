@@ -23,7 +23,7 @@ describe("screen doc path helpers", () => {
     );
   });
 
-  it("builds logical screenDoc and full per-language screenDocs", () => {
+  it("builds screenDocPath and full per-language screenDocs", () => {
     const result = buildScreenDocPaths({
       screenDetailDir: "docs/basic-design/en/screens",
       docFilename: "login.md",
@@ -31,15 +31,18 @@ describe("screen doc path helpers", () => {
     });
 
     expect(result).toEqual({
-      screenDoc: "basic-design/screens/login.md",
+      screenDocPath: "basic-design/screens/login.md",
       screenDocs: {
         en: "docs/basic-design/en/screens/login.md",
         vi: "docs/basic-design/vi/screens/login.md",
       },
     });
+    expect(result.screenDocs!.en).not.toBe(result.screenDocs!.vi);
+    expect(result.screenDocs!.en.includes("/en/")).toBe(true);
+    expect(result.screenDocs!.vi.includes("/vi/")).toBe(true);
   });
 
-  it("builds logical screenDoc only for single-language projects", () => {
+  it("builds screenDocPath only for single-language projects", () => {
     const result = buildScreenDocPaths({
       screenDetailDir: "docs/basic-design/screens/",
       docFilename: "home.md",
@@ -47,7 +50,7 @@ describe("screen doc path helpers", () => {
     });
 
     expect(result).toEqual({
-      screenDoc: "basic-design/screens/home.md",
+      screenDocPath: "basic-design/screens/home.md",
     });
   });
 });
@@ -73,7 +76,7 @@ const LIST = `## 4. Screen Index
 `;
 
 describe("screen-map screen doc paths", () => {
-  it("writes logical screenDoc and full screenDocs in multi-lang projects", async () => {
+  it("writes full screenDoc, screenDocPath, and screenDocs in multi-lang projects", async () => {
     await withTempProject(async (root) => {
       await writeJson(join(root, ".ai-spector/docflow.config.json"), {
         version: 1,
@@ -94,7 +97,8 @@ describe("screen-map screen doc paths", () => {
       });
 
       const login = result.screenMap.screens[0]!;
-      expect(login.screenDoc).toBe("basic-design/screens/login.md");
+      expect(login.screenDoc).toBe("docs/basic-design/en/screens/login.md");
+      expect(login.screenDocPath).toBe("basic-design/screens/login.md");
       expect(login.screenDocs).toEqual({
         en: "docs/basic-design/en/screens/login.md",
         vi: "docs/basic-design/vi/screens/login.md",
@@ -102,6 +106,36 @@ describe("screen-map screen doc paths", () => {
       expect(result.manifest.screens[0]!.screenDoc).toBe(
         "docs/basic-design/en/screens/login.md",
       );
+    });
+  });
+
+  it("warns when screen design doc path is missing", async () => {
+    await withTempProject(async (root) => {
+      const listWithSpec = `## 4. Screen Index
+
+| Screen | Spec file | Section (Detail Screen) | User Role | Purpose |
+|--------|-----------|-------------------------|-----------|---------|
+| Customers Directory | customers-roll-up.md | 5 | All | List |
+`;
+      await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
+      await writeFile(join(root, "docs/basic-design/list-screens.md"), listWithSpec, "utf8");
+      await mkdir(join(root, "prototype"), { recursive: true });
+
+      const result = await buildPrototypeManifest({
+        projectRoot: root,
+        config: {
+          ...multiLangConfig,
+          listScreenDoc: "docs/basic-design/list-screens.md",
+          screenDetailDir: "docs/basic-design/screens/",
+          buildMode: "static",
+        },
+        themeName: "stripe",
+      });
+
+      expect(result.screenMap.screens[0]!.screenDoc).toBe(
+        "docs/basic-design/screens/customers-roll-up.md",
+      );
+      expect(result.warnings.some((w) => w.includes("customers-roll-up.md"))).toBe(true);
     });
   });
 });

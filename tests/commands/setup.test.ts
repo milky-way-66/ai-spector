@@ -43,6 +43,26 @@ describe("setup", () => {
     });
   });
 
+  it("audit detects missing screen-map when manifest exists", async () => {
+    await withTempProject(async (root) => {
+      await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
+      await writeJson(join(root, ".ai-spector/.docflow/config/prototype.config.json"), {
+        version: 1,
+        prototypeDir: "prototype",
+      });
+      await mkdir(join(root, "prototype"), { recursive: true });
+      await writeJson(join(root, "prototype/manifest.json"), {
+        schemaVersion: 1,
+        themeName: "stripe",
+        generatedAt: "2020-01-01T00:00:00.000Z",
+        screens: [],
+      });
+
+      const audit = await auditSetup(root);
+      expect(audit.steps.find((s) => s.id === "prototype-screen-map")?.status).toBe("missing");
+    });
+  });
+
   it("setup refreshes existing project", async () => {
     await withTempProject(async (root) => {
       await gitInit(root);

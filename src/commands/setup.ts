@@ -163,6 +163,23 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
         detail: "Could not read docflow.config.json",
       });
     }
+
+    const protoConfigPath = join(root, ".ai-spector/.docflow/config/prototype.config.json");
+    if (await pathExists(protoConfigPath)) {
+      const protoConfig = await readJson<{ prototypeDir?: string }>(protoConfigPath);
+      const protoDir = protoConfig.prototypeDir?.trim() || "prototype";
+      const manifestPath = join(root, protoDir, "manifest.json");
+      const screenMapPath = join(root, protoDir, "screen-map.json");
+      if (await pathExists(manifestPath)) {
+        const screenMapExists = await pathExists(screenMapPath);
+        steps.push({
+          id: "prototype-screen-map",
+          label: `${protoDir}/screen-map.json`,
+          status: screenMapExists ? "ok" : "missing",
+          fix: screenMapExists ? undefined : "npx ai-spector prototype manifest",
+        });
+      }
+    }
   }
 
   const pkgPath = join(root, "package.json");

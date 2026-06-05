@@ -1,8 +1,8 @@
 import { join } from "node:path";
 
 export interface ScreenDocPathResult {
-  /** Language-neutral doc path without the `docs/` prefix (e.g. basic-design/screens/login.md). */
-  screenDoc: string;
+  /** Language-neutral doc path without the `docs/` prefix or language segment. */
+  screenDocPath: string;
   /** Per-language repo-relative paths when the project has multiple doc languages. */
   screenDocs?: Record<string, string>;
 }
@@ -21,7 +21,23 @@ export function toLangNeutralDocDir(detailDir: string, docLanguages: string[]): 
   return normalized;
 }
 
-/** Build logical + per-language screen doc paths for screen-map entries. */
+function fullPathForLanguage(
+  logicalPath: string,
+  lang: string,
+  docLanguages: string[],
+): string {
+  if (docLanguages.length <= 1) {
+    return `docs/${logicalPath}`.replace(/\\/g, "/");
+  }
+  const slash = logicalPath.indexOf("/");
+  const domain = slash >= 0 ? logicalPath.slice(0, slash) : logicalPath;
+  const rest = slash >= 0 ? logicalPath.slice(slash + 1) : "";
+  return rest
+    ? `docs/${domain}/${lang}/${rest}`.replace(/\\/g, "/")
+    : `docs/${domain}/${lang}/${logicalPath}`.replace(/\\/g, "/");
+}
+
+/** Build logical path + per-language repo-relative paths for screen-map entries. */
 export function buildScreenDocPaths(opts: {
   screenDetailDir: string;
   docFilename: string;
@@ -31,19 +47,14 @@ export function buildScreenDocPaths(opts: {
   const logicalPath = join(langNeutralDir, opts.docFilename).replace(/\\/g, "/");
 
   if (opts.docLanguages.length > 1) {
-    const slash = logicalPath.indexOf("/");
-    const domain = slash >= 0 ? logicalPath.slice(0, slash) : logicalPath;
-    const rest = slash >= 0 ? logicalPath.slice(slash + 1) : "";
     const screenDocs = Object.fromEntries(
       opts.docLanguages.map((lang) => [
         lang,
-        rest
-          ? `docs/${domain}/${lang}/${rest}`.replace(/\\/g, "/")
-          : `docs/${domain}/${lang}/${logicalPath}`.replace(/\\/g, "/"),
+        fullPathForLanguage(logicalPath, lang, opts.docLanguages),
       ]),
     );
-    return { screenDoc: logicalPath, screenDocs };
+    return { screenDocPath: logicalPath, screenDocs };
   }
 
-  return { screenDoc: logicalPath };
+  return { screenDocPath: logicalPath };
 }

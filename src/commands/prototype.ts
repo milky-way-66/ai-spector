@@ -287,6 +287,9 @@ export async function runPrototypeManifest(
       : `${built.htmlCount}/${built.screenCount} HTML present`;
   console.log(`Wrote ${paths.manifestPath} (${built.screenCount} screens)`);
   console.log(`Wrote ${paths.screenMapPath} (${htmlLabel})`);
+  for (const warning of built.warnings) {
+    console.warn(`Warning: ${warning}`);
+  }
   if (built.screenMap.buildMode === "spa" && built.screenMap.buildDest) {
     console.log(`  buildDest: ${built.screenMap.buildDest}`);
   }

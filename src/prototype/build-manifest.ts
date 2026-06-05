@@ -16,6 +16,7 @@ import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
+import { toDeployBasePath, toSpaScreenPrototypePath } from "./deploy-path.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -39,6 +40,7 @@ export interface BuildPrototypeManifestResult {
   screenMap: PrototypeScreenMap;
   screenCount: number;
   htmlCount: number;
+  warnings: string[];
 }
 
 export async function buildPrototypeManifest(
@@ -64,6 +66,7 @@ export async function buildPrototypeManifest(
 
   const generatedAt = new Date().toISOString();
   let htmlCount = 0;
+  const warnings: string[] = [];
 
   const manifestScreens = rows.map((r) => ({
     screenId: r.screenId,
@@ -75,11 +78,14 @@ export async function buildPrototypeManifest(
   }));
 
   const buildMode = opts.config.buildMode ?? "static";
-  const buildDest =
+  const repoBuildDest =
     buildMode === "spa"
       ? opts.config.buildDest?.trim() || `${opts.config.prototypeDir}/dist`
       : undefined;
-  const spaEntryPath = buildDest ? `${buildDest}/index.html` : undefined;
+  const deployBuildDest = repoBuildDest
+    ? toDeployBasePath(repoBuildDest, opts.config.prototypeDir)
+    : undefined;
+  const spaEntryPath = repoBuildDest ? `${repoBuildDest}/index.html` : undefined;
 
   // Load docflow languages for multi-lang screenDocs (best-effort; ignore if config missing).
   let docLanguages: string[] = [];
@@ -123,13 +129,10 @@ export async function buildPrototypeManifest(
 
   const mapScreens = await Promise.all(
     rows.map(async (r) => {
-      let effectivePath: string;
       let exists: boolean;
       if (buildMode === "spa" && spaEntryPath) {
-        effectivePath = spaEntryPath;
         exists = spaIndexExists;
       } else {
-        effectivePath = r.prototypePath;
         exists = await htmlExists(opts.projectRoot, r.prototypePath);
         if (exists) htmlCount++;
       }
@@ -145,17 +148,33 @@ export async function buildPrototypeManifest(
         fromPriorEntry: prior,
       });
 
+      const effectivePath =
+        buildMode === "spa" && deployBuildDest
+          ? toSpaScreenPrototypePath(
+              deployBuildDest,
+              routeApplied.previewUri ?? routeApplied.uri,
+            )
+          : r.prototypePath;
+
       const docFilename = r.specFile ?? `${r.slug}.md`;
-      const { screenDoc, screenDocs } = buildScreenDocPaths({
+      const { screenDocPath, screenDocs } = buildScreenDocPaths({
         screenDetailDir: opts.config.screenDetailDir,
         docFilename,
         docLanguages,
       });
 
+      if (!(await pathExists(join(opts.projectRoot, r.screenDoc)))) {
+        warnings.push(
+          `Screen design doc missing for "${r.displayName}" (${r.screenId}): ${r.screenDoc}. ` +
+            `If the filename differs from the slug, add a "Spec file" column in ${opts.config.listScreenDoc}.`,
+        );
+      }
+
       return {
         screenId: r.screenId,
         displayName: r.displayName,
-        screenDoc,
+        screenDoc: r.screenDoc,
+        screenDocPath,
         ...(screenDocs ? { screenDocs } : {}),
         prototypeStem: r.prototypeStem,
         prototypePath: effectivePath,
@@ -194,7 +213,7 @@ export async function buildPrototypeManifest(
     generatedAt,
     ...(defaultScreenId ? { defaultScreenId } : {}),
     ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
-    ...(buildDest ? { buildDest } : {}),
+    ...(deployBuildDest ? { buildDest: deployBuildDest } : {}),
     ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
     screens: mapScreens,
   };
@@ -204,6 +223,7 @@ export async function buildPrototypeManifest(
     screenMap,
     screenCount: rows.length,
     htmlCount,
+    warnings,
   };
 }
 
