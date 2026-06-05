@@ -1,54 +1,27 @@
+import type {
+  AnalysisKnowledge,
+  KnowledgeActor,
+  KnowledgeEntity,
+  KnowledgeFeature,
+  KnowledgeRequirement,
+  KnowledgeUseCase,
+} from "ai-spector-graph";
 import type { GraphEdge, GraphNode } from "../types.js";
 import { DEFAULT_LISTED_IN } from "./defaults.js";
 
-export interface AnalysisKnowledge {
-  knowledgeVersion?: number;
-  actors?: KnowledgeActor[];
-  useCases?: KnowledgeUseCase[];
-  features?: KnowledgeFeature[];
-  functionalRequirements?: KnowledgeRequirement[];
-  nfrs?: KnowledgeRequirement[];
-  entities?: KnowledgeEntity[];
-}
+export type {
+  AnalysisKnowledge,
+  KnowledgeActor,
+  KnowledgeUseCase,
+  KnowledgeFeature,
+  KnowledgeRequirement,
+  KnowledgeEntity,
+} from "ai-spector-graph";
 
-export interface KnowledgeActor {
-  id: string;
-  name?: string;
-  title?: string;
-  description?: string;
-  listedInSection?: string;
-}
-
-export interface KnowledgeUseCase {
-  id: string;
-  title: string;
-  priority?: string;
-  description?: string;
-  listedInSection?: string;
-}
-
-export interface KnowledgeFeature {
-  id: string;
-  title: string;
-  description?: string;
-  listedInSection?: string;
-  satisfies?: string[];
-}
-
-export interface KnowledgeRequirement {
-  id: string;
-  title: string;
-  description?: string;
-  listedInSection?: string;
-  tracesTo?: string[];
-}
-
-export interface KnowledgeEntity {
-  id: string;
-  name: string;
-  description?: string;
-  listedInSection?: string;
-}
+export {
+  isKnowledgePayload,
+  knowledgeHasDomainEntries,
+} from "ai-spector-graph";
 
 export interface ExtractPatch {
   version: 1;
@@ -140,26 +113,3 @@ export function knowledgeToPatch(knowledge: AnalysisKnowledge): ExtractPatch {
   return { version: 1, nodes, edges };
 }
 
-export function isKnowledgePayload(data: unknown): data is AnalysisKnowledge {
-  if (!data || typeof data !== "object") {
-    return false;
-  }
-  const k = data as Record<string, unknown>;
-  return (
-    "knowledgeVersion" in k ||
-    Array.isArray(k.useCases) ||
-    Array.isArray(k.features) ||
-    Array.isArray(k.actors)
-  );
-}
-
-export function knowledgeHasDomainEntries(knowledge: AnalysisKnowledge): boolean {
-  return (
-    (knowledge.useCases?.length ?? 0) > 0 ||
-    (knowledge.features?.length ?? 0) > 0 ||
-    (knowledge.actors?.length ?? 0) > 0 ||
-    (knowledge.functionalRequirements?.length ?? 0) > 0 ||
-    (knowledge.nfrs?.length ?? 0) > 0 ||
-    (knowledge.entities?.length ?? 0) > 0
-  );
-}

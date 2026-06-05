@@ -87,6 +87,17 @@ For scripts or debugging: `npx ai-spector index`, `graph validate`, `graph visua
 | Validate errors after edits | `/index` |
 | Old slash commands | `npx ai-spector sync-cursor` |
 
+## Web / graph SDK
+
+For **browser or custom dashboards** (not the Cursor CLI), use the read-only npm package **`ai-spector-graph`**. Your backend serves repo JSON; the frontend loads it into `ProjectSession`.
+
+- **[Integration guide](docs/ai-spector-graph-integration-guide.md)** — architecture, API examples, React, recipes
+- **[API reference](docs/ai-spector-graph.md)** — types and exports
+
+```bash
+npm install ai-spector-graph
+```
+
 ## Develop
 
 ```bash

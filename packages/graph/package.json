@@ -1,6 +1,6 @@
 {
   "name": "ai-spector-graph",
-  "version": "0.1.1",
+  "version": "0.4.0",
   "description": "Browser SDK for ai-spector traceability graphs — query and impact analysis",
   "type": "module",
   
