@@ -25,6 +25,28 @@ export interface GraphImpactCliOptions {
   json?: boolean;
 }
 
+const PER_DOMAIN_FILE_RE = /(?:\/|^)(uc|f|ent)-\d+[_-]/i;
+
+function buildResolveFailureHint(
+  opts: Pick<GraphImpactCliOptions, "file" | "heading" | "originId">,
+): string {
+  const file = opts.file?.trim();
+  if (file && PER_DOMAIN_FILE_RE.test(file) && !opts.heading?.trim()) {
+    const slug = file.split("/").pop() ?? file;
+    const ucMatch = slug.match(/^(uc|f)-?(\d+)/i);
+    const nodeHint = ucMatch ? ` or \`graph impact UC-${ucMatch[2]}\`` : "";
+    return (
+      `Could not resolve impact origin for per-domain projection file: ${file}\n` +
+      `Per-UC/feature projection files require a heading or domain node id to scope the seed.\n` +
+      `Use one of:\n` +
+      `  npx ai-spector graph impact --git --json                               (recommended)\n` +
+      `  npx ai-spector graph impact --file ${file} --heading "<heading text>" --json\n` +
+      `  npx ai-spector graph impact <nodeId> --json${nodeHint}`
+    );
+  }
+  return "Could not resolve impact origin. Provide <nodeId>, --file <path> [--heading <text>], or --git.";
+}
+
 export function resolveImpactOriginId(
   g: Awaited<ReturnType<typeof loadInMemoryGraph>>,
   opts: Pick<GraphImpactCliOptions, "originId" | "file" | "heading">,
@@ -44,9 +66,8 @@ export function resolveImpactOriginId(
   });
   const primary = pickPrimaryImpactOrigin(origins);
   if (!primary) {
-    throw new Error(
-      "Could not resolve impact origin. Provide <nodeId>, or --file <path>, or --heading <text>.",
-    );
+    const hint = buildResolveFailureHint(opts);
+    throw new Error(hint);
   }
   return { originId: primary.id, resolved: primary };
 }

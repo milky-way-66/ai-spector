@@ -9,7 +9,7 @@ describe("auditGraphLayers", () => {
     const g = loadGraph([node("UC-01", "useCase")], []);
     const report = await auditGraphLayers(g);
     expect(report.layers.specInstances.ok).toBe(false);
-    expect(report.suggestedCommand).toBe("ai-spector index");
+    expect(report.suggestedCommand).toBe("npx ai-spector index");
   });
 
   it("suggests link-graph when derivedFrom but no relatesTo", async () => {

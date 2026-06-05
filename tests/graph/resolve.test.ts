@@ -94,6 +94,45 @@ diff --git a/README.md b/README.md
 +# readme tweak
 `;
 
+describe("findDocumentNodeIdForPath — per-UC locale path", () => {
+  it("matches outputPattern with {token} placeholders and locale segment", () => {
+    const g = loadGraph(
+      [
+        node("doc.srs.uc-detail", "document", {
+          outputPattern: "docs/srs/03-use-cases/uc-{nn}-{slug}.md",
+        }),
+      ],
+      [],
+    );
+    expect(
+      findDocumentNodeIdForPath(g, "docs/srs/en/03-use-cases/UC-10-sign-in-with-google.md"),
+    ).toBe("doc.srs.uc-detail");
+  });
+});
+
+describe("resolveImpactOrigins — rendersTo domain resolution", () => {
+  it("finds domain node via rendersTo edge when --file points to per-UC output", () => {
+    const filePath = "docs/srs/en/03-use-cases/UC-10-sign-in-with-google.md";
+    const g = loadGraph(
+      [
+        node("doc.srs.uc-detail", "document", {
+          outputPattern: "docs/srs/03-use-cases/uc-{nn}-{slug}.md",
+        }),
+        node("UC-10", "useCase", { title: "Sign in with Google" }),
+      ],
+      [
+        { type: "rendersTo", from: "UC-10", to: filePath },
+      ],
+    );
+
+    const origins = resolveImpactOrigins(g, { file: filePath });
+    const ids = origins.map((o) => o.id);
+    expect(ids).toContain("UC-10");
+    // useCase (rank 2) beats document (rank 1)
+    expect(pickPrimaryImpactOrigin(origins)?.id).toBe("UC-10");
+  });
+});
+
 describe("parseGitDiffRegions", () => {
   it("extracts file paths, section anchors, and headings; prioritizes docs/", () => {
     const regions = parseGitDiffRegions(SAMPLE_DIFF);

@@ -21,12 +21,17 @@ export interface ResolvedOrigin {
 }
 
 export function globToRegExp(glob: string): RegExp {
+  // Replace template variables like {nn}, {slug} with a placeholder before shell-escaping,
+  // then restore them as single-segment wildcards ([^/]+).
+  const TMPL = "\x00";
   const escaped = glob
+    .replace(/\{[^}]+\}/g, TMPL)
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
     .replace(/\*\*\//g, "(?:.*/)?")
     .replace(/\*\*/g, ".*")
-    .replace(/\*/g, "[^/]*");
-  return new RegExp(`^${escaped}$`);
+    .replace(/\*/g, "[^/]*")
+    .replace(new RegExp(TMPL, "g"), "[^/]+");
+  return new RegExp(`^${escaped}$`, "i");
 }
 
 function normalizePath(relativePath: string): string {
@@ -37,18 +42,35 @@ function documentNodes(g: InMemoryGraph): GraphNode[] {
   return [...g.nodesById.values()].filter((n) => n.type === "document");
 }
 
+// Strip a locale segment from paths like "docs/srs/en/03-use-cases/..." → "docs/srs/03-use-cases/..."
+// Locale segments are 2-5 char codes immediately after the second path component.
+function stripLocaleSegment(p: string): string | undefined {
+  const m = p.match(/^(docs\/[^/]+\/)([a-z]{2,5}(?:-[a-zA-Z]{2,4})?\/)(.+)$/i);
+  return m ? m[1] + m[3] : undefined;
+}
+
 export function findDocumentNodeIdForPath(
   g: InMemoryGraph,
   relativePath: string,
 ): string | undefined {
   const norm = normalizePath(relativePath);
+  const normNoLocale = stripLocaleSegment(norm);
+
+  const match = (candidate: string): boolean =>
+    norm === candidate || (normNoLocale !== undefined && normNoLocale === candidate);
+
+  const patternMatch = (pattern: string): boolean => {
+    const re = globToRegExp(pattern);
+    return re.test(norm) || (normNoLocale !== undefined && re.test(normNoLocale));
+  };
+
   for (const n of documentNodes(g)) {
     const out = n.output as string | undefined;
-    if (out && norm === normalizePath(out)) {
+    if (out && match(normalizePath(out))) {
       return n.id;
     }
     const pattern = n.outputPattern as string | undefined;
-    if (pattern && globToRegExp(pattern).test(norm)) {
+    if (pattern && patternMatch(pattern)) {
       return n.id;
     }
   }
@@ -211,10 +233,36 @@ export function resolveImpactOrigins(
 
   if (hints.file?.trim()) {
     const path = normalizePath(hints.file);
+    const pathNoLocale = stripLocaleSegment(path);
+
+    const pathMatches = (candidate: string): boolean => {
+      const c = normalizePath(candidate);
+      return (
+        c === path ||
+        c.toLowerCase() === path.toLowerCase() ||
+        (pathNoLocale !== undefined &&
+          (c === pathNoLocale || c.toLowerCase() === pathNoLocale.toLowerCase()))
+      );
+    };
+
     const docId = findDocumentNodeIdForPath(g, path);
     if (docId) {
       push(docId, `document for path ${path}`);
     }
+
+    // Also scan rendersTo edges: find domain nodes (useCase, feature, etc.)
+    // that render directly to this file — gives more specific seed than template doc.
+    for (const [fromId, edges] of g.outEdges) {
+      for (const e of edges) {
+        if (e.type === "rendersTo" && pathMatches(e.to)) {
+          const fromNode = g.nodesById.get(fromId);
+          if (fromNode && fromNode.type !== "document") {
+            push(fromId, `rendersTo ${path}`);
+          }
+        }
+      }
+    }
+
     if (hints.heading?.trim()) {
       for (const id of findSectionNodeIdsByHeading(g, hints.heading, path)) {
         push(id, `section heading in ${path}`);
