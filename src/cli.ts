@@ -7,7 +7,7 @@ import { resolveProjectPaths } from "./util/paths.js";
 import { buildSectionRegistry } from "./registry/build.js";
 import { bootstrapFromRegistry } from "./commands/bootstrap.js";
 import { validateGraph, formatIssues } from "./commands/validate.js";
-import { runInit } from "./commands/init.js";
+import { runInit, type AgentTarget } from "./commands/init.js";
 import { runLangAdd } from "./commands/lang.js";
 import {
   runLangQueueFailed,
@@ -79,23 +79,23 @@ async function getPaths(cmd: Command) {
 
 program
   .command("init")
-  .description("Scaffold .ai-spector, Cursor commands/skills, and docs layout")
+  .description("Interactive wizard: scaffold .ai-spector, agent rules/skills, and docs layout")
   .option("-f, --force", "Overwrite existing scaffold files")
+  .option("-y, --yes", "Non-interactive: skip prompts, use defaults or provided flags")
   .option("-C, --cwd <path>", "Target directory", process.cwd())
-  .option(
-    "-l, --languages <codes>",
-    "Comma-separated language codes to set up (e.g. en,jp,vi)",
-    "en",
-  )
+  .option("-l, --languages <codes>", "Comma-separated language codes (e.g. en,jp,vi)")
+  .option("--target <agent>", "cursor | claude | both — skip the editor prompt")
   .action(async (opts) => {
-    const langCodes = (opts.languages as string)
-      .split(",")
-      .map((c: string) => c.trim())
-      .filter(Boolean);
+    const langCodes = opts.languages
+      ? (opts.languages as string).split(",").map((c: string) => c.trim()).filter(Boolean)
+      : [];
+    const target = opts.target as AgentTarget | undefined;
     await runInit({
       targetDir: resolve(opts.cwd ?? process.cwd()),
       force: opts.force,
+      yes: opts.yes,
       languages: langCodes,
+      target,
     });
   });
 

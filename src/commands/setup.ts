@@ -290,6 +290,7 @@ export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
       targetDir: root,
       force: opts.force,
       languages: langCodes,
+      yes: true, // setup already ran its own prompts
     });
   } else if (configExists) {
     console.log("");

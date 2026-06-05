@@ -30,6 +30,11 @@ export function scaffoldCursorBundleRoot(): string {
   return join(scaffoldBundleRoot(), "cursor");
 }
 
+/** Claude Code CLAUDE.md + .claude/ skills bundled under scaffold. */
+export function scaffoldClaudeBundleRoot(): string {
+  return join(scaffoldBundleRoot(), "claude");
+}
+
 export function findProjectRoot(start = process.cwd()): string {
   let dir = resolve(start);
   for (;;) {

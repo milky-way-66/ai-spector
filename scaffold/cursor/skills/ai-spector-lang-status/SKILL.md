@@ -18,7 +18,15 @@ paths:
 1. Read `.ai-spector/docflow.config.json`. Extract `languages[]`.
    - If only one language, reply: "Only one language configured — nothing to compare."
 
-2. Run the translation queue CLI (primary source of truth):
+2. **Refresh the index first** — the queue is only accurate after indexing:
+
+```bash
+npx ai-spector index
+```
+
+This scans all doc files, updates fingerprints, and reconciles pending/resolved jobs in the translation queue. Skip only if the user explicitly says they just ran it.
+
+3. Run the translation queue CLI (primary source of truth):
 
 ```bash
 npx ai-spector lang queue pending --json
