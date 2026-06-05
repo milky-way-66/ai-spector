@@ -225,6 +225,8 @@ export interface PrototypeManifestOptions {
   defaultScreen?: string;
   dryRun?: boolean;
   json?: boolean;
+  /** Treat validation warnings as errors (same as validate --strict). */
+  strict?: boolean;
 }
 
 export async function runPrototypeManifest(
@@ -278,14 +280,42 @@ export async function runPrototypeManifest(
     return;
   }
 
+  const buildMode = built.screenMap.buildMode;
+  const htmlLabel =
+    buildMode === "spa"
+      ? `${built.htmlCount > 0 ? "build present" : "build missing"}`
+      : `${built.htmlCount}/${built.screenCount} HTML present`;
   console.log(`Wrote ${paths.manifestPath} (${built.screenCount} screens)`);
-  console.log(`Wrote ${paths.screenMapPath} (${built.htmlCount}/${built.screenCount} HTML present)`);
+  console.log(`Wrote ${paths.screenMapPath} (${htmlLabel})`);
+  if (built.screenMap.buildMode === "spa" && built.screenMap.buildDest) {
+    console.log(`  buildDest: ${built.screenMap.buildDest}`);
+  }
   if (built.screenMap.defaultScreenId) {
     const entry = built.screenMap.screens.find(
       (s) => s.screenId === built.screenMap.defaultScreenId,
     );
-    const label = entry ? `${entry.displayName} (${entry.prototypeStem}.html)` : built.screenMap.defaultScreenId;
-    console.log(`  default screen: ${label}`);
+    const entryLabel = entry
+      ? buildMode === "spa"
+        ? `${entry.displayName} (${entry.uri})`
+        : `${entry.displayName} (${entry.prototypeStem}.html)`
+      : built.screenMap.defaultScreenId;
+    console.log(`  default screen: ${entryLabel}`);
+  }
+
+  if (opts.strict) {
+    const issues = await validatePrototype({
+      projectRoot,
+      config: configAfterDefault,
+      strict: true,
+    });
+    const errors = issues.filter((i) => i.severity === "error");
+    if (issues.length > 0) {
+      console.log("");
+      console.log(formatPrototypeIssues(issues));
+    }
+    if (errors.length > 0) {
+      throw new Error(`Prototype manifest validation failed (${errors.length} error(s))`);
+    }
   }
 }
 

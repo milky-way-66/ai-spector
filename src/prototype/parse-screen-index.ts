@@ -71,8 +71,12 @@ export function parseScreenIndexFromList(
   }
 
   const headerCells = parseTableRow(tableLines[0]!);
-  const hasScreenIdCol =
-    headerCells[0]?.toLowerCase().replace(/\s+/g, " ") === "screen id";
+  const normalizedHeaders = headerCells.map((h) => h.toLowerCase().replace(/\s+/g, " "));
+  const hasScreenIdCol = normalizedHeaders[0] === "screen id";
+  // Optional "Spec file" column lets rows override the slug-derived screenDoc filename.
+  const specFileColIdx = normalizedHeaders.findIndex(
+    (h) => h === "spec file" || h === "screen doc" || h === "spec",
+  );
 
   const rows: ScreenIndexRow[] = [];
   for (let i = 1; i < tableLines.length; i++) {
@@ -85,6 +89,7 @@ export function parseScreenIndexFromList(
     let displayName: string;
     let purpose: string | undefined;
     let userRole: string | undefined;
+    let specFile: string | undefined;
 
     if (hasScreenIdCol) {
       screenId = cells[0]!.trim();
@@ -98,13 +103,22 @@ export function parseScreenIndexFromList(
       purpose = cells[3]?.trim() || undefined;
     }
 
+    if (specFileColIdx >= 0) {
+      const raw = cells[specFileColIdx]?.trim();
+      if (raw && !PLACEHOLDER_RE.test(raw)) {
+        specFile = raw;
+      }
+    }
+
     if (!displayName || PLACEHOLDER_RE.test(displayName)) {
       continue;
     }
 
     const slug = headingSlug(displayName);
     const id = screenId && !PLACEHOLDER_RE.test(screenId) ? screenId : slug;
-    const screenDoc = join(opts.config.screenDetailDir, `${slug}.md`).replace(/\\/g, "/");
+    // Use explicit spec file if provided, otherwise derive from slug.
+    const docFilename = specFile ?? `${slug}.md`;
+    const screenDoc = join(opts.config.screenDetailDir, docFilename).replace(/\\/g, "/");
     const prototypeStem = slug;
     const prototypePath = join(opts.config.srcDir, `${prototypeStem}.html`).replace(
       /\\/g,
@@ -118,6 +132,7 @@ export function parseScreenIndexFromList(
       userRole,
       slug,
       screenDoc,
+      specFile,
       prototypeStem,
       prototypePath,
     });

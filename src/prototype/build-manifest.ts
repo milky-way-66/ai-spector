@@ -14,6 +14,7 @@ import {
 } from "./resolve-default-screen.js";
 import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
+import { loadDocflowConfig } from "../config/load.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -73,6 +74,21 @@ export async function buildPrototypeManifest(
   }));
 
   const buildMode = opts.config.buildMode ?? "static";
+  const buildDest =
+    buildMode === "spa"
+      ? opts.config.buildDest?.trim() || `${opts.config.prototypeDir}/dist`
+      : undefined;
+  const spaEntryPath = buildDest ? `${buildDest}/index.html` : undefined;
+
+  // Load docflow languages for multi-lang screenDocs (best-effort; ignore if config missing).
+  let docLanguages: string[] = [];
+  try {
+    const { config: docflow } = await loadDocflowConfig(opts.projectRoot);
+    docLanguages = docflow.languages.map((l) => l.code);
+  } catch {
+    // No docflow config — single-lang fallback
+  }
+
   const routeDefaults = await loadRouteDefaults(
     opts.projectRoot,
     opts.config.prototypeDir,
@@ -95,11 +111,26 @@ export async function buildPrototypeManifest(
     }
   }
 
+  // For SPA mode, htmlExists is shared across all screens — check once.
+  const spaIndexExists = spaEntryPath
+    ? await htmlExists(opts.projectRoot, spaEntryPath)
+    : false;
+  // SPA: count 1 if the build entrypoint exists (not N×screens), or 0.
+  if (buildMode === "spa") {
+    htmlCount = spaIndexExists ? 1 : 0;
+  }
+
   const mapScreens = await Promise.all(
     rows.map(async (r) => {
-      const exists = await htmlExists(opts.projectRoot, r.prototypePath);
-      if (exists) {
-        htmlCount++;
+      let effectivePath: string;
+      let exists: boolean;
+      if (buildMode === "spa" && spaEntryPath) {
+        effectivePath = spaEntryPath;
+        exists = spaIndexExists;
+      } else {
+        effectivePath = r.prototypePath;
+        exists = await htmlExists(opts.projectRoot, r.prototypePath);
+        if (exists) htmlCount++;
       }
       const baseUri =
         buildMode === "spa" ? `/${r.slug}` : `/src/${r.prototypeStem}.html`;
@@ -112,12 +143,38 @@ export async function buildPrototypeManifest(
         fromFile: routeDefaults?.screens[r.screenId],
         fromPriorEntry: prior,
       });
+
+      // Build per-language screenDocs map when project has multiple doc languages.
+      // Values are paths relative to docs/<lang>/ so consumers resolve as:
+      //   docs/<lang>/<screenDocs[lang]>   e.g. docs/vi/basic-design/screens/login.md
+      let screenDocs: Record<string, string> | undefined;
+      if (docLanguages.length > 1) {
+        const docFilename = r.specFile ?? `${r.slug}.md`;
+        // Strip "docs/" prefix and the lang segment from screenDetailDir to get the
+        // lang-neutral relative path. e.g. "docs/basic-design/en/screens" → "basic-design/screens"
+        const detailDir = opts.config.screenDetailDir.replace(/\\/g, "/").replace(/\/$/, "");
+        const escapedCodes = docLanguages.map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        const langSegmentRe = new RegExp(`(.*/)(?:${escapedCodes.join("|")})(/.*)$`);
+        const match = langSegmentRe.exec(detailDir);
+        if (match) {
+          // prefix is everything before the lang segment (e.g. "docs/basic-design"),
+          // suffix is everything after (e.g. "/screens").
+          // Strip leading "docs" or "docs/" so the stored value is relative to docs/<lang>/.
+          const prefix = match[1]!.replace(/\/$/, "").replace(/^docs(\/|$)/, "");
+          const suffix = match[2]!; // e.g. "/screens"
+          const langRelDir = prefix ? `${prefix}${suffix}` : suffix.replace(/^\//, "");
+          const langRelPath = join(langRelDir, docFilename).replace(/\\/g, "/");
+          screenDocs = Object.fromEntries(docLanguages.map((lang) => [lang, langRelPath]));
+        }
+      }
+
       return {
         screenId: r.screenId,
         displayName: r.displayName,
         screenDoc: r.screenDoc,
+        ...(screenDocs ? { screenDocs } : {}),
         prototypeStem: r.prototypeStem,
-        prototypePath: r.prototypePath,
+        prototypePath: effectivePath,
         htmlExists: exists,
         ...routeApplied,
       };
@@ -153,6 +210,8 @@ export async function buildPrototypeManifest(
     generatedAt,
     ...(defaultScreenId ? { defaultScreenId } : {}),
     ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
+    ...(buildDest ? { buildDest } : {}),
+    ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
     screens: mapScreens,
   };
 

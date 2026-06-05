@@ -75,6 +75,8 @@ export async function validatePrototype(
     });
   }
 
+  const buildMode = opts.config.buildMode ?? "static";
+
   const stems = new Set<string>();
   for (const screen of manifest.screens ?? []) {
     if (stems.has(screen.prototypeStem)) {
@@ -86,32 +88,34 @@ export async function validatePrototype(
     }
     stems.add(screen.prototypeStem);
 
-    const htmlPath = join(opts.projectRoot, opts.config.srcDir, `${screen.prototypeStem}.html`);
-    if (!(await pathExists(htmlPath))) {
-      issues.push({
-        severity: opts.strict ? "error" : "warn",
-        code: "HTML_MISSING",
-        message: `Missing HTML for ${screen.displayName}: ${opts.config.srcDir}/${screen.prototypeStem}.html`,
-        path: htmlPath,
-      });
-    } else if (opts.checkExternalAssets !== false) {
-      const html = await readFile(htmlPath, "utf8");
-      if (EXTERNAL_ASSET_RE.test(html)) {
-        issues.push({
-          severity: "warn",
-          code: "EXTERNAL_ASSET",
-          message: `External CDN/font URL in ${screen.prototypeStem}.html — use tokens from prototype/DESIGN.md only`,
-          path: htmlPath,
-        });
-      }
-      const absoluteRefs = findAbsoluteLocalRefs(html);
-      if (absoluteRefs.length > 0) {
+    if (buildMode !== "spa") {
+      const htmlPath = join(opts.projectRoot, opts.config.srcDir, `${screen.prototypeStem}.html`);
+      if (!(await pathExists(htmlPath))) {
         issues.push({
           severity: opts.strict ? "error" : "warn",
-          code: "ABSOLUTE_ASSET_PATH",
-          message: `Root-absolute asset refs in ${screen.prototypeStem}.html (${absoluteRefs.slice(0, 3).join(", ")}${absoluteRefs.length > 3 ? ", …" : ""}) — use relative paths from the current file (e.g. ./assets/app.js)`,
+          code: "HTML_MISSING",
+          message: `Missing HTML for ${screen.displayName}: ${opts.config.srcDir}/${screen.prototypeStem}.html`,
           path: htmlPath,
         });
+      } else if (opts.checkExternalAssets !== false) {
+        const html = await readFile(htmlPath, "utf8");
+        if (EXTERNAL_ASSET_RE.test(html)) {
+          issues.push({
+            severity: "warn",
+            code: "EXTERNAL_ASSET",
+            message: `External CDN/font URL in ${screen.prototypeStem}.html — use tokens from prototype/DESIGN.md only`,
+            path: htmlPath,
+          });
+        }
+        const absoluteRefs = findAbsoluteLocalRefs(html);
+        if (absoluteRefs.length > 0) {
+          issues.push({
+            severity: opts.strict ? "error" : "warn",
+            code: "ABSOLUTE_ASSET_PATH",
+            message: `Root-absolute asset refs in ${screen.prototypeStem}.html (${absoluteRefs.slice(0, 3).join(", ")}${absoluteRefs.length > 3 ? ", …" : ""}) — use relative paths from the current file (e.g. ./assets/app.js)`,
+            path: htmlPath,
+          });
+        }
       }
     }
 
@@ -126,22 +130,20 @@ export async function validatePrototype(
     }
   }
 
-  const buildMode = opts.config.buildMode ?? "static";
+  // SPA mode: validate the single build entrypoint (replaces per-screen HTML checks above).
   if (buildMode === "spa") {
-    const viteCheck = await checkViteRelativeBase(opts.projectRoot, opts.config.techStack);
-    if (viteCheck?.needsRelativeBase) {
-      issues.push({
-        severity: opts.strict ? "error" : "warn",
-        code: "VITE_BASE_PATH",
-        message: `Vite build will emit root-absolute asset URLs — ${formatViteBasePathHint(viteCheck)}`,
-        path: viteCheck.configPath ?? undefined,
-      });
-    }
-
     const buildDest =
       opts.config.buildDest?.trim() || `${opts.config.prototypeDir}/dist`;
     const indexPath = join(opts.projectRoot, buildDest, "index.html");
-    if (await pathExists(indexPath)) {
+
+    if (!(await pathExists(indexPath))) {
+      issues.push({
+        severity: opts.strict ? "error" : "warn",
+        code: "SPA_BUILD_MISSING",
+        message: `SPA build not found: ${buildDest}/index.html — run your framework build then: npx ai-spector prototype sync`,
+        path: indexPath,
+      });
+    } else if (opts.checkExternalAssets !== false) {
       const html = await readFile(indexPath, "utf8");
       const absoluteRefs = findAbsoluteLocalRefs(html);
       if (absoluteRefs.length > 0) {
@@ -152,6 +154,16 @@ export async function validatePrototype(
           path: indexPath,
         });
       }
+    }
+
+    const viteCheck = await checkViteRelativeBase(opts.projectRoot, opts.config.techStack);
+    if (viteCheck?.needsRelativeBase) {
+      issues.push({
+        severity: opts.strict ? "error" : "warn",
+        code: "VITE_BASE_PATH",
+        message: `Vite build will emit root-absolute asset URLs — ${formatViteBasePathHint(viteCheck)}`,
+        path: viteCheck.configPath ?? undefined,
+      });
     }
   }
 

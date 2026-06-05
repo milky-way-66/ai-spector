@@ -76,7 +76,10 @@ export interface ScreenIndexRow {
   purpose?: string;
   userRole?: string;
   slug: string;
+  /** Resolved path from slug OR explicit Spec file column. */
   screenDoc: string;
+  /** Explicit spec filename from the Screen Index "Spec file" column (overrides slug-derived path). */
+  specFile?: string;
   prototypeStem: string;
   prototypePath: string;
 }
@@ -100,8 +103,21 @@ export interface PrototypeManifest {
 export interface PrototypeScreenMapEntry {
   screenId: string;
   displayName: string;
+  /** Primary screen design doc path (language-specific from primary lang, or slug-derived). */
   screenDoc: string;
+  /**
+   * Per-language screen design doc paths, relative to docs/<lang>/.
+   * Present when the project has multiple docflow languages.
+   * Resolve full path as: docs/<lang>/<screenDocs[lang]>
+   * e.g. { en: "basic-design/screens/login.md", vi: "basic-design/screens/login.md" }
+   */
+  screenDocs?: Record<string, string>;
   prototypeStem: string;
+  /**
+   * Path to the prototype file for this screen.
+   * - static mode: "prototype/src/<stem>.html"
+   * - spa mode: "<buildDest>/index.html" (same entrypoint for all screens)
+   */
   prototypePath: string;
   /**
    * Route path for this screen.
@@ -140,5 +156,15 @@ export interface PrototypeScreenMap {
    * when opening a deep-linked route (prototype review mode).
    */
   prototypeBypassAuth?: boolean;
+  /**
+   * SPA only: repo-relative path to the build output directory (e.g. "prototype/dist").
+   * The single entrypoint for all screens is at <buildDest>/index.html.
+   */
+  buildDest?: string;
+  /**
+   * SPA only: repo-relative path to the framework build source (e.g. "frontend/dist").
+   * Informational — documents where buildDest was synced from.
+   */
+  buildSrc?: string;
   screens: PrototypeScreenMapEntry[];
 }

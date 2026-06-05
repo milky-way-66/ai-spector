@@ -667,6 +667,7 @@ prototype
     "Default entry screen (Screen Index id); picks from screens with HTML when omitted",
   )
   .option("--dry-run", "Print planned manifest without writing")
+  .option("--strict", "Treat warnings as errors (e.g. missing screen docs)")
   .option("--json", "JSON output")
   .action(async (opts, cmd) => {
     await runPrototypeManifest({
@@ -674,6 +675,7 @@ prototype
       theme: opts.theme,
       defaultScreen: opts.defaultScreen,
       dryRun: opts.dryRun,
+      strict: opts.strict,
       json: opts.json,
     });
   });
