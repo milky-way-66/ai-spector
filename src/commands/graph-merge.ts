@@ -18,6 +18,8 @@ export interface GraphMergeOptions {
   fromKnowledge?: boolean;
   /** Merge agent semantic-links.patch.json (edges only; no structure nodes). */
   semantic?: boolean;
+  /** Merge knowledge.json into graph before applying the patch (ensures domain nodes exist). */
+  withKnowledge?: boolean;
   graphPath?: string;
   writePatch?: string;
   validate?: boolean;
@@ -64,7 +66,23 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
   }
 
   const graph = await loadInMemoryGraph(graphPath);
-  const { stats } = mergePatch(graph, patch, { semanticOnly: opts.semantic === true });
+
+  // When merging a patch file, optionally pre-merge knowledge.json so domain nodes exist
+  if (opts.withKnowledge && !opts.fromKnowledge && !opts.semantic) {
+    if (await pathExists(knowledgePath)) {
+      const rawKnowledge = await readJson<unknown>(knowledgePath);
+      const knowledgePatch = await resolvePatch(rawKnowledge, knowledgePath);
+      mergePatch(graph, knowledgePatch);
+      console.log(`Pre-merged knowledge.json (domain nodes ready)`);
+    } else {
+      console.warn(`--with-knowledge: no knowledge.json found at ${knowledgePath}, skipping`);
+    }
+  }
+
+  const { stats } = mergePatch(graph, patch, {
+    semanticOnly: opts.semantic === true,
+    patchSourcePath: inputPath,
+  });
 
   console.log(
     `Merge: +${stats.nodesCreated} nodes, ~${stats.nodesUpdated} updated, +${stats.edgesAdded} edges` +

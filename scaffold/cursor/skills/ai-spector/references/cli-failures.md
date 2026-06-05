@@ -59,3 +59,20 @@ Reply: 1 Fix & retry  2 Workaround  3 Pause
 After any workaround that wrote docs: `graph validate` (+ `index` if required) before next wave.
 
 **Forbidden without user approval:** hand-edit graph at scale · glob `docs/srs/**` as primary context · skip `graph merge` · continue generation after validate errors.
+
+---
+
+## Filing a feedback report
+
+Write a feedback report whenever the **tool or workflow itself caused friction** — even if the agent recovered. A workaround that worked is still a signal the tool should be improved.
+
+Triggers (write even if agent fixed it):
+- Error message gave no actionable fix steps
+- CLI silently ignored an argument or flag
+- Agent had to do extra undocumented steps to complete the task
+- Documented behavior contradicts what the CLI actually does
+- Command output implied success when something did not actually run
+- Workflow required manual edits that the docs say you should not do
+
+Load `@feedback-report.md` for the full template and instructions.
+Save the report to `docs/feedback/YYYY-MM-DD-<short-slug>.md` and tell the user where it was saved.

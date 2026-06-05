@@ -279,15 +279,24 @@ program
   });
 
 program
-  .command("analyze")
+  .command("analyze [paths...]")
   .description(
-    "Prepare graph structure (registry + bootstrap). Normally invoked by the analyze skill in Cursor, not the user.",
+    "Prepare graph structure (registry + bootstrap). Entity extraction runs via the analyze skill in Cursor — not this command.",
   )
   .option(
     "--merge",
     "After prep, merge knowledge.json or extract/patch.json into the graph if present",
   )
-  .action(async (opts, cmd) => {
+  .action(async (paths: string[], opts, cmd) => {
+    if (paths.length > 0) {
+      console.error(
+        `error: analyze does not accept file path arguments — it only rebuilds graph structure.\n` +
+        `Entity extraction (reading docs/data-source/ files) is an agent step.\n` +
+        `In Cursor, ask: "analyze the data source"\n` +
+        `\nTo rebuild graph structure: npx ai-spector analyze`,
+      );
+      process.exit(1);
+    }
     await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
   });
 
@@ -388,6 +397,10 @@ graph
     "--semantic",
     "Merge .ai-spector/.docflow/extract/semantic-links.patch.json (agent meaning edges only)",
   )
+  .option(
+    "--with-knowledge",
+    "Merge knowledge.json first (creates domain nodes), then apply the patch — prevents missing-node errors",
+  )
   .option("-g, --graph <path>", "Graph path")
   .option("-o, --write-patch <path>", "Write normalized extract patch before merge")
   .option("--no-validate", "Skip validate after merge")
@@ -399,6 +412,7 @@ graph
       inputPath: file,
       fromKnowledge: opts.fromKnowledge,
       semantic: opts.semantic,
+      withKnowledge: opts.withKnowledge,
       graphPath: opts.graph ?? paths.graph,
       writePatch: opts.writePatch,
       validate: !opts.noValidate,

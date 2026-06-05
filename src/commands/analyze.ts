@@ -51,9 +51,10 @@ export async function runAnalyzePrep(
   await writeJson(statePath, state);
 
   const total = registry.documents.reduce((n, d) => n + d.sections.length, 0);
-  console.log(`Graph ready: ${registry.documents.length} documents, ${total} sections`);
+  console.log(`Graph structure ready: ${registry.documents.length} documents, ${total} sections`);
   console.log(`  registry → ${paths.registry}`);
   console.log(`  graph    → ${paths.graph}`);
+  console.log(`  (entity extraction did not run — domain nodes are not created here)`);
   console.log("");
   const knowledgePath = join(
     projectRoot,
@@ -73,6 +74,7 @@ export async function runAnalyzePrep(
   }
 
   console.log("");
-  console.log("Structure ready. In Cursor ask: analyze the data source");
-  console.log("(The agent reads docs/data-source/ markdown, runs merge and validate -- not you.)");
+  console.log("Next: in Cursor ask the agent to 'analyze the data source'");
+  console.log("  The agent reads docs/data-source/ markdown, writes knowledge.json,");
+  console.log("  then runs graph merge and validate.");
 }

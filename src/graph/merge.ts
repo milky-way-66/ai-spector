@@ -51,6 +51,8 @@ export interface MergeResult {
 export interface MergePatchOptions {
   /** Agent semantic patch: no structure nodes; only relatesTo/references + domain field updates. */
   semanticOnly?: boolean;
+  /** Source path of the patch file, shown in error messages. */
+  patchSourcePath?: string;
 }
 
 export function normalizePatch(input: ExtractPatch | Partial<ExtractPatch>): ExtractPatch {
@@ -153,7 +155,7 @@ export function mergePatch(
     if (skipPatchEdgeIfEndpointsMissing(graph, edge)) {
       continue;
     }
-    assertMergeEdgeAllowed(graph, edge);
+    assertMergeEdgeAllowed(graph, edge, options?.patchSourcePath);
     if (graph.addEdgeIfAbsent(edge)) {
       stats.edgesAdded++;
     }
@@ -199,9 +201,24 @@ function validateSemanticPatch(patch: ExtractPatch): void {
   }
 }
 
-function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
+function missingNodeError(nodeId: string, role: "source" | "target", edge: GraphEdge, patchSourcePath?: string): Error {
+  const edgeJson = JSON.stringify(edge);
+  const patchLine = patchSourcePath ? `\nPatch file: ${patchSourcePath}` : "";
+  return new Error(
+    `Merge edge missing ${role} node: ${nodeId}\n\n` +
+    `${nodeId} does not exist in the graph yet.\n` +
+    `To create it:\n` +
+    `  1. Add ${nodeId} to knowledge.json, then run:\n` +
+    `       npx ai-spector graph merge --from-knowledge\n` +
+    `  2. Then retry the patch merge.\n` +
+    `  Or use --with-knowledge to merge knowledge.json automatically before applying the patch.\n` +
+    `\nFailing edge: ${edgeJson}${patchLine}`,
+  );
+}
+
+function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge, patchSourcePath?: string): void {
   if (edge.type === "relatesTo") {
-    assertRelatesToEdge(graph, edge);
+    assertRelatesToEdge(graph, edge, patchSourcePath);
     return;
   }
 
@@ -209,7 +226,7 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
 
   if (isPathTargetEdge(edge.type)) {
     if (!from) {
-      throw new Error(`${edge.type} missing source node: ${edge.from}`);
+      throw missingNodeError(edge.from, "source", edge, patchSourcePath);
     }
     if (edge.type === "rendersTo") {
       if (
@@ -234,10 +251,10 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
   const to = graph.nodesById.get(edge.to);
 
   if (!from) {
-    throw new Error(`Merge edge missing source node: ${edge.from}`);
+    throw missingNodeError(edge.from, "source", edge, patchSourcePath);
   }
   if (!to) {
-    throw new Error(`Merge edge missing target node: ${edge.to}`);
+    throw missingNodeError(edge.to, "target", edge, patchSourcePath);
   }
 
   if (STRUCTURE_TYPES.has(to.type)) {
@@ -269,14 +286,14 @@ function assertMergeEdgeAllowed(graph: InMemoryGraph, edge: GraphEdge): void {
   }
 }
 
-function assertRelatesToEdge(graph: InMemoryGraph, edge: GraphEdge): void {
+function assertRelatesToEdge(graph: InMemoryGraph, edge: GraphEdge, patchSourcePath?: string): void {
   const from = graph.nodesById.get(edge.from);
   const to = graph.nodesById.get(edge.to);
   if (!from) {
-    throw new Error(`relatesTo missing source node: ${edge.from}`);
+    throw missingNodeError(edge.from, "source", edge, patchSourcePath);
   }
   if (!to) {
-    throw new Error(`relatesTo missing target node: ${edge.to}`);
+    throw missingNodeError(edge.to, "target", edge, patchSourcePath);
   }
   if (!RELATES_TO_ENDPOINT_TYPES.has(from.type)) {
     throw new Error(`relatesTo invalid source type ${from.type}: ${edge.from}`);

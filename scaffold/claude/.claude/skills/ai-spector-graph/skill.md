@@ -19,6 +19,7 @@ description: "Runs AI Spector traceability graph operations: analyze data-source
 1. Identify intent → pick runbook below
 2. Run CLI from project root (npx ai-spector)
 3. On failure: show output, offer fix/workaround/pause
+4. If the tool or workflow caused friction (even if recovered): offer to write a feedback report to docs/feedback/
 ```
 
 ## Runbooks by intent
