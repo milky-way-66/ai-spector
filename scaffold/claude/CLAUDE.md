@@ -52,6 +52,7 @@ When you need to find, query, or understand the project graph:
 |-------------|-------|
 | Analyze data source / build graph | `ai-spector-graph` |
 | Check impact of changes | `ai-spector-graph` |
+| Import / set up custom template pack | `ai-spector-template-import` |
 | Write SRS | `ai-spector-generate-srs` |
 | Write basic design | `ai-spector-generate-basic-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
@@ -68,6 +69,10 @@ npx ai-spector graph validate       # check graph integrity
 npx ai-spector graph impact --git --json   # impact of current git diff
 npx ai-spector lang queue pending --json   # pending translation jobs
 npx ai-spector setup --check        # audit project setup
+npx ai-spector template list        # list installed packs + active
+npx ai-spector template scan <path> # scan a template folder → scan-result.json
+npx ai-spector template install     # install pack from staging (AI writes manifest first)
+npx ai-spector template use <name>  # switch active pack (use "builtin" to revert)
 ```
 
 On CLI failure: show the output, offer fix / workaround / pause. Do not invent results.

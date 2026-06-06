@@ -24,6 +24,7 @@ Agents use this when intent is ambiguous.
 | SRS, use cases, features, requirements | `ai-spector-generate-srs` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate-basic-design` | `references/runbook.md` |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
+| set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |

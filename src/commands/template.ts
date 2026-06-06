@@ -1,16 +1,18 @@
 import { Command } from "commander";
 import { existsSync } from "node:fs";
-import { readdir } from "node:fs/promises";
+import { copyFile, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
   findProjectRoot,
   loadDocflowConfig,
   resolveFromRoot,
 } from "../config/load.js";
-import { readJson, writeJson, pathExists } from "../util/fs.js";
+import { readJson, writeJson, pathExists, copyTree } from "../util/fs.js";
 import { buildSectionRegistry } from "../registry/build.js";
 import { bootstrapFromRegistry } from "./bootstrap.js";
 import type { DocflowConfig, PackManifest, DocumentsManifest } from "../config/types.js";
+import { scanTemplateFolder } from "../template/scan.js";
+import { validatePackManifest } from "../template/validate.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -183,13 +185,258 @@ async function runTemplateInspect(name: string, opts: { cwd?: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// template scan <path>
+// ---------------------------------------------------------------------------
+
+async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
+  const resolvedSource = resolve(opts.cwd ?? process.cwd(), sourcePath);
+
+  // Validate source is a directory
+  if (!existsSync(resolvedSource)) {
+    console.error(`Error: path does not exist: ${resolvedSource}`);
+    process.exitCode = 1;
+    return;
+  }
+  const { statSync } = await import("node:fs");
+  if (!statSync(resolvedSource).isDirectory()) {
+    console.error(`Error: path is not a directory: ${resolvedSource}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { root } = await loadConfigAndRoot(opts.cwd);
+  const stagingDir = join(root, ".ai-spector", "packs", ".staging");
+
+  // Clear staging
+  if (await pathExists(stagingDir)) {
+    await rm(stagingDir, { recursive: true, force: true });
+  }
+  const { mkdir } = await import("node:fs/promises");
+  await mkdir(stagingDir, { recursive: true });
+
+  // Scan
+  const result = await scanTemplateFolder(resolvedSource, stagingDir);
+
+  // Write scan-result.json
+  const scanResultPath = join(stagingDir, "scan-result.json");
+  await writeJson(scanResultPath, result);
+
+  // Print summary
+  console.log(`\nScanned ${resolvedSource}:`);
+  console.log(`  ${result.files.length} template file${result.files.length === 1 ? "" : "s"} found`);
+  console.log();
+
+  if (result.files.length > 0) {
+    const fileCol = 32;
+    const headCol = 10;
+    const header =
+      "File".padEnd(fileCol) + "Headings".padEnd(headCol) + "Placeholders";
+    const divider = "─".repeat(header.length + 10);
+    console.log(`  ${header}`);
+    console.log(`  ${divider}`);
+    for (const f of result.files) {
+      const name = f.relativePath.padEnd(fileCol);
+      const headings = String(f.headings.length).padEnd(headCol);
+      const placeholders = f.placeholders.join(", ") || "(none)";
+      console.log(`  ${name}${headings}${placeholders}`);
+    }
+    console.log();
+  }
+
+  const relStaging = join(".ai-spector", "packs", ".staging", "scan-result.json");
+  console.log(`Scan saved → ${relStaging}`);
+  console.log();
+  console.log(`Next step: open your AI IDE and ask:`);
+  console.log(`  "set up template pack"`);
+  console.log(`The AI will read the scan result, ask you questions, refine`);
+  console.log(`the templates, and write them to staging for you to review.`);
+}
+
+// ---------------------------------------------------------------------------
+// template install [--name <name>] [--dry-run]
+// ---------------------------------------------------------------------------
+
+async function runTemplateInstall(opts: {
+  cwd?: string;
+  name?: string;
+  dryRun?: boolean;
+}) {
+  const { root, config, configFile } = await loadConfigAndRoot(opts.cwd);
+  const stagingDir = join(root, ".ai-spector", "packs", ".staging");
+
+  // Check scan-result.json exists
+  const scanResultPath = join(stagingDir, "scan-result.json");
+  if (!(await pathExists(scanResultPath))) {
+    console.error(
+      'Error: scan-result.json not found in staging. Run `template scan` first.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  // Check staleness (> 24h)
+  const scanResult = await readJson<{ scannedAt: string }>(scanResultPath);
+  const scannedAt = new Date(scanResult.scannedAt);
+  const ageMs = Date.now() - scannedAt.getTime();
+  const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+  if (ageMs > 24 * 60 * 60 * 1000) {
+    console.warn(
+      `Warning: scan is ${ageHours} hours old — the AI may have worked with stale context.`,
+    );
+  }
+
+  // Check manifest.json exists
+  const stagingManifestPath = join(stagingDir, "manifest.json");
+  if (!(await pathExists(stagingManifestPath))) {
+    console.error(
+      'Error: manifest.json not found in staging. Ask the AI to complete the setup workflow.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  // Load + validate manifest
+  const rawManifest = await readJson<unknown>(stagingManifestPath);
+  const { valid, errors } = validatePackManifest(rawManifest);
+  if (!valid) {
+    console.error("manifest.json validation failed:");
+    for (const err of errors) {
+      console.error(`  - ${err}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  const manifest = rawManifest as PackManifest;
+
+  // Determine pack name
+  const packName = opts.name ?? manifest.packName;
+
+  // Check all template files exist in staging/templates/
+  const stagingTemplatesDir = join(stagingDir, manifest.templatesDir ?? "templates");
+  const missing: string[] = [];
+  for (const doc of manifest.documents) {
+    const tplPath = join(stagingTemplatesDir, doc.template);
+    if (!(await pathExists(tplPath))) {
+      missing.push(doc.template);
+    }
+  }
+  if (missing.length > 0) {
+    console.error("Error: the following template files are missing from staging:");
+    for (const f of missing) {
+      console.error(`  - ${f}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  // Dry run — stop here
+  if (opts.dryRun) {
+    console.log(`Dry run complete — all checks passed. Pack: ${packName}`);
+    return;
+  }
+
+  // Destination
+  const destDir = join(root, ".ai-spector", "packs", packName);
+
+  // Remove existing if present
+  if (await pathExists(destDir)) {
+    await rm(destDir, { recursive: true, force: true });
+  }
+
+  // Copy templates
+  const destTemplatesDir = join(destDir, "templates");
+  await copyTree(stagingTemplatesDir, destTemplatesDir);
+
+  // Write manifest to destination (with resolved packName)
+  const finalManifest = { ...manifest, packName };
+  await writeJson(join(destDir, "manifest.json"), finalManifest);
+
+  // Patch config FIRST
+  const previousPacks = config.packs;
+  config.packs = { active: packName };
+  await saveConfig(configFile, config);
+
+  // Build registry + graph, roll back on failure
+  let stats: Awaited<ReturnType<typeof rebuildRegistryAndGraph>>;
+  try {
+    stats = await rebuildRegistryAndGraph(root, config);
+  } catch (err) {
+    // Roll back config
+    if (previousPacks === undefined) {
+      delete config.packs;
+    } else {
+      config.packs = previousPacks;
+    }
+    await saveConfig(configFile, config);
+    throw err;
+  }
+
+  // skill-hints.md — if the AI wrote one in staging, append to generate skill
+  const skillHintsPath = join(stagingDir, "skill-hints.md");
+  if (await pathExists(skillHintsPath)) {
+    const hints = await readFile(skillHintsPath, "utf8");
+    const cursorSkillPath = join(root, ".cursor/skills/ai-spector-generate/SKILL.md");
+    if (await pathExists(cursorSkillPath)) {
+      const existing = await readFile(cursorSkillPath, "utf8");
+      await writeFile(
+        cursorSkillPath,
+        existing + "\n\n---\n\n## Pack hints: " + packName + "\n\n" + hints,
+      );
+      console.log("  Updated .cursor/skills/ai-spector-generate/SKILL.md with pack hints.");
+    }
+    await copyFile(skillHintsPath, join(destDir, "skill-hints.md"));
+  }
+
+  // Clear staging
+  await rm(stagingDir, { recursive: true, force: true });
+
+  // Print summary
+  console.log(`\n✓ Pack '${packName}' installed and activated.\n`);
+  console.log(`  Documents : ${stats.documents}`);
+  console.log(`  Sections  : ${stats.sections}`);
+  console.log(`  Graph     : ${stats.graphNodes} nodes, ${stats.graphEdges} edges`);
+  console.log();
+  console.log(`  Templates → .ai-spector/packs/${packName}/templates/`);
+  console.log(`  Active    → docflow.config.json updated`);
+  console.log();
+  console.log(`Next: ask your AI to "generate <document>" to use the new template.`);
+}
+
+// ---------------------------------------------------------------------------
+// template remove <name>
+// ---------------------------------------------------------------------------
+
+async function runTemplateRemove(name: string, opts: { cwd?: string }) {
+  const { root, config } = await loadConfigAndRoot(opts.cwd);
+
+  const packDir = join(root, ".ai-spector", "packs", name);
+  if (!(await pathExists(packDir))) {
+    console.error(`Error: pack "${name}" is not installed.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (config.packs?.active === name) {
+    console.error(
+      `Error: pack '${name}' is currently active. Run \`template use builtin\` first.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  await rm(packDir, { recursive: true, force: true });
+  console.log(`Removed pack '${name}'.`);
+}
+
+// ---------------------------------------------------------------------------
 // Command group registration
 // ---------------------------------------------------------------------------
 
 export function registerTemplateCommand(program: Command) {
   const template = program
     .command("template")
-    .description("Template pack management: list, use, inspect");
+    .description("Template pack management: list, use, inspect, scan, install, remove");
 
   template
     .command("list")
@@ -217,5 +464,39 @@ export function registerTemplateCommand(program: Command) {
     .option("-C, --cwd <path>", "Project root", process.cwd())
     .action(async (name: string, opts) => {
       await runTemplateInspect(name, { cwd: resolve(opts.cwd ?? process.cwd()) });
+    });
+
+  template
+    .command("scan <path>")
+    .description(
+      "Walk a folder of .md template files, extract headings + placeholders, write scan-result.json to staging.",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .action(async (sourcePath: string, opts) => {
+      await runTemplateScan(sourcePath, { cwd: resolve(opts.cwd ?? process.cwd()) });
+    });
+
+  template
+    .command("install")
+    .description(
+      "Install a template pack from staging (manifest.json + templates/ written by AI).",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--name <name>", "Override pack name from manifest")
+    .option("--dry-run", "Validate and print without writing anything")
+    .action(async (opts) => {
+      await runTemplateInstall({
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        name: opts.name as string | undefined,
+        dryRun: Boolean(opts.dryRun),
+      });
+    });
+
+  template
+    .command("remove <name>")
+    .description("Remove an installed template pack by name.")
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .action(async (name: string, opts) => {
+      await runTemplateRemove(name, { cwd: resolve(opts.cwd ?? process.cwd()) });
     });
 }
