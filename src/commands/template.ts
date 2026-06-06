@@ -103,6 +103,74 @@ async function runTemplateList(opts: { cwd?: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// DAG generation from pack manifest
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive a `dag.srs.json` + `dag.srs.graph-seeds.json` pair from a pack manifest.
+ * All documents become flat DAG nodes with no dependsOn (ordering is unknown for
+ * arbitrary packs). The AI IDE is expected to refine the dependency graph during
+ * generate workflows.
+ */
+function buildDagFromManifest(manifest: PackManifest): {
+  dag: object;
+  seeds: object;
+} {
+  const packSlug = manifest.packName.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  const dagNodes: object[] = [];
+  const seedsMap: Record<string, string> = {};
+
+  for (const doc of manifest.documents) {
+    if (doc.perDomain) continue; // skip per-domain breakout templates — not DAG nodes
+    const docSlug = doc.documentId
+      .replace(/^doc\.[^.]+\./, "") // strip nodePrefix (e.g. "doc.msrs.")
+      .replace(/\./g, "-");
+    const dagId = `${packSlug}.${docSlug}`;
+    const output = doc.output ?? doc.outputPattern ?? `${docSlug}.md`;
+    dagNodes.push({ id: dagId, template: doc.template, output, dependsOn: [] });
+    seedsMap[dagId] = doc.documentId;
+  }
+
+  const dag = { version: 1, root: "docs/srs", nodes: dagNodes };
+  const seeds = {
+    version: 1,
+    description: `Map dag.srs.json node ids to graph document ids for pack "${manifest.packName}"`,
+    seeds: seedsMap,
+    perDomain: manifest.perDomainTemplates
+      ? Object.fromEntries(
+          Object.entries(manifest.perDomainTemplates).map(([domain, templateDocId]) => [
+            domain,
+            { graphNodeType: domain, documentPattern: `${templateDocId}-{id}`, seedFromDomainId: true },
+          ]),
+        )
+      : {},
+  };
+
+  return { dag, seeds };
+}
+
+async function writeDagFiles(root: string, dag: object, seeds: object): Promise<void> {
+  const dagDir = join(root, ".ai-spector", ".docflow", "config");
+  await mkdir(dagDir, { recursive: true });
+  await writeJson(join(dagDir, "dag.srs.json"), dag);
+  await writeJson(join(dagDir, "dag.srs.graph-seeds.json"), seeds);
+}
+
+async function restoreBuiltinDagFiles(root: string): Promise<void> {
+  const { scaffoldBundleRoot } = await import("../config/load.js");
+  const srcDir = join(scaffoldBundleRoot(), ".ai-spector", ".docflow", "config");
+  const destDir = join(root, ".ai-spector", ".docflow", "config");
+  await mkdir(destDir, { recursive: true });
+  for (const name of ["dag.srs.json", "dag.srs.graph-seeds.json"]) {
+    const src = join(srcDir, name);
+    const dest = join(destDir, name);
+    if (existsSync(src)) {
+      await copyFile(src, dest);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // template use <name>
 // ---------------------------------------------------------------------------
 
@@ -110,14 +178,13 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
   const { root, config, configFile } = await loadConfigAndRoot(opts.cwd);
 
   if (name === "builtin" || name === "default") {
-    // Remove packs.active
     if (config.packs) {
       delete config.packs;
     }
     await saveConfig(configFile, config);
-    console.log("Switched to builtin templates. Rebuilding registry and graph...");
+    console.log("Switched to builtin templates. Restoring builtin DAG config...");
+    await restoreBuiltinDagFiles(root);
   } else {
-    // Verify pack exists
     const manifestPath = join(root, ".ai-spector", "packs", name, "manifest.json");
     if (!existsSync(manifestPath)) {
       console.error(
@@ -126,9 +193,14 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
       process.exitCode = 1;
       return;
     }
+    const manifest = await readJson<PackManifest>(manifestPath);
     config.packs = { active: name };
     await saveConfig(configFile, config);
-    console.log(`Switched to pack "${name}". Rebuilding registry and graph...`);
+    console.log(`Switched to pack "${name}". Rebuilding registry, graph, and DAG config...`);
+
+    // Write pack-derived DAG files so generate workflows use valid graph ids
+    const { dag, seeds } = buildDagFromManifest(manifest);
+    await writeDagFiles(root, dag, seeds);
   }
 
   const stats = await rebuildRegistryAndGraph(root, config);
@@ -137,20 +209,15 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
       `${stats.graphNodes} graph nodes, ${stats.graphEdges} edges.`,
   );
 
-  // Warn about artifacts that still reference the previous pack's ids
   const activePack = config.packs?.active ?? "builtin";
+  const docIdList = stats.documentIds?.map((id: string) => `   - ${id}`).join("\n") ??
+    `   (run \`npx ai-spector template inspect ${activePack}\` to list them)`;
   console.log(`
-⚠  Heads-up — the following project artifacts still reference the previous template ids
-   and may need updating before running \`generate\` or \`index\`:
+Active graph document ids (valid query seeds):
+${docIdList}
 
-   • .ai-spector/.docflow/config/dag.srs.json
-   • .ai-spector/.docflow/config/dag.srs.graph-seeds.json
-   • .cursor/skills/ai-spector-generate-srs/references/runbook.md
-
-   Active graph document ids (use as query seeds):
-${stats.documentIds?.map((id: string) => `   - ${id}`).join("\n") ?? "   (run \`npx ai-spector template inspect ${activePack}\` to list them)"}
-
-   Run \`npx ai-spector template inspect ${activePack}\` for the full manifest.
+Note: .cursor/skills/ai-spector-generate-srs/references/runbook.md still references
+builtin ids — update it or ask the agent to use the ids above when querying the graph.
 `);
 }
 
@@ -391,6 +458,10 @@ async function runTemplateInstall(opts: {
     await saveConfig(configFile, config);
     throw err;
   }
+
+  // Write pack-derived DAG files so generate workflows use correct graph ids
+  const { dag, seeds } = buildDagFromManifest(finalManifest);
+  await writeDagFiles(root, dag, seeds);
 
   // skill-hints.md — if the AI wrote one in staging, append to generate skill
   const skillHintsPath = join(stagingDir, "skill-hints.md");
