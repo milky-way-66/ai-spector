@@ -54,7 +54,17 @@ export function resolveImpactOriginId(
   if (opts.originId?.trim()) {
     const id = opts.originId.trim();
     if (!g.nodesById.has(id)) {
-      throw new Error(`Unknown node id: ${id}`);
+      // Suggest document ids from the active graph to help agents using stale builtin seeds
+      const docNodes = [...g.nodesById.values()]
+        .filter((n) => n.type === "document")
+        .map((n) => n.id)
+        .slice(0, 6);
+      const suggestion =
+        docNodes.length > 0
+          ? `\nDocument ids in current graph:\n${docNodes.map((d) => `  ${d}`).join("\n")}\n` +
+            `Run \`npx ai-spector template inspect <pack> --json\` to list all active pack documents.`
+          : "";
+      throw new Error(`Unknown node id: ${id}${suggestion}`);
     }
     return { originId: id };
   }

@@ -13,6 +13,19 @@ export interface GraphQueryCliOptions {
 
 export async function runGraphQuery(opts: GraphQueryCliOptions): Promise<void> {
   const g = await loadInMemoryGraph(opts.graphPath);
+
+  if (!g.nodesById.has(opts.seedId)) {
+    const docNodes = [...g.nodesById.values()]
+      .filter((n) => n.type === "document")
+      .map((n) => n.id);
+    const suggestion =
+      docNodes.length > 0
+        ? `\nDocument ids in the current graph:\n${docNodes.map((d) => `  ${d}`).join("\n")}\n` +
+          `\nTip: if you switched packs, run \`npx ai-spector template inspect <pack>\` to list valid seed ids.`
+        : "\nThe graph appears empty — run \`npx ai-spector registry build\` then retry.";
+    throw new Error(`Unknown node id: ${opts.seedId}${suggestion}`);
+  }
+
   const queryOpts: QueryOptions = {
     direction: opts.direction,
     depth: opts.depth,

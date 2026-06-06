@@ -43,11 +43,13 @@ async function rebuildRegistryAndGraph(root: string, config: DocflowConfig) {
   await writeJson(graphPath, graph.toTraceabilityGraph());
 
   const totalSections = registry.documents.reduce((n, d) => n + d.sections.length, 0);
+  const tg = graph.toTraceabilityGraph();
   return {
     documents: registry.documents.length,
     sections: totalSections,
     graphNodes: graph.nodesById.size,
-    graphEdges: graph.toTraceabilityGraph().edges.length,
+    graphEdges: tg.edges.length,
+    documentIds: tg.nodes.filter((n) => n.type === "document").map((n) => n.id),
   };
 }
 
@@ -134,6 +136,22 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
     `Done. ${stats.documents} documents, ${stats.sections} sections, ` +
       `${stats.graphNodes} graph nodes, ${stats.graphEdges} edges.`,
   );
+
+  // Warn about artifacts that still reference the previous pack's ids
+  const activePack = config.packs?.active ?? "builtin";
+  console.log(`
+⚠  Heads-up — the following project artifacts still reference the previous template ids
+   and may need updating before running \`generate\` or \`index\`:
+
+   • .ai-spector/.docflow/config/dag.srs.json
+   • .ai-spector/.docflow/config/dag.srs.graph-seeds.json
+   • .cursor/skills/ai-spector-generate-srs/references/runbook.md
+
+   Active graph document ids (use as query seeds):
+${stats.documentIds?.map((id: string) => `   - ${id}`).join("\n") ?? "   (run \`npx ai-spector template inspect ${activePack}\` to list them)"}
+
+   Run \`npx ai-spector template inspect ${activePack}\` for the full manifest.
+`);
 }
 
 // ---------------------------------------------------------------------------

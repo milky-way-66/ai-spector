@@ -185,6 +185,12 @@ export function skipPatchEdgeIfEndpointsMissing(
   ) {
     return !from || !to;
   }
+  // listedIn: skip gracefully when the list-anchor section doesn't exist in the graph
+  // (common with custom packs whose defaultListedIn differs from builtin sections)
+  if (edge.type === "listedIn") {
+    const to = graph.nodesById.get(edge.to);
+    return !from || !to;
+  }
   return false;
 }
 
