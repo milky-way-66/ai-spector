@@ -62,7 +62,7 @@ export interface RegistryDocument {
   template: string;
   output?: string;
   outputPattern?: string;
-  perDomain?: "useCase" | "feature";
+  perDomain?: string;
   sections: RegistrySection[];
 }
 

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DocflowConfig, DocumentsManifest, LanguageConfig } from "./types.js";
+import type { DocflowConfig, DocumentsManifest, LanguageConfig, PackManifest } from "./types.js";
 import { readJson } from "../util/fs.js";
 
 const CONFIG_NAME = "docflow.config.json";
@@ -87,8 +87,49 @@ export async function loadDocflowConfig(
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
       templates: raw.paths?.templates ?? DEFAULT_PATHS.templates,
     },
+    ...(raw.packs ? { packs: raw.packs } : {}),
   };
   return { root, config, configFile };
+}
+
+/**
+ * Load the active pack's PackManifest, or null if using builtin.
+ * Returns null when packs.active is absent, empty, or "builtin".
+ */
+export async function resolveActivePackManifest(
+  root: string,
+  config: DocflowConfig,
+): Promise<PackManifest | null> {
+  const active = config.packs?.active;
+  if (!active || active === "builtin") return null;
+  const packDir = join(root, ".ai-spector/packs", active);
+  const manifest = await readJson<PackManifest>(join(packDir, "manifest.json"));
+  return manifest;
+}
+
+/**
+ * Returns the list of manifests + template dirs to use.
+ * Legacy / builtin path: both builtin manifests.
+ * Custom pack path: single pack manifest from .ai-spector/packs/<active>/.
+ */
+export async function resolveActiveManifests(
+  root: string,
+  config: DocflowConfig,
+): Promise<Array<{ manifest: DocumentsManifest; templatesDir: string }>> {
+  const active = config.packs?.active;
+  if (!active || active === "builtin") {
+    // Legacy builtin path — same as before
+    const { bundleRoot, manifest: srsManifest } = await loadDocumentsManifest();
+    const bdManifest = await loadBasicDesignListManifest();
+    return [
+      { manifest: srsManifest, templatesDir: join(bundleRoot, srsManifest.templatesDir) },
+      { manifest: bdManifest, templatesDir: join(bundleRoot, bdManifest.templatesDir) },
+    ];
+  }
+  const packDir = join(root, ".ai-spector/packs", active);
+  const manifest = await readJson<PackManifest>(join(packDir, "manifest.json"));
+  const templatesDir = join(packDir, manifest.templatesDir ?? "templates");
+  return [{ manifest, templatesDir }];
 }
 
 /** Returns the primary (first) language from config. */
