@@ -1,11 +1,14 @@
 import { Command } from "commander";
 import { existsSync } from "node:fs";
-import { copyFile, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
   findProjectRoot,
   loadDocflowConfig,
   resolveFromRoot,
+  packageBundleRoot,
+  loadDocumentsManifest,
+  loadBasicDesignListManifest,
 } from "../config/load.js";
 import { readJson, writeJson, pathExists, copyTree } from "../util/fs.js";
 import { buildSectionRegistry } from "../registry/build.js";
@@ -211,7 +214,6 @@ async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
   if (await pathExists(stagingDir)) {
     await rm(stagingDir, { recursive: true, force: true });
   }
-  const { mkdir } = await import("node:fs/promises");
   await mkdir(stagingDir, { recursive: true });
 
   // Scan
@@ -430,6 +432,144 @@ async function runTemplateRemove(name: string, opts: { cwd?: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// template export <output-path>
+// ---------------------------------------------------------------------------
+
+async function runTemplateExport(
+  outputPath: string,
+  opts: { cwd?: string; pack?: string; overwrite?: boolean },
+) {
+  const cwd = opts.cwd ?? process.cwd();
+  const { root, config } = await loadConfigAndRoot(cwd);
+
+  // Determine pack name to export
+  let packName = opts.pack ?? config.packs?.active ?? "builtin";
+  if (!packName || packName === "default") packName = "builtin";
+
+  // Resolve output path
+  const outputAbs = resolve(cwd, outputPath);
+
+  // Check if output exists
+  if (await pathExists(outputAbs)) {
+    if (!opts.overwrite) {
+      console.error("Output path already exists. Use --overwrite to replace it.");
+      process.exitCode = 1;
+      return;
+    }
+    await rm(outputAbs, { recursive: true, force: true });
+  }
+
+  // Create output dirs
+  const outputTemplatesDir = join(outputAbs, "templates");
+  await mkdir(outputTemplatesDir, { recursive: true });
+
+  let manifest: PackManifest;
+  let templateCount = 0;
+
+  if (packName === "builtin") {
+    // Load both builtin manifests
+    const { bundleRoot, manifest: srsManifest } = await loadDocumentsManifest();
+    const bdManifest = await loadBasicDesignListManifest();
+
+    // Merge documents, copying templates while preserving subdirectory structure
+    const allDocs: PackManifest["documents"] = [];
+
+    for (const srcManifest of [srsManifest, bdManifest]) {
+      const srcTemplatesDir = join(bundleRoot, srcManifest.templatesDir);
+      for (const doc of srcManifest.documents) {
+        // srcManifest.templatesDir is e.g. "templates/srs" — extract the subdir
+        // relative to the root "templates/" folder
+        const subdir = srcManifest.templatesDir.replace(/^templates\/?/, "");
+        const relPath = subdir ? join(subdir, doc.template) : doc.template;
+        const srcFile = join(srcTemplatesDir, doc.template);
+        const destFile = join(outputTemplatesDir, relPath);
+        // Ensure subdirectory exists
+        await mkdir(join(outputTemplatesDir, subdir || "."), { recursive: true });
+        if (await pathExists(srcFile)) {
+          await copyFile(srcFile, destFile);
+          templateCount++;
+        }
+        allDocs.push({ ...doc, template: relPath });
+      }
+    }
+
+    manifest = {
+      version: srsManifest.version,
+      name: "builtin",
+      packName: "builtin",
+      templatesDir: "templates",
+      nodePrefix: "doc.srs",
+      perDomainTemplates: {
+        useCase: "doc.srs.use-case-detail",
+        feature: "doc.srs.system-feature-detail",
+      },
+      defaultListedIn: {
+        useCase: "doc.srs.use-cases",
+        feature: "doc.srs.system-features-list",
+        actor: "doc.srs.use-cases",
+      },
+      documents: allDocs,
+    };
+  } else {
+    // Custom pack
+    const packDir = join(root, ".ai-spector", "packs", packName);
+    const manifestPath = join(packDir, "manifest.json");
+    if (!(await pathExists(manifestPath))) {
+      console.error(`Pack "${packName}" not found. Expected manifest at: ${manifestPath}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    manifest = await readJson<PackManifest>(manifestPath);
+    const srcTemplatesDir = join(packDir, manifest.templatesDir ?? "templates");
+
+    // Copy templates preserving structure
+    if (await pathExists(srcTemplatesDir)) {
+      await copyTree(srcTemplatesDir, outputTemplatesDir);
+      // Count template files
+      const countFiles = async (dir: string): Promise<number> => {
+        let count = 0;
+        try {
+          const entries = await readdir(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory()) {
+              count += await countFiles(join(dir, entry.name));
+            } else if (entry.name.endsWith(".md")) {
+              count++;
+            }
+          }
+        } catch { /* ignore */ }
+        return count;
+      };
+      templateCount = await countFiles(srcTemplatesDir);
+    }
+
+    // Override templatesDir to "templates" in output
+    manifest = { ...manifest, templatesDir: "templates" };
+
+    // Copy skill-hints.md if present
+    const skillHintsSrc = join(packDir, "skill-hints.md");
+    if (await pathExists(skillHintsSrc)) {
+      await copyFile(skillHintsSrc, join(outputAbs, "skill-hints.md"));
+    }
+  }
+
+  // Write manifest.json
+  await writeJson(join(outputAbs, "manifest.json"), manifest);
+
+  // Print summary
+  const relOutput = outputPath.startsWith("/") ? outputPath : `./${outputPath}`;
+  console.log(`\n✓ Exported pack '${packName}' to ${relOutput}/\n`);
+  console.log(`  Templates : ${templateCount} files`);
+  console.log(`  Manifest  : ${join(outputPath, "manifest.json")}`);
+  console.log();
+  console.log("To use this template in another project:");
+  console.log("  1. Copy the folder to the other project's workspace");
+  console.log(`  2. Run: npx ai-spector template scan ./${outputPath}`);
+  console.log('  3. Ask your AI: "set up template pack"');
+}
+
+// ---------------------------------------------------------------------------
 // Command group registration
 // ---------------------------------------------------------------------------
 
@@ -498,5 +638,21 @@ export function registerTemplateCommand(program: Command) {
     .option("-C, --cwd <path>", "Project root", process.cwd())
     .action(async (name: string, opts) => {
       await runTemplateRemove(name, { cwd: resolve(opts.cwd ?? process.cwd()) });
+    });
+
+  template
+    .command("export <output-path>")
+    .description(
+      "Export the active (or specified) template pack as a portable folder for use in another project.",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--pack <name>", "Pack to export (default: active pack)")
+    .option("--overwrite", "Replace output path if it already exists")
+    .action(async (outputPath: string, opts) => {
+      await runTemplateExport(outputPath, {
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        pack: opts.pack as string | undefined,
+        overwrite: Boolean(opts.overwrite),
+      });
     });
 }
