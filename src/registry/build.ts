@@ -5,6 +5,7 @@ import {
   loadBasicDesignListManifest,
   loadDocflowConfig,
   loadDocumentsManifest,
+  resolveActiveManifests,
   resolveProjectTemplatesDir,
 } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
@@ -84,31 +85,13 @@ export async function buildSectionRegistry(
   root?: string,
 ): Promise<SectionRegistry> {
   const { root: projectRoot, config } = await loadDocflowConfig(root);
-  const { bundleRoot, manifest: srsManifest } = await loadDocumentsManifest();
-  const bdManifest = await loadBasicDesignListManifest();
-
-  const srsTemplatesDir = await resolveTemplatesSubdir(
-    projectRoot,
-    config,
-    bundleRoot,
-    srsManifest.templatesDir,
-    "srs",
-  );
-  const bdTemplatesDir = await resolveTemplatesSubdir(
-    projectRoot,
-    config,
-    bundleRoot,
-    bdManifest.templatesDir,
-    "basic_design",
-  );
+  const packs = await resolveActiveManifests(projectRoot, config);
 
   const documents: RegistryDocument[] = [];
-
-  for (const doc of srsManifest.documents) {
-    documents.push(await scanTemplate(srsTemplatesDir, doc));
-  }
-  for (const doc of bdManifest.documents) {
-    documents.push(await scanTemplate(bdTemplatesDir, doc));
+  for (const { manifest, templatesDir } of packs) {
+    for (const doc of manifest.documents) {
+      documents.push(await scanTemplate(templatesDir, doc));
+    }
   }
 
   return {

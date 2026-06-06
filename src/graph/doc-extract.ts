@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode } from "../types.js";
+import type { PackManifest } from "../config/types.js";
 import {
   basicDesignListChapterDocumentId,
   basicDesignListChapterFileToPatch,
@@ -46,11 +47,15 @@ export interface DocExtractResult {
   filesScanned: number;
 }
 
-/** Registry template ids for per-domain SRS detail (see documents.json). */
-export const PER_DOMAIN_TEMPLATE_DOC = {
+/**
+ * Builtin fallback for per-domain template doc IDs.
+ * Prefer PackManifest.perDomainTemplates when a pack config is available.
+ * @deprecated Use packConfig?.perDomainTemplates instead.
+ */
+const BUILTIN_PER_DOMAIN_TEMPLATE_DOC: Record<string, string> = {
   useCase: "doc.srs.uc-detail",
   feature: "doc.srs.feature-detail",
-} as const;
+};
 
 const UC_ID_RE = /\b(UC-\d+)\b/gi;
 const F_ID_RE = /\b(F-\d+)\b/gi;
@@ -133,11 +138,13 @@ export function classifyBasicDesignDetailFile(
 export function documentIdForDomainDetail(
   kind: DetailFileKind,
   domainId: string,
+  nodePrefix?: string,
 ): string {
+  const prefix = nodePrefix ?? "doc.srs";
   const norm = normalizeDomainId(domainId);
   return kind === "useCaseDetail"
-    ? `doc.srs.uc-${norm}`
-    : `doc.srs.f-${norm}`;
+    ? `${prefix}.uc-${norm}`
+    : `${prefix}.f-${norm}`;
 }
 
 function slugFromFilename(relativePath: string): string {
@@ -730,7 +737,11 @@ function buildDetailInstancePatch(opts: {
   return { version: 1, nodes, edges };
 }
 
-function srsDetailFileToPatch(relativePath: string, content: string): ExtractPatch {
+function srsDetailFileToPatch(
+  relativePath: string,
+  content: string,
+  packConfig?: PackManifest | null,
+): ExtractPatch {
   const kind = classifySrsDetailFile(relativePath);
   if (!kind) {
     return { version: 1, nodes: [], edges: [] };
@@ -743,17 +754,24 @@ function srsDetailFileToPatch(relativePath: string, content: string): ExtractPat
 
   const perDomain = kind === "useCaseDetail" ? "useCase" : "feature";
   const rich = extractDetailDomainMeta(content, kind);
+  const nodePrefix = packConfig?.nodePrefix;
+  const templateDocId =
+    packConfig?.perDomainTemplates?.[perDomain] ??
+    BUILTIN_PER_DOMAIN_TEMPLATE_DOC[perDomain] ??
+    `doc.srs.${perDomain === "useCase" ? "uc-detail" : "feature-detail"}`;
+  const listAnchorId =
+    packConfig?.defaultListedIn?.[perDomain] ??
+    (perDomain === "useCase" ? DEFAULT_LISTED_IN.useCase : DEFAULT_LISTED_IN.feature);
 
   return buildDetailInstancePatch({
     relativePath,
     content,
-    docId: documentIdForDomainDetail(kind, primary.id),
+    docId: documentIdForDomainDetail(kind, primary.id, nodePrefix),
     domainId: primary.id,
     domainType: perDomain === "useCase" ? "useCase" : "feature",
     perDomain,
-    templateDocId: PER_DOMAIN_TEMPLATE_DOC[perDomain],
-    listAnchorId:
-      perDomain === "useCase" ? DEFAULT_LISTED_IN.useCase : DEFAULT_LISTED_IN.feature,
+    templateDocId,
+    listAnchorId,
     title: rich?.title ?? primary.title,
     description: rich?.description,
     priority: rich?.priority,
@@ -796,7 +814,7 @@ export function detailFileToPatch(
     return { version: 1, nodes: [], edges: [] };
   }
 
-  const srs = srsDetailFileToPatch(relativePath, content);
+  const srs = srsDetailFileToPatch(relativePath, content, options?.packConfig);
   if (srs.nodes.length > 0 || srs.edges.length > 0) {
     return srs;
   }
@@ -911,6 +929,8 @@ export async function basicDesignAnchorStructurePatch(
 export interface BuildDocExtractPatchOptions {
   /** When false, do not re-parse api-list / list-screens / db-design bodies (avoids duplicate section trees after bootstrap). */
   includeListChapterMarkdown?: boolean;
+  /** Active pack config for resolving template doc IDs, node prefixes, etc. */
+  packConfig?: PackManifest | null;
 }
 
 export async function buildDocExtractPatch(
@@ -942,14 +962,10 @@ export async function buildDocExtractPatch(
       if (!existing) {
         allNodesMap.set(n.id, n);
         if (n.type === "document" && n.output && !n.outputPattern) {
-          const out = String(n.output).replace(/\\/g, "/");
           const isBdInstance =
-            n.id.startsWith("doc.bd.api-") ||
-            (n.id.startsWith("doc.bd.screen-") &&
-              !out.includes("list-screens") &&
-              !out.endsWith("api-list.md"));
+            n.perDomain === "apiDetail" || n.perDomain === "screenDetail";
           const isSrsInstance =
-            n.id.startsWith("doc.srs.uc-") || n.id.startsWith("doc.srs.f-");
+            n.perDomain === "useCase" || n.perDomain === "feature";
           if (isBdInstance) {
             detailDocuments++;
             bdDetailDocuments++;
@@ -961,7 +977,9 @@ export async function buildDocExtractPatch(
         if (
           n.type === "section" &&
           typeof n.documentId === "string" &&
-          (n.documentId.startsWith("doc.srs.") || n.documentId.startsWith("doc.bd."))
+          (n.documentId.startsWith("doc.srs.") ||
+            n.documentId.startsWith("doc.bd.") ||
+            allNodesMap.get(n.documentId)?.perDomain != null)
         ) {
           detailSections++;
         }

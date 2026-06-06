@@ -37,6 +37,7 @@ import {
   runCommentsShow,
 } from "./commands/comments.js";
 import { runProvenanceLink } from "./graph/provenance.js";
+import { registerTemplateCommand } from "./commands/template.js";
 import {
   runPrototypeInstallPreviews,
   runPrototypeManifest,
@@ -737,6 +738,8 @@ graph
       process.exitCode = 1;
     }
   });
+
+registerTemplateCommand(program);
 
 program.parseAsync(process.argv).catch((err) => {
   const msg = err instanceof Error ? err.message : String(err);

@@ -1,6 +1,17 @@
 {
   "version": 1,
   "name": "srs",
+  "packName": "builtin-srs",
+  "nodePrefix": "doc.srs",
+  "perDomainTemplates": {
+    "useCase": "doc.srs.uc-detail",
+    "feature": "doc.srs.feature-detail"
+  },
+  "defaultListedIn": {
+    "useCase": "doc.srs.3-use-cases",
+    "feature": "doc.srs.4-system-features",
+    "actor": "doc.srs.2-overall-description"
+  },
   "templatesDir": "templates/srs",
   "documents": [
     {

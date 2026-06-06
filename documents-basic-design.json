@@ -1,6 +1,16 @@
 {
   "version": 1,
   "name": "basic-design-list",
+  "packName": "builtin-basic-design",
+  "nodePrefix": "doc.bd",
+  "perDomainTemplates": {
+    "apiDetail": "doc.bd.detail-api",
+    "screenDetail": "doc.bd.detail-screen"
+  },
+  "defaultListedIn": {
+    "apiDetail": "doc.bd.list-api",
+    "screenDetail": "doc.bd.list-screen"
+  },
   "templatesDir": "templates/basic_design",
   "documents": [
     {
