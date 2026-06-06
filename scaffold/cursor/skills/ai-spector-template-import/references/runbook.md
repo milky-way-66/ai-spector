@@ -76,7 +76,13 @@ For **each file** in `scan-result.json files[]`:
 If the file is a **repeating file** (identified in Q2):
 - `outputPattern` = output-root + vocabulary-slug + `/{nn}-{slug}.md`
   - Example: use cases in `docs/srs/` → `docs/srs/use-cases/uc-{nn}-{slug}.md`
-- `perDomain` = camelCase of the vocabulary from Q3 (e.g. `"use case"` → `"useCase"`, `"feature"` → `"feature"`, `"epic"` → `"epic"`)
+  - If the project uses per-language subfolders (e.g. `docs/srs/en/`), include `{lang}` in the pattern:
+    `docs/srs/{lang}/requirements/req-{nn}-{slug}.md`
+- `perDomain` = camelCase of the vocabulary from Q3 (e.g. `"use case"` → `"useCase"`, `"feature"` → `"feature"`, `"epic"` → `"epic"`, `"requirement"` → `"requirement"`)
+
+> **Note on perDomain vocabulary:** The builtin generate-SRS skill has deep support for `useCase` and `feature` (it enumerates them automatically). Other values (`requirement`, `epic`, `story`, etc.) are valid and will appear in the DAG, but **breakout file generation for these types is a manual second wave** — after generating the primary document, ask the agent:
+> `"generate breakout <vocabulary> files from the graph"`
+> The agent will read `.ai-spector/packs/<name>/generate-hints.md` for instructions.
 
 If the file is a **single/non-repeating file**:
 - `output` = output-root + slugified-filename + `.md`
@@ -164,10 +170,19 @@ Show the CLI output and summarize:
 
 > "✓ Pack '<name>' installed and active.
 >
-> You can now ask me to:
-> - 'generate <document-type>' — uses your new template
+> **Generation workflow for this pack:**
+>
+> **Wave 0 (primary documents):** Ask me to 'generate <document-type>' for each non-repeating template.
+>
+> **Wave 1 (breakout files, if any):** After Wave 0, ask me:
+> 'generate breakout <vocabulary> files from the graph'
+> I'll read `.ai-spector/packs/<name>/generate-hints.md` for the exact steps.
+>
+> Other commands:
 > - 'template list' — see all installed packs
 > - 'template use builtin' — switch back to builtin template"
+
+If the install output shows a `⚠  This pack includes ... per-domain breakout template(s)` warning, **explicitly tell the user** which vocabulary they need to generate as a second wave and point them to `generate-hints.md`.
 
 ### If install fails
 
