@@ -13,7 +13,7 @@ const DOMAIN_TYPES = new Set<NodeType>([
   "dataEntity",
 ]);
 
-const UC_DETAIL_PATH_RE = /docs\/srs\/.*\/uc-\d+.*\.md$/i;
+const UC_DETAIL_PATH_RE_DEFAULT = /docs\/srs\/.*\/uc-\d+.*\.md$/i;
 
 export interface LayerAuditLayers {
   structure: {
@@ -68,6 +68,12 @@ export interface LayerAuditOptions {
    * Used to populate specInstances.missingOnDisk — UC detail files on disk but not in graph.
    */
   existingPaths?: Iterable<string>;
+  /**
+   * Override the regex used to identify UC detail files on disk.
+   * Defaults to /docs\/srs\/.*\/uc-\d+.*\.md$/i — projects with a different
+   * folder structure should supply their own pattern here.
+   */
+  ucDetailPathPattern?: RegExp;
 }
 
 function isPerDomainInstanceDocument(node: GraphNode): boolean {
@@ -211,15 +217,17 @@ function graphOutputPathsForUseCaseDocs(graph: InMemoryGraph): Set<string> {
 function missingUseCasePathsOnDisk(
   graph: InMemoryGraph,
   existingPaths?: Iterable<string>,
+  ucDetailPathPattern?: RegExp,
 ): string[] {
   if (!existingPaths) {
     return [];
   }
+  const re = ucDetailPathPattern ?? UC_DETAIL_PATH_RE_DEFAULT;
   const graphPaths = graphOutputPathsForUseCaseDocs(graph);
   const missing: string[] = [];
   for (const raw of existingPaths) {
     const p = raw.replace(/\\/g, "/");
-    if (!UC_DETAIL_PATH_RE.test(p)) {
+    if (!re.test(p)) {
       continue;
     }
     if (!graphPaths.has(p)) {
@@ -286,7 +294,7 @@ export function auditGraphLayers(
   const relatesTo = edgeCount(graph, "relatesTo");
   const domainsWithoutSemanticLinks = listDomainsNeedingSemanticLinks(graph);
 
-  const missingOnDisk = missingUseCasePathsOnDisk(graph, options.existingPaths);
+  const missingOnDisk = missingUseCasePathsOnDisk(graph, options.existingPaths, options.ucDetailPathPattern);
   const diskCheck = options.existingPaths !== undefined;
 
   const specInstancesOk =

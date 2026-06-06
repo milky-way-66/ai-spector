@@ -10,6 +10,7 @@ export interface ImpactRulesFile {
   pass1_expand: Record<string, EdgeRule>;
   pass2_downstream: Record<string, EdgeRule>;
   buckets: { regenerate: NodeType[]; review: NodeType[] };
+  maxNodes?: number;
 }
 
 export interface ImpactEntry {
@@ -54,7 +55,7 @@ function runBfs(
 ): { provenance: Map<string, Provenance>; capped: boolean } {
   const provenance = new Map<string, Provenance>();
   const queue: { id: string; depth: number }[] = seeds.map((id) => ({ id, depth: 0 }));
-  const cap = 500;
+  const cap = rules.maxNodes ?? 500;
   let capped = false;
 
   while (queue.length > 0) {

@@ -172,10 +172,13 @@ export function querySubgraph(
   visitedNodes.add(seedId);
 
   const nodes = [...visitedNodes]
-    .map((id) => g.nodesById.get(id)!)
-    .filter((n) => !nodeTypeFilter || nodeTypeFilter.has(n.type));
+    .map((id) => g.nodesById.get(id))
+    .filter((n): n is GraphNode => n !== undefined && (!nodeTypeFilter || nodeTypeFilter.has(n.type)));
 
-  const edges = [...visitedEdges.values()];
+  const includedIds = new Set(nodes.map((n) => n.id));
+  const edges = [...visitedEdges.values()].filter(
+    (e) => includedIds.has(e.from) && includedIds.has(e.to),
+  );
 
   const projectionPaths = [
     ...new Set(

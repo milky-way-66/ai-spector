@@ -109,12 +109,10 @@ export class InMemoryGraph {
     depth = 1,
   ): Set<string> {
     const seen = new Set<string>();
+    const queued = new Set<string>([id]);
     const queue: { id: string; d: number }[] = [{ id, d: 0 }];
     while (queue.length > 0) {
       const { id: current, d } = queue.shift()!;
-      if (d > depth) {
-        continue;
-      }
       if (d > 0) {
         seen.add(current);
       }
@@ -122,7 +120,8 @@ export class InMemoryGraph {
         continue;
       }
       const expand = (next: string) => {
-        if (!seen.has(next) && next !== id) {
+        if (!queued.has(next)) {
+          queued.add(next);
           queue.push({ id: next, d: d + 1 });
         }
       };
@@ -143,6 +142,45 @@ export class InMemoryGraph {
     }
     seen.delete(id);
     return seen;
+  }
+
+  detectCycles(edgeTypes?: Set<string>): string[][] {
+    const cycles: string[][] = [];
+    const WHITE = 0, GRAY = 1, BLACK = 2;
+    const color = new Map<string, 0 | 1 | 2>();
+    const parent = new Map<string, string>();
+
+    for (const id of this.nodesById.keys()) {
+      color.set(id, WHITE);
+    }
+
+    const dfs = (id: string) => {
+      color.set(id, GRAY);
+      for (const e of this.outEdges.get(id) ?? []) {
+        if (edgeTypes && !edgeTypes.has(e.type)) continue;
+        const next = e.to;
+        if (!color.has(next)) continue;
+        if (color.get(next) === GRAY) {
+          const cycle: string[] = [next];
+          let cur: string | undefined = id;
+          while (cur && cur !== next) {
+            cycle.unshift(cur);
+            cur = parent.get(cur);
+          }
+          cycle.unshift(next);
+          cycles.push(cycle);
+        } else if (color.get(next) === WHITE) {
+          parent.set(next, id);
+          dfs(next);
+        }
+      }
+      color.set(id, BLACK);
+    };
+
+    for (const id of this.nodesById.keys()) {
+      if (color.get(id) === WHITE) dfs(id);
+    }
+    return cycles;
   }
 
   validateStructure(): ValidationIssue[] {
@@ -217,6 +255,15 @@ export class InMemoryGraph {
           });
         }
       }
+    }
+
+    const cycleEdgeTypes = new Set(["dependsOn", "requires", "partOf"]);
+    for (const cycle of this.detectCycles(cycleEdgeTypes)) {
+      issues.push({
+        ruleId: "NO-CYCLE",
+        severity: "error",
+        message: `Cycle detected: ${cycle.join(" → ")}`,
+      });
     }
 
     return issues;
