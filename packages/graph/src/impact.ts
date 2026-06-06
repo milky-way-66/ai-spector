@@ -52,10 +52,11 @@ function runBfs(
   seeds: string[],
   rules: Record<string, EdgeRule>,
   globalSeen: Set<string>,
+  maxNodes: number,
 ): { provenance: Map<string, Provenance>; capped: boolean } {
   const provenance = new Map<string, Provenance>();
   const queue: { id: string; depth: number }[] = seeds.map((id) => ({ id, depth: 0 }));
-  const cap = rules.maxNodes ?? 500;
+  const cap = maxNodes;
   let capped = false;
 
   while (queue.length > 0) {
@@ -134,11 +135,14 @@ export function computeImpact(
   const globalSeen = new Set<string>([originId]);
   let truncated = false;
 
+  const maxNodes = rules.maxNodes ?? 500;
+
   const { provenance: p1, capped: c1 } = runBfs(
     g,
     [originId],
     rules.pass1_expand,
     globalSeen,
+    maxNodes,
   );
   if (c1) truncated = true;
 
@@ -165,6 +169,7 @@ export function computeImpact(
       domainSeeds,
       rules.pass2_downstream,
       globalSeen,
+      maxNodes,
     );
     if (c2) truncated = true;
 
