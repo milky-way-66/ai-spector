@@ -17,6 +17,12 @@ paths:
 
 [references/runbook.md](references/runbook.md) — follow all phases in order.
 
+## Load when needed
+
+| Phase | Load |
+|-------|------|
+| Phase 5 — Write generate skill | [references/skill-outline.md](references/skill-outline.md) |
+
 ## Natural language
 
 "set up template pack", "import my template", "install template", "use my own template",

@@ -245,13 +245,64 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
 
 /**
  * Write a dedicated Cursor + Claude generate skill for the installed pack.
- * The skill is self-contained: it loads generate-hints.md + the pack DAG and
- * follows generate-workflow.md — no hardcoded document structure.
+ *
+ * Priority: if the AI wrote generate-skill.md to staging during the import workflow,
+ * use it directly (it's tailored to the specific template). Otherwise fall back to
+ * auto-generating a structural skeleton from the manifest.
  */
-async function writePackGenerateSkill(root: string, manifest: PackManifest): Promise<void> {
+async function writePackGenerateSkill(
+  root: string,
+  manifest: PackManifest,
+  stagedSkillPath?: string,
+): Promise<void> {
   const name = manifest.packName;
   const slug = name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
 
+  // If the AI wrote a tailored skill during the import workflow, use it directly
+  if (stagedSkillPath && existsSync(stagedSkillPath)) {
+    const tailoredContent = await readFile(stagedSkillPath, "utf8");
+    const cursorSkillDir = join(root, ".cursor", "skills", `ai-spector-generate-${slug}`);
+    await mkdir(cursorSkillDir, { recursive: true });
+    await writeFile(join(cursorSkillDir, "SKILL.md"), tailoredContent, "utf8");
+    // Derive a minimal Claude skill from the tailored content (strip frontmatter + reformat)
+    const claudeContent = [
+      `---`,
+      `name: ai-spector-generate-${slug}`,
+      `description: "Generates documents for the ${name} template pack. Use the pack-specific Cursor skill for full details."`,
+      `---`,
+      ``,
+      `# AI Spector — Generate (${name} pack)`,
+      ``,
+      `## When to use`,
+      ``,
+      `- Any request to generate, write, or update documents for pack \`${name}\``,
+      ``,
+      `## Step 0 — Load pack context`,
+      ``,
+      `Read these files before generating:`,
+      `1. \`.ai-spector/packs/${name}/generate-hints.md\``,
+      `2. \`.ai-spector/.docflow/config/dag.srs.json\``,
+      `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+      ``,
+      `Then follow the wave structure from \`generate-hints.md\`.`,
+      ``,
+      `## Checklist`,
+      ``,
+      `\`\`\``,
+      `- [ ] Loaded generate-hints.md and DAG config`,
+      `- [ ] graph validate passes before starting`,
+      `- [ ] Wave 0 primary documents generated`,
+      `- [ ] Wave 1 breakout files generated (if any)`,
+      `- [ ] npx ai-spector index run after each wave`,
+      `\`\`\``,
+    ].join("\n");
+    const claudeSkillDir = join(root, ".claude", "skills", `ai-spector-generate-${slug}`);
+    await mkdir(claudeSkillDir, { recursive: true });
+    await writeFile(join(claudeSkillDir, "skill.md"), claudeContent + "\n", "utf8");
+    return;
+  }
+
+  // Fallback: auto-generate a structural skeleton from the manifest
   // Derive description from primary docs
   const primaryDocs = manifest.documents.filter((d) => !d.perDomain);
   const breakoutDocs = manifest.documents.filter((d) => d.perDomain);
@@ -720,7 +771,8 @@ async function runTemplateInstall(opts: {
   const { dag, seeds } = buildDagFromManifest(finalManifest);
   await writeDagFiles(root, dag, seeds);
   await writeGenerateHints(destDir, finalManifest);
-  await writePackGenerateSkill(root, finalManifest);
+  const stagedSkillPath = join(stagingDir, "generate-skill.md");
+  await writePackGenerateSkill(root, finalManifest, stagedSkillPath);
 
   // skill-hints.md — if the AI wrote one in staging, copy to pack dir
   const skillHintsPath = join(stagingDir, "skill-hints.md");
@@ -737,9 +789,12 @@ async function runTemplateInstall(opts: {
   console.log(`  Sections  : ${stats.sections}`);
   console.log(`  Graph     : ${stats.graphNodes} nodes, ${stats.graphEdges} edges`);
   console.log();
+  const usedAiSkill = existsSync(stagedSkillPath);
   console.log(`  Templates → .ai-spector/packs/${packName}/templates/`);
   console.log(`  Active    → docflow.config.json updated`);
   console.log(`  DAG       → .ai-spector/.docflow/config/dag.srs.json updated`);
+  console.log(`  Skill     → .cursor/skills/ai-spector-generate-${packName}/SKILL.md ${usedAiSkill ? "(AI-written)" : "(auto-generated from manifest)"}`);
+  console.log(`           → .claude/skills/ai-spector-generate-${packName}/skill.md`);
 
   const breakoutDocs = finalManifest.documents.filter((d) => d.perDomain);
   if (breakoutDocs.length > 0) {

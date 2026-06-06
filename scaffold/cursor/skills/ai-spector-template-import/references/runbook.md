@@ -150,7 +150,45 @@ After all files are written, confirm:
 
 ---
 
-## Phase 5 — Write manifest and install
+## Phase 5 — Write the generate skill
+
+Load the skill outline reference:
+
+```
+references/skill-outline.md
+```
+
+Read it fully, then write `.ai-spector/packs/.staging/generate-skill.md` following the outline.
+
+**What you know by this point:**
+- Template structure and placeholders (scan result)
+- Pack name, vocabulary, output location (Phase 1 answers)
+- Manifest with document IDs, outputPattern, perDomain values (Phase 2–3)
+- Refined template files (Phase 4)
+
+**Key things to fill in accurately:**
+- `description` field — use the user's actual vocabulary from Phase 1 Q1 and Q3
+- Wave 0 table — derive graph seed IDs by taking each primary documentId from the manifest
+  (e.g. `doc.msrs.srs.template` → DAG node `msrs.srs-template`, seed `doc.msrs.srs.template`)
+- Wave 1 table — one row per perDomain document, naming the perDomainKey and outputPattern
+- Domain vocabulary — from Phase 1 Q3
+- Output paths — exactly as specified in the manifest
+- Guardrails — include at least: correct seed IDs, output path convention, breakout wave reminder
+
+After writing, show the user a short summary:
+
+> "I've written a tailored generate skill for this pack. It includes:
+> - [list Wave 0 documents]
+> - [list Wave 1 breakout types, if any]
+> - [N guardrails]
+>
+> Ready to install?"
+
+Wait for confirmation before proceeding to Phase 6.
+
+---
+
+## Phase 6 — Write manifest and install
 
 Write the final manifest (incorporating any Phase 3 refinements) to:
 
@@ -170,19 +208,20 @@ Show the CLI output and summarize:
 
 > "✓ Pack '<name>' installed and active.
 >
-> **Generation workflow for this pack:**
+> A tailored generate skill was written to:
+> - `.cursor/skills/ai-spector-generate-<name>/SKILL.md`
+> - `.claude/skills/ai-spector-generate-<name>/skill.md`
 >
-> **Wave 0 (primary documents):** Ask me to 'generate <document-type>' for each non-repeating template.
+> **Generation workflow:**
 >
-> **Wave 1 (breakout files, if any):** After Wave 0, ask me:
-> 'generate breakout <vocabulary> files from the graph'
-> I'll read `.ai-spector/packs/<name>/generate-hints.md` for the exact steps.
+> Say 'generate <name>' or 'generate <primary doc type>' — the agent will load the skill,
+> read generate-hints.md, and follow the wave structure.
 >
 > Other commands:
 > - 'template list' — see all installed packs
 > - 'template use builtin' — switch back to builtin template"
 
-If the install output shows a `⚠  This pack includes ... per-domain breakout template(s)` warning, **explicitly tell the user** which vocabulary they need to generate as a second wave and point them to `generate-hints.md`.
+If the install output shows a `⚠  This pack includes ... per-domain breakout template(s)` warning, **explicitly tell the user** which vocabulary they need to generate as a second wave.
 
 ### If install fails
 
