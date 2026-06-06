@@ -108,15 +108,50 @@ npx ai-spector index
 
 **Exception:** if a file within the wave is a dependency for another file in the **same** wave (unusual — check the DAG), merge that file's `rendersTo` before writing the dependent. For standard DAGs this never happens within a wave.
 
-### F. Per-domain detail files
+### F. Per-domain detail files (breakout wave)
 
-For `mode: perFeature` / `perDomain` (SRS):
+**Every breakout file requires its own graph query.** This applies to builtin SRS per-UC/feature files and to custom pack breakout templates equally.
+
+#### Required per-item workflow (one item at a time)
+
+```
+1. npx ai-spector graph query <itemId> --direction both --depth 4 --edges CONTEXT --json
+2. Read projectionPaths from result — these are the only allowed source files
+3. Load the breakout template (.ai-spector/packs/<name>/templates/<template> or .ai-spector/templates/)
+4. Write the output file with specific, verifiable content from graph context
+5. Repeat for next item
+```
+
+After **all items in the wave** are written, do one batch merge + validate + index:
+```bash
+npx ai-spector graph merge .ai-spector/.docflow/extract/projection-patch.json
+npx ai-spector graph validate
+npx ai-spector index
+```
+
+**"Batch" means batch the wave-end merge — not the file generation.** Each file must be written from its own graph query result.
+
+#### ⛔ Anti-pattern — script generation
+
+```js
+// WRONG — never do this
+for (const item of knowledge.functionalRequirements) {
+  writeFile(`req-${item.id}.md`, fillTemplate(item));
+}
+```
+
+A script over `knowledge.json` bypasses the graph. The files it produces pass `graph validate` and `index`, but contain boilerplate acceptance criteria, wrong language, and no domain context. **Treat any script-generated breakout file as a stub that must be regenerated per the workflow above.**
+
+#### Large sets (10+ items)
+
+Use sub-agents — one sub-agent per item or 3–5 items per agent. Do not attempt all items in one agent context. Load [context-management.md](./context-management.md) for the sub-agent pattern.
+
+#### Builtin SRS (useCase / feature)
 
 - Seed = domain id (`UC-01`, `F-01`), not only chapter document.
 - Query with `--depth 4` + CONTEXT edges; include inbound `satisfies`.
-- Batch all per-domain files in their wave; merge all `rendersTo` once at wave end.
 
-For `mode: perEndpoint` / `perScreen` (basic design):
+#### Basic design (perEndpoint / perScreen)
 
 - **perEndpoint:** read `docs/basic-design/api-list.md` §3; one file per row under `docs/basic-design/api/<slug>.md`.
 - **perScreen:** read `docs/basic-design/list-screens.md` §4; one file per screen under `docs/basic-design/screens/<slug>.md`.

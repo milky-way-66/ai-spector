@@ -90,7 +90,20 @@ Describe each wave in human-readable terms. Copy seed IDs from `dag.srs.graph-se
 |---------------|-----------------|----------------|----------|
 | `requirement` | `requirement` | `docs/srs/requirements/req-{nn}-{slug}.md` | `req-template.md` |
 
-For Wave 1: query graph for all nodes of the matching type, then generate one file per node.
+**Wave 1 per-item workflow (required — one item at a time):**
+
+```
+1. npx ai-spector graph query <itemId> --direction both --depth 4 --edges CONTEXT --json
+2. Read projectionPaths — these are the only allowed source files
+3. Write the breakout file with specific, verifiable content from graph context
+4. After all items: batch merge rendersTo edges, then graph validate + index
+```
+
+⛔ **Do NOT generate breakout files with a loop or script over knowledge.json.**
+Script-generated files pass validate/index but contain boilerplate and no domain context.
+See [generate-graph.md §F](../../ai-spector/references/generate-graph.md) for the full rule.
+
+For 10+ items: use sub-agents (one per item or 3–5 per agent). Load context-management.md.
 ```
 
 Omit Wave 1 section if there are no breakout templates.

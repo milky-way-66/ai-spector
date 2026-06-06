@@ -207,25 +207,50 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
       "",
       "## Wave 1 — Per-domain breakout files",
       "",
-      "Generate after Wave 0. One file per graph node of the matching domain type.",
-      "Query graph for nodes of `type: \"<perDomainKey>\"` to get the item list.",
+      "**Start only after Wave 0 is complete and `npx ai-spector index` has run.**",
+      "",
+      "### Required per-item workflow",
+      "",
+      "Generate one item at a time — do NOT script or loop over knowledge.json:",
+      "",
+      "```",
+      "1. npx ai-spector graph query <itemId> --direction both --depth 4 --edges CONTEXT --json",
+      "2. Read projectionPaths — these are the only allowed source files",
+      "3. Load the breakout template (listed below)",
+      "4. Write output file with specific, verifiable content from graph context",
+      "5. Repeat for next item",
+      "```",
+      "",
+      "After all items: batch merge `rendersTo` edges → `graph validate` → `index`.",
+      "",
+      "For 10+ items: use sub-agents (3–5 items each). Load `generate-workflow.md` → `context-management.md`.",
+      "",
+      "⛔ **Anti-pattern:** do not run a script over `knowledge.json` to stamp all files at once.",
+      "Script output passes validate/index but contains boilerplate, not real domain content.",
+      "See `.cursor/skills/ai-spector/references/generate-graph.md §F` for the rule.",
       "",
     );
     for (const doc of breakoutDocs) {
       const output = doc.outputPattern ?? doc.output ?? "(see manifest)";
-      lines.push(`- **${doc.documentId}** (perDomain: \`${doc.perDomain}\`)`);
-      lines.push(`  Output pattern: \`${output}\``);
-      lines.push(`  Template: \`${doc.template}\``);
-      lines.push(
-        `  → Query: \`npx ai-spector graph query ${manifest.documents[0]?.documentId ?? "doc." + manifest.packName} --json\``,
-      );
-      lines.push(`  → Then generate one file per node where \`node.type === "${doc.perDomain}"\``);
+      lines.push(`### ${doc.perDomain} — \`${doc.documentId}\``);
+      lines.push("");
+      lines.push(`- Output pattern: \`${output}\``);
+      lines.push(`- Template: \`.ai-spector/packs/${manifest.packName}/templates/${doc.template}\``);
+      lines.push(`- Graph node type: \`${doc.perDomain}\``);
+      lines.push("");
+      lines.push("Get the item list:");
+      lines.push("```bash");
+      lines.push(`npx ai-spector graph query ${manifest.documents[0]?.documentId ?? `doc.${manifest.packName}`} --json`);
+      lines.push(`# look for nodes where type === "${doc.perDomain}"`);
+      lines.push("```");
+      lines.push("");
     }
     if (manifest.defaultListedIn) {
-      lines.push("", "## Breakout list anchors", "");
+      lines.push("### Breakout list anchors", "");
       for (const [domain, sectionId] of Object.entries(manifest.defaultListedIn)) {
-        lines.push(`- \`${domain}\` items list section: \`${sectionId}\``);
+        lines.push(`- \`${domain}\` items are listed in: \`${sectionId}\``);
       }
+      lines.push("");
     }
   } else {
     lines.push("", "> This pack has no per-domain breakout templates.");
@@ -362,10 +387,25 @@ async function writePackGenerateSkill(
     ...(breakoutDocs.length > 0
       ? [
           `**Wave 1 — Breakout files (${breakoutDocs.map((d) => d.perDomain).join(", ")}):**`,
-          `- After Wave 0, for each DAG node with \`mode: "perDomainBreakout"\`:`,
-          `  - Query graph for all nodes where \`type === node.perDomainKey\``,
-          `  - Generate one file per item using \`outputPattern\` from \`dag.srs.json\``,
-          `  - Template: \`.ai-spector/packs/${name}/templates/<breakout-template>\``,
+          ``,
+          `Start only after Wave 0 is complete and \`npx ai-spector index\` has run.`,
+          ``,
+          `**Required per-item workflow — one item at a time:**`,
+          ``,
+          `\`\`\``,
+          `1. npx ai-spector graph query <itemId> --direction both --depth 4 --edges CONTEXT --json`,
+          `2. Read projectionPaths — these are the only allowed source files`,
+          `3. Write output file with specific, verifiable content from graph context`,
+          `4. Repeat for next item`,
+          `\`\`\``,
+          ``,
+          `After all items are written: batch merge rendersTo edges, then validate + index.`,
+          ``,
+          `⛔ **Do NOT generate breakout files via a script or loop over knowledge.json.**`,
+          `Script-generated files pass validate/index but contain boilerplate, not real content.`,
+          `See [\`generate-graph.md §F\`](../ai-spector/references/generate-graph.md) for the full rule.`,
+          ``,
+          `For 10+ items: use sub-agents (3–5 items each). Load context-management.md.`,
           ``,
         ]
       : []),
