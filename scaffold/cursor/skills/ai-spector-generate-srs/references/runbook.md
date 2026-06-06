@@ -10,43 +10,9 @@ Generate SRS markdown **from the traceability graph** in DAG order.
 | Graph query, ingest patch, parallelism | [generate-graph.md](../../ai-spector/references/generate-graph.md) |
 | **Graph → template section mapping** | **[srs-context/](./srs-context/) — load the matching section file before writing each doc type** |
 
----
-
-## Phase 0 — Pack detection gate (always run first)
-
-Before any generation, read `.ai-spector/docflow.config.json` and check `packs.active`.
-
-**If `packs.active` is absent, null, or `"builtin"`** → proceed with the builtin workflow below (Intent → DAG hints, Waves, etc.).
-
-**If `packs.active` is set to a custom pack name** (e.g. `"msrs"`, `"kaopiz-srs"`):
-
-1. Read `.ai-spector/packs/<packs.active>/generate-hints.md`
-2. Read `.ai-spector/.docflow/config/dag.srs.json`
-3. Read `.ai-spector/.docflow/config/dag.srs.graph-seeds.json`
-
-Use the wave structure from `generate-hints.md` instead of the builtin wave table below:
-
-- **Wave 0** = primary documents listed under "Wave 0 — Primary documents"
-- **Wave 1** = breakout files listed under "Wave 1 — Per-domain breakout files" (if any)
-
-For each primary document in Wave 0:
-- Use the `output` path from `dag.srs.json` (not the builtin `docs/srs/{lang.code}/` convention — custom packs define their own paths)
-- Use the `templateDocId` from `dag.srs.graph-seeds.json` as the graph query seed
-- Query the graph: `npx ai-spector graph query <templateDocId> --json`
-- Write output based on the template file from `.ai-spector/packs/<packs.active>/templates/`
-
-For each breakout domain in Wave 1 (after Wave 0 is done):
-- The `perDomainKey` field in `dag.srs.json` names the graph node type (e.g. `"requirement"`)
-- Query graph nodes of that type: look for nodes where `type === perDomainKey` in the full graph
-- Generate one output file per node using the `outputPattern` from `dag.srs.json`
-- Use the template file from `.ai-spector/packs/<packs.active>/templates/`
-
-> **Graph query seed for custom packs:** If `npx ai-spector graph query <id> --json` returns
-> "Unknown node id", the error will list valid document ids. Use one of those instead.
-> Do NOT use builtin ids like `doc.srs.1-introduction` — they do not exist in a custom pack graph.
-
-**After Phase 0 check is done**, skip to "Output paths" and "Config" sections.
-The "Intent → DAG hints" and "Waves" tables below apply to **builtin only**.
+> **Scope:** This runbook is for the **builtin SRS template** only. If a custom pack is active,
+> the `ai-spector-generate` router will have already dispatched you to the pack-specific skill
+> (`ai-spector-generate-<packname>`). If you are here with a custom pack active, switch to that skill.
 
 ---
 

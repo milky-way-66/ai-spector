@@ -243,6 +243,153 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
   await writeFile(join(packDir, "generate-hints.md"), lines.join("\n") + "\n", "utf8");
 }
 
+/**
+ * Write a dedicated Cursor + Claude generate skill for the installed pack.
+ * The skill is self-contained: it loads generate-hints.md + the pack DAG and
+ * follows generate-workflow.md — no hardcoded document structure.
+ */
+async function writePackGenerateSkill(root: string, manifest: PackManifest): Promise<void> {
+  const name = manifest.packName;
+  const slug = name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+
+  // Derive description from primary docs
+  const primaryDocs = manifest.documents.filter((d) => !d.perDomain);
+  const breakoutDocs = manifest.documents.filter((d) => d.perDomain);
+  const primaryOutputs = primaryDocs
+    .map((d) => d.output ?? d.outputPattern ?? d.template)
+    .slice(0, 3)
+    .join(", ");
+  const breakoutNote =
+    breakoutDocs.length > 0
+      ? ` Plus ${breakoutDocs.length} breakout template(s): ${breakoutDocs.map((d) => d.perDomain).join(", ")}.`
+      : "";
+
+  // Infer docs/ path for `paths:` frontmatter
+  const outputPaths = new Set<string>();
+  for (const doc of manifest.documents) {
+    const p = (doc.output ?? doc.outputPattern ?? "docs/").split("/").slice(0, 2).join("/") + "/**";
+    outputPaths.add(p);
+  }
+  const pathsYaml = [...outputPaths].map((p) => `  - "${p}"`).join("\n");
+
+  const cursorSkillContent = [
+    `---`,
+    `name: ai-spector-generate-${slug}`,
+    `description: >-`,
+    `  Generates documents for the ${name} template pack. Use when the user asks to`,
+    `  generate, write, or update documents produced by this pack. Outputs: ${primaryOutputs}.${breakoutNote}`,
+    `  Active pack: ${name}.`,
+    `paths:`,
+    pathsYaml,
+    `---`,
+    ``,
+    `# Generate — ${name} pack`,
+    ``,
+    `## Load at start (in order)`,
+    `1. \`.ai-spector/packs/${name}/generate-hints.md\``,
+    `2. \`.ai-spector/.docflow/config/dag.srs.json\``,
+    `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+    `4. [\`generate-workflow.md\`](../ai-spector/references/generate-workflow.md)`,
+    ``,
+    `## Pack`,
+    ``,
+    `- Name: \`${name}\``,
+    `- Templates: \`.ai-spector/packs/${name}/templates/\``,
+    `- Manifest: \`.ai-spector/packs/${name}/manifest.json\``,
+    ``,
+    `## Workflow`,
+    ``,
+    `Follow the wave structure from \`generate-hints.md\`.`,
+    ``,
+    `**Wave 0 — Primary documents:**`,
+    `- For each node in \`dag.srs.json\` where \`mode\` is not set:`,
+    `  - Graph seed: look up DAG id in \`dag.srs.graph-seeds.json\` → use that document id`,
+    `  - Template: \`.ai-spector/packs/${name}/templates/<template-file>\``,
+    `  - Output: \`output\` or \`outputPattern\` from \`dag.srs.json\` node`,
+    `  - **Do NOT** use builtin \`doc.srs.*\` ids — they do not exist in this pack's graph`,
+    ``,
+    ...(breakoutDocs.length > 0
+      ? [
+          `**Wave 1 — Breakout files (${breakoutDocs.map((d) => d.perDomain).join(", ")}):**`,
+          `- After Wave 0, for each DAG node with \`mode: "perDomainBreakout"\`:`,
+          `  - Query graph for all nodes where \`type === node.perDomainKey\``,
+          `  - Generate one file per item using \`outputPattern\` from \`dag.srs.json\``,
+          `  - Template: \`.ai-spector/packs/${name}/templates/<breakout-template>\``,
+          ``,
+        ]
+      : []),
+    `## After each wave`,
+    ``,
+    `\`\`\`bash`,
+    `npx ai-spector graph validate`,
+    `npx ai-spector index`,
+    `\`\`\``,
+    ``,
+    `## On CLI failure`,
+    ``,
+    `Load [\`cli-failures.md\`](../ai-spector/references/cli-failures.md).`,
+    ``,
+    `"generate ${name}", "write docs", "generate documents" → this skill.`,
+  ].join("\n");
+
+  const claudeSkillContent = [
+    `---`,
+    `name: ai-spector-generate-${slug}`,
+    `description: "Generates documents for the ${name} template pack. Use when the user asks to generate, write, or update documents. Outputs: ${primaryOutputs}.${breakoutNote}"`,
+    `---`,
+    ``,
+    `# AI Spector — Generate (${name} pack)`,
+    ``,
+    `## When to use`,
+    ``,
+    `- "generate ${name}", "write docs", "generate documents" when pack \`${name}\` is active`,
+    ``,
+    `## Step 0 — Load pack context`,
+    ``,
+    `Read these files before generating anything:`,
+    `1. \`.ai-spector/packs/${name}/generate-hints.md\` — wave structure`,
+    `2. \`.ai-spector/.docflow/config/dag.srs.json\` — DAG node order`,
+    `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\` — graph seed ids`,
+    ``,
+    `## Workflow`,
+    ``,
+    `Follow wave structure from \`generate-hints.md\`.`,
+    ``,
+    `\`\`\``,
+    `1. Load generate-hints.md + DAG config`,
+    `2. Wave 0: generate primary documents (use seed ids from dag.srs.graph-seeds.json)`,
+    ...(breakoutDocs.length > 0
+      ? [`3. Wave 1: generate breakout files (one per graph node of perDomainKey type)`]
+      : []),
+    `${breakoutDocs.length > 0 ? "4" : "3"}. After each wave: npx ai-spector index`,
+    `${breakoutDocs.length > 0 ? "5" : "4"}. Final: npx ai-spector graph validate`,
+    `\`\`\``,
+    ``,
+    `**Important:** Use graph seed ids from \`dag.srs.graph-seeds.json\`, NOT builtin \`doc.srs.*\` ids.`,
+    ``,
+    `## Checklist`,
+    ``,
+    `\`\`\``,
+    `- [ ] Loaded generate-hints.md and DAG config`,
+    `- [ ] graph validate passes before starting`,
+    `- [ ] Wave 0 primary documents generated`,
+    ...(breakoutDocs.length > 0 ? [`- [ ] Wave 1 breakout files generated`] : []),
+    `- [ ] npx ai-spector index run after each wave`,
+    `- [ ] npx ai-spector graph validate run at end`,
+    `\`\`\``,
+  ].join("\n");
+
+  // Write Cursor skill
+  const cursorSkillDir = join(root, ".cursor", "skills", `ai-spector-generate-${slug}`);
+  await mkdir(cursorSkillDir, { recursive: true });
+  await writeFile(join(cursorSkillDir, "SKILL.md"), cursorSkillContent + "\n", "utf8");
+
+  // Write Claude skill
+  const claudeSkillDir = join(root, ".claude", "skills", `ai-spector-generate-${slug}`);
+  await mkdir(claudeSkillDir, { recursive: true });
+  await writeFile(join(claudeSkillDir, "skill.md"), claudeSkillContent + "\n", "utf8");
+}
+
 async function writeDagFiles(root: string, dag: object, seeds: object): Promise<void> {
   const dagDir = join(root, ".ai-spector", ".docflow", "config");
   await mkdir(dagDir, { recursive: true });
@@ -292,11 +439,12 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
     await saveConfig(configFile, config);
     console.log(`Switched to pack "${name}". Rebuilding registry, graph, and DAG config...`);
 
-    // Write pack-derived DAG files and generate-hints.md
+    // Write pack-derived DAG files, generate-hints.md, and dedicated generate skill
     const packDir = join(root, ".ai-spector", "packs", name);
     const { dag, seeds } = buildDagFromManifest(manifest);
     await writeDagFiles(root, dag, seeds);
     await writeGenerateHints(packDir, manifest);
+    await writePackGenerateSkill(root, manifest);
   }
 
   const stats = await rebuildRegistryAndGraph(root, config);
@@ -568,24 +716,15 @@ async function runTemplateInstall(opts: {
     throw err;
   }
 
-  // Write pack-derived DAG files + generate-hints.md
+  // Write pack-derived DAG files, generate-hints.md, and dedicated generate skill
   const { dag, seeds } = buildDagFromManifest(finalManifest);
   await writeDagFiles(root, dag, seeds);
   await writeGenerateHints(destDir, finalManifest);
+  await writePackGenerateSkill(root, finalManifest);
 
-  // skill-hints.md — if the AI wrote one in staging, append to generate skill
+  // skill-hints.md — if the AI wrote one in staging, copy to pack dir
   const skillHintsPath = join(stagingDir, "skill-hints.md");
   if (await pathExists(skillHintsPath)) {
-    const hints = await readFile(skillHintsPath, "utf8");
-    const cursorSkillPath = join(root, ".cursor/skills/ai-spector-generate/SKILL.md");
-    if (await pathExists(cursorSkillPath)) {
-      const existing = await readFile(cursorSkillPath, "utf8");
-      await writeFile(
-        cursorSkillPath,
-        existing + "\n\n---\n\n## Pack hints: " + packName + "\n\n" + hints,
-      );
-      console.log("  Updated .cursor/skills/ai-spector-generate/SKILL.md with pack hints.");
-    }
     await copyFile(skillHintsPath, join(destDir, "skill-hints.md"));
   }
 

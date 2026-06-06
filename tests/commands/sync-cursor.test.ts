@@ -25,7 +25,7 @@ describe("sync-cursor", () => {
       "utf8",
     );
     expect(router).toContain("ai-spector-resolve-comments");
-    expect(router).toContain("ai-spector-generate-srs");
+    expect(router).toContain("ai-spector-generate");
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
       true,
     );

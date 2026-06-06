@@ -13,14 +13,13 @@ paths:
 # Generate SRS
 
 ## Load at start
-1. [references/runbook.md](references/runbook.md) — **includes pack detection gate (Phase 0)**
+1. [references/runbook.md](references/runbook.md)
 2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md)
 
 ## Load when needed
 
 | Situation | Load |
 |---|---|
-| **Custom pack active** (`packs.active` ≠ builtin) | `.ai-spector/packs/<name>/generate-hints.md` + `dag.srs.json` + `dag.srs.graph-seeds.json` |
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
 | Writing §1 Introduction | [references/srs-context/introduction.md](references/srs-context/introduction.md) |
 | Writing §2 Overall Description | [references/srs-context/overall-description.md](references/srs-context/overall-description.md) |

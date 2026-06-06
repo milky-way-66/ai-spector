@@ -53,8 +53,10 @@ When you need to find, query, or understand the project graph:
 | Analyze data source / build graph | `ai-spector-graph` |
 | Check impact of changes | `ai-spector-graph` |
 | Import / set up custom template pack | `ai-spector-template-import` |
-| Write SRS | `ai-spector-generate-srs` |
-| Write basic design | `ai-spector-generate-basic-design` |
+| Generate documents (check active pack first) | read `packs.active` → use skill below |
+| → Custom pack active | `ai-spector-generate-<packname>` (installed by `template install`) |
+| → Builtin: Write SRS | `ai-spector-generate-srs` |
+| → Builtin: Write basic design | `ai-spector-generate-basic-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
 | Translation status | `ai-spector-lang-status` |
 | Resolve translations | `ai-spector-resolve-translation` |
