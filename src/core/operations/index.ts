@@ -50,11 +50,14 @@ export interface IndexOptions {
   skipMerge?: boolean;
   skipDocSemantics?: boolean;
   skipValidate?: boolean;
+  cocoindexSync?: boolean;
 }
 
 export interface IndexReport {
   steps: IndexStepResult[];
   failed: boolean;
+  cocoindexUpdated?: boolean;
+  cocoindexSkipped?: boolean;
 }
 
 export async function runIndex(
@@ -518,5 +521,46 @@ export async function runIndex(
     );
   }
 
-  return { steps, failed };
+  // CocoIndex auto-sync (opt-in via cocoindexSync option or config flag)
+  const { isCocoindexConfigured, cocoindexPipelinePath } = await import("./cocoindex.js");
+  const { loadDocflowConfig: reloadConfig } = await import("../config/load.js");
+
+  let cocoindexUpdated: boolean | undefined;
+  let cocoindexSkipped: boolean | undefined;
+
+  const configured = await isCocoindexConfigured(projectRoot);
+  if (!configured) {
+    cocoindexSkipped = true;
+  } else {
+    let autoSync = opts.cocoindexSync ?? false;
+    if (!autoSync) {
+      try {
+        const { config } = await reloadConfig(projectRoot);
+        autoSync = (config as unknown as { cocoindex?: { autoSync?: boolean } }).cocoindex?.autoSync === true;
+      } catch {
+        // config reload failed — skip
+      }
+    }
+
+    if (!autoSync) {
+      cocoindexSkipped = true;
+    } else {
+      try {
+        const pipelinePath = cocoindexPipelinePath(projectRoot);
+        const { execFile } = await import("node:child_process");
+        const { promisify } = await import("node:util");
+        const exec = promisify(execFile);
+        await exec("python", [pipelinePath, "cocoindex", "update"], {
+          cwd: projectRoot,
+          env: { ...process.env },
+        });
+        cocoindexUpdated = true;
+      } catch {
+        // CocoIndex update failure is non-fatal
+        cocoindexSkipped = true;
+      }
+    }
+  }
+
+  return { steps, failed, cocoindexUpdated, cocoindexSkipped };
 }

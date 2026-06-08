@@ -9,6 +9,12 @@ export function formatIndexReport(report: IndexReport): string {
       for (const line of s.detail.split("\n")) lines.push(`      ${line}`);
     }
   }
+  if (report.cocoindexUpdated) {
+    lines.push("  ✓ CocoIndex: embeddings updated");
+  } else if (report.cocoindexSkipped === false) {
+    lines.push("  ○ CocoIndex: skipped (not configured — run: npx ai-spector cocoindex setup)");
+  }
+
   lines.push("");
   if (report.failed) {
     lines.push("Some steps failed. Graph/knowledge may be partially updated.");
