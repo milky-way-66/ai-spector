@@ -2,7 +2,7 @@ import { readJson } from "../util/fs.js";
 import type { NodeType } from "../../types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import { projectionPathForNode } from "./query.js";
-import defaultImpactRules from "./rules/default-impact.json";
+import { createRequire } from "module";
 
 type EdgeRule = { direction: "in" | "out"; depth: number | "unbounded" };
 
@@ -13,6 +13,9 @@ export interface ImpactRulesFile {
   buckets: { regenerate: NodeType[]; review: NodeType[] };
   maxNodes?: number;
 }
+
+const _require = createRequire(import.meta.url);
+const defaultImpactRules = _require("./rules/default-impact.json") as ImpactRulesFile;
 
 export interface ImpactEntry {
   id: string;
