@@ -36,7 +36,7 @@ Read **one** runbook under `references/` for the user’s intent, then execute i
 
 ```
 - [ ] Matched runbook read completely
-- [ ] CLI from project root (npx ai-spector)
+- [ ] MCP first (ai-spector server) → CLI fallback (npx ai-spector) — see ai-spector/SKILL.md#invocation-rule
 - [ ] On failure: pause; offer fix / workaround / pause per ai-spector/references/cli-failures.md
 ```
 

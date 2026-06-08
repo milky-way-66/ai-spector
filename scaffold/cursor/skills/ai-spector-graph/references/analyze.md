@@ -2,7 +2,7 @@
 
 Ingest `docs/data-source/` and commit knowledge into the traceability graph.
 
-The agent runs all CLI steps below — see [WORKFLOW.md](../../WORKFLOW.md).
+Step 0 (`npx ai-spector analyze`) is **CLI-only** — no MCP equivalent. Steps B (merge, validate) use **MCP when available**.
 
 ## Usage
 
@@ -48,6 +48,15 @@ Creates section/document nodes from templates. Do not ask the user to run this s
 
 ### B. Commit to graph
 
+**MCP (preferred when ai-spector server is configured):**
+
+```
+graph_merge({ fromKnowledge: true })
+graph_validate({})
+```
+
+**CLI fallback:**
+
 ```bash
 npx ai-spector graph merge --from-knowledge
 npx ai-spector graph validate
@@ -69,13 +78,13 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 - `knowledge.json` mirrors extract; graph is authoritative for `/generate-srs`.
 - Gaps recorded in `gaps.json`.
 
-## CLI steps — stop on first failure
+## Steps — stop on first failure
 
-| Step | Command |
-|------|---------|
-| 0 | `npx ai-spector analyze` |
-| B | `npx ai-spector graph merge --from-knowledge` |
-| B | `npx ai-spector graph validate` |
+| Step | MCP (preferred) | CLI fallback |
+|------|-----------------|--------------|
+| 0 | *(CLI only — no MCP tool)* | `npx ai-spector analyze` |
+| B merge | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
+| B validate | `graph_validate({})` | `npx ai-spector graph validate` |
 
 If any step fails, **pause** and use [cli-failures.md](../../ai-spector/references/cli-failures.md). Do not skip to generate SRS without user choice.
 

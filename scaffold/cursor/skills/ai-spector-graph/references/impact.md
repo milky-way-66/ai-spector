@@ -58,15 +58,17 @@ Map regions with the same rules as below (`resolveImpactOrigins` / graph JSON). 
 
 ### 3. Run impact per seed, unify report
 
-For each file/region, pick the **most specific** seed (`section` > domain > `document`). Dedupe seeds by id, then:
+For each file/region, pick the **most specific** seed (`section` > domain > `document`). Dedupe seeds by id, then run impact (MCP preferred, CLI fallback):
 
-```bash
-npx ai-spector graph impact <originId> --change content_change --json
+```
+graph_impact({ originId: "<id>", change: "content_change" })
+# or for all git seeds at once:
+graph_impact({ git: true, change: "content_change" })
 ```
 
-Or once for all seeds:
-
 ```bash
+# CLI fallback:
+npx ai-spector graph impact <originId> --change content_change --json
 npx ai-spector graph impact --git --change content_change --json
 ```
 
@@ -89,25 +91,27 @@ Gather context from the message (priority order):
 
 If several nodes match, pick the **most specific** seed: `section` > domain (`useCase`, `feature`, …) > `document`. If still ambiguous, ask **one** short clarifying question (never ask for raw node id format).
 
-## Run impact (CLI)
+## Run impact
 
-After resolving `originId` (one primary seed per region; run again for unrelated regions if needed):
+**Use MCP when the `ai-spector` server is configured. Fall back to CLI otherwise.**
+
+### MCP (preferred)
+
+```
+graph_impact({ originId: "<id>", change: "content_change" })
+graph_impact({ git: true, change: "content_change" })
+graph_impact({ file: "docs/srs/3-use-cases.md", heading: "3.2 List Use Case", change: "content_change" })
+```
+
+### CLI fallback
 
 ```bash
 npx ai-spector graph impact <originId> --change content_change --json
-```
-
-Or resolver flags (optional verification):
-
-```bash
+npx ai-spector graph impact --git --change content_change --json
 npx ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
 ```
 
-Optional report file:
-
-```bash
-npx ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<timestamp>.json
-```
+After resolving `originId` (one primary seed per region; run again for unrelated regions if needed):
 
 1. Parse JSON output:
    - `regenerate` / `review` arrays — traceability impact buckets
@@ -115,7 +119,7 @@ npx ai-spector graph impact <originId> --json -o .ai-spector/views/impact-<times
    - `truncated: true` — BFS hit the propagation cap; warn the user results may be incomplete
    - `resolvedFrom` / `gitSeeds` — which file/heading each seed came from (present with `--file` / `--heading` / `--git`)
 2. Present a table with `projectionPath` per entry.
-3. For each **regenerate** id, suggest `/generate-srs` or `/generate-basic-design` using:
+3. For each **regenerate** id, suggest `/generate-srs` or `/generate-basic-design` using MCP `graph_query({ id: "<thatId>" })` or CLI:
 
 ```bash
 npx ai-spector graph query <thatId> --json

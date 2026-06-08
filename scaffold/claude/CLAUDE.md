@@ -1,51 +1,64 @@
 # AI Spector — Claude Agent Rules
 
-You are working in an **AI Spector** managed project. The agent workflow is: read skills, run `npx ai-spector` CLI, report results. You do not write doc content from scratch — CLI + skills do the work.
+You are working in an **AI Spector** managed project. The agent workflow is: read skills, call **MCP tools** (preferred) or `npx ai-spector` CLI (fallback), report results. You do not write doc content from scratch — MCP tools / CLI + skills do the work.
 
 Enable all skills under `.claude/skills/` before starting.
 
 ## Mandatory Rules
 
-### 1. Refresh index before any staleness check
+### 1. MCP first, CLI fallback
+
+When the `ai-spector` MCP server is available, **call the MCP tool** instead of shelling out to `npx ai-spector`.
+
+| Operation | MCP tool | CLI fallback |
+|-----------|----------|--------------|
+| Re-index project | `index({})` | `npx ai-spector index` |
+| Merge knowledge → graph | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
+| Validate graph | `graph_validate({})` | `npx ai-spector graph validate` |
+| Impact analysis | `graph_impact({ originId, change })` | `npx ai-spector graph impact …` |
+| Walk graph from node | `graph_query({ id })` | `npx ai-spector graph query <id> --json` |
+| **Analyze data-source** | *(CLI only — no MCP tool)* | `npx ai-spector analyze` |
+
+### 2. Refresh index before any staleness check
 
 Before checking translation status, pending queue, or "what's outdated":
 
-```bash
-npx ai-spector index
+```
+index({})                    # MCP preferred
+npx ai-spector index         # CLI fallback
 ```
 
 Then read the queue. **Never read `.ai-spector/.docflow/translation-queue/pending.json` without running index first** — the queue is only accurate after indexing.
 
-### 2. Check impact before finishing any doc edit
+### 3. Check impact before finishing any doc edit
 
 After editing any file under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`, run impact before closing the task:
 
-```bash
-npx ai-spector graph impact --git --change content_change --json
+```
+graph_impact({ git: true, change: "content_change" })   # MCP preferred
+npx ai-spector graph impact --git --change content_change --json  # CLI fallback
 ```
 
-Then run index to refresh the translation queue:
+Then refresh index:
 
-```bash
-npx ai-spector index
+```
+index({})
 ```
 
 Skip only when the user explicitly says it was a typo-only fix with no traceability concern.
 
-### 3. Use CLI and graph — not file search
+### 4. Use MCP/graph — not file search
 
-When you need to find, query, or understand the project graph:
+| Need | MCP (preferred) | CLI fallback |
+|------|-----------------|--------------|
+| Find what needs regeneration | `graph_impact({ git: true, change: "content_change" })` | `npx ai-spector graph impact --git --json` |
+| Find node by exact ID | `graph_query({ id: "…" })` | `npx ai-spector graph query <id> --json` |
+| Find node by concept | `graph_query_fuzzy(query: "…")` — requires CocoIndex | — |
+| Search docs by meaning | `docs_search(query: "…")` — requires CocoIndex | — |
+| Check graph health | `graph_validate({})` | `npx ai-spector graph validate` |
+| See pending translations | *(CLI only)* | `npx ai-spector lang queue pending --json` (after index) |
 
-| Need | Use |
-|------|-----|
-| Find what needs regeneration | `npx ai-spector graph impact` |
-| Find doc/section/node by exact ID | `npx ai-spector graph query <id> --json` |
-| Find doc/section/node by concept | `graph_query_fuzzy(query: "…")` (MCP) — requires CocoIndex |
-| Search docs by meaning | `docs_search(query: "…")` (MCP) — requires CocoIndex |
-| Check graph health | `npx ai-spector graph validate` |
-| See pending translations | `npx ai-spector lang queue pending --json` (after index) |
-
-**Only fall back to `grep` or `Read` when the CLI returns no results or you need raw file content for editing.**
+**Only fall back to `grep` or `Read` when the tool returns no results or you need raw file content for editing.**
 
 ## Skill → task mapping
 
@@ -64,13 +77,25 @@ When you need to find, query, or understand the project graph:
 | Resolve translations | `ai-spector-resolve-translation` |
 | Resolve comments | `ai-spector-resolve-comments` |
 
-## CLI quick reference
+## Quick reference
+
+### MCP tools (prefer these)
+
+| Tool | Purpose |
+|------|---------|
+| `index({})` | Refresh fingerprints + translation queue |
+| `graph_merge({ fromKnowledge: true })` | Merge knowledge.json into graph |
+| `graph_validate({})` | Check graph integrity |
+| `graph_impact({ git: true, change: "content_change" })` | Impact of current git diff |
+| `graph_query({ id: "…" })` | Walk graph from a node |
+
+### CLI (fallback / MCP-unavailable or no tool equivalent)
 
 ```bash
-npx ai-spector analyze              # ingest data-source, build graph
-npx ai-spector index                # refresh fingerprints + translation queue
-npx ai-spector graph validate       # check graph integrity
-npx ai-spector graph impact --git --json   # impact of current git diff (+ semantic suggestions if CocoIndex configured)
+npx ai-spector analyze              # ingest data-source, build graph (no MCP equivalent)
+npx ai-spector index                # fallback for index({})
+npx ai-spector graph validate       # fallback for graph_validate({})
+npx ai-spector graph impact --git --json   # fallback for graph_impact({ git: true })
 npx ai-spector lang queue pending --json   # pending translation jobs
 npx ai-spector setup --check        # audit project setup
 npx ai-spector template list        # list installed packs + active
@@ -81,11 +106,9 @@ npx ai-spector template use <name>  # switch active pack (use "builtin" to rever
 # CocoIndex (opt-in — requires Python 3.11+)
 npx ai-spector cocoindex setup      # scaffold pipeline into project
 npx ai-spector cocoindex index      # run pipeline (update embeddings)
-npx ai-spector cocoindex search --query "login flow"   # semantic search
-npx ai-spector cocoindex query-fuzzy --query "login"   # natural language → graph node + subgraph
 ```
 
-On CLI failure: show the output, offer fix / workaround / pause. Do not invent results.
+On MCP tool or CLI failure: show the output, offer fix / workaround / pause. Do not invent results.
 
 ## Pipeline order
 

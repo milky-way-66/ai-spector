@@ -6,8 +6,8 @@ Rebuild **graph**, re-merge **knowledge** staging, and update **document indexes
 
 ## Usage
 
-- `/index` — full CLI refresh (agent runs commands below)
-- User may run: `npx ai-spector index` with flags (see README)
+- `/index` — full refresh via MCP (preferred) or CLI fallback
+- User may run: `npx ai-spector index` with flags (see README) when MCP is unavailable
 
 ## When to use
 
@@ -19,42 +19,33 @@ Rebuild **graph**, re-merge **knowledge** staging, and update **document indexes
 
 **Still requires `/analyze` for:** full knowledge extraction → `knowledge.json` (NFRs, data model, rich descriptions). Index re-merges existing `knowledge.json` when present; warns if SRS changed but knowledge is stale.
 
-## Required Behavior (agent runs CLI)
+## Required Behavior
 
-```bash
-npx ai-spector index
+**Use the MCP tool when the `ai-spector` server is configured. Fall back to CLI only when MCP is unavailable.**
+
+### MCP (preferred)
+
+```
+index({})                              # full refresh
+index({ graphOnly: true })             # structure + knowledge merge only
+index({ docsOnly: true })              # doc indexes only
+index({ skipMerge: true })             # skip knowledge.json merge
+index({ skipDocSemantics: true })      # skip UC/F body parsing
 ```
 
-After **`/generate-srs`** (recommended):
+### CLI fallback
 
 ```bash
 npx ai-spector index
+npx ai-spector index --graph-only
+npx ai-spector index --docs-only
 ```
 
 Index steps (default): registry/bootstrap → knowledge merge → **SRS/docs body extract** → **source hub** → **provenance (`derivedFrom`)** → **business hub** → validate → doc indexes.
 
-**CLI alone is not full semantics:** Index builds structure + parseable meaning. For cross-hub evidence links (`relatesTo`), run **`/link-graph`** after index, then `npx ai-spector graph merge --semantic`. Check gaps with `npx ai-spector graph report --json`.
+**CLI alone is not full semantics:** Index builds structure + parseable meaning. For cross-hub evidence links (`relatesTo`), run **`/link-graph`** after index, then `graph_merge({ semantic: true })` (MCP) or `npx ai-spector graph merge --semantic`. Check gaps with `npx ai-spector graph report --json`.
 
 **Provenance:** UC/F/requirement/actor nodes get **`derivedFrom`** edges to `docs/data-source/**` paths (from `knowledge.json` `sourceRef` / `sourceRefs` / `derivedFrom`, SRS detail `Source:` lines, or inline `docs/data-source/…` mentions). No evidence → no edge.
-
-Flags:
-
-| Flag | Effect |
-|------|--------|
-| `--skip-doc-semantics` | Skip UC/F parsing from `docs/srs` and `docs/basic-design` |
-| `--skip-merge` | Skip `knowledge.json` merge |
-
-Structure + merge only:
-
-```bash
-npx ai-spector index --graph-only
-```
-
-Doc indexes only:
-
-```bash
-npx ai-spector index --docs-only
-```
 
 ## Stop on failure
 

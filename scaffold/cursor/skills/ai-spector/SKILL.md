@@ -12,6 +12,21 @@ description: >-
 
 **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md) · **Router:** [_skill-router.md](../_skill-router.md)
 
+## Invocation rule — MCP first, CLI fallback
+
+When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` lists it), **call the MCP tool** instead of shelling out to `npx ai-spector`. MCP returns structured JSON, avoids spawning a Node process, and is the preferred channel for agents.
+
+| Operation | MCP tool | CLI fallback |
+|-----------|----------|--------------|
+| Re-index project | `index({})` | `npx ai-spector index` |
+| Merge knowledge → graph | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
+| Validate graph | `graph_validate({})` | `npx ai-spector graph validate` |
+| Impact analysis | `graph_impact({ originId, change })` | `npx ai-spector graph impact …` |
+| Walk graph from node | `graph_query({ id, … })` | `npx ai-spector graph query <id> --json` |
+| **Analyze data-source** | *(no MCP tool — CLI only)* | `npx ai-spector analyze` |
+
+Use CLI **only** when: MCP server is not configured, the tool errors and MCP is unavailable, or the operation has no MCP equivalent (e.g. `analyze`).
+
 ## CLI and tool failure (non-negotiable)
 
 When `npx ai-spector` exits non-zero, required `--json` is invalid, or a required MCP/terminal step fails:
@@ -27,7 +42,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 |------|------|
 | Config (languages, paths) | `.ai-spector/docflow.config.json` |
 | Graph | `.ai-spector/graph/traceability.graph.json` |
-| Query | `npx ai-spector graph query <id> --json` |
+| Query | `graph_query({ id })` MCP · fallback: `npx ai-spector graph query <id> --json` |
 | Templates | `.ai-spector/templates/` |
 | Doc output | `docs/srs/{lang.code}/` · `docs/basic-design/{lang.code}/` |
 
