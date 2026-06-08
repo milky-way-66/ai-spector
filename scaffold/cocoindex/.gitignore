@@ -1,0 +1,4 @@
+.env
+lance_data/
+__pycache__/
+*.pyc

@@ -1,0 +1,9 @@
+cocoindex>=0.1
+sentence-transformers>=3.0
+lancedb>=0.8
+
+# Uncomment if using Postgres+pgvector (COCOINDEX_DB_URL set):
+# psycopg2-binary>=2.9
+
+# Uncomment if using OpenAI embeddings (OPENAI_API_KEY set):
+# openai>=1.0

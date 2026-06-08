@@ -48,7 +48,7 @@ User project
 
 **Runtime:**
 - Python ≥ 3.11 + `cocoindex` pip package
-- PostgreSQL with pgvector (local) **or** LanceDB (file-based, no server) — see Open Questions
+- **LanceDB by default** (file-based, zero setup, pushable to git) — switch to Postgres+pgvector via `COCOINDEX_DB_URL` env var
 - Runs as a sidecar alongside the Node.js stack
 - Pipeline reads `index.docs.json` — no extra config needed
 
@@ -173,7 +173,14 @@ yet. Validate the Python side independently.
 """
 ai-spector CocoIndex pipeline.
 Reads doc roots from .ai-spector/.docflow/config/index.docs.json
-and indexes all markdown files into pgvector for semantic search.
+and indexes all markdown files for semantic search.
+
+Storage: LanceDB by default (file-based, zero setup).
+Set COCOINDEX_DB_URL=postgresql://... to use Postgres+pgvector instead.
+
+Embedding: all-MiniLM-L6-v2 (local, no API key, ~80 MB).
+Set OPENAI_API_KEY + COCOINDEX_EMBED_MODEL=openai:text-embedding-3-small
+for higher-quality embeddings.
 """
 import json, os
 from pathlib import Path
@@ -181,10 +188,23 @@ import cocoindex
 
 PROJECT_ROOT = Path(os.getenv("AI_SPECTOR_ROOT", str(Path.cwd())))
 INDEX_CONFIG = PROJECT_ROOT / ".ai-spector/.docflow/config/index.docs.json"
+DB_URL = os.getenv("COCOINDEX_DB_URL", "")          # empty → LanceDB
+EMBED_MODEL = os.getenv("COCOINDEX_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+LANCE_PATH = str(PROJECT_ROOT / ".ai-spector/.docflow/cocoindex/lance_data")
 
 def load_doc_roots() -> list[str]:
     cfg = json.loads(INDEX_CONFIG.read_text())
     return [str(PROJECT_ROOT / src["root"]) for src in cfg.get("sources", {}).values()]
+
+def make_embed():
+    if EMBED_MODEL.startswith("openai:"):
+        return cocoindex.functions.OpenAIEmbed(model=EMBED_MODEL.removeprefix("openai:"))
+    return cocoindex.functions.SentenceTransformerEmbed(model=EMBED_MODEL)
+
+def make_storage():
+    if DB_URL:
+        return cocoindex.storages.Postgres(table_name="doc_chunks")
+    return cocoindex.storages.LanceDB(uri=LANCE_PATH, table_name="doc_chunks")
 
 @cocoindex.flow_def(name="ai_spector_docs")
 def docs_flow(flow_builder: cocoindex.FlowBuilder, db: cocoindex.DataScope):
@@ -196,14 +216,7 @@ def docs_flow(flow_builder: cocoindex.FlowBuilder, db: cocoindex.DataScope):
             cocoindex.functions.SplitRecursively(),
             language="markdown", chunk_size=400, chunk_overlap=50,
         )
-        chunks.transform(
-            cocoindex.functions.SentenceTransformerEmbed(
-                model="sentence-transformers/all-MiniLM-L6-v2"
-            )
-        ).save_to(
-            db["doc_chunks"],
-            cocoindex.storages.Postgres(table_name="doc_chunks"),
-        )
+        chunks.transform(make_embed()).save_to(db["doc_chunks"], make_storage())
 
 if __name__ == "__main__":
     cocoindex.cli.main()
@@ -211,9 +224,18 @@ if __name__ == "__main__":
 
 **`scaffold/cocoindex/.env.example`**
 ```
-COCOINDEX_DB_URL=postgresql://localhost/cocoindex
 AI_SPECTOR_ROOT=.
-# Optional: use OpenAI embeddings instead of local model
+
+# Storage — LanceDB (default, file-based, no server needed):
+# leave COCOINDEX_DB_URL unset
+
+# Storage — Postgres+pgvector (optional):
+# COCOINDEX_DB_URL=postgresql://localhost/cocoindex
+
+# Embedding — local model (default, ~80 MB download, no API key):
+# COCOINDEX_EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Embedding — OpenAI (optional, higher quality):
 # OPENAI_API_KEY=sk-...
 # COCOINDEX_EMBED_MODEL=openai:text-embedding-3-small
 ```
@@ -222,15 +244,24 @@ AI_SPECTOR_ROOT=.
 ```
 cocoindex>=0.1
 sentence-transformers>=3.0
-psycopg2-binary>=2.9
+lancedb>=0.8
+# Uncomment if using Postgres+pgvector:
+# psycopg2-binary>=2.9
 ```
 
-**`scaffold/cocoindex/README.md`** — setup instructions (Postgres, pip install, first run).
+**`scaffold/cocoindex/.gitignore`**
+```
+.env
+lance_data/
+```
+
+**`scaffold/cocoindex/README.md`** — setup instructions (pip install, first run, env options).
 
 #### Acceptance criteria
-- [ ] `python pipeline.py cocoindex update` runs on a sample project
-- [ ] Chunks appear in Postgres `doc_chunks` table with embeddings
+- [ ] `python pipeline.py cocoindex update` runs on a sample project with no `.env`
+- [ ] Chunks appear in `lance_data/` with embeddings (LanceDB default)
 - [ ] Re-run only reprocesses changed files (incremental)
+- [ ] Setting `COCOINDEX_DB_URL` routes to Postgres instead
 
 **Estimated effort:** 1 day
 
@@ -280,10 +311,16 @@ export const DocsSearchSchema = RootSchema.extend({
 
 #### CLI subcommands
 ```
-ai-spector cocoindex setup    # scaffold pipeline into project
+ai-spector cocoindex setup    # scaffold pipeline into project (also offered by `ai-spector setup`)
 ai-spector cocoindex index    # run pipeline.py cocoindex update
 ai-spector cocoindex search   # --query <text> --limit <n> --json
 ```
+
+`ai-spector setup` gains an interactive prompt:
+```
+? Enable CocoIndex for semantic doc search? (y/N)
+```
+Answering yes calls `runCocoindexSetup` inline.
 
 #### MCP tool output
 ```json
@@ -302,11 +339,14 @@ When CocoIndex is not configured, `docs_search` returns:
 ```
 Never throws — MCP server must not crash on optional features.
 
-#### New dependency
+#### New dependencies
 ```json
+"@lancedb/lancedb": "^0.8.0",
 "pg": "^8.13.0"
 ```
-Only imported when CocoIndex is configured — no cost to users who don't use it.
+`@lancedb/lancedb` is the default storage client. `pg` is imported only when
+`COCOINDEX_DB_URL` is set (Postgres mode). Neither is loaded when CocoIndex is
+not configured — no cost to users who don't use it.
 
 #### Acceptance criteria
 - [ ] `npx ai-spector cocoindex setup` creates pipeline files
@@ -373,10 +413,12 @@ export interface ImpactResult {
 export interface SemanticSuggestion {
   docPath: string;
   heading: string;
-  score: number;
+  score: number;          // similarity 0–1; only suggestions ≥ threshold included
   graphNodeId?: string;
-  reason: string;  // e.g. "semantically similar to changed section"
+  reason: string;         // e.g. "semantically similar to changed section"
 }
+
+// threshold default: 0.75 — configurable via COCOINDEX_SIMILARITY_THRESHOLD env var
 ```
 
 `runGraphImpact()` and `runGraphImpactFromGit()` call `runCocoindexSearch` with
@@ -508,21 +550,14 @@ Phase 3 + 4 are the highest-leverage additions for agent usability.
 
 ---
 
-## Open Questions
+## Decisions (closed)
 
-1. **Vector store** — Postgres + pgvector is the CocoIndex default but heavy
-   for local dev. Evaluate LanceDB (file-based, zero setup) as the default for
-   solo developers. Make configurable via `.env`.
-
-2. **Embedding model** — `all-MiniLM-L6-v2` runs locally (no API key needed,
-   ~80 MB download). Switch to `openai:text-embedding-3-small` for better
-   quality when `OPENAI_API_KEY` is set. Pipeline reads model from env.
-
-3. **`cocoindex setup` vs `init --with-cocoindex`** — keep as a separate
-   subcommand for now. Lower risk, easier to test independently.
-
-4. **`semanticSuggestions` threshold** — only include suggestions above a
-   minimum score (e.g. 0.75) to avoid noise. Make configurable.
+| Question | Decision |
+|----------|----------|
+| **Vector store** | LanceDB default (file-based, zero setup, git-friendly). Postgres+pgvector opt-in via `COCOINDEX_DB_URL`. |
+| **Embedding model** | `all-MiniLM-L6-v2` local (no API key, ~80 MB). Auto-upgrade to `openai:text-embedding-3-small` when `OPENAI_API_KEY` + `COCOINDEX_EMBED_MODEL` set. |
+| **`cocoindex setup` vs `init --with-cocoindex`** | `ai-spector setup` asks whether to enable CocoIndex. `ai-spector cocoindex setup` also available to add it later. |
+| **`semanticSuggestions` threshold** | Default 0.75 minimum score. Configurable via `COCOINDEX_SIMILARITY_THRESHOLD` env var. |
 
 ---
 
