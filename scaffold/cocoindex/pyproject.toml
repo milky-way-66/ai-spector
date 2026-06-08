@@ -3,10 +3,9 @@ name = "ai-spector-cocoindex"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "cocoindex>=0.3.39,<1.0",
+    "cocoindex[sentence_transformers,lancedb]>=1.0.7",
     "mcp>=1.0",
-    "sentence-transformers>=3.0",
-    "lancedb>=0.8",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

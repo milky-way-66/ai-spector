@@ -41,14 +41,6 @@ export async function findPython(cocoDir: string): Promise<string> {
 
 /** Returns [command, ...args] for running pipeline.py in MCP mode.
  *  Priority: uv (inline deps, no venv required) → venv python → python3 → python */
-/** Returns the command for running server.py in MCP mode.
- *  Always uses the venv python so startup is instant — no downloads.
- *  Deps must be pre-installed via runCocoindexSetup before calling this. */
-export async function buildMcpCommand(cocoDir: string, _pipelinePath: string): Promise<{ command: string; args: string[] }> {
-  const serverPath = join(cocoDir, "server.py");
-  const pythonBin = await findPython(cocoDir);
-  return { command: pythonBin, args: [serverPath] };
-}
 
 /** Check python version is ≥3.11. Returns version string or null on failure. */
 export async function checkPythonVersion(bin: string): Promise<string | null> {
@@ -234,8 +226,11 @@ export async function runCocoindexSetup(
 /** Merge the cocoindex MCP server entry into <root>/.mcp.json */
 async function writeCocoindexMcpEntry(root: string, pipelinePath: string, cocoDir: string): Promise<void> {
   const { writeJson } = await import("../util/fs.js");
-  const { command, args } = await buildMcpCommand(cocoDir, pipelinePath);
-  const entry = { command, args, env: { AI_SPECTOR_ROOT: root } };
+  const entry = {
+    command: await findPython(cocoDir),
+    args: [join(cocoDir, "server.py")],
+    env: { AI_SPECTOR_ROOT: root },
+  };
 
   // Write to all MCP config files that exist or should be created
   const mcpFiles = [

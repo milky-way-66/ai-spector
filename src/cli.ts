@@ -790,7 +790,7 @@ cocoindex
   .description("Run the CocoIndex pipeline to update embeddings (requires Python)")
   .option("--root <path>", "Project root (default: cwd)")
   .action(async (opts) => {
-    const { resolve: res } = await import("node:path");
+    const { resolve: res, join } = await import("node:path");
     const { isCocoindexConfigured, cocoindexPipelinePath, cocoindexDir, findPython } = await import(
       "./core/operations/cocoindex.js"
     );
@@ -811,7 +811,7 @@ cocoindex
     }
     const { spawn } = await import("node:child_process");
     await new Promise<void>((resolveP, reject) => {
-      const child = spawn(pythonBin, [pipelinePath, "update"], {
+      const child = spawn(pythonBin, [join(cocoindexDir(root), "pipeline.py"), "update"], {
         cwd: root,
         stdio: "inherit",
         env: { ...process.env, AI_SPECTOR_ROOT: root },
