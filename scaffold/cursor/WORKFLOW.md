@@ -32,7 +32,9 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Detail design | “detail design for checkout” | `ai-spector-generate-detail-design` | docs/detail-design |
 | HTML prototype | “HTML mockup”, “prototype with stripe theme” | `ai-spector-generate-prototype` | auth picker (if needed) → theme picker → setup → HTML → validate |
 | Pick / preview UI theme | “help me pick a theme”, “show me themes”, “what fits my app?” | `ai-spector-generate-prototype` | read project context → recommend 3 → `prototype preview` ×3 |
-| What to redo | “what’s impacted”, “what should I regenerate” | `ai-spector-graph` | `graph impact` / git diff |
+| What to redo | “what’s impacted”, “what should I regenerate” | `ai-spector-graph` | `graph impact` / git diff — includes semantic suggestions if CocoIndex configured |
+| Find docs by concept | “find all mentions of rate limiting”, “which docs describe login?” | `ai-spector-search` | `docs_search` MCP tool or `cocoindex search --query` |
+| Find graph node by name | “show graph for user login” (node ID unknown) | `ai-spector-search` | `graph_query_fuzzy` MCP tool |
 | Translation status | “what’s stale in JP”, “pending translations” | `ai-spector-lang-status` | `lang queue pending` |
 | Sync translations | “resolve translations”, “update JP from EN” | `ai-spector-resolve-translation` | read queue → translate → `index` |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |

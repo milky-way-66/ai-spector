@@ -17,6 +17,9 @@ Agents use this when intent is ambiguous.
 | index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
 | validate graph | `ai-spector-graph` | `references/validate-graph.md` |
 | impact, what to regenerate | `ai-spector-graph` | `references/impact.md` |
+| semantic search, find docs about a concept | `ai-spector-search` | `SKILL.md` |
+| fuzzy graph lookup, find node by name | `ai-spector-search` | `SKILL.md` |
+| CocoIndex, embeddings, docs_search, graph_query_fuzzy | `ai-spector-search` | `SKILL.md` |
 | visualize graph | `ai-spector-graph` | `references/visualize-graph.md` |
 | link graph, semantic edges | `ai-spector-graph` | `references/link-graph.md` |
 | sync graph | `ai-spector-graph` | `references/sync-graph.md` |

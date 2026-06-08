@@ -10,6 +10,7 @@ export async function toolIndex(input: z.infer<typeof IndexSchema>) {
     skipMerge: input.skipMerge,
     skipValidate: input.skipValidate,
     skipDocSemantics: input.skipDocSemantics,
+    cocoindexSync: input.cocoindexSync,
   });
   return report;
 }

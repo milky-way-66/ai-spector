@@ -54,6 +54,10 @@ export const IndexSchema = RootSchema.extend({
   skipMerge: z.boolean().optional().describe("Skip knowledge.json merge step"),
   skipValidate: z.boolean().optional().describe("Skip graph validation step"),
   skipDocSemantics: z.boolean().optional().describe("Skip SRS body extraction step"),
+  cocoindexSync: z
+    .boolean()
+    .optional()
+    .describe("Run CocoIndex pipeline update after indexing (requires Python + CocoIndex configured)"),
 });
 
 // ── Comments ──────────────────────────────────────────────────────────────────

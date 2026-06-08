@@ -39,10 +39,11 @@ When you need to find, query, or understand the project graph:
 | Need | Use |
 |------|-----|
 | Find what needs regeneration | `npx ai-spector graph impact` |
-| Find doc/section/node | `npx ai-spector graph query <id> --json` |
+| Find doc/section/node by exact ID | `npx ai-spector graph query <id> --json` |
+| Find doc/section/node by concept | `graph_query_fuzzy(query: "…")` (MCP) — requires CocoIndex |
+| Search docs by meaning | `docs_search(query: "…")` (MCP) — requires CocoIndex |
 | Check graph health | `npx ai-spector graph validate` |
 | See pending translations | `npx ai-spector lang queue pending --json` (after index) |
-| Find a node by name | `npx ai-spector graph query <text> --json` |
 
 **Only fall back to `grep` or `Read` when the CLI returns no results or you need raw file content for editing.**
 
@@ -52,6 +53,7 @@ When you need to find, query, or understand the project graph:
 |-------------|-------|
 | Analyze data source / build graph | `ai-spector-graph` |
 | Check impact of changes | `ai-spector-graph` |
+| Semantic search / fuzzy graph lookup | `ai-spector-search` |
 | Import / set up custom template pack | `ai-spector-template-import` |
 | Generate documents (check active pack first) | read `packs.active` → use skill below |
 | → Custom pack active | `ai-spector-generate-<packname>` (installed by `template install`) |
@@ -68,13 +70,19 @@ When you need to find, query, or understand the project graph:
 npx ai-spector analyze              # ingest data-source, build graph
 npx ai-spector index                # refresh fingerprints + translation queue
 npx ai-spector graph validate       # check graph integrity
-npx ai-spector graph impact --git --json   # impact of current git diff
+npx ai-spector graph impact --git --json   # impact of current git diff (+ semantic suggestions if CocoIndex configured)
 npx ai-spector lang queue pending --json   # pending translation jobs
 npx ai-spector setup --check        # audit project setup
 npx ai-spector template list        # list installed packs + active
 npx ai-spector template scan <path> # scan a template folder → scan-result.json
 npx ai-spector template install     # install pack from staging (AI writes manifest first)
 npx ai-spector template use <name>  # switch active pack (use "builtin" to revert)
+
+# CocoIndex (opt-in — requires Python 3.11+)
+npx ai-spector cocoindex setup      # scaffold pipeline into project
+npx ai-spector cocoindex index      # run pipeline (update embeddings)
+npx ai-spector cocoindex search --query "login flow"   # semantic search
+npx ai-spector cocoindex query-fuzzy --query "login"   # natural language → graph node + subgraph
 ```
 
 On CLI failure: show the output, offer fix / workaround / pause. Do not invent results.

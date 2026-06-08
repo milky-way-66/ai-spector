@@ -300,6 +300,7 @@ program
     "Skip parsing docs/srs and docs/basic-design for UC/F/actor ids into the graph",
   )
   .option("--skip-validate", "Skip graph validate after refresh")
+  .option("--cocoindex-sync", "Run CocoIndex pipeline update after indexing (requires Python)")
   .action(async (opts, cmd) => {
     const report = await runIndex({
       root: projectRootOpt(cmd),
@@ -309,6 +310,7 @@ program
       skipMerge: opts.skipMerge,
       skipDocSemantics: opts.skipDocSemantics,
       skipValidate: opts.skipValidate,
+      cocoindexSync: opts.cocoindexSync,
     });
     console.log(formatIndexReport(report));
   });
