@@ -16,6 +16,7 @@ import {
   TemplateListSchema,
   TemplateInspectSchema,
   DocsSearchSchema,
+  GraphQueryFuzzySchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge } from "./tools/graph.js";
@@ -27,7 +28,7 @@ import {
   toolCommentsResolve,
 } from "./tools/comments.js";
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
-import { toolDocsSearch } from "./tools/cocoindex.js";
+import { toolDocsSearch, toolGraphQueryFuzzy } from "./tools/cocoindex.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -163,6 +164,16 @@ server.tool(
   DocsSearchSchema.shape,
   async (input) => {
     const result = await toolDocsSearch(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.tool(
+  "graph_query_fuzzy",
+  "Find a graph node by natural language description, then return its subgraph. Combines semantic doc search with graph traversal in one call. Requires CocoIndex (npx ai-spector cocoindex setup).",
+  GraphQueryFuzzySchema.shape,
+  async (input) => {
+    const result = await toolGraphQueryFuzzy(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

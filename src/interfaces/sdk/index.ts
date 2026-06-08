@@ -24,6 +24,7 @@ export type { IndexReport, IndexOptions } from "../../core/operations/index.js";
 export {
   runCocoindexSetup,
   runCocoindexSearch,
+  runGraphQueryFuzzy,
   isCocoindexConfigured,
 } from "../../core/operations/cocoindex.js";
 export type {
@@ -32,6 +33,8 @@ export type {
   CocoindexSearchOptions,
   CocoindexSearchResult,
   SearchResult as CocoindexSearchHit,
+  FuzzyQueryOptions,
+  FuzzyQueryResult,
 } from "../../core/operations/cocoindex.js";
 
 // Comments

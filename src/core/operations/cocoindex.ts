@@ -2,6 +2,7 @@ import { join, resolve, relative } from "node:path";
 import { mkdir, cp } from "node:fs/promises";
 import { pathExists, readJson } from "../util/fs.js";
 import type { TraceabilityGraph } from "../../types.js";
+import type { GraphQueryResult } from "ai-spector-graph";
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 
@@ -171,4 +172,68 @@ async function enrichWithGraphNodeIds(
       : undefined;
     return { ...r, graphNodeId };
   });
+}
+
+// ── Fuzzy graph query ─────────────────────────────────────────────────────────
+
+export interface FuzzyQueryOptions {
+  root?: string;
+  query: string;
+  direction?: "out" | "in" | "both";
+  depth?: number;
+  threshold?: number;
+}
+
+export interface FuzzyQueryResult {
+  resolvedNodeId: string;
+  resolvedVia: string;
+  confidence: number;
+  subgraph: GraphQueryResult;
+}
+
+export async function runGraphQueryFuzzy(
+  opts: FuzzyQueryOptions,
+): Promise<FuzzyQueryResult> {
+  const root = resolve(opts.root ?? process.cwd());
+
+  // Step 1: semantic search to resolve natural language → graphNodeId
+  const searchResult = await runCocoindexSearch({
+    root,
+    query: opts.query,
+    limit: 5,
+    threshold: opts.threshold,
+  });
+
+  if (!searchResult.cocoindexConfigured) {
+    throw new Error(
+      "CocoIndex is not configured. Run: npx ai-spector cocoindex setup",
+    );
+  }
+
+  const topHit = searchResult.results.find((r) => r.graphNodeId);
+  if (!topHit?.graphNodeId) {
+    throw new Error(
+      `No graph node found for query "${opts.query}". ` +
+        "Try a more specific query or use graph_query with an exact node id.",
+    );
+  }
+
+  // Step 2: graph traversal from resolved node
+  const { loadDocflowConfig } = await import("../config/load.js");
+  const { config } = await loadDocflowConfig(root);
+  const { runGraphQuery } = await import("./graph-query.js");
+
+  const subgraph = await runGraphQuery({
+    graphPath: join(root, config.paths.graph),
+    seedId: topHit.graphNodeId,
+    direction: opts.direction,
+    depth: opts.depth,
+  });
+
+  return {
+    resolvedNodeId: topHit.graphNodeId,
+    resolvedVia: `docs_search → ${topHit.docPath} § ${topHit.heading}`,
+    confidence: topHit.score,
+    subgraph,
+  };
 }

@@ -105,6 +105,21 @@ export const DocsSearchSchema = RootSchema.extend({
     .describe("Minimum similarity score 0–1 (default: 0.75)"),
 });
 
+export const GraphQueryFuzzySchema = RootSchema.extend({
+  query: z.string().describe("Natural language description of the graph node to find"),
+  direction: z
+    .enum(["out", "in", "both"])
+    .optional()
+    .describe("Edge traversal direction once node is resolved (default: out)"),
+  depth: z.number().int().min(1).optional().describe("Max traversal depth (default: 3)"),
+  threshold: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Minimum similarity score for node resolution (default: 0.75)"),
+});
+
 // ── Template ──────────────────────────────────────────────────────────────────
 
 export const TemplateListSchema = RootSchema;

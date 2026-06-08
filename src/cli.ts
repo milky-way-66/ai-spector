@@ -62,10 +62,11 @@ import {
 } from "./core/operations/comments.js";
 import { runProvenanceLink } from "./core/graph/provenance.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
-import { runCocoindexSetup, runCocoindexSearch } from "./core/operations/cocoindex.js";
+import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
   formatCocoindexSetup,
   formatCocoindexSearch,
+  formatGraphQueryFuzzy,
 } from "./interfaces/cli/format/cocoindex.js";
 import {
   runPrototypeInstallPreviews,
@@ -811,6 +812,32 @@ cocoindex
         else reject(new Error(`python pipeline exited with code ${code}`));
       });
     });
+  });
+
+cocoindex
+  .command("query-fuzzy")
+  .description("Resolve a natural language query to a graph node and return its subgraph")
+  .requiredOption("--query <text>", "Natural language description of the node")
+  .option("--root <path>", "Project root (default: cwd)")
+  .option("--direction <dir>", "out | in | both", "out")
+  .option("--depth <n>", "Max traversal depth", "3")
+  .option("--threshold <n>", "Minimum similarity score 0–1", "0.75")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    try {
+      const result = await runGraphQueryFuzzy({
+        root: opts.root,
+        query: opts.query,
+        direction: opts.direction as "out" | "in" | "both",
+        depth: Number(opts.depth),
+        threshold: Number(opts.threshold),
+      });
+      if (opts.json) console.log(JSON.stringify(result, null, 2));
+      else console.log(formatGraphQueryFuzzy(result));
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
+    }
   });
 
 cocoindex

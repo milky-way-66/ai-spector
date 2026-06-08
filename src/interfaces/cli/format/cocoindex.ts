@@ -1,6 +1,7 @@
 import type {
   CocoindexSetupResult,
   CocoindexSearchResult,
+  FuzzyQueryResult,
 } from "../../../core/operations/cocoindex.js";
 
 export function formatCocoindexSetup(r: CocoindexSetupResult): string {
@@ -47,4 +48,17 @@ export function formatCocoindexSearch(r: CocoindexSearchResult): string {
     lines.push("");
   }
   return lines.join("\n").trimEnd();
+}
+
+export function formatGraphQueryFuzzy(r: FuzzyQueryResult): string {
+  const lines: string[] = [
+    `Resolved: ${r.resolvedNodeId}  (confidence: ${r.confidence})`,
+    `Via: ${r.resolvedVia}`,
+    "",
+    `Subgraph — ${r.subgraph.nodes.length} node(s), ${r.subgraph.edges.length} edge(s)`,
+  ];
+  for (const node of r.subgraph.nodes) {
+    lines.push(`  ${node.id}  [${node.type}]`);
+  }
+  return lines.join("\n");
 }
