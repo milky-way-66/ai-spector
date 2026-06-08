@@ -12,7 +12,11 @@ export { validateGraph } from "../../core/operations/validate.js";
 export { runGraphMerge } from "../../core/operations/graph-merge.js";
 export type { GraphMergeOptions, GraphMergeResult } from "../../core/operations/graph-merge.js";
 export { runGraphImpact, runGraphImpactFromGit } from "../../core/operations/graph-impact.js";
-export type { GraphImpactCliOptions } from "../../core/operations/graph-impact.js";
+export type {
+  GraphImpactCliOptions,
+  GraphImpactResult,
+  SemanticSuggestion,
+} from "../../core/operations/graph-impact.js";
 export { runGraphQuery } from "../../core/operations/graph-query.js";
 export type { GraphQueryCliOptions } from "../../core/operations/graph-query.js";
 

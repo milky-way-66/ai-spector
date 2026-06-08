@@ -1,6 +1,7 @@
 import type { GraphQueryResult, ImpactResult, LayerAuditReport } from "ai-spector-graph";
 import type { GraphMergeResult } from "../../../core/operations/graph-merge.js";
 import type { GraphVisualizeResult } from "../../../core/operations/graph-visualize.js";
+import type { GraphImpactResult } from "../../../core/operations/graph-impact.js";
 import { formatIssues } from "../../../core/operations/validate.js";
 
 export function formatGraphQuery(result: GraphQueryResult): string {
@@ -76,7 +77,7 @@ export function formatGraphVisualize(result: GraphVisualizeResult): string {
   return lines.join("\n");
 }
 
-export function formatGraphImpact(result: ImpactResult, fromGit = false): string {
+export function formatGraphImpact(result: GraphImpactResult, fromGit = false): string {
   const lines: string[] = [];
   if (result.noTraceabilityImpact) {
     const files = (result as ImpactResult & { changedFiles?: string[] }).changedFiles ?? [];
@@ -111,6 +112,14 @@ export function formatGraphImpact(result: ImpactResult, fromGit = false): string
   if (staleTranslations && staleTranslations.length > 0) {
     lines.push("\nstale translations (may need update):");
     for (const e of staleTranslations) lines.push(`  - ${e.id} (${e.reason})`);
+  }
+
+  if (result.semanticSuggestions && result.semanticSuggestions.length > 0) {
+    lines.push("\nsemantic suggestions (review recommended):");
+    for (const s of result.semanticSuggestions) {
+      const nodeTag = s.graphNodeId ? `  [${s.graphNodeId}]` : "";
+      lines.push(`  - ${s.docPath} § ${s.heading}${nodeTag}  (score: ${s.score})`);
+    }
   }
 
   return lines.join("\n");

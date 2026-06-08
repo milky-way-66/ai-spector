@@ -12,6 +12,19 @@ import {
   type ResolvedOrigin,
 } from "../graph/resolve.js";
 import type { ImpactResult } from "ai-spector-graph";
+import { runCocoindexSearch, isCocoindexConfigured, type SearchResult } from "./cocoindex.js";
+
+export interface SemanticSuggestion {
+  docPath: string;
+  heading: string;
+  score: number;
+  graphNodeId?: string;
+  reason: string;
+}
+
+export type GraphImpactResult = ImpactResult & {
+  semanticSuggestions?: SemanticSuggestion[];
+};
 
 export interface GraphImpactCliOptions {
   graphPath: string;
@@ -78,10 +91,53 @@ export function resolveImpactOriginId(
   return { originId: primary.id, resolved: primary };
 }
 
+async function addSemanticSuggestions(
+  result: ImpactResult,
+  opts: Pick<GraphImpactCliOptions, "projectRoot" | "change">,
+): Promise<GraphImpactResult> {
+  const configured = await isCocoindexConfigured(opts.projectRoot);
+  if (!configured) return result;
+
+  const query = opts.change || result.origin.id;
+  const threshold = Number(process.env["COCOINDEX_SIMILARITY_THRESHOLD"] ?? "0.75");
+
+  try {
+    const searchResult = await runCocoindexSearch({
+      root: opts.projectRoot,
+      query,
+      limit: 5,
+      threshold,
+    });
+
+    // exclude nodes already in formal impact results
+    const formalIds = new Set([
+      result.origin.id,
+      ...result.regenerate.map((e) => e.id),
+      ...result.review.map((e) => e.id),
+    ]);
+
+    const suggestions: SemanticSuggestion[] = searchResult.results
+      .filter((r: SearchResult) => !r.graphNodeId || !formalIds.has(r.graphNodeId))
+      .map((r: SearchResult) => ({
+        docPath: r.docPath,
+        heading: r.heading,
+        score: r.score,
+        graphNodeId: r.graphNodeId,
+        reason: "semantically similar to changed section",
+      }));
+
+    if (suggestions.length === 0) return result;
+    return { ...result, semanticSuggestions: suggestions };
+  } catch {
+    // CocoIndex failure is non-fatal
+    return result;
+  }
+}
+
 export async function runGraphImpactFromGit(
   g: Awaited<ReturnType<typeof loadInMemoryGraph>>,
   opts: GraphImpactCliOptions,
-): Promise<ImpactResult> {
+): Promise<GraphImpactResult> {
   const collected = await collectGitDiff(opts.projectRoot);
   if (collected.notRepo) {
     throw new Error(
@@ -109,7 +165,7 @@ export async function runGraphImpactFromGit(
       await mkdir(dirname(opts.output), { recursive: true });
       await writeJson(opts.output, noImpact);
     }
-    return noImpact;
+    return addSemanticSuggestions(noImpact, opts);
   }
 
   const rules = await loadImpactRules(opts.rulesPath);
@@ -143,7 +199,8 @@ export async function runGraphImpactFromGit(
     return { id: s.id, type: s.type, reason: s.reason, file: region?.file, heading: region?.heading };
   });
 
-  const result = results.length === 1 ? { ...results[0], gitSeeds } : mergeImpactResults(results, gitSeeds);
+  const merged = results.length === 1 ? { ...results[0], gitSeeds } : mergeImpactResults(results, gitSeeds);
+  const result = await addSemanticSuggestions(merged, opts);
 
   if (opts.output) {
     await mkdir(dirname(opts.output), { recursive: true });
@@ -212,13 +269,14 @@ export async function computeImpactForRegen(
   return { affectedNodeIds: nodeIds, affectedOutputPaths: outputPaths, noImpact: false, reason, graph: g };
 }
 
-export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<ImpactResult> {
+export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<GraphImpactResult> {
   const g = await loadInMemoryGraph(opts.graphPath);
   if (opts.git) return runGraphImpactFromGit(g, opts);
   const { originId, resolved } = resolveImpactOriginId(g, opts);
   const rules = await loadImpactRules(opts.rulesPath);
-  const result = computeImpact(g, originId, opts.change, rules);
-  if (resolved) result.resolvedFrom = resolved;
+  const formal = computeImpact(g, originId, opts.change, rules);
+  if (resolved) formal.resolvedFrom = resolved;
+  const result = await addSemanticSuggestions(formal, opts);
   if (opts.output) {
     await mkdir(dirname(opts.output), { recursive: true });
     await writeJson(opts.output, result);
