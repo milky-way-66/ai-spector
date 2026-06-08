@@ -10,7 +10,26 @@ import { copyTree, pathExists, readJson, writeJson } from "../util/fs.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import { isInteractive, promptLine, promptSelect, promptYesNo } from "../util/prompt.js";
+import { isCocoindexConfigured } from "./cocoindex.js";
 import type { LanguageConfig } from "../config/types.js";
+
+const MCP_SERVER_ENTRY = {
+  command: "npx",
+  args: ["ai-spector-mcp"],
+};
+
+async function writeMcpConfig(projectRoot: string): Promise<string> {
+  const mcpPath = join(projectRoot, ".mcp.json");
+  const existing = (await pathExists(mcpPath))
+    ? await readJson<{ mcpServers?: Record<string, unknown> }>(mcpPath)
+    : {};
+  const merged = {
+    ...existing,
+    mcpServers: { ...(existing.mcpServers ?? {}), "ai-spector": MCP_SERVER_ENTRY },
+  };
+  await writeJson(mcpPath, merged);
+  return mcpPath;
+}
 
 export type AgentTarget = "cursor" | "claude" | "both";
 
@@ -223,6 +242,15 @@ export async function runInit(opts: InitOptions): Promise<void> {
     }
   }
 
+  // Write .mcp.json for Claude target
+  let claudeMcpPath: string | undefined;
+  if (target === "claude" || target === "both") {
+    claudeMcpPath = await writeMcpConfig(root);
+  }
+
+  // CocoIndex status
+  const cocoConfigured = await isCocoindexConfigured(root);
+
   // ---------------------------------------------------------------------------
   // Summary
   // ---------------------------------------------------------------------------
@@ -243,11 +271,15 @@ export async function runInit(opts: InitOptions): Promise<void> {
     process.stdout.write(`  git hook  -> skipped  (run later: npx ai-spector hooks install)\n`);
   }
   if (target === "cursor" || target === "both") {
-    process.stdout.write(`  cursor    -> .cursor/ (rules + skills)\n`);
+    process.stdout.write(`  cursor    -> .cursor/ (rules + skills + mcp.json)\n`);
   }
   if (target === "claude" || target === "both") {
     process.stdout.write(`  claude    -> CLAUDE.md + .claude/skills/\n`);
+    process.stdout.write(`  mcp       -> ${claudeMcpPath} (ai-spector MCP server registered)\n`);
   }
+  process.stdout.write(
+    `  cocoindex -> ${cocoConfigured ? "configured ✓" : "not configured (run: npx ai-spector cocoindex setup)"}\n`,
+  );
 
   process.stdout.write("\n");
   process.stdout.write("What you can change later:\n");
