@@ -2,7 +2,7 @@ import { join, resolve, relative } from "node:path";
 import { mkdir, cp } from "node:fs/promises";
 import { pathExists, readJson } from "../util/fs.js";
 import type { TraceabilityGraph } from "../../types.js";
-import type { GraphQueryResult } from "ai-spector-graph";
+import type { GraphQueryResult } from "../graph/query.js";
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 

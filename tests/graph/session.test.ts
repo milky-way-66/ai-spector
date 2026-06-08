@@ -6,9 +6,9 @@ import {
   DEFAULT_IMPACT_RULES,
   GraphSession,
   type TraceabilityGraph,
-} from "../src/index.js";
+} from "../../src/core/graph/index.js";
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function loadGraphj(): TraceabilityGraph {
   const raw = readFileSync(join(repoRoot, "graphj.json"), "utf8");

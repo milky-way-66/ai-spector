@@ -1,9 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.7.0",
-  "workspaces": [
-    "packages/*"
-  ],
+  "version": "0.7.1",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -41,6 +38,7 @@
   ],
   "exports": {
     ".": "./dist/sdk.js",
+    "./graph": "./dist/core/graph/index.js",
     "./mcp": "./dist/interfaces/mcp/server.js",
     "./cli": "./dist/cli.js"
   },
@@ -51,8 +49,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "npm run build -w ai-spector-graph && tsc",
-    "build:graph": "npm run build -w ai-spector-graph",
+    "build": "tsc",
     "prepack": "npm run build",
     "prepublish:check-deps": "node --input-type=module -e \"import { readFileSync } from 'node:fs'; const p = JSON.parse(readFileSync('package.json','utf8')); for (const [name, range] of Object.entries({ ...p.dependencies, ...p.optionalDependencies, ...p.peerDependencies })) { if (String(range).startsWith('workspace:')) { console.error('Cannot publish: ' + name + ' uses ' + range); process.exit(1); } }\"",
     "prepublishOnly": "npm run build && npm run prepublish:check-deps",
@@ -71,7 +68,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/mdast": "^4.0.4",
-    "ai-spector-graph": "^0.4.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",

@@ -1,12 +1,12 @@
-import { computeGraphStats as computeGraphStatsCore } from "ai-spector-graph";
+import { computeGraphStats as computeGraphStatsCore } from "../graph/stats.js";
 import {
   computeKnowledgeStats as computeKnowledgeStatsCore,
   type KnowledgeStats,
-} from "ai-spector-graph";
+} from "../graph/knowledge.js";
 import type { TraceabilityGraph } from "../../types.js";
 import type { AnalysisKnowledge } from "../graph/knowledge.js";
 
-export type { GraphStats } from "ai-spector-graph";
+export type { GraphStats } from "../graph/stats.js";
 export type { KnowledgeStats };
 
 export function computeGraphStats(graph: TraceabilityGraph) {

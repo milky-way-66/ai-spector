@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { simulatePatch } from "../src/patch.js";
-import { loadGraph, node } from "../../../tests/helpers/graph.js";
+import { simulatePatch } from "../../src/core/graph/patch.js";
+import { loadGraph, node } from "../helpers/graph.js";
 
 describe("simulatePatch", () => {
   it("previews nodes and edges to add without mutating graph", () => {

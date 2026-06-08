@@ -1,4 +1,4 @@
-import type { TraceabilityGraph } from "./types.js";
+import type { TraceabilityGraph } from "../../types.js";
 
 export interface GraphStats {
   nodes: number;

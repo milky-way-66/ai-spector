@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_IMPACT_RULES, ProjectSession } from "../src/index.js";
-import { loadGraph, node } from "../../../tests/helpers/graph.js";
+import { DEFAULT_IMPACT_RULES, ProjectSession } from "../../src/core/graph/index.js";
+import { loadGraph, node } from "../helpers/graph.js";
 
 describe("ProjectSession", () => {
   const graph = loadGraph(

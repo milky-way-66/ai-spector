@@ -13,7 +13,7 @@ import {
   type ResolveHints,
 } from "./resolve.js";
 import { computeGraphStats, type GraphStats } from "./stats.js";
-import type { TraceabilityGraph } from "./types.js";
+import type { TraceabilityGraph } from "../../types.js";
 
 export interface GraphSessionOptions {
   impactRules?: ImpactRulesFile;

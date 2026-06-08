@@ -10,7 +10,7 @@ Full architecture reference: [ARCHITECTURE.md](ARCHITECTURE.md)
 ## Commands
 
 ```bash
-npm run build          # compile ai-spector-graph then tsc
+npm run build          # tsc
 npm test               # vitest run (all tests in tests/ + packages/graph/tests/)
 npm run test:watch     # vitest in watch mode
 ```
@@ -47,8 +47,6 @@ src/
     mcp/                  # MCP server + Zod schemas + tool handlers
     sdk/                  # SDK re-exports
 
-packages/
-  graph/                  # ai-spector-graph workspace package (pure domain types + algorithms)
 
 tests/                    # mirrors src/ layout
 ```
@@ -181,16 +179,10 @@ Package subpath exports: `.` → SDK, `./mcp` → MCP server, `./cli` → CLI.
 
 ---
 
-## ai-spector-graph Package
+## Graph module
 
-Located at `packages/graph/`. Workspace dependency — resolved via npm
-workspaces. In tests, Vitest aliases `ai-spector-graph` to the TypeScript
-source directly (see `vitest.config.ts`).
-
-Build separately: `npm run build:graph`
-
-Do not modify its public API without bumping the version and updating the
-`"ai-spector-graph"` version range in the root `package.json`.
+Graph algorithms live in `src/core/graph/`. Public API: `src/core/graph/index.ts`.
+Published as `ai-spector/graph` subpath export for browser consumers.
 
 ---
 
@@ -204,12 +196,12 @@ Do not modify its public API without bumping the version and updating the
 | `src/core/config/load.ts` | `packageBundleRoot()`, `scaffoldBundleRoot()`, config loading |
 | `src/interfaces/mcp/server.ts` | MCP server registration + startup |
 | `src/interfaces/mcp/schemas.ts` | Zod schemas for all MCP tool inputs |
-| `packages/graph/src/index.ts` | Public API of ai-spector-graph |
+| `src/core/graph/index.ts` | Graph public API (`ai-spector/graph` export) |
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ai-spector** (7481 symbols, 10498 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ai-spector** (7511 symbols, 10518 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

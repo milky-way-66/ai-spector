@@ -1,4 +1,4 @@
-import type { GraphQueryResult, ImpactResult, LayerAuditReport } from "ai-spector-graph";
+import type { GraphQueryResult, ImpactResult, LayerAuditReport } from "../../../core/graph/index.js";
 import type { GraphMergeResult } from "../../../core/operations/graph-merge.js";
 import type { GraphVisualizeResult } from "../../../core/operations/graph-visualize.js";
 import type { GraphImpactResult } from "../../../core/operations/graph-impact.js";

@@ -95,10 +95,8 @@ src/
     sdk/
       index.ts                    # re-exports core operations + types as public API
 
-packages/
-  graph/                          # ai-spector-graph workspace package
-                                  # pure domain types: GraphSession, querySubgraph,
-                                  # computeImpact, LayerAuditReport, ImpactResult, …
+src/core/graph/index.ts           # graph public API (GraphSession, querySubgraph, …)
+                                  # also published as `ai-spector/graph` subpath export
 ```
 
 ---
@@ -158,17 +156,18 @@ Package `exports` field:
 
 ```json
 {
-  ".":     "./dist/sdk.js",
-  "./mcp": "./dist/interfaces/mcp/server.js",
-  "./cli": "./dist/cli.js"
+  ".":      "./dist/sdk.js",
+  "./graph": "./dist/core/graph/index.js",
+  "./mcp":  "./dist/interfaces/mcp/server.js",
+  "./cli":  "./dist/cli.js"
 }
 ```
 
 SDK surface:
 
 ```ts
-// Graph domain (from ai-spector-graph)
-export { querySubgraph, computeImpact }
+// Graph domain (from src/core/graph)
+export { querySubgraph, computeImpact, GraphSession, ProjectSession }
 export type { GraphQueryResult, ImpactResult, LayerAuditReport, ResolvedOrigin }
 
 // Operations
@@ -179,16 +178,14 @@ export { runCommentsList, runCommentsInbox, runCommentsPlan, runCommentsShow, ru
 
 ---
 
-## Domain Package (`ai-spector-graph`)
+## Graph module (`src/core/graph`)
 
-The `packages/graph/` workspace package is the lowest layer — pure TypeScript
-with no CLI or IO dependencies. It exports:
+Graph algorithms and sessions live in `src/core/graph/`. Pure functions
+(`querySubgraph`, `computeImpact`, `GraphSession`, …) are exported from
+`src/core/graph/index.ts` and published as `ai-spector/graph` for browser apps.
 
-- `GraphSession` / `ProjectSession` — graph load + query sessions
-- `querySubgraph()` / `computeImpact()` — core graph algorithms
-- All result types: `GraphQueryResult`, `ImpactResult`, `LayerAuditReport`, etc.
-
-Do not add IO or CLI concerns to this package.
+Repo-specific graph IO (load, merge, doc-extract) stays in sibling files under
+the same folder (`loadGraph.ts`, `merge.ts`, `doc-extract.ts`, …).
 
 ---
 
@@ -227,5 +224,5 @@ Typed result object
   (Cursor, Claude Code). Do not switch to HTTP.
 - **Zod schemas in `mcp/schemas.ts`** are the single source of truth for MCP
   tool input shapes.
-- **`ai-spector-graph` is untouched** — it is already a clean domain package;
-  add no IO or CLI logic there.
+- **Graph algorithms stay pure** — session/query/impact code in `src/core/graph/`
+  must not import `fs` or write to stdout; repo IO belongs in sibling modules.

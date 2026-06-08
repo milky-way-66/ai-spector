@@ -11,7 +11,7 @@ import {
   resolveImpactOrigins,
   type ResolvedOrigin,
 } from "../graph/resolve.js";
-import type { ImpactResult } from "ai-spector-graph";
+import type { ImpactResult } from "../graph/impact.js";
 import { runCocoindexSearch, isCocoindexConfigured, type SearchResult } from "./cocoindex.js";
 
 export interface SemanticSuggestion {

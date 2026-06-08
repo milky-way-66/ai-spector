@@ -1,11 +1,28 @@
-// Graph domain — re-exported from ai-spector-graph workspace package
-export { querySubgraph, computeImpact } from "ai-spector-graph";
+// Graph domain — pure algorithms and sessions
+export {
+  querySubgraph,
+  computeImpact,
+  GraphSession,
+  ProjectSession,
+  DEFAULT_IMPACT_RULES,
+  parseImpactRules,
+  auditGraphLayers,
+  knowledgeGraphCoverage,
+  computeKnowledgeStats,
+  expandPathTargetNodes,
+} from "../../core/graph/index.js";
 export type {
   GraphQueryResult,
   ImpactResult,
   LayerAuditReport,
   ResolvedOrigin,
-} from "ai-spector-graph";
+  GraphSessionOptions,
+  ProjectSessionOptions,
+  ProjectBundle,
+  ImpactRulesFile,
+  KnowledgeCoverageReport,
+  AnalysisKnowledge,
+} from "../../core/graph/index.js";
 
 // Graph commands
 export { validateGraph } from "../../core/operations/validate.js";
@@ -57,4 +74,3 @@ export type {
   CommentsShowOptions,
   CommentsResolveOptions,
 } from "../../core/operations/comments.js";
-

@@ -46,7 +46,7 @@ import {
   type TranslationQueueData,
   type TranslationQueueStats,
 } from "./translation-queue.js";
-import type { TraceabilityGraph, ValidationIssue } from "./types.js";
+import type { TraceabilityGraph, ValidationIssue } from "../../types.js";
 
 export interface ProjectBundle {
   graph: TraceabilityGraph;
