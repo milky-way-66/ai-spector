@@ -39,6 +39,11 @@
     "README.md",
     "LICENSE"
   ],
+  "exports": {
+    ".": "./dist/sdk.js",
+    "./mcp": "./dist/interfaces/mcp/server.js",
+    "./cli": "./dist/cli.js"
+  },
   "bin": {
     "ai-spector": "./dist/cli.js",
     "ai-spector-mcp": "./dist/interfaces/mcp/server.js"
