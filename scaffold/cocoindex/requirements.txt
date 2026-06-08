@@ -1,4 +1,5 @@
-cocoindex>=0.1
+cocoindex>=0.3.39,<1.0
+mcp>=1.0
 sentence-transformers>=3.0
 lancedb>=0.8
 

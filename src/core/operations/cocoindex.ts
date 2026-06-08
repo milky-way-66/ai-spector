@@ -39,6 +39,17 @@ export async function findPython(cocoDir: string): Promise<string> {
   );
 }
 
+/** Returns [command, ...args] for running pipeline.py in MCP mode.
+ *  Priority: uv (inline deps, no venv required) → venv python → python3 → python */
+/** Returns the command for running server.py in MCP mode.
+ *  Always uses the venv python so startup is instant — no downloads.
+ *  Deps must be pre-installed via runCocoindexSetup before calling this. */
+export async function buildMcpCommand(cocoDir: string, _pipelinePath: string): Promise<{ command: string; args: string[] }> {
+  const serverPath = join(cocoDir, "server.py");
+  const pythonBin = await findPython(cocoDir);
+  return { command: pythonBin, args: [serverPath] };
+}
+
 /** Check python version is ≥3.11. Returns version string or null on failure. */
 export async function checkPythonVersion(bin: string): Promise<string | null> {
   try {
@@ -161,31 +172,52 @@ export async function runCocoindexSetup(
   let installError: string | undefined;
 
   try {
-    const pythonBin = await findPython(destDir);
-    const { execFile } = await import("node:child_process");
+    const { execFile, spawn } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const exec = promisify(execFile);
-    const reqFile = join(destDir, "requirements.txt");
 
-    if (mode === "venv") {
-      const venvDir = join(destDir, ".venv");
-      if (!await pathExists(venvDir) || opts.force) {
-        process.stdout.write("  Creating Python venv…\n");
-        await exec(pythonBin, ["-m", "venv", venvDir]);
-      }
-      const venvPip = process.platform === "win32"
-        ? join(venvDir, "Scripts", "pip.exe")
-        : join(venvDir, "bin", "pip");
-      process.stdout.write("  Installing CocoIndex dependencies into venv…\n");
-      await exec(venvPip, ["install", "-r", reqFile], { cwd: destDir });
-    } else {
-      // global — use pip3 with --break-system-packages fallback for PEP 668
-      process.stdout.write("  Installing CocoIndex dependencies globally…\n");
-      const pip = process.platform === "win32" ? "pip" : "pip3";
-      try {
-        await exec(pip, ["install", "-r", reqFile], { cwd: destDir });
-      } catch {
-        await exec(pip, ["install", "--break-system-packages", "-r", reqFile], { cwd: destDir });
+    /** Run a command with visible output (inherit stdio). */
+    const spawnVisible = (cmd: string, args: string[], cwd: string): Promise<void> =>
+      new Promise((res, rej) => {
+        const child = spawn(cmd, args, { cwd, stdio: "inherit", shell: process.platform === "win32" });
+        child.on("error", rej);
+        child.on("close", (code) => code === 0 ? res() : rej(new Error(`${cmd} exited with code ${code}`)));
+      });
+
+    // Prefer uv sync (creates .venv from pyproject.toml, cached — fast on repeat)
+    let usedUv = false;
+    try {
+      await exec("uv", ["--version"]);
+      process.stdout.write("  Installing CocoIndex dependencies with uv…\n");
+      await spawnVisible("uv", ["sync"], destDir);
+      usedUv = true;
+    } catch {
+      // uv not available — fall through to pip
+    }
+
+    if (!usedUv) {
+      const pythonBin = await findPython(destDir);
+      const reqFile = join(destDir, "requirements.txt");
+      if (mode === "venv") {
+        const venvDir = join(destDir, ".venv");
+        if (!await pathExists(venvDir) || opts.force) {
+          process.stdout.write("  Creating Python venv…\n");
+          await spawnVisible(pythonBin, ["-m", "venv", venvDir], destDir);
+        }
+        const venvPip = process.platform === "win32"
+          ? join(venvDir, "Scripts", "pip.exe")
+          : join(venvDir, "bin", "pip");
+        process.stdout.write("  Installing CocoIndex dependencies into venv…\n");
+        await spawnVisible(venvPip, ["install", "-r", reqFile], destDir);
+      } else {
+        // global — use pip3 with --break-system-packages fallback for PEP 668
+        process.stdout.write("  Installing CocoIndex dependencies globally…\n");
+        const pip = process.platform === "win32" ? "pip" : "pip3";
+        try {
+          await spawnVisible(pip, ["install", "-r", reqFile], destDir);
+        } catch {
+          await spawnVisible(pip, ["install", "--break-system-packages", "-r", reqFile], destDir);
+        }
       }
     }
     depsInstalled = true;
@@ -193,7 +225,37 @@ export async function runCocoindexSetup(
     installError = err instanceof Error ? err.message : String(err);
   }
 
+  // Write MCP entry into project .mcp.json so Cursor/Claude picks up the server
+  await writeCocoindexMcpEntry(root, pipelinePath, destDir);
+
   return { pipelinePath, envPath, alreadyExists, depsInstalled, installError };
+}
+
+/** Merge the cocoindex MCP server entry into <root>/.mcp.json */
+async function writeCocoindexMcpEntry(root: string, pipelinePath: string, cocoDir: string): Promise<void> {
+  const { writeJson } = await import("../util/fs.js");
+  const { command, args } = await buildMcpCommand(cocoDir, pipelinePath);
+  const entry = { command, args, env: { AI_SPECTOR_ROOT: root } };
+
+  // Write to all MCP config files that exist or should be created
+  const mcpFiles = [
+    join(root, ".mcp.json"),           // Claude Code
+    join(root, ".cursor", "mcp.json"), // Cursor
+  ];
+
+  for (const mcpPath of mcpFiles) {
+    // Only write to .cursor/mcp.json if .cursor/ dir already exists
+    if (mcpPath.includes(".cursor") && !(await pathExists(join(root, ".cursor")))) {
+      continue;
+    }
+    const existing = (await pathExists(mcpPath))
+      ? await readJson<{ mcpServers?: Record<string, unknown> }>(mcpPath)
+      : {};
+    await writeJson(mcpPath, {
+      ...existing,
+      mcpServers: { ...(existing.mcpServers ?? {}), "ai-spector-cocoindex": entry },
+    });
+  }
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -280,12 +342,13 @@ async function spawnPythonSearch(
 
   const { stdout } = await exec(pythonBin, args, {
     cwd: root,
-    env: { ...process.env },
+    env: { ...process.env, AI_SPECTOR_ROOT: root },
     maxBuffer: 1024 * 1024,
   });
 
   try {
-    return JSON.parse(stdout) as PythonSearchResult[];
+    const parsed = JSON.parse(stdout);
+    return Array.isArray(parsed) ? (parsed as PythonSearchResult[]) : [];
   } catch {
     return [];
   }

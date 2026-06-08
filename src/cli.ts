@@ -791,7 +791,7 @@ cocoindex
   .option("--root <path>", "Project root (default: cwd)")
   .action(async (opts) => {
     const { resolve: res } = await import("node:path");
-    const { isCocoindexConfigured, cocoindexPipelinePath } = await import(
+    const { isCocoindexConfigured, cocoindexPipelinePath, cocoindexDir, findPython } = await import(
       "./core/operations/cocoindex.js"
     );
     const root = res(opts.root ?? process.cwd());
@@ -801,11 +801,20 @@ cocoindex
       return;
     }
     const pipelinePath = cocoindexPipelinePath(root);
+    let pythonBin: string;
+    try {
+      pythonBin = await findPython(cocoindexDir(root));
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
+      return;
+    }
     const { spawn } = await import("node:child_process");
     await new Promise<void>((resolveP, reject) => {
-      const child = spawn("python", [pipelinePath, "cocoindex", "update"], {
+      const child = spawn(pythonBin, [pipelinePath, "update"], {
         cwd: root,
         stdio: "inherit",
+        env: { ...process.env, AI_SPECTOR_ROOT: root },
         shell: process.platform === "win32",
       });
       child.on("error", reject);

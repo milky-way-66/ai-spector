@@ -40,40 +40,49 @@ const server = new McpServer({
 
 // ── Graph tools ───────────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "graph_query",
-  "Walk the traceability graph from a seed node and return connected nodes and edges",
-  GraphQuerySchema.shape,
+  {
+    description: "Walk the traceability graph from a seed node and return connected nodes and edges",
+    inputSchema: GraphQuerySchema.shape,
+  },
   async (input) => {
     const result = await toolGraphQuery(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "graph_impact",
-  "Compute impact analysis for a change — returns which documents/sections need to be regenerated or reviewed",
-  GraphImpactSchema.shape,
+  {
+    description:
+      "Compute impact analysis for a change — returns which documents/sections need to be regenerated or reviewed",
+    inputSchema: GraphImpactSchema.shape,
+  },
   async (input) => {
     const result = await toolGraphImpact(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "graph_validate",
-  "Validate the traceability graph against schema and traceability rules",
-  GraphValidateSchema.shape,
+  {
+    description: "Validate the traceability graph against schema and traceability rules",
+    inputSchema: GraphValidateSchema.shape,
+  },
   async (input) => {
     const result = await toolGraphValidate(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "graph_merge",
-  "Merge AI-extracted knowledge (knowledge.json) into the traceability graph",
-  GraphMergeSchema.shape,
+  {
+    description: "Merge AI-extracted knowledge (knowledge.json) into the traceability graph",
+    inputSchema: GraphMergeSchema.shape,
+  },
   async (input) => {
     const result = await toolGraphMerge(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -82,10 +91,12 @@ server.tool(
 
 // ── Index tool ────────────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "index",
-  "Re-index the project: rebuild graph structure, merge knowledge, build doc indexes",
-  IndexSchema.shape,
+  {
+    description: "Re-index the project: rebuild graph structure, merge knowledge, build doc indexes",
+    inputSchema: IndexSchema.shape,
+  },
   async (input) => {
     const result = await toolIndex(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -94,40 +105,48 @@ server.tool(
 
 // ── Comment tools ─────────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "comments_list",
-  "List review comment threads, optionally filtered by file or status",
-  CommentsListSchema.shape,
+  {
+    description: "List review comment threads, optionally filtered by file or status",
+    inputSchema: CommentsListSchema.shape,
+  },
   async (input) => {
     const result = await toolCommentsList(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "comments_inbox",
-  "Get the structured comment inbox with priority ordering and IDE presentation hints",
-  CommentsInboxSchema.shape,
+  {
+    description: "Get the structured comment inbox with priority ordering and IDE presentation hints",
+    inputSchema: CommentsInboxSchema.shape,
+  },
   async (input) => {
     const result = await toolCommentsInbox(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "comments_show",
-  "Get full detail of a single comment thread by id",
-  CommentsShowSchema.shape,
+  {
+    description: "Get full detail of a single comment thread by id",
+    inputSchema: CommentsShowSchema.shape,
+  },
   async (input) => {
     const result = await toolCommentsShow(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "comments_resolve",
-  "Resolve a comment thread",
-  CommentsResolveSchema.shape,
+  {
+    description: "Resolve a comment thread",
+    inputSchema: CommentsResolveSchema.shape,
+  },
   async (input) => {
     const result = await toolCommentsResolve(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -136,20 +155,24 @@ server.tool(
 
 // ── Template tools ────────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "template_list",
-  "List installed template packs and show which is active",
-  TemplateListSchema.shape,
+  {
+    description: "List installed template packs and show which is active",
+    inputSchema: TemplateListSchema.shape,
+  },
   async (input) => {
     const result = await toolTemplateList(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "template_inspect",
-  "Inspect a template pack — returns its manifest and available documents",
-  TemplateInspectSchema.shape,
+  {
+    description: "Inspect a template pack — returns its manifest and available documents",
+    inputSchema: TemplateInspectSchema.shape,
+  },
   async (input) => {
     const result = await toolTemplateInspect(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -158,20 +181,26 @@ server.tool(
 
 // ── CocoIndex tools ───────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "docs_search",
-  "Semantic search over project documentation. Returns matching sections with similarity scores and traceability graph node IDs. Requires CocoIndex to be set up (npx ai-spector cocoindex setup).",
-  DocsSearchSchema.shape,
+  {
+    description:
+      "Semantic search over project documentation. Returns matching sections with similarity scores and traceability graph node IDs. Requires CocoIndex to be set up (npx ai-spector cocoindex setup).",
+    inputSchema: DocsSearchSchema.shape,
+  },
   async (input) => {
     const result = await toolDocsSearch(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
 
-server.tool(
+server.registerTool(
   "graph_query_fuzzy",
-  "Find a graph node by natural language description, then return its subgraph. Combines semantic doc search with graph traversal in one call. Requires CocoIndex (npx ai-spector cocoindex setup).",
-  GraphQueryFuzzySchema.shape,
+  {
+    description:
+      "Find a graph node by natural language description, then return its subgraph. Combines semantic doc search with graph traversal in one call. Requires CocoIndex (npx ai-spector cocoindex setup).",
+    inputSchema: GraphQueryFuzzySchema.shape,
+  },
   async (input) => {
     const result = await toolGraphQueryFuzzy(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
