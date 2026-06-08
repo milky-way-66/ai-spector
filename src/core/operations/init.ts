@@ -10,7 +10,8 @@ import { copyTree, pathExists, readJson, writeJson } from "../util/fs.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import { isInteractive, promptLine, promptSelect, promptYesNo } from "../util/prompt.js";
-import { isCocoindexConfigured } from "./cocoindex.js";
+import { checkCocoindexReadiness, runCocoindexSetup } from "./cocoindex.js";
+import type { CocoindexInstallMode } from "./cocoindex.js";
 import type { LanguageConfig } from "../config/types.js";
 
 const MCP_SERVER_ENTRY = {
@@ -109,6 +110,7 @@ interface WizardAnswers {
   target: AgentTarget;
   langCodes: string[];
   installHook: boolean;
+  cocoindexMode: CocoindexInstallMode | "skip";
 }
 
 async function runWizard(opts: InitOptions, alreadyInitialized: boolean): Promise<WizardAnswers> {
@@ -153,7 +155,21 @@ async function runWizard(opts: InitOptions, alreadyInitialized: boolean): Promis
     installHook = true; // non-interactive: always attempt
   }
 
-  return { target, langCodes, installHook };
+  // --- CocoIndex ---
+  let cocoindexMode: CocoindexInstallMode | "skip" = "skip";
+  if (interactive) {
+    cocoindexMode = await promptSelect<CocoindexInstallMode | "skip">(
+      "\nEnable CocoIndex for semantic doc search? (requires Python 3.11+)",
+      [
+        { value: "skip", label: "Skip", hint: "set up later with: npx ai-spector cocoindex setup" },
+        { value: "venv", label: "Yes — install in venv", hint: "recommended: isolated .venv inside cocoindex dir" },
+        { value: "global", label: "Yes — install globally", hint: "uses system pip3; may need --break-system-packages on macOS" },
+      ],
+      "skip",
+    );
+  }
+
+  return { target, langCodes, installHook, cocoindexMode };
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +194,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     process.stdout.write("Re-initializing (--force). Existing scaffold files will be overwritten.\n");
   }
 
-  const { target, langCodes, installHook } = await runWizard(opts, alreadyInitialized);
+  const { target, langCodes, installHook, cocoindexMode } = await runWizard(opts, alreadyInitialized);
   const languages = buildLanguageConfigs(langCodes);
 
   process.stdout.write("\nSetting up…\n");
@@ -242,6 +258,21 @@ export async function runInit(opts: InitOptions): Promise<void> {
     }
   }
 
+  // CocoIndex setup
+  let cocoSetupResult: Awaited<ReturnType<typeof runCocoindexSetup>> | undefined;
+  if (cocoindexMode !== "skip") {
+    process.stdout.write("\nSetting up CocoIndex…\n");
+    cocoSetupResult = await runCocoindexSetup({
+      root,
+      installMode: cocoindexMode,
+      installDeps: true,
+    });
+    if (cocoSetupResult.installError) {
+      process.stdout.write(`  Warning: dependency install failed — ${cocoSetupResult.installError}\n`);
+      process.stdout.write("  You can retry manually: npx ai-spector cocoindex setup\n");
+    }
+  }
+
   // Write .mcp.json for Claude target
   let claudeMcpPath: string | undefined;
   if (target === "claude" || target === "both") {
@@ -249,7 +280,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   }
 
   // CocoIndex status
-  const cocoConfigured = await isCocoindexConfigured(root);
+  const cocoReadiness = await checkCocoindexReadiness(root);
 
   // ---------------------------------------------------------------------------
   // Summary
@@ -277,9 +308,16 @@ export async function runInit(opts: InitOptions): Promise<void> {
     process.stdout.write(`  claude    -> CLAUDE.md + .claude/skills/\n`);
     process.stdout.write(`  mcp       -> ${claudeMcpPath} (ai-spector MCP server registered)\n`);
   }
-  process.stdout.write(
-    `  cocoindex -> ${cocoConfigured ? "configured ✓" : "not configured (run: npx ai-spector cocoindex setup)"}\n`,
-  );
+  if (cocoReadiness.configured) {
+    if (cocoReadiness.depsInstalled) {
+      process.stdout.write(`  cocoindex -> ready ✓ (${cocoindexMode === "venv" ? "venv" : "global"}, run: npx ai-spector cocoindex update to build index)\n`);
+    } else {
+      process.stdout.write(`  cocoindex -> scaffolded only — deps not installed\n`);
+      process.stdout.write(`      fix: npx ai-spector cocoindex setup\n`);
+    }
+  } else {
+    process.stdout.write(`  cocoindex -> not configured (run: npx ai-spector cocoindex setup)\n`);
+  }
 
   process.stdout.write("\n");
   process.stdout.write("What you can change later:\n");

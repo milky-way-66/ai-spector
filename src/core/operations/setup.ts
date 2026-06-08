@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { loadDocflowConfig } from "../config/load.js";
 import { runInit } from "./init.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
-import { isCocoindexConfigured, runCocoindexSetup } from "./cocoindex.js";
+import { checkCocoindexReadiness, runCocoindexSetup } from "./cocoindex.js";
 import { runSyncCursor } from "./sync-cursor.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
@@ -199,6 +199,32 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
     });
   }
 
+  // CocoIndex checks (only when configured)
+  const cocoReadiness = await checkCocoindexReadiness(root);
+  if (cocoReadiness.configured) {
+    steps.push({
+      id: "cocoindex-python",
+      label: "CocoIndex — Python ≥3.11",
+      status: cocoReadiness.pythonVersion ? "ok" : "missing",
+      detail: cocoReadiness.pythonVersion ?? undefined,
+      fix: cocoReadiness.pythonVersion
+        ? undefined
+        : "brew install python@3.11  or  https://python.org  (then set COCOINDEX_PYTHON if needed)",
+    });
+    steps.push({
+      id: "cocoindex-deps",
+      label: "CocoIndex — dependencies installed",
+      status: cocoReadiness.depsInstalled ? "ok" : "missing",
+      fix: cocoReadiness.depsInstalled ? undefined : "npx ai-spector cocoindex setup",
+    });
+    steps.push({
+      id: "cocoindex-index",
+      label: "CocoIndex — index built (lance_data/)",
+      status: cocoReadiness.indexed ? "ok" : "warning",
+      fix: cocoReadiness.indexed ? undefined : "npx ai-spector cocoindex update",
+    });
+  }
+
   const required = ["node", "init", "cursor-skills"];
   const ready = required.every((id) => steps.find((s) => s.id === id)?.status === "ok");
 
@@ -296,13 +322,16 @@ export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
   await mkdir(join(root, "docs/data-source"), { recursive: true });
 
   // Offer CocoIndex setup when interactive and not yet configured
-  if (interactive && !(await isCocoindexConfigured(root))) {
-    const setupCoco = await promptYesNo(
-      "Enable CocoIndex for semantic doc search? (requires Python 3.11+)",
-      false,
-    );
-    if (setupCoco) {
-      await runCocoindexSetup({ root });
+  if (interactive) {
+    const cocoReady = await checkCocoindexReadiness(root);
+    if (!cocoReady.configured) {
+      const setupCoco = await promptYesNo(
+        "Enable CocoIndex for semantic doc search? (requires Python 3.11+)",
+        false,
+      );
+      if (setupCoco) {
+        await runCocoindexSetup({ root, installDeps: true, installMode: "venv" });
+      }
     }
   }
 

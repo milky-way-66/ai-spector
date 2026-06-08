@@ -1,8 +1,56 @@
 import { join, resolve, relative } from "node:path";
-import { mkdir, cp } from "node:fs/promises";
+import { mkdir, cp, copyFile } from "node:fs/promises";
 import { pathExists, readJson } from "../util/fs.js";
 import type { TraceabilityGraph } from "../../types.js";
 import type { GraphQueryResult } from "../graph/query.js";
+
+// ── Python detection ──────────────────────────────────────────────────────────
+
+export type CocoindexInstallMode = "venv" | "global";
+
+/** Returns the python executable to use for a given cocoindex dir.
+ *  Priority: project venv → COCOINDEX_PYTHON env → python3 → python */
+export async function findPython(cocoDir: string): Promise<string> {
+  const envVar = process.env["COCOINDEX_PYTHON"];
+  if (envVar) return envVar;
+
+  // venv inside the cocoindex dir
+  const venvBin = process.platform === "win32"
+    ? join(cocoDir, ".venv", "Scripts", "python.exe")
+    : join(cocoDir, ".venv", "bin", "python");
+  if (await pathExists(venvBin)) return venvBin;
+
+  // system python3 / python
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const exec = promisify(execFile);
+  for (const bin of ["python3", "python"]) {
+    try {
+      await exec(bin, ["--version"]);
+      return bin;
+    } catch {
+      // not found — try next
+    }
+  }
+  throw new Error(
+    "Python not found. CocoIndex requires Python ≥3.11.\n" +
+    "  Install: brew install python@3.11  (macOS) or https://python.org\n" +
+    "  Or set COCOINDEX_PYTHON=/path/to/python3",
+  );
+}
+
+/** Check python version is ≥3.11. Returns version string or null on failure. */
+export async function checkPythonVersion(bin: string): Promise<string | null> {
+  try {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const exec = promisify(execFile);
+    const { stdout } = await exec(bin, ["--version"]);
+    return stdout.trim().replace(/^Python /, "");
+  } catch {
+    return null;
+  }
+}
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 
@@ -18,17 +66,67 @@ export async function isCocoindexConfigured(root: string): Promise<boolean> {
   return pathExists(cocoindexPipelinePath(root));
 }
 
+export interface CocoindexReadiness {
+  configured: boolean;   // pipeline.py exists
+  pythonBin: string | null;
+  pythonVersion: string | null;
+  depsInstalled: boolean;
+  indexed: boolean;      // lance_data/ exists
+}
+
+export async function checkCocoindexReadiness(root: string): Promise<CocoindexReadiness> {
+  const dir = cocoindexDir(root);
+  const configured = await pathExists(cocoindexPipelinePath(root));
+
+  if (!configured) {
+    return { configured: false, pythonBin: null, pythonVersion: null, depsInstalled: false, indexed: false };
+  }
+
+  let pythonBin: string | null = null;
+  let pythonVersion: string | null = null;
+  let depsInstalled = false;
+
+  try {
+    pythonBin = await findPython(dir);
+    pythonVersion = await checkPythonVersion(pythonBin);
+  } catch {
+    // python not found
+  }
+
+  if (pythonBin) {
+    try {
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const exec = promisify(execFile);
+      await exec(pythonBin, ["-c", "import cocoindex"]);
+      depsInstalled = true;
+    } catch {
+      depsInstalled = false;
+    }
+  }
+
+  const indexed = await pathExists(join(dir, "lance_data"));
+
+  return { configured, pythonBin, pythonVersion, depsInstalled, indexed };
+}
+
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 export interface CocoindexSetupOptions {
   root?: string;
   force?: boolean;
+  /** "venv" creates .venv inside cocoindex dir; "global" uses system pip3/pip */
+  installMode?: CocoindexInstallMode;
+  /** If true, install Python deps and copy .env */
+  installDeps?: boolean;
 }
 
 export interface CocoindexSetupResult {
   pipelinePath: string;
   envPath: string;
   alreadyExists: boolean;
+  depsInstalled: boolean;
+  installError?: string;
 }
 
 export async function runCocoindexSetup(
@@ -37,21 +135,65 @@ export async function runCocoindexSetup(
   const root = resolve(opts.root ?? process.cwd());
   const destDir = cocoindexDir(root);
   const pipelinePath = join(destDir, "pipeline.py");
-  const envPath = join(destDir, ".env.example");
+  const envExample = join(destDir, ".env.example");
+  const envPath = join(destDir, ".env");
 
   const alreadyExists = await pathExists(pipelinePath);
-  if (alreadyExists && !opts.force) {
-    return { pipelinePath, envPath, alreadyExists: true };
+  if (!alreadyExists || opts.force) {
+    const { scaffoldBundleRoot } = await import("../config/load.js");
+    const scaffoldSrc = join(scaffoldBundleRoot(), "cocoindex");
+    await mkdir(destDir, { recursive: true });
+    await cp(scaffoldSrc, destDir, { recursive: true });
   }
 
-  // locate scaffold relative to this package's bundle root
-  const { scaffoldBundleRoot } = await import("../config/load.js");
-  const scaffoldSrc = join(scaffoldBundleRoot(), "cocoindex");
+  // Copy .env.example → .env if .env doesn't exist yet
+  if (!(await pathExists(envPath)) && await pathExists(envExample)) {
+    await copyFile(envExample, envPath);
+  }
 
-  await mkdir(destDir, { recursive: true });
-  await cp(scaffoldSrc, destDir, { recursive: true });
+  if (!opts.installDeps) {
+    return { pipelinePath, envPath, alreadyExists, depsInstalled: false };
+  }
 
-  return { pipelinePath, envPath, alreadyExists: false };
+  // Install Python deps
+  const mode = opts.installMode ?? "venv";
+  let depsInstalled = false;
+  let installError: string | undefined;
+
+  try {
+    const pythonBin = await findPython(destDir);
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const exec = promisify(execFile);
+    const reqFile = join(destDir, "requirements.txt");
+
+    if (mode === "venv") {
+      const venvDir = join(destDir, ".venv");
+      if (!await pathExists(venvDir) || opts.force) {
+        process.stdout.write("  Creating Python venv…\n");
+        await exec(pythonBin, ["-m", "venv", venvDir]);
+      }
+      const venvPip = process.platform === "win32"
+        ? join(venvDir, "Scripts", "pip.exe")
+        : join(venvDir, "bin", "pip");
+      process.stdout.write("  Installing CocoIndex dependencies into venv…\n");
+      await exec(venvPip, ["install", "-r", reqFile], { cwd: destDir });
+    } else {
+      // global — use pip3 with --break-system-packages fallback for PEP 668
+      process.stdout.write("  Installing CocoIndex dependencies globally…\n");
+      const pip = process.platform === "win32" ? "pip" : "pip3";
+      try {
+        await exec(pip, ["install", "-r", reqFile], { cwd: destDir });
+      } catch {
+        await exec(pip, ["install", "--break-system-packages", "-r", reqFile], { cwd: destDir });
+      }
+    }
+    depsInstalled = true;
+  } catch (err) {
+    installError = err instanceof Error ? err.message : String(err);
+  }
+
+  return { pipelinePath, envPath, alreadyExists, depsInstalled, installError };
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -119,6 +261,15 @@ async function spawnPythonSearch(
   const { promisify } = await import("node:util");
   const exec = promisify(execFile);
 
+  const dir = cocoindexDir(root);
+  let pythonBin: string;
+  try {
+    pythonBin = await findPython(dir);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(msg);
+  }
+
   const args = [
     pipelinePath,
     "search",
@@ -127,7 +278,7 @@ async function spawnPythonSearch(
     "--threshold", String(threshold),
   ];
 
-  const { stdout } = await exec("python", args, {
+  const { stdout } = await exec(pythonBin, args, {
     cwd: root,
     env: { ...process.env },
     maxBuffer: 1024 * 1024,
@@ -157,7 +308,6 @@ async function enrichWithGraphNodeIds(
     for (const node of graph.nodes) {
       const file = (node as { file?: string }).file;
       if (file) {
-        // normalise to relative path from root
         const rel = relative(root, resolve(root, file));
         nodeFileMap.set(rel, node.id);
       }
@@ -196,7 +346,6 @@ export async function runGraphQueryFuzzy(
 ): Promise<FuzzyQueryResult> {
   const root = resolve(opts.root ?? process.cwd());
 
-  // Step 1: semantic search to resolve natural language → graphNodeId
   const searchResult = await runCocoindexSearch({
     root,
     query: opts.query,
@@ -218,7 +367,6 @@ export async function runGraphQueryFuzzy(
     );
   }
 
-  // Step 2: graph traversal from resolved node
   const { loadDocflowConfig } = await import("../config/load.js");
   const { config } = await loadDocflowConfig(root);
   const { runGraphQuery } = await import("./graph-query.js");
