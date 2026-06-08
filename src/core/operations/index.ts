@@ -21,7 +21,7 @@ import {
 import { computeKnowledgeStats } from "../visualize/stats.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translation.js";
-import type { TraceabilityGraph } from "../types.js";
+import type { TraceabilityGraph } from "../../types.js";
 import {
   indexDocsConfigPath,
   type IndexDocsConfig,

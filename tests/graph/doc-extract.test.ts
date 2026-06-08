@@ -10,12 +10,12 @@ import {
   extractDetailDomainMeta,
   extractDomainFromMarkdown,
   normalizeDomainId,
-} from "../../src/graph/doc-extract.js";
+} from "../../src/core/graph/doc-extract.js";
 import {
   basicDesignListChapterFileToPatch,
   parseDetailSections,
   snippetAfterHeading,
-} from "../../src/graph/detail-sections.js";
+} from "../../src/core/graph/detail-sections.js";
 
 describe("normalizeDomainId", () => {
   it("pads numeric suffixes", () => {

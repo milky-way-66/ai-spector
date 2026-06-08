@@ -1,0 +1,364 @@
+import { existsSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { join, relative, resolve } from "node:path";
+import { findProjectRoot, loadDocflowConfig, resolveFromRoot } from "../config/load.js";
+import { readJson, writeJson, pathExists } from "../util/fs.js";
+import { resolveProjectPaths } from "../util/paths.js";
+import { loadInMemoryGraph } from "../graph/loadGraph.js";
+import { computeImpactForRegen } from "./graph-impact.js";
+import type { PackManifest } from "../config/types.js";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface StaleOutput {
+  documentId: string;
+  templateFile: string;
+  outputFile: string;
+  affectedBy: string[];  // graph node ids that triggered this staleness
+  reason: string;
+  isBreakout: boolean;
+}
+
+export interface RegenPlan {
+  packName: string;
+  createdAt: string;
+  impactReason: string;
+  stale: StaleOutput[];
+}
+
+// ---------------------------------------------------------------------------
+// Core: resolve stale outputs from affected node ids
+// ---------------------------------------------------------------------------
+
+export async function computeStaleOutputs(
+  root: string,
+  packName: string,
+  affectedNodeIds: Set<string>,
+  affectedOutputPaths: string[],
+  g?: Awaited<ReturnType<typeof loadInMemoryGraph>>,
+): Promise<StaleOutput[]> {
+  const packDir = join(root, ".ai-spector", "packs", packName);
+  const manifestPath = join(packDir, "manifest.json");
+  if (!existsSync(manifestPath)) return [];
+
+  const manifest = await readJson<PackManifest>(manifestPath);
+
+  // Load graph to walk rendersTo edges (reuse caller's graph if provided)
+  if (!g) {
+    const { config } = await loadDocflowConfig(root);
+    const graphPath = resolveFromRoot(root, config.paths.graph);
+    g = await loadInMemoryGraph(graphPath);
+  }
+
+  // Build: outputFilePath → set of graph node ids that render to it
+  const outputToNodes = new Map<string, Set<string>>();
+  for (const edge of g.toTraceabilityGraph().edges) {
+    if (edge.type !== "rendersTo") continue;
+    if (!affectedNodeIds.has(edge.from)) continue;
+    const outPath = edge.to;
+    if (!outputToNodes.has(outPath)) outputToNodes.set(outPath, new Set());
+    outputToNodes.get(outPath)!.add(edge.from);
+  }
+
+  // Also include affectedOutputPaths from impact result directly
+  for (const p of affectedOutputPaths) {
+    const rel = p.startsWith(root) ? relative(root, p) : p;
+    if (!outputToNodes.has(rel)) outputToNodes.set(rel, new Set(["(impact)"]) );
+  }
+
+  // Match output files to manifest documents
+  const stale: StaleOutput[] = [];
+  const seen = new Set<string>();
+
+  for (const doc of manifest.documents) {
+    const outputFile = doc.output ?? doc.outputPattern ?? "";
+    if (!outputFile || seen.has(doc.documentId)) continue;
+
+    // Check direct match or pattern match against affected outputs
+    let matchedNodes: Set<string> | undefined;
+
+    // Direct path match
+    if (outputToNodes.has(outputFile)) {
+      matchedNodes = outputToNodes.get(outputFile)!;
+    }
+
+    // Pattern match: outputPattern like "docs/uc/{id}.md" — any affected output under that dir
+    if (!matchedNodes && doc.outputPattern) {
+      const prefix = doc.outputPattern.split("{")[0]!; // e.g. "docs/uc/"
+      for (const [p, nodes] of outputToNodes) {
+        if (p.startsWith(prefix)) {
+          if (!matchedNodes) matchedNodes = new Set();
+          for (const n of nodes) matchedNodes.add(n);
+        }
+      }
+    }
+
+    // Also: if the document's documentId is directly in affected node ids
+    if (!matchedNodes && affectedNodeIds.has(doc.documentId)) {
+      matchedNodes = new Set([doc.documentId]);
+    }
+
+    if (!matchedNodes) continue;
+
+    const affectedBy = [...matchedNodes].filter((n) => n !== "(impact)");
+    const reason = affectedBy.length > 0
+      ? `node(s) changed: ${affectedBy.slice(0, 3).join(", ")}${affectedBy.length > 3 ? ` +${affectedBy.length - 3} more` : ""}`
+      : "in affected output paths";
+
+    stale.push({
+      documentId: doc.documentId,
+      templateFile: join(packDir, "templates", doc.template),
+      outputFile,
+      affectedBy,
+      reason,
+      isBreakout: Boolean(doc.perDomain),
+    });
+    seen.add(doc.documentId);
+  }
+
+  return stale;
+}
+
+// ---------------------------------------------------------------------------
+// Write regen-plan.md
+// ---------------------------------------------------------------------------
+
+async function writeRegenPlan(
+  packDir: string,
+  packName: string,
+  plan: RegenPlan,
+): Promise<void> {
+  const primary = plan.stale.filter((s) => !s.isBreakout);
+  const breakout = plan.stale.filter((s) => s.isBreakout);
+
+  const lines: string[] = [
+    `# Re-generation plan — pack: ${packName}`,
+    ``,
+    `> Auto-generated by \`template regen\` on ${plan.createdAt.slice(0, 10)}.`,
+    `> Only regenerate the files listed here — do NOT touch others.`,
+    ``,
+    `**Impact reason:** ${plan.impactReason}`,
+    ``,
+    `**Total stale:** ${plan.stale.length} document(s)`,
+    ``,
+  ];
+
+  if (primary.length > 0) {
+    lines.push(`## Primary documents to regenerate`, ``);
+    lines.push(`| documentId | template | output | affected by |`);
+    lines.push(`|---|---|---|---|`);
+    for (const s of primary) {
+      const rel = s.templateFile.includes("templates/")
+        ? s.templateFile.split("templates/")[1]!
+        : s.templateFile;
+      lines.push(`| \`${s.documentId}\` | \`${rel}\` | \`${s.outputFile}\` | ${s.affectedBy.slice(0, 2).join(", ")} |`);
+    }
+    lines.push(``);
+  }
+
+  if (breakout.length > 0) {
+    lines.push(`## Breakout files to regenerate`, ``);
+    lines.push(
+      `Start only after primary documents are done and \`npx ai-spector index\` has run.`,
+      ``,
+      `**Per-item workflow:**`,
+      `\`\`\``,
+      `1. npx ai-spector graph query <itemId> --direction both --depth 4 --json`,
+      `2. Read projectionPaths — use only those source files`,
+      `3. Rewrite the output file with updated content`,
+      `4. Update gen-status.json entry: status "done", generatedAt <ISO>`,
+      `5. Repeat for next item`,
+      `\`\`\``,
+      ``,
+    );
+    lines.push(`| documentId | output pattern | affected by |`);
+    lines.push(`|---|---|---|`);
+    for (const s of breakout) {
+      lines.push(`| \`${s.documentId}\` | \`${s.outputFile}\` | ${s.affectedBy.slice(0, 2).join(", ")} |`);
+    }
+    lines.push(``);
+  }
+
+  lines.push(
+    `## When to pause and ask the user`,
+    ``,
+    `- A section you need to update is ambiguous or conflicts with another document`,
+    `- The affected node's graph context is empty or missing`,
+    `- The output file has manual edits that may conflict with re-generation`,
+    `- \`graph validate\` fails after writing and the error is not self-explanatory`,
+    ``,
+    `⛔ Do NOT guess. Ask instead.`,
+    ``,
+    `## After all files updated`,
+    ``,
+    `\`\`\`bash`,
+    `npx ai-spector index`,
+    `npx ai-spector graph validate`,
+    `\`\`\``,
+    ``,
+    `## Reference`,
+    ``,
+    `- Context map: \`.ai-spector/packs/${packName}/context-map.json\``,
+    `- Full hints:  \`.ai-spector/packs/${packName}/generate-hints.md\``,
+  );
+
+  await writeFile(join(packDir, "regen-plan.md"), lines.join("\n") + "\n", "utf8");
+}
+
+// ---------------------------------------------------------------------------
+// Update gen-status.json with staleSince
+// ---------------------------------------------------------------------------
+
+async function markStaleInGenStatus(
+  packDir: string,
+  stale: StaleOutput[],
+): Promise<void> {
+  const genStatusPath = join(packDir, "gen-status.json");
+  if (!(await pathExists(genStatusPath))) return;
+
+  interface GenStatusItem {
+    itemId: string;
+    outputFile?: string;
+    status: string;
+    generatedAt?: string;
+    staleSince?: string;
+    blockedReason?: string;
+  }
+  interface GenStatus {
+    packName?: string;
+    updatedAt?: string;
+    items?: GenStatusItem[];
+  }
+
+  const gs = await readJson<GenStatus>(genStatusPath);
+  const staleOutputFiles = new Set(stale.map((s) => s.outputFile));
+  const staleDocIds = new Set(stale.map((s) => s.documentId));
+  const now = new Date().toISOString();
+  let changed = false;
+
+  for (const item of gs.items ?? []) {
+    const isStale =
+      (item.outputFile && staleOutputFiles.has(item.outputFile)) ||
+      staleDocIds.has(item.itemId);
+    if (isStale && !item.staleSince) {
+      item.staleSince = now;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    gs.updatedAt = now;
+    await writeJson(genStatusPath, gs);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CLI entry point
+// ---------------------------------------------------------------------------
+
+export async function runTemplateRegen(opts: {
+  cwd?: string;
+  pack?: string;
+  origin?: string;
+  json?: boolean;
+  dryRun?: boolean;
+}): Promise<void> {
+  const root = opts.cwd ?? findProjectRoot();
+  const { config } = await loadDocflowConfig(root);
+  const packName = opts.pack ?? config.packs?.active;
+
+  if (!packName || packName === "builtin") {
+    console.error("No custom pack active. Run `template use <pack>` first.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const packDir = join(root, ".ai-spector", "packs", packName);
+  if (!(await pathExists(packDir))) {
+    console.error(`Pack "${packName}" not found.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Resolve graph + rules paths
+  const paths = await resolveProjectPaths(root);
+
+  console.log(`Running graph impact for pack "${packName}"...`);
+
+  // Use rulesTraceability — same as `graph impact` CLI (rulesImpact is a different ruleset)
+  const { affectedNodeIds, affectedOutputPaths, noImpact, reason, graph } =
+    await computeImpactForRegen(root, paths.graph, paths.rulesTraceability, opts.origin);
+
+  if (noImpact) {
+    console.log(`No graph impact detected (${reason}). Nothing is stale.`);
+    return;
+  }
+
+  // Pass the already-loaded graph to avoid a second disk read
+  const stale = await computeStaleOutputs(root, packName, affectedNodeIds, affectedOutputPaths, graph);
+
+  if (stale.length === 0) {
+    console.log(`Graph impact found ${affectedNodeIds.size} affected node(s), but none map to pack "${packName}" output files.`);
+    console.log(`Affected nodes: ${[...affectedNodeIds].slice(0, 6).join(", ")}`);
+    return;
+  }
+
+  if (opts.json) {
+    const plan: RegenPlan = {
+      packName,
+      createdAt: new Date().toISOString(),
+      impactReason: reason,
+      stale,
+    };
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  // Print human-readable table
+  console.log(`\nStale output files (${stale.length}) — pack: ${packName}`);
+  console.log(`Impact: ${reason}\n`);
+
+  const primary = stale.filter((s) => !s.isBreakout);
+  const breakout = stale.filter((s) => s.isBreakout);
+
+  if (primary.length > 0) {
+    console.log("Primary documents:");
+    for (const s of primary) {
+      console.log(`  ✗  ${s.outputFile}`);
+      console.log(`       ← ${s.reason}`);
+    }
+  }
+  if (breakout.length > 0) {
+    console.log("\nBreakout templates (re-run per domain item):");
+    for (const s of breakout) {
+      console.log(`  ✗  ${s.outputFile}`);
+      console.log(`       ← ${s.reason}`);
+    }
+  }
+
+  if (opts.dryRun) {
+    console.log("\nDry run — no files written.");
+    return;
+  }
+
+  // Write regen-plan.md
+  const plan: RegenPlan = {
+    packName,
+    createdAt: new Date().toISOString(),
+    impactReason: reason,
+    stale,
+  };
+  await writeRegenPlan(packDir, packName, plan);
+
+  // Mark stale items in gen-status.json
+  await markStaleInGenStatus(packDir, stale);
+
+  const regenPlanRel = join(".ai-spector", "packs", packName, "regen-plan.md");
+  console.log(`\n✓ Wrote: ${regenPlanRel}`);
+  console.log(`\nTo regenerate:`);
+  console.log(`  Ask your AI: "regenerate stale documents"`);
+  console.log(`  or: "re-generate affected files using regen-plan.md"`);
+  console.log(`\nRun \`npx ai-spector template status\` to see blocked/pending items.`);
+}

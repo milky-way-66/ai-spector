@@ -8,17 +8,17 @@ export type {
 } from "ai-spector-graph";
 
 // Graph commands
-export { validateGraph } from "../../commands/validate.js";
-export { runGraphMerge } from "../../commands/graph-merge.js";
-export type { GraphMergeOptions, GraphMergeResult } from "../../commands/graph-merge.js";
-export { runGraphImpact, runGraphImpactFromGit } from "../../commands/graph-impact.js";
-export type { GraphImpactCliOptions } from "../../commands/graph-impact.js";
-export { runGraphQuery } from "../../commands/graph-query.js";
-export type { GraphQueryCliOptions } from "../../commands/graph-query.js";
+export { validateGraph } from "../../core/operations/validate.js";
+export { runGraphMerge } from "../../core/operations/graph-merge.js";
+export type { GraphMergeOptions, GraphMergeResult } from "../../core/operations/graph-merge.js";
+export { runGraphImpact, runGraphImpactFromGit } from "../../core/operations/graph-impact.js";
+export type { GraphImpactCliOptions } from "../../core/operations/graph-impact.js";
+export { runGraphQuery } from "../../core/operations/graph-query.js";
+export type { GraphQueryCliOptions } from "../../core/operations/graph-query.js";
 
 // Index
-export { runIndex } from "../../commands/index.js";
-export type { IndexReport, IndexOptions } from "../../commands/index.js";
+export { runIndex } from "../../core/operations/index.js";
+export type { IndexReport, IndexOptions } from "../../core/operations/index.js";
 
 // Comments
 export {
@@ -27,7 +27,7 @@ export {
   runCommentsPlan,
   runCommentsShow,
   runCommentsResolve,
-} from "../../commands/comments.js";
+} from "../../core/operations/comments.js";
 export type {
   CommentsListOptions,
   CommentsListResult,
@@ -35,5 +35,5 @@ export type {
   CommentsPlanOptions,
   CommentsShowOptions,
   CommentsResolveOptions,
-} from "../../commands/comments.js";
+} from "../../core/operations/comments.js";
 

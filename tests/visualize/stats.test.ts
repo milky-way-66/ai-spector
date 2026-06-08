@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeGraphStats,
   computeKnowledgeStats,
-} from "../../src/visualize/stats.js";
+} from "../../src/core/visualize/stats.js";
 import { graph, node } from "../helpers/graph.js";
 
 describe("computeGraphStats", () => {

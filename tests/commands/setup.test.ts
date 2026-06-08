@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { auditSetup, runSetup } from "../../src/commands/setup.js";
-import { pathExists, writeJson } from "../../src/util/fs.js";
+import { auditSetup, runSetup } from "../../src/core/operations/setup.js";
+import { pathExists, writeJson } from "../../src/core/util/fs.js";
 import { withTempDir, withTempProject } from "../helpers/temp-project.js";
 
 const exec = promisify(execFile);

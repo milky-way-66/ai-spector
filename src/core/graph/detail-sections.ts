@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode } from "../types.js";
+import type { GraphEdge, GraphNode } from "../../types.js";
 import { sectionIdFromHeading } from "../registry/slug.js";
 import type { ExtractPatch } from "./knowledge.js";
 import {

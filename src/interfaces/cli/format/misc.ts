@@ -1,10 +1,10 @@
-import type { AnalyzePrepResult } from "../../../commands/analyze.js";
-import type { SyncCursorResult } from "../../../commands/sync-cursor.js";
-import type { HooksInstallResult } from "../../../commands/hooks.js";
-import type { PreCommitReport } from "../../../commands/hooks.js";
-import type { SetupAudit } from "../../../commands/setup.js";
-import type { LangAddResult } from "../../../commands/lang.js";
-import type { QueueScanResult } from "../../../commands/lang-queue.js";
+import type { AnalyzePrepResult } from "../../../core/operations/analyze.js";
+import type { SyncCursorResult } from "../../../core/operations/sync-cursor.js";
+import type { HooksInstallResult } from "../../../core/operations/hooks.js";
+import type { PreCommitReport } from "../../../core/operations/hooks.js";
+import type { SetupAudit } from "../../../core/operations/setup.js";
+import type { LangAddResult } from "../../../core/operations/lang.js";
+import type { QueueScanResult } from "../../../core/operations/lang-queue.js";
 
 export function formatAnalyzePrep(result: AnalyzePrepResult): string {
   const lines = [
@@ -38,7 +38,7 @@ export function formatHooksInstall(result: HooksInstallResult): string {
   return lines.join("\n");
 }
 
-export { formatPreCommitReport } from "../../../commands/hooks.js";
+export { formatPreCommitReport } from "../../../core/operations/hooks.js";
 
 export function formatSetupAudit(audit: SetupAudit, afterSetup = false): string {
   const lines = ["Setup checklist", ""];

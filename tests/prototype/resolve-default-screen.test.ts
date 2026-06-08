@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveDefaultScreenId } from "../../src/prototype/resolve-default-screen.js";
-import type { PrototypeScreenMapEntry } from "../../src/prototype/types.js";
+import { resolveDefaultScreenId } from "../../src/core/prototype/resolve-default-screen.js";
+import type { PrototypeScreenMapEntry } from "../../src/core/prototype/types.js";
 
 function entry(
   partial: Partial<PrototypeScreenMapEntry> & Pick<PrototypeScreenMapEntry, "screenId" | "displayName">,

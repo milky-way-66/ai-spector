@@ -1,4 +1,4 @@
-import { runIndex } from "../../../commands/index.js";
+import { runIndex } from "../../../core/operations/index.js";
 import type { IndexSchema } from "../schemas.js";
 import type { z } from "zod";
 

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LISTED_IN } from "../../src/graph/defaults.js";
+import { DEFAULT_LISTED_IN } from "../../src/core/graph/defaults.js";
 import {
   isKnowledgePayload,
   knowledgeHasDomainEntries,
   knowledgeToPatch,
-} from "../../src/graph/knowledge.js";
+} from "../../src/core/graph/knowledge.js";
 
 describe("knowledgeToPatch", () => {
   it("emits domain nodes and anchoring edges with default sections", () => {

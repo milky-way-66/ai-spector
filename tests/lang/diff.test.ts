@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeLineDiff } from "../../src/lang/diff.js";
+import { computeLineDiff } from "../../src/core/lang/diff.js";
 
 describe("computeLineDiff", () => {
   it("formats removals and additions with line numbers", () => {

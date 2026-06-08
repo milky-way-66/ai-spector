@@ -6,7 +6,7 @@ import type {
   KnowledgeRequirement,
   KnowledgeUseCase,
 } from "ai-spector-graph";
-import type { GraphEdge, GraphNode } from "../types.js";
+import type { GraphEdge, GraphNode } from "../../types.js";
 import { DEFAULT_LISTED_IN } from "./defaults.js";
 
 export type {

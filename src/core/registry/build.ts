@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { RegistryDocument, RegistrySection, SectionRegistry } from "../types.js";
+import type { RegistryDocument, RegistrySection, SectionRegistry } from "../../types.js";
 import {
   loadBasicDesignListManifest,
   loadDocflowConfig,

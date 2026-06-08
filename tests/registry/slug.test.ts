@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { headingSlug, sectionIdFromHeading } from "../../src/registry/slug.js";
+import { headingSlug, sectionIdFromHeading } from "../../src/core/registry/slug.js";
 
 describe("headingSlug", () => {
   it("lowercases, strips punctuation, and hyphenates words", () => {

@@ -1,4 +1,4 @@
-import type { TraceabilityGraph } from "../types.js";
+import type { TraceabilityGraph } from "../../types.js";
 import { readJson } from "../util/fs.js";
 
 export async function loadGraph(path: string): Promise<TraceabilityGraph> {

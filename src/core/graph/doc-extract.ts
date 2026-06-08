@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode } from "../types.js";
+import type { GraphEdge, GraphNode } from "../../types.js";
 import type { PackManifest } from "../config/types.js";
 import {
   basicDesignListChapterDocumentId,

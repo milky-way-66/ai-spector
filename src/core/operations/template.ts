@@ -16,6 +16,7 @@ import { bootstrapFromRegistry } from "./bootstrap.js";
 import type { DocflowConfig, PackManifest, DocumentsManifest } from "../config/types.js";
 import { scanTemplateFolder } from "../template/scan.js";
 import { validatePackManifest } from "../template/validate.js";
+import { runTemplateRegen } from "./template-regen.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -240,8 +241,9 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
       lines.push("");
       lines.push("Get the item list:");
       lines.push("```bash");
-      lines.push(`npx ai-spector graph query ${manifest.documents[0]?.documentId ?? `doc.${manifest.packName}`} --json`);
-      lines.push(`# look for nodes where type === "${doc.perDomain}"`);
+      lines.push(`npx ai-spector graph query <any-wave0-documentId> --direction both --depth 4 --json`);
+      lines.push(`# filter: nodes where type === "${doc.perDomain}"`);
+      lines.push(`# or: npx ai-spector graph query ${doc.documentId} --json`);
       lines.push("```");
       lines.push("");
     }
@@ -258,14 +260,95 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
 
   lines.push(
     "",
+    "## When to pause and ask the user",
+    "",
+    "Stop generating and ask if:",
+    "",
+    "- A `{placeholder}` in a template has no matching value in the graph query result",
+    "- The item list for a breakout domain returns 0 results or ambiguous node types",
+    "- Two output paths could satisfy the same `outputPattern`",
+    "- A Wave 0 document already exists and it is unclear whether to overwrite or append",
+    "- `graph validate` fails after writing and the error is not self-explanatory",
+    "",
+    "⛔ **Do NOT guess. A wrong file written silently is harder to fix than a question asked upfront.**",
+    "",
+    "See `context-map.json` in this directory for the expected source of each `{placeholder}`.",
+    "",
     "## Reference",
     "",
     `- Pack manifest: \`.ai-spector/packs/${manifest.packName}/manifest.json\``,
+    `- Context map:   \`.ai-spector/packs/${manifest.packName}/context-map.json\``,
     `- Inspect pack:  \`npx ai-spector template inspect ${manifest.packName}\``,
     `- Active graph seeds: see \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
   );
 
   await writeFile(join(packDir, "generate-hints.md"), lines.join("\n") + "\n", "utf8");
+}
+
+/**
+ * Write a context-map.json into the pack directory.
+ *
+ * Lists every {placeholder} found across all templates and the suggested graph
+ * field path to resolve it from. Unknown placeholders get `"source": "TODO"` so
+ * the user (or AI) can fill them in before generating.
+ */
+async function writeContextMap(
+  packDir: string,
+  manifest: PackManifest,
+  scanResult?: import("../template/scan.js").ScanResult,
+): Promise<void> {
+  // Collect all unique placeholders across all template files
+  const allPlaceholders = new Set<string>();
+  if (scanResult) {
+    for (const f of scanResult.files) {
+      for (const p of f.placeholders) {
+        allPlaceholders.add(p);
+      }
+    }
+  }
+  // Also collect from manifest-level metadata if present
+  for (const doc of manifest.documents) {
+    for (const p of [doc.output ?? "", doc.outputPattern ?? ""]) {
+      const m = p.matchAll(/\{([a-zA-Z][a-zA-Z0-9_-]*)\}/g);
+      for (const [, name] of m) allPlaceholders.add(`{${name}}`);
+    }
+  }
+
+  // Build a mapping with best-guess sources
+  const KNOWN_SOURCES: Record<string, string> = {
+    "{projectName}": "graph.metadata.projectName or config.projectName",
+    "{project}": "graph.metadata.projectName or config.projectName",
+    "{domain}": "graph node id (perDomain item)",
+    "{id}": "graph node id",
+    "{title}": "graph node title or heading",
+    "{feature}": "graph node id (feature type)",
+    "{module}": "graph node id (module type)",
+    "{screen}": "graph node id (screen type)",
+    "{date}": "new Date().toISOString().slice(0, 10)",
+    "{version}": "config.version or package.json version",
+  };
+
+  const entries: Record<string, { source: string; note: string }> = {};
+  for (const placeholder of [...allPlaceholders].sort()) {
+    const known = KNOWN_SOURCES[placeholder];
+    entries[placeholder] = {
+      source: known ?? "TODO",
+      note: known
+        ? "auto-resolved"
+        : "fill in before generating — ask user if unclear",
+    };
+  }
+
+  const map = {
+    _description:
+      "Maps every {placeholder} in this pack's templates to its graph/config source. " +
+      "Entries marked TODO must be resolved before generation.",
+    packName: manifest.packName,
+    generatedAt: new Date().toISOString(),
+    placeholders: entries,
+  };
+
+  await writeFile(join(packDir, "context-map.json"), JSON.stringify(map, null, 2) + "\n", "utf8");
 }
 
 /**
@@ -372,17 +455,25 @@ async function writePackGenerateSkill(
     `- Name: \`${name}\``,
     `- Templates: \`.ai-spector/packs/${name}/templates/\``,
     `- Manifest: \`.ai-spector/packs/${name}/manifest.json\``,
+    `- Context map: \`.ai-spector/packs/${name}/context-map.json\` — placeholder → graph field`,
+    ``,
+    `## Before you start`,
+    ``,
+    `1. Read \`context-map.json\` — check every entry marked \`TODO\` and resolve it or ask the user.`,
+    `2. Run \`npx ai-spector graph validate\` — fix any errors before writing files.`,
     ``,
     `## Workflow`,
     ``,
     `Follow the wave structure from \`generate-hints.md\`.`,
     ``,
-    `**Wave 0 — Primary documents:**`,
-    `- For each node in \`dag.srs.json\` where \`mode\` is not set:`,
-    `  - Graph seed: look up DAG id in \`dag.srs.graph-seeds.json\` → use that document id`,
-    `  - Template: \`.ai-spector/packs/${name}/templates/<template-file>\``,
-    `  - Output: \`output\` or \`outputPattern\` from \`dag.srs.json\` node`,
-    `  - **Do NOT** use builtin \`doc.srs.*\` ids — they do not exist in this pack's graph`,
+    `**Wave 0 — Primary documents (exact table):**`,
+    ``,
+    `| documentId | template | output |`,
+    `|---|---|---|`,
+    ...primaryDocs.map((d) => `| \`${d.documentId}\` | \`${d.template}\` | \`${d.output ?? d.outputPattern ?? "(see manifest)"}\` |`),
+    ``,
+    `- Graph seed id: look up the \`documentId\` in \`dag.srs.graph-seeds.json\` to get the graph node id to query`,
+    `- **Do NOT** use builtin \`doc.srs.*\` ids — they do not exist in this pack's graph`,
     ``,
     ...(breakoutDocs.length > 0
       ? [
@@ -409,12 +500,56 @@ async function writePackGenerateSkill(
           ``,
         ]
       : []),
+    `## Re-generation mode (source doc changed)`,
+    ``,
+    `When the user says "regenerate", "update stale docs", "source changed", or similar:`,
+    ``,
+    `1. Run: \`npx ai-spector template regen --json\``,
+    `2. Read \`.ai-spector/packs/${name}/regen-plan.md\` — it lists exactly which files are stale and why`,
+    `3. Regenerate ONLY the listed files — do NOT touch others`,
+    `4. For each file: query the graph for the affected node context first`,
+    `   \`npx ai-spector graph query <nodeId> --direction both --depth 4 --json\``,
+    `5. Update gen-status.json entries for regenerated files`,
+    `6. After all files: \`npx ai-spector index\` + \`npx ai-spector graph validate\``,
+    ``,
+    `⛔ Do NOT regenerate files that are NOT in the regen plan. Scope is everything.`,
+    ``,
+    `## After each breakout item — update gen-status.json`,
+    ``,
+    `After writing each breakout file, append an entry to \`.ai-spector/packs/${name}/gen-status.json\`:`,
+    ``,
+    `\`\`\`json`,
+    `{`,
+    `  "packName": "${name}",`,
+    `  "updatedAt": "<ISO timestamp>",`,
+    `  "items": [`,
+    `    { "itemId": "<graphNodeId>", "outputFile": "<relative path>", "status": "done", "generatedAt": "<ISO>" },`,
+    `    { "itemId": "<id>", "status": "blocked", "blockedReason": "<why you need human input>" }`,
+    `  ]`,
+    `}`,
+    `\`\`\``,
+    ``,
+    `Status values: \`done\` | \`pending\` | \`blocked\`.`,
+    `Set \`blocked\` + \`blockedReason\` when you cannot proceed — user can run \`npx ai-spector template status\` to see it.`,
+    ``,
     `## After each wave`,
     ``,
     `\`\`\`bash`,
     `npx ai-spector graph validate`,
     `npx ai-spector index`,
     `\`\`\``,
+    ``,
+    `## When to pause and ask the user`,
+    ``,
+    `Stop and ask if:`,
+    ``,
+    `- A \`{placeholder}\` in a template has no matching value in the graph result`,
+    `- The item list for a breakout domain returns 0 or ambiguous results`,
+    `- Two output paths could satisfy the same \`outputPattern\``,
+    `- A Wave 0 output file already exists and it is unclear whether to overwrite or append`,
+    `- \`graph validate\` fails after writing and the error is not self-explanatory`,
+    ``,
+    `⛔ Do NOT guess. Wrong files written silently are harder to fix than a question asked upfront.`,
     ``,
     `## On CLI failure`,
     ``,
@@ -458,13 +593,50 @@ async function writePackGenerateSkill(
     ``,
     `**Important:** Use graph seed ids from \`dag.srs.graph-seeds.json\`, NOT builtin \`doc.srs.*\` ids.`,
     ``,
+    `Before generating: read \`context-map.json\` and resolve any entry marked \`TODO\` — ask the user if unclear.`,
+    ``,
+    `## When to pause and ask the user`,
+    ``,
+    `Stop and ask if:`,
+    ``,
+    `- A \`{placeholder}\` has no matching value in the graph result`,
+    `- The breakout item list returns 0 or ambiguous results`,
+    `- An output file already exists and it is unclear whether to overwrite`,
+    `- \`graph validate\` fails and the error is not self-explanatory`,
+    ``,
+    `⛔ Do NOT guess. Ask instead.`,
+    ``,
+    `## Re-generation mode`,
+    ``,
+    `When user says "regenerate", "update stale docs", or "source changed":`,
+    ``,
+    `\`\`\``,
+    `1. npx ai-spector template regen --json`,
+    `2. Read regen-plan.md — regenerate ONLY listed files`,
+    `3. Query graph context for each affected node before rewriting`,
+    `4. Update gen-status.json`,
+    `5. npx ai-spector index + graph validate`,
+    `\`\`\``,
+    ``,
+    ...(breakoutDocs.length > 0
+      ? [
+          `## Tracking breakout progress (gen-status.json)`,
+          ``,
+          `After each breakout item, update \`.ai-spector/packs/${name}/gen-status.json\`:`,
+          `- \`"status": "done"\` + \`outputFile\` + \`generatedAt\` when written successfully`,
+          `- \`"status": "blocked"\` + \`blockedReason\` when you need human input`,
+          ``,
+          `User can run \`npx ai-spector template status\` to see what's done/blocked.`,
+          ``,
+        ]
+      : []),
     `## Checklist`,
     ``,
     `\`\`\``,
     `- [ ] Loaded generate-hints.md and DAG config`,
     `- [ ] graph validate passes before starting`,
     `- [ ] Wave 0 primary documents generated`,
-    ...(breakoutDocs.length > 0 ? [`- [ ] Wave 1 breakout files generated`] : []),
+    ...(breakoutDocs.length > 0 ? [`- [ ] Wave 1 breakout files generated`, `- [ ] gen-status.json updated for every item`] : []),
     `- [ ] npx ai-spector index run after each wave`,
     `- [ ] npx ai-spector graph validate run at end`,
     `\`\`\``,
@@ -535,6 +707,12 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
     const { dag, seeds } = buildDagFromManifest(manifest);
     await writeDagFiles(root, dag, seeds);
     await writeGenerateHints(packDir, manifest);
+    // Scan installed templates so context-map captures real placeholders
+    const templatesDir = join(packDir, "templates");
+    const scanForContextMap = (await pathExists(templatesDir))
+      ? await scanTemplateFolder(templatesDir, templatesDir)
+      : undefined;
+    await writeContextMap(packDir, manifest, scanForContextMap);
     await writePackGenerateSkill(root, manifest);
   }
 
@@ -710,7 +888,7 @@ async function runTemplateInstall(opts: {
   }
 
   // Check staleness (> 24h)
-  const scanResult = await readJson<{ scannedAt: string }>(scanResultPath);
+  const scanResult = await readJson<import("../template/scan.js").ScanResult>(scanResultPath);
   const scannedAt = new Date(scanResult.scannedAt);
   const ageMs = Date.now() - scannedAt.getTime();
   const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
@@ -811,6 +989,7 @@ async function runTemplateInstall(opts: {
   const { dag, seeds } = buildDagFromManifest(finalManifest);
   await writeDagFiles(root, dag, seeds);
   await writeGenerateHints(destDir, finalManifest);
+  await writeContextMap(destDir, finalManifest, scanResult);
   const stagedSkillPath = join(stagingDir, "generate-skill.md");
   await writePackGenerateSkill(root, finalManifest, stagedSkillPath);
 
@@ -853,6 +1032,223 @@ async function runTemplateInstall(opts: {
 
   console.log();
   console.log(`Next: ask your AI to "generate <document>" to use the new template.`);
+}
+
+// ---------------------------------------------------------------------------
+// template verify <name>
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify a pack is correctly wired:
+ * - All template files referenced in manifest exist on disk
+ * - context-map.json has no TODO entries (warns, not error)
+ * - generate-hints.md and dag files exist
+ * - All output paths / outputPatterns are non-empty
+ */
+async function runTemplateVerify(name: string, opts: { cwd?: string }) {
+  const { root, config } = await loadConfigAndRoot(opts.cwd);
+  const resolvedName = name === "active" ? (config.packs?.active ?? "builtin") : name;
+
+  if (resolvedName === "builtin") {
+    console.log("Builtin pack — no verification needed.");
+    return;
+  }
+
+  const packDir = join(root, ".ai-spector", "packs", resolvedName);
+  const manifestPath = join(packDir, "manifest.json");
+
+  if (!(await pathExists(manifestPath))) {
+    console.error(`Error: pack "${resolvedName}" not found at ${packDir}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const manifest = await readJson<PackManifest>(manifestPath);
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. Template files
+  for (const doc of manifest.documents) {
+    const tplPath = join(packDir, "templates", doc.template);
+    if (!(await pathExists(tplPath))) {
+      errors.push(`Missing template file: templates/${doc.template}  (documentId: ${doc.documentId})`);
+    }
+  }
+
+  // 2. Output paths defined
+  for (const doc of manifest.documents) {
+    const hasOutput = typeof doc.output === "string" && doc.output.length > 0;
+    const hasPattern = typeof doc.outputPattern === "string" && doc.outputPattern.length > 0;
+    if (!hasOutput && !hasPattern) {
+      errors.push(`Document "${doc.documentId}" has no output or outputPattern`);
+    }
+  }
+
+  // 3. generate-hints.md and DAG files
+  for (const f of ["generate-hints.md", "context-map.json"]) {
+    if (!(await pathExists(join(packDir, f)))) {
+      warnings.push(`${f} is missing — run \`template use ${resolvedName}\` to regenerate`);
+    }
+  }
+  const dagDir = join(root, ".ai-spector", ".docflow", "config");
+  if (config.packs?.active === resolvedName) {
+    for (const f of ["dag.srs.json", "dag.srs.graph-seeds.json"]) {
+      if (!(await pathExists(join(dagDir, f)))) {
+        warnings.push(`${f} is missing — run \`template use ${resolvedName}\` to regenerate`);
+      }
+    }
+  }
+
+  // 4. context-map TODO entries
+  const contextMapPath = join(packDir, "context-map.json");
+  if (await pathExists(contextMapPath)) {
+    try {
+      const cm = await readJson<{ placeholders?: Record<string, { source: string }> }>(contextMapPath);
+      const todos = Object.entries(cm.placeholders ?? {})
+        .filter(([, v]) => v.source === "TODO")
+        .map(([k]) => k);
+      if (todos.length > 0) {
+        warnings.push(
+          `context-map.json has ${todos.length} unresolved placeholder(s): ${todos.join(", ")}` +
+          `\n  Edit .ai-spector/packs/${resolvedName}/context-map.json or ask the AI to fill them in.`,
+        );
+      }
+    } catch {
+      warnings.push("context-map.json could not be parsed");
+    }
+  }
+
+  // 5. gen-status.json — show missing breakout items if present
+  const genStatusPath = join(packDir, "gen-status.json");
+  if (await pathExists(genStatusPath)) {
+    try {
+      const gs = await readJson<{ items?: Array<{ itemId: string; status: string; blockedReason?: string }> }>(genStatusPath);
+      const blocked = (gs.items ?? []).filter((i) => i.status === "blocked");
+      const pending = (gs.items ?? []).filter((i) => i.status === "pending");
+      if (blocked.length > 0) {
+        warnings.push(
+          `${blocked.length} breakout item(s) are blocked:\n` +
+          blocked.map((i) => `  ${i.itemId}: ${i.blockedReason ?? "no reason given"}`).join("\n"),
+        );
+      }
+      if (pending.length > 0) {
+        warnings.push(`${pending.length} breakout item(s) still pending: ${pending.map((i) => i.itemId).join(", ")}`);
+      }
+    } catch {
+      warnings.push("gen-status.json could not be parsed");
+    }
+  }
+
+  // Report
+  if (errors.length === 0 && warnings.length === 0) {
+    console.log(`✓ Pack "${resolvedName}" verified — no issues found.`);
+    return;
+  }
+
+  if (warnings.length > 0) {
+    console.log(`Warnings for pack "${resolvedName}":`);
+    for (const w of warnings) console.warn(`  ⚠  ${w}`);
+  }
+
+  if (errors.length > 0) {
+    console.log(`\nErrors for pack "${resolvedName}":`);
+    for (const e of errors) console.error(`  ✗  ${e}`);
+    process.exitCode = 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// template status [name]
+// ---------------------------------------------------------------------------
+
+/**
+ * Show generation progress for a pack's breakout items.
+ * Reads gen-status.json if present; otherwise reports no tracking data.
+ */
+async function runTemplateStatus(name: string | undefined, opts: { cwd?: string }) {
+  const { root, config } = await loadConfigAndRoot(opts.cwd);
+  const resolvedName = name ?? config.packs?.active ?? "builtin";
+
+  if (resolvedName === "builtin") {
+    console.log("Builtin pack has no breakout items to track.");
+    return;
+  }
+
+  const packDir = join(root, ".ai-spector", "packs", resolvedName);
+  const manifest = await readJson<PackManifest>(join(packDir, "manifest.json")).catch(() => null);
+  if (!manifest) {
+    console.error(`Error: pack "${resolvedName}" not found.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const breakoutDocs = manifest.documents.filter((d) => d.perDomain);
+  if (breakoutDocs.length === 0) {
+    console.log(`Pack "${resolvedName}" has no breakout templates — nothing to track.`);
+    return;
+  }
+
+  const genStatusPath = join(packDir, "gen-status.json");
+  if (!(await pathExists(genStatusPath))) {
+    console.log(`No gen-status.json found for pack "${resolvedName}".`);
+    console.log(`This file is written by the AI as it generates breakout items.`);
+    console.log(`Run \`template verify ${resolvedName}\` after generation to check for issues.`);
+    return;
+  }
+
+  interface GenStatusItem {
+    itemId: string;
+    outputFile?: string;
+    status: "done" | "pending" | "blocked";
+    generatedAt?: string;
+    staleSince?: string;
+    blockedReason?: string;
+  }
+  interface GenStatus {
+    packName?: string;
+    updatedAt?: string;
+    items?: GenStatusItem[];
+  }
+
+  const gs = await readJson<GenStatus>(genStatusPath);
+  const items = gs.items ?? [];
+
+  const done = items.filter((i) => i.status === "done" && !i.staleSince);
+  const stale = items.filter((i) => i.status === "done" && i.staleSince);
+  const pending = items.filter((i) => i.status === "pending");
+  const blocked = items.filter((i) => i.status === "blocked");
+
+  console.log(`\nGeneration status for pack "${resolvedName}"\n`);
+  console.log(`  Total   : ${items.length}`);
+  console.log(`  Done    : ${done.length}`);
+  console.log(`  Stale   : ${stale.length}${stale.length > 0 ? "  ← run \`template regen\` to see details" : ""}`);
+  console.log(`  Pending : ${pending.length}`);
+  console.log(`  Blocked : ${blocked.length}`);
+
+  if (stale.length > 0) {
+    console.log(`\n⚠ Stale (source changed since generation):`);
+    for (const i of stale) {
+      console.log(`  ${i.itemId}  →  ${i.outputFile ?? "(no output path)"}  (stale since ${i.staleSince!.slice(0, 10)})`);
+    }
+  }
+  if (done.length > 0) {
+    console.log(`\n✓ Done:`);
+    for (const i of done) {
+      console.log(`  ${i.itemId}  →  ${i.outputFile ?? "(no output path)"}${i.generatedAt ? `  (${i.generatedAt.slice(0, 10)})` : ""}`);
+    }
+  }
+  if (pending.length > 0) {
+    console.log(`\n○ Pending:`);
+    for (const i of pending) console.log(`  ${i.itemId}`);
+  }
+  if (blocked.length > 0) {
+    console.log(`\n⚠ Blocked (needs human input):`);
+    for (const i of blocked) console.log(`  ${i.itemId}: ${i.blockedReason ?? "no reason given"}`);
+  }
+
+  if (blocked.length > 0 || pending.length > 0) {
+    console.log(`\nTo resume: ask your AI to continue generating breakout items for pack "${resolvedName}".`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,6 +1474,45 @@ export function registerTemplateCommand(program: Command) {
       await runTemplateInstall({
         cwd: resolve(opts.cwd ?? process.cwd()),
         name: opts.name as string | undefined,
+        dryRun: Boolean(opts.dryRun),
+      });
+    });
+
+  template
+    .command("verify [name]")
+    .description(
+      'Verify a pack is correctly wired: templates exist, output paths defined, context-map TODOs flagged. Use "active" or omit to check the active pack.',
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .action(async (name: string | undefined, opts) => {
+      await runTemplateVerify(name ?? "active", { cwd: resolve(opts.cwd ?? process.cwd()) });
+    });
+
+  template
+    .command("status [name]")
+    .description(
+      "Show breakout-item generation progress for a pack (reads gen-status.json written by the AI during generation).",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .action(async (name: string | undefined, opts) => {
+      await runTemplateStatus(name, { cwd: resolve(opts.cwd ?? process.cwd()) });
+    });
+
+  template
+    .command("regen [pack]")
+    .description(
+      "Detect which pack output files are stale after source changes, write regen-plan.md, and update gen-status.json. Uses git diff by default.",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--origin <nodeId>", "Use a specific graph node as impact origin instead of git diff")
+    .option("--json", "Output regen plan as JSON")
+    .option("--dry-run", "Print stale files without writing regen-plan.md")
+    .action(async (pack: string | undefined, opts) => {
+      await runTemplateRegen({
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        pack,
+        origin: opts.origin as string | undefined,
+        json: Boolean(opts.json),
         dryRun: Boolean(opts.dryRun),
       });
     });

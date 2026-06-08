@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { readdir } from "node:fs/promises";
-import { loadDocflowConfig } from "../../../config/load.js";
-import { pathExists, readJson } from "../../../util/fs.js";
-import type { PackManifest } from "../../../config/types.js";
+import { loadDocflowConfig } from "../../../core/config/load.js";
+import { pathExists, readJson } from "../../../core/util/fs.js";
+import type { PackManifest } from "../../../core/config/types.js";
 import type { TemplateListSchema, TemplateInspectSchema } from "../schemas.js";
 import type { z } from "zod";
 

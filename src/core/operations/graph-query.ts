@@ -1,7 +1,7 @@
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { querySubgraph, type QueryOptions } from "../graph/query.js";
 import type { GraphQueryResult } from "ai-spector-graph";
-import type { EdgeType } from "../types.js";
+import type { EdgeType } from "../../types.js";
 
 export interface GraphQueryCliOptions {
   graphPath: string;

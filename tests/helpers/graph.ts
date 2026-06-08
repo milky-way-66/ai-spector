@@ -1,4 +1,4 @@
-import { InMemoryGraph } from "../../src/graph/InMemoryGraph.js";
+import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
 import type { GraphEdge, GraphNode, TraceabilityGraph } from "../../src/types.js";
 
 export function node(

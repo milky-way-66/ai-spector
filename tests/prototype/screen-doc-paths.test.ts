@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { withTempProject } from "../helpers/temp-project.js";
-import { buildPrototypeManifest } from "../../src/prototype/build-manifest.js";
+import { buildPrototypeManifest } from "../../src/core/prototype/build-manifest.js";
 import {
   buildScreenDocPaths,
   toLangNeutralDocDir,
-} from "../../src/prototype/screen-doc-paths.js";
-import type { PrototypeConfig } from "../../src/prototype/types.js";
-import { writeJson } from "../../src/util/fs.js";
+} from "../../src/core/prototype/screen-doc-paths.js";
+import type { PrototypeConfig } from "../../src/core/prototype/types.js";
+import { writeJson } from "../../src/core/util/fs.js";
 
 describe("screen doc path helpers", () => {
   it("derives lang-neutral directory from multi-lang detail dir", () => {

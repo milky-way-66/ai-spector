@@ -2,13 +2,13 @@
 import { Command } from "commander";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
-import { writeJson, readJson } from "./util/fs.js";
-import { resolveProjectPaths } from "./util/paths.js";
-import { buildSectionRegistry } from "./registry/build.js";
-import { bootstrapFromRegistry } from "./commands/bootstrap.js";
-import { validateGraph, formatIssues } from "./commands/validate.js";
-import { runInit, type AgentTarget } from "./commands/init.js";
-import { runLangAdd } from "./commands/lang.js";
+import { writeJson, readJson } from "./core/util/fs.js";
+import { resolveProjectPaths } from "./core/util/paths.js";
+import { buildSectionRegistry } from "./core/registry/build.js";
+import { bootstrapFromRegistry } from "./core/operations/bootstrap.js";
+import { validateGraph, formatIssues } from "./core/operations/validate.js";
+import { runInit, type AgentTarget } from "./core/operations/init.js";
+import { runLangAdd } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
   runLangQueueFail,
@@ -16,16 +16,16 @@ import {
   runLangQueueResolved,
   runLangQueueRetry,
   runLangQueueScan,
-} from "./commands/lang-queue.js";
-import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./lang/queue.js";
-import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./commands/hooks.js";
-import { runSetup, runSetupCheck } from "./commands/setup.js";
-import { runSyncCursor } from "./commands/sync-cursor.js";
-import { runAnalyzePrep } from "./commands/analyze.js";
-import { runGraphQuery } from "./commands/graph-query.js";
-import { runGraphImpact } from "./commands/graph-impact.js";
-import { runGraphMerge } from "./commands/graph-merge.js";
-import { runGraphReport } from "./commands/graph-report.js";
+} from "./core/operations/lang-queue.js";
+import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./core/lang/queue.js";
+import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./core/operations/hooks.js";
+import { runSetup, runSetupCheck } from "./core/operations/setup.js";
+import { runSyncCursor } from "./core/operations/sync-cursor.js";
+import { runAnalyzePrep } from "./core/operations/analyze.js";
+import { runGraphQuery } from "./core/operations/graph-query.js";
+import { runGraphImpact } from "./core/operations/graph-impact.js";
+import { runGraphMerge } from "./core/operations/graph-merge.js";
+import { runGraphReport } from "./core/operations/graph-report.js";
 import {
   formatGraphQuery,
   formatGraphReport,
@@ -49,19 +49,19 @@ import {
   formatLangAdd,
   formatQueueScan,
 } from "./interfaces/cli/format/misc.js";
-import { ensureHubBundles } from "./graph/bundles.js";
-import { loadInMemoryGraph } from "./graph/loadGraph.js";
-import { runGraphVisualize } from "./commands/graph-visualize.js";
-import { runIndex } from "./commands/index.js";
+import { ensureHubBundles } from "./core/graph/bundles.js";
+import { loadInMemoryGraph } from "./core/graph/loadGraph.js";
+import { runGraphVisualize } from "./core/operations/graph-visualize.js";
+import { runIndex } from "./core/operations/index.js";
 import {
   runCommentsInbox,
   runCommentsList,
   runCommentsPlan,
   runCommentsResolve,
   runCommentsShow,
-} from "./commands/comments.js";
-import { runProvenanceLink } from "./graph/provenance.js";
-import { registerTemplateCommand } from "./commands/template.js";
+} from "./core/operations/comments.js";
+import { runProvenanceLink } from "./core/graph/provenance.js";
+import { registerTemplateCommand } from "./core/operations/template.js";
 import {
   runPrototypeInstallPreviews,
   runPrototypeManifest,
@@ -72,7 +72,7 @@ import {
   runPrototypeThemes,
   runPrototypeValidate,
   runPrototypeAuth,
-} from "./commands/prototype.js";
+} from "./core/operations/prototype.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();

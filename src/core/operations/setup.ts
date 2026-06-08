@@ -11,7 +11,7 @@ import { isInteractive, promptLine, promptYesNo } from "../util/prompt.js";
 import { HOOK_MARKER } from "./hooks-constants.js";
 
 const require = createRequire(import.meta.url);
-const packageJson = require("../../package.json") as { version: string; engines?: { node?: string } };
+const packageJson = require("../../../package.json") as { version: string; engines?: { node?: string } };
 
 export type SetupStepStatus = "ok" | "missing" | "warning";
 

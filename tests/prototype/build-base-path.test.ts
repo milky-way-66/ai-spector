@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { viteConfigNeedsRelativeBase } from "../../src/prototype/build-base-path.js";
+import { viteConfigNeedsRelativeBase } from "../../src/core/prototype/build-base-path.js";
 
 describe("build-base-path", () => {
   it("accepts base: './'", () => {

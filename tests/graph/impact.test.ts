@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeImpact } from "../../src/graph/impact.js";
-import type { ImpactRulesFile } from "../../src/graph/impact.js";
+import { computeImpact } from "../../src/core/graph/impact.js";
+import type { ImpactRulesFile } from "../../src/core/graph/impact.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 const SAMPLE_RULES: ImpactRulesFile = {

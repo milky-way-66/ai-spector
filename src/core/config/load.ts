@@ -8,7 +8,7 @@ const CONFIG_NAME = "docflow.config.json";
 
 /** Installed package root (schemas, templates, documents.json). */
 export function packageBundleRoot(): string {
-  return resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+  return resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 }
 
 /** Bundled project scaffold for `ai-spector init`. */

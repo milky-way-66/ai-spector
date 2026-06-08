@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bootstrapFromRegistry } from "../../src/commands/bootstrap.js";
+import { bootstrapFromRegistry } from "../../src/core/operations/bootstrap.js";
 import type { SectionRegistry } from "../../src/types.js";
 
 function minimalRegistry(): SectionRegistry {

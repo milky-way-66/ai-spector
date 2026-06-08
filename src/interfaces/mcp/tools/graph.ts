@@ -1,20 +1,20 @@
-import { resolveProjectPaths } from "../../../util/paths.js";
-import { loadInMemoryGraph } from "../../../graph/loadGraph.js";
-import { querySubgraph } from "../../../graph/query.js";
+import { resolveProjectPaths } from "../../../core/util/paths.js";
+import { loadInMemoryGraph } from "../../../core/graph/loadGraph.js";
+import { querySubgraph } from "../../../core/graph/query.js";
 import {
   computeImpact,
   loadImpactRules,
   mergeImpactResults,
-} from "../../../graph/impact.js";
+} from "../../../core/graph/impact.js";
 import {
   resolveImpactOrigins,
   pickPrimaryImpactOrigin,
   resolveFromGitDiff,
   parseGitDiffRegions,
-} from "../../../graph/resolve.js";
-import { collectGitDiff } from "../../../util/git-diff.js";
-import { validateGraph } from "../../../commands/validate.js";
-import { runGraphMerge } from "../../../commands/graph-merge.js";
+} from "../../../core/graph/resolve.js";
+import { collectGitDiff } from "../../../core/util/git-diff.js";
+import { validateGraph } from "../../../core/operations/validate.js";
+import { runGraphMerge } from "../../../core/operations/graph-merge.js";
 import type { EdgeType } from "../../../types.js";
 import type {
   GraphQuerySchema,

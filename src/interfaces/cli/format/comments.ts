@@ -1,8 +1,8 @@
-import type { CommentsListResult } from "../../../commands/comments.js";
-import type { CommentInbox, CommentResolvePlan } from "../../../comments/inbox.js";
-import type { ResolveThreadResult } from "../../../comments/storage.js";
-import { formatInboxForChat, formatPlanForChat } from "../../../comments/inbox.js";
-import { formatThreadListText } from "../../../comments/storage.js";
+import type { CommentsListResult } from "../../../core/operations/comments.js";
+import type { CommentInbox, CommentResolvePlan } from "../../../core/comments/inbox.js";
+import type { ResolveThreadResult } from "../../../core/comments/storage.js";
+import { formatInboxForChat, formatPlanForChat } from "../../../core/comments/inbox.js";
+import { formatThreadListText } from "../../../core/comments/storage.js";
 
 export function formatCommentsList(result: CommentsListResult): string {
   return [formatThreadListText(result.threads), "", `${result.count} thread(s)`].join("\n");

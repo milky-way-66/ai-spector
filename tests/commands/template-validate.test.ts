@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validatePackManifest } from "../../src/template/validate.js";
+import { validatePackManifest } from "../../src/core/template/validate.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

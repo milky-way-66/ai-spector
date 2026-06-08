@@ -4,7 +4,7 @@ import {
   projectionPathForNode,
   querySubgraph,
   resolveDocumentForNode,
-} from "../../src/graph/query.js";
+} from "../../src/core/graph/query.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("resolveDocumentForNode", () => {

@@ -7,7 +7,7 @@ import {
   ensureBusinessBundle,
   provenanceTargetId,
   sourceFileNodeId,
-} from "../../src/graph/bundles.js";
+} from "../../src/core/graph/bundles.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("bundles", () => {

@@ -2,8 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { buildPrototypeManifest } from "../../src/prototype/build-manifest.js";
-import type { PrototypeConfig } from "../../src/prototype/types.js";
+import { buildPrototypeManifest } from "../../src/core/prototype/build-manifest.js";
+import type { PrototypeConfig } from "../../src/core/prototype/types.js";
 
 const spaConfig: PrototypeConfig = {
   version: 1,

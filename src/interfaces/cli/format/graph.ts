@@ -1,7 +1,7 @@
 import type { GraphQueryResult, ImpactResult, LayerAuditReport } from "ai-spector-graph";
-import type { GraphMergeResult } from "../../../commands/graph-merge.js";
-import type { GraphVisualizeResult } from "../../../commands/graph-visualize.js";
-import { formatIssues } from "../../../commands/validate.js";
+import type { GraphMergeResult } from "../../../core/operations/graph-merge.js";
+import type { GraphVisualizeResult } from "../../../core/operations/graph-visualize.js";
+import { formatIssues } from "../../../core/operations/validate.js";
 
 export function formatGraphQuery(result: GraphQueryResult): string {
   const lines: string[] = [];

@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { apr1Hash, formatHtpasswdLine } from "../../src/prototype/htpasswd.js";
+import { apr1Hash, formatHtpasswdLine } from "../../src/core/prototype/htpasswd.js";
 
 function opensslApr1(password: string, salt: string): string {
   return execFileSync("openssl", ["passwd", "-apr1", "-salt", salt, password], {

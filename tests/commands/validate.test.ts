@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatIssues } from "../../src/commands/validate.js";
+import { formatIssues } from "../../src/core/operations/validate.js";
 import type { ValidationIssue } from "../../src/types.js";
 
 describe("formatIssues", () => {

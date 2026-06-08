@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { extractSourceRefsFromMarkdown } from "../../src/graph/source-refs.js";
-import { normalizeDataSourcePath } from "../../src/graph/provenance.js";
+import { extractSourceRefsFromMarkdown } from "../../src/core/graph/source-refs.js";
+import { normalizeDataSourcePath } from "../../src/core/graph/provenance.js";
 
 describe("extractSourceRefsFromMarkdown", () => {
   it("finds inline docs/data-source paths", () => {

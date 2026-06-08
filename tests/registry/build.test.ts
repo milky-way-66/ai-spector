@@ -3,12 +3,12 @@ import { mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { bootstrapFromRegistry } from "../../src/commands/bootstrap.js";
-import { buildSectionRegistry } from "../../src/registry/build.js";
+import { bootstrapFromRegistry } from "../../src/core/operations/bootstrap.js";
+import { buildSectionRegistry } from "../../src/core/registry/build.js";
 import {
   BASIC_DESIGN_LIST_DOCUMENT_IDS,
   DEFAULT_BD_LIST_DOC,
-} from "../../src/graph/defaults.js";
+} from "../../src/core/graph/defaults.js";
 
 describe("buildSectionRegistry", () => {
   it("includes basic-design list chapters with template sections", async () => {
