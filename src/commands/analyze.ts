@@ -11,14 +11,18 @@ export interface AnalyzePrepOptions {
   merge?: boolean;
 }
 
-/**
- * Prepare traceability graph structure (registry + bootstrap + validate).
- * Semantic knowledge extraction runs in Cursor via the analyze skill (agent reads docs/data-source/ markdown directly).
- */
+export interface AnalyzePrepResult {
+  documentCount: number;
+  sectionCount: number;
+  registryPath: string;
+  graphPath: string;
+  merged: boolean;
+}
+
 export async function runAnalyzePrep(
   root?: string,
   opts: AnalyzePrepOptions = {},
-): Promise<void> {
+): Promise<AnalyzePrepResult> {
   const paths = await resolveProjectPaths(root);
   const { root: projectRoot } = await loadDocflowConfig(root);
 
@@ -36,8 +40,7 @@ export async function runAnalyzePrep(
   });
   const errors = issues.filter((i) => i.severity === "error");
   if (errors.length > 0) {
-    console.log(formatIssues(issues));
-    throw new Error("Graph validation failed after analyze prep");
+    throw new Error(`Graph validation failed after analyze prep:\n${formatIssues(issues)}`);
   }
 
   const statePath = join(projectRoot, ".ai-spector/.docflow/state.json");
@@ -51,30 +54,22 @@ export async function runAnalyzePrep(
   await writeJson(statePath, state);
 
   const total = registry.documents.reduce((n, d) => n + d.sections.length, 0);
-  console.log(`Graph structure ready: ${registry.documents.length} documents, ${total} sections`);
-  console.log(`  registry → ${paths.registry}`);
-  console.log(`  graph    → ${paths.graph}`);
-  console.log(`  (entity extraction did not run — domain nodes are not created here)`);
-  console.log("");
-  const knowledgePath = join(
-    projectRoot,
-    ".ai-spector/.docflow/analysis/knowledge.json",
-  );
-  const patchPath = join(projectRoot, ".ai-spector/.docflow/extract/patch.json");
 
+  let merged = false;
   if (opts.merge) {
+    const knowledgePath = join(projectRoot, ".ai-spector/.docflow/analysis/knowledge.json");
+    const patchPath = join(projectRoot, ".ai-spector/.docflow/extract/patch.json");
     if ((await pathExists(knowledgePath)) || (await pathExists(patchPath))) {
       await runGraphMerge({ root: projectRoot });
-      console.log("");
-      console.log("Merged domain knowledge into graph.");
-    } else {
-      console.log("");
-      console.log("Skip merge: no knowledge.json or extract/patch.json yet.");
+      merged = true;
     }
   }
 
-  console.log("");
-  console.log("Next: in Cursor ask the agent to 'analyze the data source'");
-  console.log("  The agent reads docs/data-source/ markdown, writes knowledge.json,");
-  console.log("  then runs graph merge and validate.");
+  return {
+    documentCount: registry.documents.length,
+    sectionCount: total,
+    registryPath: paths.registry,
+    graphPath: paths.graph,
+    merged,
+  };
 }

@@ -1,5 +1,6 @@
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { querySubgraph, type QueryOptions } from "../graph/query.js";
+import type { GraphQueryResult } from "ai-spector-graph";
 import type { EdgeType } from "../types.js";
 
 export interface GraphQueryCliOptions {
@@ -8,10 +9,9 @@ export interface GraphQueryCliOptions {
   direction?: "out" | "in" | "both";
   depth?: number;
   edges?: string;
-  json?: boolean;
 }
 
-export async function runGraphQuery(opts: GraphQueryCliOptions): Promise<void> {
+export async function runGraphQuery(opts: GraphQueryCliOptions): Promise<GraphQueryResult> {
   const g = await loadInMemoryGraph(opts.graphPath);
 
   if (!g.nodesById.has(opts.seedId)) {
@@ -34,24 +34,5 @@ export async function runGraphQuery(opts: GraphQueryCliOptions): Promise<void> {
     queryOpts.edgeTypes = opts.edges.split(",").map((s) => s.trim()) as EdgeType[];
   }
 
-  const result = querySubgraph(g, opts.seedId, queryOpts);
-
-  if (opts.json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`Seed: ${result.seed}`);
-  console.log(`Nodes (${result.nodes.length}):`);
-  for (const n of result.nodes) {
-    console.log(`  - ${n.id} (${n.type})`);
-  }
-  console.log(`Edges (${result.edges.length}):`);
-  for (const e of result.edges) {
-    console.log(`  - ${e.from} --${e.type}--> ${e.to}`);
-  }
-  console.log(`Projection paths (${result.projectionPaths.length}):`);
-  for (const p of result.projectionPaths) {
-    console.log(`  - ${p}`);
-  }
+  return querySubgraph(g, opts.seedId, queryOpts);
 }

@@ -251,75 +251,44 @@ async function maybeInstallDependency(root: string, installDep: boolean): Promis
 
 export async function runSetupCheck(opts: SetupOptions = {}): Promise<SetupAudit> {
   const root = resolve(opts.root ?? process.cwd());
-  const audit = await auditSetup(root);
-  if (opts.json) {
-    console.log(JSON.stringify(audit, null, 2));
-  } else {
-    console.log(formatAuditTable(audit));
-  }
-  return audit;
+  return auditSetup(root);
 }
 
 export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
   const root = resolve(opts.root ?? process.cwd());
   const interactive = isInteractive() && !opts.yes;
 
-  console.log("AI Spector setup");
-  console.log("==============");
-  console.log("");
-
   let audit = await auditSetup(root);
-  if (!opts.json) {
-    console.log(formatAuditTable(audit));
-  }
 
   if (interactive && !audit.ready) {
     const cont = await promptYesNo("Run setup to fix missing required steps?", true);
-    if (!cont) {
-      console.log("Setup cancelled.");
-      return audit;
-    }
+    if (!cont) return audit;
   }
 
   let langCodes = opts.languages;
   if (!langCodes || langCodes.length === 0) {
     if (interactive) {
-      const raw = await promptLine(
-        "Languages (comma-separated codes, e.g. en,jp,vi)",
-        "en",
-      );
+      const raw = await promptLine("Languages (comma-separated codes, e.g. en,jp,vi)", "en");
       langCodes = raw.split(",").map((c) => c.trim()).filter(Boolean);
     } else {
       langCodes = ["en"];
     }
   }
-  if (langCodes.length === 0) {
-    langCodes = ["en"];
-  }
+  if (langCodes.length === 0) langCodes = ["en"];
 
   const configExists = await pathExists(join(root, ".ai-spector/docflow.config.json"));
   const shouldInit = !opts.skipInit && (!configExists || opts.force);
 
   if (shouldInit) {
-    console.log("");
-    console.log(`Step: scaffold project (${langCodes.join(", ")})…`);
-    await runInit({
-      targetDir: root,
-      force: opts.force,
-      languages: langCodes,
-      yes: true, // setup already ran its own prompts
-    });
+    await runInit({ targetDir: root, force: opts.force, languages: langCodes, yes: true });
   } else if (configExists) {
-    console.log("");
-    console.log("Step: refresh Cursor skills from package…");
     await runSyncCursor({ targetDir: root });
     await ensureAiSpectorGitignore(root);
     try {
       await ensureGitRepository(root);
       await installGitHooks(root);
-      console.log("  git hook  -> pre-commit installed/updated");
     } catch {
-      console.log("  git hook  -> skipped (run: npx ai-spector hooks install)");
+      // git hook skipped — not a hard error
     }
   }
 
@@ -328,30 +297,11 @@ export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
   if (opts.installDep) {
     try {
       await maybeInstallDependency(root, true);
-    } catch (err) {
-      console.warn(
-        `Warning: could not install npm dependency: ${err instanceof Error ? err.message : String(err)}`,
-      );
+    } catch {
+      // non-fatal
     }
   }
 
   audit = await auditSetup(root);
-
-  if (!opts.json) {
-    console.log("");
-    console.log(formatAuditTable(audit));
-    console.log("");
-    console.log("Cursor IDE (do once):");
-    console.log("  1. Open this folder in Cursor");
-    console.log("  2. Settings → Rules → enable all skills under .cursor/skills/");
-    console.log("  3. Reload MCP if .cursor/mcp.json changed");
-    console.log("  4. Add source files to docs/data-source/");
-    console.log('  5. In chat: "setup complete — analyze my data source"');
-    console.log("");
-    console.log("Re-check anytime: npx ai-spector setup --check");
-  } else {
-    console.log(JSON.stringify(audit, null, 2));
-  }
-
   return audit;
 }

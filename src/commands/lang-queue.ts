@@ -11,101 +11,76 @@ import {
 import {
   failPendingJob,
   filterJobsByLang,
-  formatFailedTable,
-  formatPendingTable,
-  formatResolvedTable,
   reconcileTranslationQueue,
 } from "../lang/queue.js";
+import type { TranslationJob } from "../lang/queue-types.js";
 
 export interface LangQueueOptions {
   root?: string;
   lang?: string;
-  json?: boolean;
   limit?: number;
 }
 
-export async function runLangQueueScan(opts: LangQueueOptions = {}): Promise<void> {
+export interface QueueScanResult {
+  skipped: boolean;
+  skipReason?: string;
+  pendingCount?: number;
+  enqueued?: number;
+  resolved?: number;
+  failed?: number;
+}
+
+export async function runLangQueueScan(opts: LangQueueOptions = {}): Promise<QueueScanResult> {
   const { root: projectRoot, config } = await loadDocflowConfig(
     opts.root ? resolve(opts.root) : undefined,
   );
   const result = await reconcileTranslationQueue(projectRoot, config);
-  if (result.skipped) {
-    console.log(`Translation queue: skipped (${result.skipReason})`);
-    return;
-  }
-  console.log(
-    `Translation queue: ${result.pendingCount} pending, +${result.enqueued} enqueued, ${result.resolved} resolved, ${result.failed} failed`,
-  );
+  if (result.skipped) return { skipped: true, skipReason: result.skipReason };
+  return { skipped: false, pendingCount: result.pendingCount, enqueued: result.enqueued, resolved: result.resolved, failed: result.failed };
 }
 
-export async function runLangQueuePending(opts: LangQueueOptions = {}): Promise<void> {
+export async function runLangQueuePending(opts: LangQueueOptions = {}): Promise<TranslationJob[]> {
   const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
   const paths = await ensureQueueDir(projectRoot);
   const pending = await loadPendingQueue(paths);
-  const jobs = filterJobsByLang(pending.jobs, opts.lang);
-
-  if (opts.json) {
-    console.log(JSON.stringify({ jobs }, null, 2));
-    return;
-  }
-  console.log(formatPendingTable(jobs));
+  return filterJobsByLang(pending.jobs, opts.lang);
 }
 
-export async function runLangQueueResolved(opts: LangQueueOptions = {}): Promise<void> {
+export async function runLangQueueResolved(opts: LangQueueOptions = {}): Promise<unknown[]> {
   const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
   const paths = await ensureQueueDir(projectRoot);
   const resolved = await loadResolvedQueue(paths.resolved);
-  let jobs = resolved.jobs;
-  if (opts.limit && opts.limit > 0) {
-    jobs = jobs.slice(-opts.limit);
-  }
-
-  if (opts.json) {
-    console.log(JSON.stringify({ jobs }, null, 2));
-    return;
-  }
-  console.log(formatResolvedTable(jobs));
+  const jobs = resolved.jobs;
+  return opts.limit && opts.limit > 0 ? jobs.slice(-opts.limit) : jobs;
 }
 
-export async function runLangQueueFailed(opts: LangQueueOptions = {}): Promise<void> {
+export async function runLangQueueFailed(opts: LangQueueOptions = {}): Promise<unknown[]> {
   const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
   const paths = await ensureQueueDir(projectRoot);
   const failed = await loadFailedQueue(paths.failed);
-  let jobs = failed.jobs;
-  if (opts.limit && opts.limit > 0) {
-    jobs = jobs.slice(-opts.limit);
-  }
-
-  if (opts.json) {
-    console.log(JSON.stringify({ jobs }, null, 2));
-    return;
-  }
-  console.log(formatFailedTable(jobs));
+  const jobs = failed.jobs;
+  return opts.limit && opts.limit > 0 ? jobs.slice(-opts.limit) : jobs;
 }
 
 export async function runLangQueueFail(
   jobId: string,
   opts: LangQueueOptions & { reason?: string; message?: string } = {},
-): Promise<void> {
+): Promise<{ jobId: string; reason: FailReason }> {
   const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
   const reason = (opts.reason ?? "dismissed") as FailReason;
   const message = opts.message ?? "Manually dismissed";
   const ok = await failPendingJob(projectRoot, jobId, reason, message);
-  if (!ok) {
-    throw new Error(`Pending job not found: ${jobId}`);
-  }
-  console.log(`Moved job ${jobId} to failed (${reason})`);
+  if (!ok) throw new Error(`Pending job not found: ${jobId}`);
+  return { jobId, reason };
 }
 
 export async function runLangQueueRetry(
   jobId: string,
   opts: LangQueueOptions = {},
-): Promise<void> {
+): Promise<TranslationJob> {
   const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
   const paths = await ensureQueueDir(projectRoot);
   const job = await retryFailedJob(paths, jobId);
-  if (!job) {
-    throw new Error(`Failed job not found: ${jobId}`);
-  }
-  console.log(`Moved job ${jobId} back to pending`);
+  if (!job) throw new Error(`Failed job not found: ${jobId}`);
+  return job;
 }

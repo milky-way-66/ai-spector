@@ -22,41 +22,45 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 export interface LangAddOptions {
   root?: string;
-  /** Optional display label; inferred from built-in map if omitted. */
   label?: string;
 }
 
-export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promise<void> {
+export interface LangAddResult {
+  code: string;
+  label: string;
+  alreadyExists: boolean;
+  srsDirCreated: boolean;
+  basicDesignDirCreated: boolean;
+  translationEdgesRegistered: boolean;
+  queuePending?: number;
+  queueEnqueued?: number;
+}
+
+export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promise<LangAddResult> {
   const { root: projectRoot, config, configFile } = await loadDocflowConfig(
     opts.root ? resolve(opts.root) : undefined,
   );
 
   const existing = config.languages.find((l) => l.code === code);
   if (existing) {
-    console.log(`Language "${code}" is already configured.`);
-    return;
+    return { code, label: existing.label, alreadyExists: true, srsDirCreated: false, basicDesignDirCreated: false, translationEdgesRegistered: false };
   }
 
   const label = opts.label ?? LANGUAGE_LABELS[code] ?? code;
   const newLang: LanguageConfig = { code, label };
   const primary = config.languages[0];
+  void primary; // used for context; translation edges handle wiring
 
-  // Create doc folders
-  const docTypes = ["srs", "basic-design"];
-  for (const docType of docTypes) {
+  for (const docType of ["srs", "basic-design"]) {
     await mkdir(join(projectRoot, `docs/${docType}/${code}`), { recursive: true });
     const gitkeep = join(projectRoot, `docs/${docType}/${code}/.gitkeep`);
-    if (!(await pathExists(gitkeep))) {
-      await writeFile(gitkeep, "");
-    }
+    if (!(await pathExists(gitkeep))) await writeFile(gitkeep, "");
   }
 
-  // Append to config
   const raw = await readJson<Record<string, unknown>>(configFile);
   const languages = Array.isArray(raw.languages) ? [...raw.languages, newLang] : [newLang];
   await writeJson(configFile, { ...raw, languages });
 
-  // Wire translation document nodes and edges in graph
   const existingLangCodes = config.languages.map((l) => l.code);
   await registerTranslationEdges(projectRoot, config.paths.graph, newLang, existingLangCodes);
 
@@ -64,16 +68,16 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   await addLangToPendingJobs(projectRoot, code, updatedConfig);
   const queueResult = await reconcileTranslationQueue(projectRoot, updatedConfig);
 
-  console.log(`Added language: ${label} (${code})`);
-  console.log(`  docs/srs/${code}/`);
-  console.log(`  docs/basic-design/${code}/`);
-  console.log(`  translationOf edges registered in graph`);
-  if (!queueResult.skipped) {
-    console.log(
-      `  translation queue: ${queueResult.pendingCount} pending, +${queueResult.enqueued} enqueued`,
-    );
-  }
-  console.log(`Run 'npx ai-spector index' to refresh the full graph.`);
+  return {
+    code,
+    label,
+    alreadyExists: false,
+    srsDirCreated: true,
+    basicDesignDirCreated: true,
+    translationEdgesRegistered: true,
+    queuePending: queueResult.skipped ? undefined : queueResult.pendingCount,
+    queueEnqueued: queueResult.skipped ? undefined : queueResult.enqueued,
+  };
 }
 
 async function registerTranslationEdges(
@@ -83,16 +87,12 @@ async function registerTranslationEdges(
   existingLangCodes: string[],
 ): Promise<void> {
   const graphPath = join(projectRoot, graphRelPath);
-  if (!(await pathExists(graphPath))) {
-    return;
-  }
+  if (!(await pathExists(graphPath))) return;
 
   const allLangCodes = [...existingLangCodes, lang.code];
   const graphMem = await loadInMemoryGraph(graphPath);
   const primaryDocNodes = primaryDocumentNodes(graphMem, allLangCodes);
-  if (primaryDocNodes.length === 0) {
-    return;
-  }
+  if (primaryDocNodes.length === 0) return;
 
   for (const primary of primaryDocNodes) {
     wireTranslationDocNode(graphMem, primary, lang);

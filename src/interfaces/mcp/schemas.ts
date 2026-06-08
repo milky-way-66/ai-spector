@@ -1,0 +1,95 @@
+import { z } from "zod";
+
+// ── Shared ────────────────────────────────────────────────────────────────────
+
+export const RootSchema = z.object({
+  root: z.string().optional().describe("Project root directory (auto-detected if omitted)"),
+});
+
+// ── Graph ─────────────────────────────────────────────────────────────────────
+
+export const GraphQuerySchema = RootSchema.extend({
+  seedId: z.string().describe("Node id to start the traversal from"),
+  direction: z
+    .enum(["out", "in", "both"])
+    .optional()
+    .describe("Edge traversal direction (default: out)"),
+  depth: z.number().int().min(1).optional().describe("Max traversal depth (default: 3)"),
+  edges: z
+    .string()
+    .optional()
+    .describe("Comma-separated edge types to include (e.g. 'contains,implements')"),
+});
+
+export const GraphImpactSchema = RootSchema.extend({
+  change: z.string().describe("Description of the change being made"),
+  originId: z.string().optional().describe("Graph node id of the changed element"),
+  file: z.string().optional().describe("File path of the changed element"),
+  heading: z.string().optional().describe("Section heading within the file"),
+  git: z.boolean().optional().describe("Derive origin from staged git diff"),
+  output: z.string().optional().describe("Write impact report JSON to this path"),
+});
+
+export const GraphValidateSchema = RootSchema;
+
+export const GraphMergeSchema = RootSchema.extend({
+  fromKnowledge: z
+    .boolean()
+    .optional()
+    .describe("Merge from knowledge.json (AI analysis output)"),
+});
+
+export const GraphReportSchema = RootSchema.extend({
+  format: z
+    .enum(["text", "json", "markdown"])
+    .optional()
+    .describe("Output format (default: text)"),
+});
+
+// ── Index ─────────────────────────────────────────────────────────────────────
+
+export const IndexSchema = RootSchema.extend({
+  graphOnly: z.boolean().optional().describe("Only rebuild graph, skip doc indexes"),
+  docsOnly: z.boolean().optional().describe("Only rebuild doc indexes, skip graph"),
+  skipMerge: z.boolean().optional().describe("Skip knowledge.json merge step"),
+  skipValidate: z.boolean().optional().describe("Skip graph validation step"),
+  skipDocSemantics: z.boolean().optional().describe("Skip SRS body extraction step"),
+});
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+
+export const CommentsListSchema = RootSchema.extend({
+  filePath: z.string().optional().describe("Filter by file path"),
+  status: z
+    .enum(["open", "resolved", "all"])
+    .optional()
+    .describe("Filter by status (default: open)"),
+});
+
+export const CommentsInboxSchema = RootSchema.extend({
+  filePath: z.string().optional().describe("Filter by file path"),
+  status: z
+    .enum(["open", "resolved", "all"])
+    .optional()
+    .describe("Filter by status (default: open)"),
+});
+
+export const CommentsShowSchema = RootSchema.extend({
+  threadId: z.string().describe("Comment thread id"),
+  filePath: z.string().optional().describe("File path scope"),
+});
+
+export const CommentsResolveSchema = RootSchema.extend({
+  threadId: z.string().describe("Comment thread id to resolve"),
+  filePath: z.string().describe("File path the comment is anchored to"),
+  resolvedBy: z.string().optional().describe("Who resolved it (name or agent id)"),
+  dryRun: z.boolean().optional().describe("Preview resolution without writing"),
+});
+
+// ── Template ──────────────────────────────────────────────────────────────────
+
+export const TemplateListSchema = RootSchema;
+
+export const TemplateInspectSchema = RootSchema.extend({
+  pack: z.string().describe("Pack name to inspect"),
+});

@@ -7,20 +7,24 @@ export interface SyncCursorOptions {
   targetDir: string;
 }
 
-/** Refresh `.cursor/` skills and WORKFLOW from bundled `scaffold/cursor/`. */
-export async function runSyncCursor(opts: SyncCursorOptions): Promise<void> {
+export interface SyncCursorResult {
+  targetDir: string;
+  cursorDir: string;
+  sourceDir: string;
+}
+
+export async function runSyncCursor(opts: SyncCursorOptions): Promise<SyncCursorResult> {
   const root = resolve(opts.targetDir);
   const marker = join(root, ".ai-spector", "docflow.config.json");
   if (!(await pathExists(marker))) {
-    throw new Error(
-      `Project not initialized (${marker}). Run: npx ai-spector init`,
-    );
+    throw new Error(`Project not initialized (${marker}). Run: npx ai-spector init`);
   }
 
   await copyCursorToProject(root);
 
-  console.log(`Synced Cursor bundle at ${join(root, ".cursor")}`);
-  console.log(`  source → ${scaffoldCursorBundleRoot()}`);
-  console.log("");
-  console.log("Reload Cursor skills if needed; see .cursor/WORKFLOW.md");
+  return {
+    targetDir: root,
+    cursorDir: join(root, ".cursor"),
+    sourceDir: scaffoldCursorBundleRoot(),
+  };
 }

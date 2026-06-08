@@ -17,7 +17,8 @@ import {
   runLangQueueRetry,
   runLangQueueScan,
 } from "./commands/lang-queue.js";
-import { runHooksInstall, runHooksPreCommit } from "./commands/hooks.js";
+import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./lang/queue.js";
+import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./commands/hooks.js";
 import { runSetup, runSetupCheck } from "./commands/setup.js";
 import { runSyncCursor } from "./commands/sync-cursor.js";
 import { runAnalyzePrep } from "./commands/analyze.js";
@@ -25,6 +26,29 @@ import { runGraphQuery } from "./commands/graph-query.js";
 import { runGraphImpact } from "./commands/graph-impact.js";
 import { runGraphMerge } from "./commands/graph-merge.js";
 import { runGraphReport } from "./commands/graph-report.js";
+import {
+  formatGraphQuery,
+  formatGraphReport,
+  formatGraphMerge,
+  formatGraphVisualize,
+  formatGraphImpact,
+} from "./interfaces/cli/format/graph.js";
+import { formatIndexReport } from "./interfaces/cli/format/index-cmd.js";
+import {
+  formatCommentsList,
+  formatCommentsInbox,
+  formatCommentsPlan,
+  formatCommentsShow,
+  formatCommentsResolve,
+} from "./interfaces/cli/format/comments.js";
+import {
+  formatAnalyzePrep,
+  formatSyncCursor,
+  formatHooksInstall,
+  formatSetupAudit,
+  formatLangAdd,
+  formatQueueScan,
+} from "./interfaces/cli/format/misc.js";
 import { ensureHubBundles } from "./graph/bundles.js";
 import { loadInMemoryGraph } from "./graph/loadGraph.js";
 import { runGraphVisualize } from "./commands/graph-visualize.js";
@@ -113,20 +137,23 @@ program
   .action(async (opts) => {
     const root = resolve(opts.cwd ?? process.cwd());
     if (opts.check) {
-      await runSetupCheck({ root, json: opts.json });
+      const audit = await runSetupCheck({ root });
+      if (opts.json) console.log(JSON.stringify(audit, null, 2));
+      else console.log(formatSetupAudit(audit));
       return;
     }
     const languages = opts.languages
       ? (opts.languages as string).split(",").map((c: string) => c.trim()).filter(Boolean)
       : undefined;
-    await runSetup({
+    const audit = await runSetup({
       root,
       languages,
       yes: opts.yes,
       force: opts.force,
       installDep: opts.installDep,
-      json: opts.json,
     });
+    if (opts.json) console.log(JSON.stringify(audit, null, 2));
+    else { console.log(formatSetupAudit(audit, true)); }
   });
 
 const lang = program.command("lang").description("Manage project languages");
@@ -137,10 +164,8 @@ lang
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("--label <label>", "Display name for the language")
   .action(async (code: string, opts) => {
-    await runLangAdd(code, {
-      root: resolve(opts.cwd ?? process.cwd()),
-      label: opts.label,
-    });
+    const result = await runLangAdd(code, { root: resolve(opts.cwd ?? process.cwd()), label: opts.label });
+    console.log(formatLangAdd(result));
   });
 
 const langQueue = lang.command("queue").description("Translation sync job queue");
@@ -152,11 +177,9 @@ langQueue
   .option("--lang <code>", "Filter jobs affecting a language")
   .option("--json", "JSON output")
   .action(async (opts) => {
-    await runLangQueuePending({
-      root: resolve(opts.cwd ?? process.cwd()),
-      lang: opts.lang,
-      json: opts.json,
-    });
+    const jobs = await runLangQueuePending({ root: resolve(opts.cwd ?? process.cwd()), lang: opts.lang });
+    if (opts.json) console.log(JSON.stringify({ jobs }, null, 2));
+    else console.log(formatPendingTable(jobs));
   });
 
 langQueue
@@ -166,11 +189,9 @@ langQueue
   .option("--limit <n>", "Max entries to show", (v) => parseInt(v, 10))
   .option("--json", "JSON output")
   .action(async (opts) => {
-    await runLangQueueResolved({
-      root: resolve(opts.cwd ?? process.cwd()),
-      limit: opts.limit,
-      json: opts.json,
-    });
+    const jobs = await runLangQueueResolved({ root: resolve(opts.cwd ?? process.cwd()), limit: opts.limit });
+    if (opts.json) console.log(JSON.stringify({ jobs }, null, 2));
+    else console.log(formatResolvedTable(jobs as Parameters<typeof formatResolvedTable>[0]));
   });
 
 langQueue
@@ -180,11 +201,9 @@ langQueue
   .option("--limit <n>", "Max entries to show", (v) => parseInt(v, 10))
   .option("--json", "JSON output")
   .action(async (opts) => {
-    await runLangQueueFailed({
-      root: resolve(opts.cwd ?? process.cwd()),
-      limit: opts.limit,
-      json: opts.json,
-    });
+    const jobs = await runLangQueueFailed({ root: resolve(opts.cwd ?? process.cwd()), limit: opts.limit });
+    if (opts.json) console.log(JSON.stringify({ jobs }, null, 2));
+    else console.log(formatFailedTable(jobs as Parameters<typeof formatFailedTable>[0]));
   });
 
 langQueue
@@ -192,7 +211,8 @@ langQueue
   .description("Reconcile translation queue without full index")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .action(async (opts) => {
-    await runLangQueueScan({ root: resolve(opts.cwd ?? process.cwd()) });
+    const result = await runLangQueueScan({ root: resolve(opts.cwd ?? process.cwd()) });
+    console.log(formatQueueScan(result));
   });
 
 langQueue
@@ -222,9 +242,8 @@ program
   .description("Refresh .cursor/commands and .cursor/skills from scaffold/cursor/ (no full re-init)")
   .option("-C, --cwd <path>", "Target directory", process.cwd())
   .action(async (opts) => {
-    await runSyncCursor({
-      targetDir: resolve(opts.cwd ?? process.cwd()),
-    });
+    const result = await runSyncCursor({ targetDir: resolve(opts.cwd ?? process.cwd()) });
+    console.log(formatSyncCursor(result));
   });
 
 const hooks = program.command("hooks").description("Git hooks for local doc workflow checks");
@@ -234,7 +253,8 @@ hooks
   .description("Install pre-commit hook (graph validate, translation queue, impact warnings)")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .action(async (opts) => {
-    await runHooksInstall({ root: resolve(opts.cwd ?? process.cwd()) });
+    const result = await runHooksInstall({ root: resolve(opts.cwd ?? process.cwd()) });
+    console.log(formatHooksInstall(result));
   });
 
 hooks
@@ -245,12 +265,19 @@ hooks
   .option("--skip-impact", "Skip graph impact advisory")
   .option("--skip-queue", "Skip translation queue check")
   .action(async (opts) => {
-    await runHooksPreCommit({
+    const report = await runHooksPreCommit({
       root: resolve(opts.cwd ?? process.cwd()),
       strict: opts.strict,
       skipImpact: opts.skipImpact,
       skipQueue: opts.skipQueue,
     });
+    const text = formatPreCommitReport(report);
+    if (text) console.log(text);
+    if (!report.skipped && report.errors.length > 0) { process.exitCode = 1; return; }
+    if (opts.strict && !report.skipped && report.warnings.length > 0) {
+      console.error("Strict mode: warnings block commit. Fix warnings or commit with --no-verify.");
+      process.exitCode = 1;
+    }
   });
 
 program
@@ -268,7 +295,7 @@ program
   )
   .option("--skip-validate", "Skip graph validate after refresh")
   .action(async (opts, cmd) => {
-    await runIndex({
+    const report = await runIndex({
       root: projectRootOpt(cmd),
       graphOnly: opts.graphOnly,
       docsOnly: opts.docsOnly,
@@ -277,6 +304,7 @@ program
       skipDocSemantics: opts.skipDocSemantics,
       skipValidate: opts.skipValidate,
     });
+    console.log(formatIndexReport(report));
   });
 
 program
@@ -298,7 +326,8 @@ program
       );
       process.exit(1);
     }
-    await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
+    const result = await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
+    console.log(formatAnalyzePrep(result));
   });
 
 const graph = program.command("graph").description("Traceability graph operations");
@@ -345,14 +374,15 @@ graph
   .option("--json", "JSON output for agents")
   .action(async (id: string, opts, cmd) => {
     const paths = await getPaths(cmd);
-    await runGraphQuery({
+    const result = await runGraphQuery({
       graphPath: paths.graph,
       seedId: id,
       direction: opts.direction as "out" | "in" | "both",
       depth: Number(opts.depth),
       edges: opts.edges,
-      json: opts.json,
     });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatGraphQuery(result));
   });
 
 graph
@@ -374,7 +404,7 @@ graph
       process.exitCode = 1;
       return;
     }
-    await runGraphImpact({
+    const result = await runGraphImpact({
       graphPath: paths.graph,
       rulesPath: paths.rulesImpact,
       projectRoot: paths.root,
@@ -384,8 +414,9 @@ graph
       git: opts.git,
       change: "content_change",
       output: opts.output,
-      json: opts.json,
     });
+    if (opts.json || opts.output) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatGraphImpact(result, opts.git));
   });
 
 graph
@@ -408,7 +439,7 @@ graph
   .option("--dry-run", "Compute merge stats without saving")
   .action(async (file: string | undefined, opts, cmd) => {
     const paths = await getPaths(cmd);
-    await runGraphMerge({
+    const result = await runGraphMerge({
       root: paths.root,
       inputPath: file,
       fromKnowledge: opts.fromKnowledge,
@@ -419,6 +450,7 @@ graph
       validate: !opts.noValidate,
       dryRun: opts.dryRun,
     });
+    console.log(formatGraphMerge(result));
   });
 
 graph
@@ -428,11 +460,9 @@ graph
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
     const paths = await getPaths(cmd);
-    await runGraphReport({
-      root: paths.root,
-      graphPath: opts.graph ?? paths.graph,
-      json: opts.json,
-    });
+    const result = await runGraphReport({ root: paths.root, graphPath: opts.graph ?? paths.graph });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatGraphReport(result));
   });
 
 graph
@@ -478,7 +508,7 @@ graph
   .option("--open", "Open the HTML file in the default browser")
   .action(async (opts, cmd) => {
     const paths = await getPaths(cmd);
-    await runGraphVisualize({
+    const result = await runGraphVisualize({
       root: paths.root,
       graphPath: opts.graph ?? paths.graph,
       knowledgePath: opts.knowledge,
@@ -486,6 +516,7 @@ graph
       open: opts.open,
       skipKnowledge: opts.noKnowledge,
     });
+    console.log(formatGraphVisualize(result));
   });
 
 const comments = program
@@ -499,12 +530,9 @@ comments
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    await runCommentsList({
-      root: projectRootOpt(cmd),
-      filePath: opts.file,
-      status: opts.status,
-      json: opts.json,
-    });
+    const result = await runCommentsList({ root: projectRootOpt(cmd), filePath: opts.file, status: opts.status });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsList(result));
   });
 
 comments
@@ -516,12 +544,9 @@ comments
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    await runCommentsInbox({
-      root: projectRootOpt(cmd),
-      filePath: opts.file,
-      status: opts.status,
-      json: opts.json,
-    });
+    const inbox = await runCommentsInbox({ root: projectRootOpt(cmd), filePath: opts.file, status: opts.status });
+    if (opts.json) console.log(JSON.stringify(inbox, null, 2));
+    else console.log(formatCommentsInbox(inbox));
   });
 
 comments
@@ -537,13 +562,9 @@ comments
       process.exitCode = 1;
       return;
     }
-    await runCommentsPlan({
-      root: projectRootOpt(cmd),
-      threadId: id,
-      filePath: opts.file,
-      pick: opts.pick,
-      json: opts.json,
-    });
+    const plan = await runCommentsPlan({ root: projectRootOpt(cmd), threadId: id, filePath: opts.file, pick: opts.pick });
+    if (opts.json) console.log(JSON.stringify(plan, null, 2));
+    else console.log(formatCommentsPlan(plan));
   });
 
 comments
@@ -552,12 +573,9 @@ comments
   .option("--file <path>", "Logical file path when thread id alone is ambiguous")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string, opts, cmd) => {
-    await runCommentsShow({
-      root: projectRootOpt(cmd),
-      threadId,
-      filePath: opts.file,
-      json: opts.json,
-    });
+    const thread = await runCommentsShow({ root: projectRootOpt(cmd), threadId, filePath: opts.file });
+    if (opts.json) console.log(JSON.stringify(thread, null, 2));
+    else console.log(formatCommentsShow(thread));
   });
 
 comments
@@ -570,17 +588,17 @@ comments
   .option("--dry-run", "Preview resolve without writing files")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string, opts, cmd) => {
-    await runCommentsResolve({
+    const result = await runCommentsResolve({
       root: projectRootOpt(cmd),
       threadId,
       filePath: opts.file,
       resolvedBy: opts.by,
       commitSha: opts.commitSha,
-      expectedVersion:
-        opts.expectedVersion != null ? Number(opts.expectedVersion) : undefined,
+      expectedVersion: opts.expectedVersion != null ? Number(opts.expectedVersion) : undefined,
       dryRun: opts.dryRun,
-      json: opts.json,
     });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsResolve(result, threadId));
   });
 
 const prototype = program

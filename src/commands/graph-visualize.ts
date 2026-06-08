@@ -21,7 +21,14 @@ export interface GraphVisualizeOptions {
   skipKnowledge?: boolean;
 }
 
-export async function runGraphVisualize(opts: GraphVisualizeOptions): Promise<string> {
+export interface GraphVisualizeResult {
+  outputPath: string;
+  nodeCount: number;
+  edgeCount: number;
+  knowledgeStats?: ReturnType<typeof computeKnowledgeStats>;
+}
+
+export async function runGraphVisualize(opts: GraphVisualizeOptions): Promise<GraphVisualizeResult> {
   const paths = await resolveProjectPaths(opts.root);
   const graphPath = opts.graphPath ?? paths.graph;
   const knowledgePath =
@@ -52,23 +59,14 @@ export async function runGraphVisualize(opts: GraphVisualizeOptions): Promise<st
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, html, "utf8");
 
-  console.log(`Wrote ${outputPath}`);
-  console.log(`  ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
-  if (knowledge) {
-    const k = computeKnowledgeStats(knowledge);
-    console.log(
-      `  knowledge: ${k.useCases} use cases, ${k.features} features, ${k.actors} actors`,
-    );
-  } else {
-    console.log("  knowledge: (not loaded)");
-  }
-  console.log("");
-  console.log("Open in a browser:");
-  console.log(`  file://${outputPath}`);
-
   if (opts.open) {
     await openInBrowser(outputPath);
   }
 
-  return outputPath;
+  return {
+    outputPath,
+    nodeCount: graph.nodes.length,
+    edgeCount: graph.edges.length,
+    knowledgeStats: knowledge ? computeKnowledgeStats(knowledge) : undefined,
+  };
 }

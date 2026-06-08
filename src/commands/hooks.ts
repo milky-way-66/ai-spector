@@ -175,23 +175,8 @@ export function formatPreCommitReport(report: PreCommitReport): string {
   return lines.join("\n");
 }
 
-export async function runHooksPreCommit(opts: PreCommitOptions = {}): Promise<void> {
-  const report = await runPreCommitCheck(opts);
-  const text = formatPreCommitReport(report);
-  if (text) {
-    console.log(text);
-  }
-  if (report.skipped) {
-    return;
-  }
-  if (report.errors.length > 0) {
-    process.exitCode = 1;
-    return;
-  }
-  if (opts.strict && report.warnings.length > 0) {
-    console.error("Strict mode: warnings block commit. Fix warnings or commit with --no-verify.");
-    process.exitCode = 1;
-  }
+export async function runHooksPreCommit(opts: PreCommitOptions = {}): Promise<PreCommitReport> {
+  return runPreCommitCheck(opts);
 }
 
 const PRE_COMMIT_HOOK = `#!/bin/sh
@@ -255,15 +240,14 @@ export async function installGitHooks(projectRoot: string): Promise<string> {
   return hookPath;
 }
 
-export async function runHooksInstall(opts: { root?: string } = {}): Promise<void> {
+export interface HooksInstallResult {
+  hookPath: string;
+  gitInitialized: boolean;
+}
+
+export async function runHooksInstall(opts: { root?: string } = {}): Promise<HooksInstallResult> {
   const { root } = await loadDocflowConfig(opts.root);
-  const initialized = await ensureGitRepository(root);
-  if (initialized) {
-    console.log(`Initialized git repository at ${root}`);
-  }
+  const gitInitialized = await ensureGitRepository(root);
   const hookPath = await installGitHooks(root);
-  console.log(`Installed pre-commit hook: ${hookPath}`);
-  console.log("Checks on staged docs/graph: graph validate (blocks), translation queue + impact (warn).");
-  console.log("Strict warnings: npx ai-spector hooks pre-commit --strict");
-  console.log("Bypass once: git commit --no-verify");
+  return { hookPath, gitInitialized };
 }

@@ -10,7 +10,8 @@ import {
 import { mergePatch, normalizePatch } from "../graph/merge.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
-import { validateGraph, formatIssues } from "./validate.js";
+import { validateGraph } from "./validate.js";
+import type { ValidationIssue } from "../types.js";
 
 export interface GraphMergeOptions {
   root?: string;
@@ -26,18 +27,24 @@ export interface GraphMergeOptions {
   dryRun?: boolean;
 }
 
-export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
+export interface GraphMergeResult {
+  graphPath: string;
+  stats: { nodesCreated: number; nodesUpdated: number; edgesAdded: number; nodesSkipped: number };
+  dryRun: boolean;
+  patchWritten?: string;
+  knowledgePreMerged?: boolean;
+  knowledgeMissingWarning?: boolean;
+  validationOk?: boolean;
+  validationIssues?: ValidationIssue[];
+  validationWarnCount?: number;
+}
+
+export async function runGraphMerge(opts: GraphMergeOptions): Promise<GraphMergeResult> {
   const paths = await resolveProjectPaths(opts.root);
   const graphPath = opts.graphPath ?? paths.graph;
-  const knowledgePath = join(
-    paths.root,
-    ".ai-spector/.docflow/analysis/knowledge.json",
-  );
+  const knowledgePath = join(paths.root, ".ai-spector/.docflow/analysis/knowledge.json");
   const defaultPatchPath = join(paths.root, ".ai-spector/.docflow/extract/patch.json");
-  const semanticPatchPath = join(
-    paths.root,
-    ".ai-spector/.docflow/extract/semantic-links.patch.json",
-  );
+  const semanticPatchPath = join(paths.root, ".ai-spector/.docflow/extract/semantic-links.patch.json");
 
   let inputPath = opts.inputPath;
   if (opts.semantic) {
@@ -50,32 +57,33 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
   } else if (opts.fromKnowledge) {
     inputPath = knowledgePath;
   } else if (!inputPath) {
-    if (await pathExists(defaultPatchPath)) {
-      inputPath = defaultPatchPath;
-    } else {
-      inputPath = knowledgePath;
-    }
+    inputPath = (await pathExists(defaultPatchPath)) ? defaultPatchPath : knowledgePath;
   }
 
   const raw = await readJson<unknown>(inputPath);
   const patch = await resolvePatch(raw, inputPath);
 
+  const result: GraphMergeResult = {
+    graphPath,
+    stats: { nodesCreated: 0, nodesUpdated: 0, edgesAdded: 0, nodesSkipped: 0 },
+    dryRun: opts.dryRun === true,
+  };
+
   if (opts.writePatch) {
     await writeJson(opts.writePatch, patch);
-    console.log(`Wrote patch → ${opts.writePatch}`);
+    result.patchWritten = opts.writePatch;
   }
 
   const graph = await loadInMemoryGraph(graphPath);
 
-  // When merging a patch file, optionally pre-merge knowledge.json so domain nodes exist
   if (opts.withKnowledge && !opts.fromKnowledge && !opts.semantic) {
     if (await pathExists(knowledgePath)) {
       const rawKnowledge = await readJson<unknown>(knowledgePath);
       const knowledgePatch = await resolvePatch(rawKnowledge, knowledgePath);
       mergePatch(graph, knowledgePatch);
-      console.log(`Pre-merged knowledge.json (domain nodes ready)`);
+      result.knowledgePreMerged = true;
     } else {
-      console.warn(`--with-knowledge: no knowledge.json found at ${knowledgePath}, skipping`);
+      result.knowledgeMissingWarning = true;
     }
   }
 
@@ -83,15 +91,10 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
     semanticOnly: opts.semantic === true,
     patchSourcePath: inputPath,
   });
-
-  console.log(
-    `Merge: +${stats.nodesCreated} nodes, ~${stats.nodesUpdated} updated, +${stats.edgesAdded} edges` +
-      (stats.nodesSkipped ? `, ${stats.nodesSkipped} structure nodes skipped` : ""),
-  );
+  result.stats = stats;
 
   if (opts.dryRun) {
-    console.log("(dry-run: graph not saved)");
-    return;
+    return result;
   }
 
   await writeJson(graphPath, graph.toTraceabilityGraph());
@@ -115,22 +118,16 @@ export async function runGraphMerge(opts: GraphMergeOptions): Promise<void> {
       rulesPath: paths.rulesTraceability,
     });
     const errors = issues.filter((i) => i.severity === "error");
+    const warns = issues.filter((i) => i.severity === "warn");
+    result.validationIssues = issues;
+    result.validationOk = errors.length === 0;
+    result.validationWarnCount = warns.length;
     if (errors.length > 0) {
-      console.log(formatIssues(issues));
-      console.error("");
-      console.error("Merge rolled back nothing — graph was saved but validation failed.");
-      console.error("Fix the issues above, then re-run: npx ai-spector graph merge --from-knowledge");
-      console.error("Or run /analyze in Cursor (agent should show these errors and help fix).");
       throw new Error("Graph validation failed after merge");
     }
-    const warns = issues.filter((i) => i.severity === "warn");
-    if (warns.length > 0) {
-      console.log(formatIssues(warns));
-    }
-    console.log("Graph validate: OK");
   }
 
-  console.log(`Wrote ${graphPath}`);
+  return result;
 }
 
 async function resolvePatch(raw: unknown, sourcePath: string): Promise<ExtractPatch> {
@@ -143,7 +140,6 @@ async function resolvePatch(raw: unknown, sourcePath: string): Promise<ExtractPa
     }
     return knowledgeToPatch(knowledge);
   }
-
   const patch = normalizePatch(raw as ExtractPatch);
   if (patch.nodes.length === 0 && patch.edges.length === 0) {
     throw new Error(`Empty patch in ${sourcePath}`);

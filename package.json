@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.6.6",
+  "version": "0.6.8",
   "workspaces": [
     "packages/*"
   ],
@@ -40,7 +40,8 @@
     "LICENSE"
   ],
   "bin": {
-    "ai-spector": "./dist/cli.js"
+    "ai-spector": "./dist/cli.js",
+    "ai-spector-mcp": "./dist/interfaces/mcp/server.js"
   },
   "scripts": {
     "test": "vitest run",
@@ -63,15 +64,17 @@
     "themes:preview": "node dist/cli.js prototype preview"
   },
   "dependencies": {
-    "ai-spector-graph": "^0.4.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/mdast": "^4.0.4",
+    "ai-spector-graph": "^0.4.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0"
+    "unist-util-visit": "^5.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

@@ -11,6 +11,7 @@ import {
   resolveImpactOrigins,
   type ResolvedOrigin,
 } from "../graph/resolve.js";
+import type { ImpactResult } from "ai-spector-graph";
 
 export interface GraphImpactCliOptions {
   graphPath: string;
@@ -22,7 +23,6 @@ export interface GraphImpactCliOptions {
   git?: boolean;
   change: string;
   output?: string;
-  json?: boolean;
 }
 
 const PER_DOMAIN_FILE_RE = /(?:\/|^)(uc|f|ent)-\d+[_-]/i;
@@ -54,7 +54,6 @@ export function resolveImpactOriginId(
   if (opts.originId?.trim()) {
     const id = opts.originId.trim();
     if (!g.nodesById.has(id)) {
-      // Suggest document ids from the active graph to help agents using stale builtin seeds
       const docNodes = [...g.nodesById.values()]
         .filter((n) => n.type === "document")
         .map((n) => n.id)
@@ -75,17 +74,14 @@ export function resolveImpactOriginId(
     nodeId: opts.originId,
   });
   const primary = pickPrimaryImpactOrigin(origins);
-  if (!primary) {
-    const hint = buildResolveFailureHint(opts);
-    throw new Error(hint);
-  }
+  if (!primary) throw new Error(buildResolveFailureHint(opts));
   return { originId: primary.id, resolved: primary };
 }
 
 export async function runGraphImpactFromGit(
   g: Awaited<ReturnType<typeof loadInMemoryGraph>>,
   opts: GraphImpactCliOptions,
-): Promise<void> {
+): Promise<ImpactResult> {
   const collected = await collectGitDiff(opts.projectRoot);
   if (collected.notRepo) {
     throw new Error(
@@ -108,24 +104,17 @@ export async function runGraphImpactFromGit(
       affectedOutputPaths: [],
       noTraceabilityImpact: true,
       changedFiles: files,
-    };
-    if (opts.json || opts.output) {
-      if (opts.output) {
-        await mkdir(dirname(opts.output), { recursive: true });
-        await writeJson(opts.output, noImpact);
-      }
-      console.log(JSON.stringify(noImpact, null, 2));
-    } else {
-      const fileList = files.length > 0 ? files.join(", ") : "(none matched)";
-      console.log(`No traceability impact found.\nChanged files not in graph: ${fileList}`);
+    } as unknown as ImpactResult;
+    if (opts.output) {
+      await mkdir(dirname(opts.output), { recursive: true });
+      await writeJson(opts.output, noImpact);
     }
-    return;
+    return noImpact;
   }
 
   const rules = await loadImpactRules(opts.rulesPath);
   const regions = parseGitDiffRegions(collected.diff);
   const seedsByRegion: ResolvedOrigin[] = [];
-
   for (const region of regions) {
     const regionOrigins = resolveImpactOrigins(g, {
       file: region.file,
@@ -133,132 +122,106 @@ export async function runGraphImpactFromGit(
       sectionAnchor: region.sectionAnchor,
     });
     const primary = pickPrimaryImpactOrigin(regionOrigins);
-    if (primary) {
-      seedsByRegion.push(primary);
-    }
+    if (primary) seedsByRegion.push(primary);
   }
 
   const uniqueSeeds = new Map<string, ResolvedOrigin>();
   for (const o of seedsByRegion.length > 0 ? seedsByRegion : origins) {
-    if (!uniqueSeeds.has(o.id)) {
-      uniqueSeeds.set(o.id, o);
-    }
+    if (!uniqueSeeds.has(o.id)) uniqueSeeds.set(o.id, o);
   }
 
   const results = [...uniqueSeeds.values()].map((seed) => {
-    const result = computeImpact(g, seed.id, opts.change, rules);
-    result.resolvedFrom = seed;
-    return result;
+    const r = computeImpact(g, seed.id, opts.change, rules);
+    r.resolvedFrom = seed;
+    return r;
   });
 
   const gitSeeds = [...uniqueSeeds.values()].map((s) => {
-    const region = regions.find(
-      (r) =>
-        resolveImpactOrigins(g, {
-          file: r.file,
-          heading: r.heading,
-          sectionAnchor: r.sectionAnchor,
-        }).some((o) => o.id === s.id),
+    const region = regions.find((r) =>
+      resolveImpactOrigins(g, { file: r.file, heading: r.heading, sectionAnchor: r.sectionAnchor }).some((o) => o.id === s.id),
     );
-    return {
-      id: s.id,
-      type: s.type,
-      reason: s.reason,
-      file: region?.file,
-      heading: region?.heading,
-    };
+    return { id: s.id, type: s.type, reason: s.reason, file: region?.file, heading: region?.heading };
   });
 
-  const result =
-    results.length === 1
-      ? { ...results[0], gitSeeds }
-      : mergeImpactResults(results, gitSeeds);
+  const result = results.length === 1 ? { ...results[0], gitSeeds } : mergeImpactResults(results, gitSeeds);
 
   if (opts.output) {
     await mkdir(dirname(opts.output), { recursive: true });
     await writeJson(opts.output, result);
   }
 
-  if (opts.json || opts.output) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`Impact from git diff (${uniqueSeeds.size} seed(s))`);
-  for (const bucket of ["regenerate", "review"] as const) {
-    const entries = result[bucket];
-    console.log(`\n${bucket}:`);
-    if (entries.length === 0) {
-      console.log("  (none)");
-      continue;
-    }
-    for (const e of entries) {
-      const path = e.projectionPath ? ` → ${e.projectionPath}` : "";
-      console.log(`  - ${e.id} (${e.type})${path}`);
-    }
-  }
-  if (result.affectedOutputPaths.length > 0) {
-    console.log("\naffected output paths:");
-    for (const p of result.affectedOutputPaths) {
-      console.log(`  - ${p}`);
-    }
-  }
-  if (result.staleTranslations && result.staleTranslations.length > 0) {
-    console.log("\nstale translations (may need update):");
-    for (const e of result.staleTranslations) {
-      console.log(`  - ${e.id} (${e.reason})`);
-    }
-  }
+  return result;
 }
 
-export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<void> {
-  const g = await loadInMemoryGraph(opts.graphPath);
+export async function computeImpactForRegen(
+  root: string,
+  graphPath: string,
+  rulesPath: string,
+  originId?: string,
+): Promise<{
+  affectedNodeIds: Set<string>;
+  affectedOutputPaths: string[];
+  noImpact: boolean;
+  reason: string;
+  graph: Awaited<ReturnType<typeof loadInMemoryGraph>>;
+}> {
+  const g = await loadInMemoryGraph(graphPath);
+  let nodeIds: Set<string>;
+  let outputPaths: string[] = [];
+  let reason: string;
 
-  if (opts.git) {
-    await runGraphImpactFromGit(g, opts);
-    return;
+  if (originId) {
+    const { originId: resolvedId } = resolveImpactOriginId(g, { originId });
+    const rules = await loadImpactRules(rulesPath);
+    const result = computeImpact(g, resolvedId, "changed", rules);
+    nodeIds = new Set([resolvedId, ...result.regenerate.map((e) => e.id), ...result.review.map((e) => e.id)]);
+    outputPaths = result.affectedOutputPaths ?? [];
+    reason = `origin: ${resolvedId}`;
+  } else {
+    const collected = await collectGitDiff(root);
+    if (collected.notRepo || collected.empty) {
+      return { affectedNodeIds: new Set(), affectedOutputPaths: [], noImpact: true, reason: collected.notRepo ? "not a git repo" : "no changes", graph: g };
+    }
+    const origins = resolveFromGitDiff(g, collected.diff);
+    if (origins.length === 0) {
+      return { affectedNodeIds: new Set(), affectedOutputPaths: [], noImpact: true, reason: "changed files not in graph", graph: g };
+    }
+    const rules = await loadImpactRules(rulesPath);
+    const regions = parseGitDiffRegions(collected.diff);
+    const uniqueSeeds = new Map<string, ResolvedOrigin>();
+    for (const region of regions) {
+      const regionOrigins = resolveImpactOrigins(g, { file: region.file, heading: region.heading, sectionAnchor: region.sectionAnchor });
+      const primary = pickPrimaryImpactOrigin(regionOrigins);
+      if (primary && !uniqueSeeds.has(primary.id)) uniqueSeeds.set(primary.id, primary);
+    }
+    for (const o of origins) {
+      if (!uniqueSeeds.has(o.id)) uniqueSeeds.set(o.id, o);
+    }
+    nodeIds = new Set<string>();
+    for (const seed of uniqueSeeds.values()) {
+      const result = computeImpact(g, seed.id, "changed", rules);
+      nodeIds.add(seed.id);
+      for (const e of result.regenerate) nodeIds.add(e.id);
+      for (const e of result.review) nodeIds.add(e.id);
+      outputPaths.push(...(result.affectedOutputPaths ?? []));
+    }
+    outputPaths = [...new Set(outputPaths)];
+    reason = `git diff: ${uniqueSeeds.size} seed(s) — ${[...uniqueSeeds.keys()].join(", ")}`;
   }
 
+  return { affectedNodeIds: nodeIds, affectedOutputPaths: outputPaths, noImpact: false, reason, graph: g };
+}
+
+export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<ImpactResult> {
+  const g = await loadInMemoryGraph(opts.graphPath);
+  if (opts.git) return runGraphImpactFromGit(g, opts);
   const { originId, resolved } = resolveImpactOriginId(g, opts);
   const rules = await loadImpactRules(opts.rulesPath);
   const result = computeImpact(g, originId, opts.change, rules);
-  if (resolved) {
-    result.resolvedFrom = resolved;
-  }
-
+  if (resolved) result.resolvedFrom = resolved;
   if (opts.output) {
     await mkdir(dirname(opts.output), { recursive: true });
     await writeJson(opts.output, result);
   }
-
-  if (opts.json || opts.output) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`Impact from ${result.origin.id} (${result.origin.change})`);
-  for (const bucket of ["regenerate", "review"] as const) {
-    const entries = result[bucket];
-    console.log(`\n${bucket}:`);
-    if (entries.length === 0) {
-      console.log("  (none)");
-      continue;
-    }
-    for (const e of entries) {
-      const path = e.projectionPath ? ` → ${e.projectionPath}` : "";
-      console.log(`  - ${e.id} (${e.type})${path}`);
-    }
-  }
-  if (result.affectedOutputPaths.length > 0) {
-    console.log("\naffected output paths:");
-    for (const p of result.affectedOutputPaths) {
-      console.log(`  - ${p}`);
-    }
-  }
-  if (result.staleTranslations && result.staleTranslations.length > 0) {
-    console.log("\nstale translations (may need update):");
-    for (const e of result.staleTranslations) {
-      console.log(`  - ${e.id} (${e.reason})`);
-    }
-  }
+  return result;
 }

@@ -1,0 +1,120 @@
+import { resolveProjectPaths } from "../../../util/paths.js";
+import { loadInMemoryGraph } from "../../../graph/loadGraph.js";
+import { querySubgraph } from "../../../graph/query.js";
+import {
+  computeImpact,
+  loadImpactRules,
+  mergeImpactResults,
+} from "../../../graph/impact.js";
+import {
+  resolveImpactOrigins,
+  pickPrimaryImpactOrigin,
+  resolveFromGitDiff,
+  parseGitDiffRegions,
+} from "../../../graph/resolve.js";
+import { collectGitDiff } from "../../../util/git-diff.js";
+import { validateGraph } from "../../../commands/validate.js";
+import { runGraphMerge } from "../../../commands/graph-merge.js";
+import type { EdgeType } from "../../../types.js";
+import type {
+  GraphQuerySchema,
+  GraphImpactSchema,
+  GraphValidateSchema,
+  GraphMergeSchema,
+} from "../schemas.js";
+import type { z } from "zod";
+
+export async function toolGraphQuery(input: z.infer<typeof GraphQuerySchema>) {
+  const paths = await resolveProjectPaths(input.root);
+  const g = await loadInMemoryGraph(paths.graph);
+
+  if (!g.nodesById.has(input.seedId)) {
+    const docIds = [...g.nodesById.values()]
+      .filter((n) => n.type === "document")
+      .map((n) => n.id)
+      .slice(0, 10);
+    throw new Error(
+      `Unknown node id: ${input.seedId}\nDocument ids in current graph:\n${docIds.map((d) => `  ${d}`).join("\n")}`,
+    );
+  }
+
+  const edgeTypes = input.edges
+    ? (input.edges.split(",").map((s) => s.trim()) as EdgeType[])
+    : undefined;
+
+  const result = querySubgraph(g, input.seedId, {
+    direction: input.direction,
+    depth: input.depth,
+    edgeTypes,
+  });
+
+  return result;
+}
+
+export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) {
+  const paths = await resolveProjectPaths(input.root);
+  const g = await loadInMemoryGraph(paths.graph);
+  const rules = await loadImpactRules(paths.rulesImpact);
+
+  if (input.git) {
+    const collected = await collectGitDiff(paths.root);
+    if (collected.notRepo) throw new Error("Not a git repository.");
+    if (collected.empty) throw new Error("No staged/unstaged changes found.");
+
+    const origins = resolveFromGitDiff(g, collected.diff);
+    if (origins.length === 0) {
+      const files = parseGitDiffRegions(collected.diff).map((r) => r.file);
+      return {
+        origin: { id: "(git diff)", type: "none", change: input.change },
+        regenerate: [],
+        review: [],
+        affectedOutputPaths: [],
+        noTraceabilityImpact: true,
+        changedFiles: files,
+      };
+    }
+
+    const results = origins.map((o) =>
+      computeImpact(g, o.id, input.change, rules),
+    );
+    return mergeImpactResults(results, origins);
+  }
+
+  const resolvedOrigins = resolveImpactOrigins(g, {
+    file: input.file,
+    heading: input.heading,
+    nodeId: input.originId,
+  });
+  const primary = pickPrimaryImpactOrigin(resolvedOrigins);
+  if (!primary) {
+    throw new Error(
+      "Could not resolve impact origin. Provide originId, file, or set git:true.",
+    );
+  }
+
+  return computeImpact(g, primary.id, input.change, rules);
+}
+
+export async function toolGraphValidate(input: z.infer<typeof GraphValidateSchema>) {
+  const paths = await resolveProjectPaths(input.root);
+  const issues = await validateGraph({
+    graphPath: paths.graph,
+    schemaPath: paths.schema,
+    registryPath: paths.registry,
+    rulesPath: paths.rulesTraceability,
+  });
+  const errors = issues.filter((i) => i.severity === "error");
+  const warnings = issues.filter((i) => i.severity === "warn");
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+export async function toolGraphMerge(input: z.infer<typeof GraphMergeSchema>) {
+  const paths = await resolveProjectPaths(input.root);
+  await runGraphMerge({
+    root: input.root,
+    fromKnowledge: input.fromKnowledge,
+    graphPath: paths.graph,
+    validate: false,
+  });
+  return { merged: true };
+}

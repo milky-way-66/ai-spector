@@ -511,8 +511,6 @@ export async function runIndex(
     });
   }
 
-  printIndexSummary(steps, failed);
-
   if (failed) {
     const first = steps.find((s) => s.status === "failed");
     throw new Error(
@@ -521,32 +519,4 @@ export async function runIndex(
   }
 
   return { steps, failed };
-}
-
-function printIndexSummary(steps: IndexStepResult[], failed: boolean): void {
-  console.log("");
-  console.log("Index refresh summary");
-  console.log("─────────────────────");
-  for (const s of steps) {
-    const icon = s.status === "ok" ? "✓" : s.status === "skipped" ? "○" : "✗";
-    console.log(`  ${icon} ${s.label}: ${s.status}`);
-    if (s.detail) {
-      for (const line of s.detail.split("\n")) {
-        console.log(`      ${line}`);
-      }
-    }
-  }
-  console.log("");
-  if (failed) {
-    console.log("Some steps failed. Graph/knowledge may be partially updated.");
-    console.log("Re-run after fixing, or use flags: --skip-merge, --graph-only");
-  } else {
-    console.log("All requested steps completed.");
-    console.log(
-      "Index merges existing knowledge.json plus UC/F/actor ids parsed from docs/srs and docs/basic-design bodies.",
-    );
-    console.log(
-      "Full semantic re-extract (actors, NFRs, data model): run /analyze in Cursor → knowledge.json.",
-    );
-  }
 }
