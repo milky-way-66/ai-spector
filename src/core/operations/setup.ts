@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { loadDocflowConfig } from "../config/load.js";
 import { runInit } from "./init.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
+import { isCocoindexConfigured, runCocoindexSetup } from "./cocoindex.js";
 import { runSyncCursor } from "./sync-cursor.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
@@ -293,6 +294,17 @@ export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
   }
 
   await mkdir(join(root, "docs/data-source"), { recursive: true });
+
+  // Offer CocoIndex setup when interactive and not yet configured
+  if (interactive && !(await isCocoindexConfigured(root))) {
+    const setupCoco = await promptYesNo(
+      "Enable CocoIndex for semantic doc search? (requires Python 3.11+)",
+      false,
+    );
+    if (setupCoco) {
+      await runCocoindexSetup({ root });
+    }
+  }
 
   if (opts.installDep) {
     try {

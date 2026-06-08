@@ -82,5 +82,56 @@ def docs_flow(flow_builder: cocoindex.FlowBuilder, db: cocoindex.DataScope):
         chunks.transform(embed).save_to(db["doc_chunks"], storage)
 
 
+def run_search(query: str, limit: int, threshold: float) -> None:
+    """Semantic search — prints JSON array of results to stdout."""
+    import json
+
+    try:
+        embed_fn = make_embed()
+        query_vec = embed_fn.embed_query(query)
+    except Exception as e:
+        print(json.dumps({"error": f"Embedding failed: {e}"}))
+        return
+
+    try:
+        storage = make_storage()
+        rows = storage.search(
+            table="doc_chunks",
+            vector=query_vec,
+            limit=limit,
+            score_threshold=threshold,
+        )
+    except Exception as e:
+        print(json.dumps({"error": f"Search failed: {e}"}))
+        return
+
+    results = [
+        {
+            "docPath": row.get("filename", ""),
+            "heading": row.get("heading", ""),
+            "excerpt": row.get("text", ""),
+            "score": round(float(row.get("score", 0)), 4),
+        }
+        for row in rows
+    ]
+    print(json.dumps(results))
+
+
 if __name__ == "__main__":
-    cocoindex.cli.main()
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "search":
+        import argparse
+
+        parser = argparse.ArgumentParser(prog="pipeline.py search")
+        parser.add_argument("--query", required=True)
+        parser.add_argument("--limit", type=int, default=5)
+        parser.add_argument(
+            "--threshold",
+            type=float,
+            default=float(os.getenv("COCOINDEX_SIMILARITY_THRESHOLD", "0.75")),
+        )
+        args = parser.parse_args(sys.argv[2:])
+        run_search(args.query, args.limit, args.threshold)
+    else:
+        cocoindex.cli.main()

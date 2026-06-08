@@ -15,6 +15,7 @@ import {
   CommentsResolveSchema,
   TemplateListSchema,
   TemplateInspectSchema,
+  DocsSearchSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge } from "./tools/graph.js";
@@ -26,6 +27,7 @@ import {
   toolCommentsResolve,
 } from "./tools/comments.js";
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
+import { toolDocsSearch } from "./tools/cocoindex.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -149,6 +151,18 @@ server.tool(
   TemplateInspectSchema.shape,
   async (input) => {
     const result = await toolTemplateInspect(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── CocoIndex tools ───────────────────────────────────────────────────────────
+
+server.tool(
+  "docs_search",
+  "Semantic search over project documentation. Returns matching sections with similarity scores and traceability graph node IDs. Requires CocoIndex to be set up (npx ai-spector cocoindex setup).",
+  DocsSearchSchema.shape,
+  async (input) => {
+    const result = await toolDocsSearch(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

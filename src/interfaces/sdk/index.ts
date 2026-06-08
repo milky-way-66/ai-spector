@@ -20,6 +20,20 @@ export type { GraphQueryCliOptions } from "../../core/operations/graph-query.js"
 export { runIndex } from "../../core/operations/index.js";
 export type { IndexReport, IndexOptions } from "../../core/operations/index.js";
 
+// CocoIndex
+export {
+  runCocoindexSetup,
+  runCocoindexSearch,
+  isCocoindexConfigured,
+} from "../../core/operations/cocoindex.js";
+export type {
+  CocoindexSetupOptions,
+  CocoindexSetupResult,
+  CocoindexSearchOptions,
+  CocoindexSearchResult,
+  SearchResult as CocoindexSearchHit,
+} from "../../core/operations/cocoindex.js";
+
 // Comments
 export {
   runCommentsList,

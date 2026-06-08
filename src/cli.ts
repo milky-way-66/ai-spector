@@ -62,6 +62,11 @@ import {
 } from "./core/operations/comments.js";
 import { runProvenanceLink } from "./core/graph/provenance.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
+import { runCocoindexSetup, runCocoindexSearch } from "./core/operations/cocoindex.js";
+import {
+  formatCocoindexSetup,
+  formatCocoindexSearch,
+} from "./interfaces/cli/format/cocoindex.js";
 import {
   runPrototypeInstallPreviews,
   runPrototypeManifest,
@@ -758,6 +763,74 @@ graph
   });
 
 registerTemplateCommand(program);
+
+// ── CocoIndex ──────────────────────────────────────────────────────────────────
+
+const cocoindex = program
+  .command("cocoindex")
+  .description("CocoIndex semantic search add-on — index docs and search by meaning");
+
+cocoindex
+  .command("setup")
+  .description("Scaffold the CocoIndex pipeline into this project")
+  .option("--root <path>", "Project root (default: cwd)")
+  .option("--force", "Overwrite existing pipeline files")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runCocoindexSetup({ root: opts.root, force: opts.force });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCocoindexSetup(result));
+  });
+
+cocoindex
+  .command("index")
+  .description("Run the CocoIndex pipeline to update embeddings (requires Python)")
+  .option("--root <path>", "Project root (default: cwd)")
+  .action(async (opts) => {
+    const { resolve: res } = await import("node:path");
+    const { isCocoindexConfigured, cocoindexPipelinePath } = await import(
+      "./core/operations/cocoindex.js"
+    );
+    const root = res(opts.root ?? process.cwd());
+    if (!(await isCocoindexConfigured(root))) {
+      console.error("CocoIndex is not configured. Run: npx ai-spector cocoindex setup");
+      process.exitCode = 1;
+      return;
+    }
+    const pipelinePath = cocoindexPipelinePath(root);
+    const { spawn } = await import("node:child_process");
+    await new Promise<void>((resolveP, reject) => {
+      const child = spawn("python", [pipelinePath, "cocoindex", "update"], {
+        cwd: root,
+        stdio: "inherit",
+        shell: process.platform === "win32",
+      });
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code === 0) resolveP();
+        else reject(new Error(`python pipeline exited with code ${code}`));
+      });
+    });
+  });
+
+cocoindex
+  .command("search")
+  .description("Semantic search over indexed project docs")
+  .requiredOption("--query <text>", "Natural language search query")
+  .option("--root <path>", "Project root (default: cwd)")
+  .option("--limit <n>", "Max results", "5")
+  .option("--threshold <n>", "Minimum similarity score 0–1", "0.75")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runCocoindexSearch({
+      root: opts.root,
+      query: opts.query,
+      limit: Number(opts.limit),
+      threshold: Number(opts.threshold),
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCocoindexSearch(result));
+  });
 
 program.parseAsync(process.argv).catch((err) => {
   const msg = err instanceof Error ? err.message : String(err);

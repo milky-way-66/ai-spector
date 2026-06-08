@@ -86,6 +86,25 @@ export const CommentsResolveSchema = RootSchema.extend({
   dryRun: z.boolean().optional().describe("Preview resolution without writing"),
 });
 
+// ── CocoIndex ─────────────────────────────────────────────────────────────────
+
+export const DocsSearchSchema = RootSchema.extend({
+  query: z.string().describe("Natural language search query over project docs"),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional()
+    .describe("Max results to return (default: 5)"),
+  threshold: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Minimum similarity score 0–1 (default: 0.75)"),
+});
+
 // ── Template ──────────────────────────────────────────────────────────────────
 
 export const TemplateListSchema = RootSchema;
