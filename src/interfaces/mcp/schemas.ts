@@ -141,6 +141,8 @@ export const KnowledgeStatusSchema = RootSchema;
 
 export const KnowledgeValidateSchema = RootSchema;
 
+export const KnowledgeSchemaSchema = RootSchema;
+
 // ── Lang queue ────────────────────────────────────────────────────────────────
 
 export const LangQueueSchema = RootSchema.extend({

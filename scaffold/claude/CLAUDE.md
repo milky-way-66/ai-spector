@@ -81,10 +81,11 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | Check impact of changes | `ai-spector-graph` |
 | Semantic search / fuzzy graph lookup | `ai-spector-search` |
 | Import / set up custom template pack | `ai-spector-template-import` |
-| Generate documents (check active pack first) | read `packs.active` → use skill below |
-| → Custom pack active | `ai-spector-generate-<packname>` (installed by `template install`) |
-| → Builtin: Write SRS | `ai-spector-generate-srs` |
-| → Builtin: Write basic design | `ai-spector-generate-basic-design` |
+| Generate documents (check active packs first) | read `packs.srs` + `packs.basicDesign` → use skill below |
+| → `packs.srs` is custom pack | `ai-spector-generate-<packname>` for SRS requests |
+| → `packs.srs` is `"builtin"` | `ai-spector-generate-srs` |
+| → `packs.basicDesign` is custom pack | `ai-spector-generate-<packname>` for basic-design requests |
+| → `packs.basicDesign` is `"builtin"` | `ai-spector-generate-basic-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
 | Translation status | `ai-spector-lang-status` |
 | Resolve translations | `ai-spector-resolve-translation` |

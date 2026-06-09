@@ -13,6 +13,7 @@ import { isInteractive, promptLine, promptSelect, promptYesNo } from "../util/pr
 import { checkCocoindexReadiness, runCocoindexSetup } from "./cocoindex.js";
 import type { CocoindexInstallMode } from "./cocoindex.js";
 import type { LanguageConfig } from "../config/types.js";
+import { assertSupportedLanguageCode } from "../config/types.js";
 
 const MCP_SERVER_ENTRY = {
   command: "npx",
@@ -65,7 +66,7 @@ const LANGUAGE_LIST = Object.entries(LANGUAGE_LABELS)
 
 function buildLanguageConfigs(codes: string[]): LanguageConfig[] {
   return codes.map((code) => ({
-    code,
+    code: assertSupportedLanguageCode(code),
     label: LANGUAGE_LABELS[code] ?? code,
   }));
 }
@@ -204,7 +205,11 @@ export async function runInit(opts: InitOptions): Promise<void> {
   // Patch languages into config
   const configPath = join(root, ".ai-spector", "docflow.config.json");
   const existingConfig = await readJson<Record<string, unknown>>(configPath);
-  await writeJson(configPath, { ...existingConfig, languages });
+  await writeJson(configPath, {
+    ...existingConfig,
+    languages,
+    packs: (existingConfig.packs as Record<string, unknown>) ?? { srs: "builtin", basicDesign: "builtin" },
+  });
 
   // Templates
   const projectTemplates = join(root, ".ai-spector", "templates");

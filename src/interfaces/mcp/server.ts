@@ -13,6 +13,7 @@ import {
   AnalyzeSchema,
   KnowledgeStatusSchema,
   KnowledgeValidateSchema,
+  KnowledgeSchemaSchema,
   LangQueueSchema,
   CommentsListSchema,
   CommentsInboxSchema,
@@ -27,7 +28,7 @@ import {
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
-import { toolAnalyze, toolKnowledgeStatus, toolKnowledgeValidate } from "./tools/analyze.js";
+import { toolAnalyze, toolKnowledgeStatus, toolKnowledgeValidate, toolKnowledgeSchema } from "./tools/analyze.js";
 import { toolLangQueue } from "./tools/lang.js";
 import { toolIndex } from "./tools/index.js";
 import {
@@ -148,6 +149,19 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolKnowledgeValidate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "knowledge_schema",
+  {
+    description:
+      "Return the knowledge.json schema, default listedInSection IDs, valid section IDs from the project registry, example payload, and shape docs for gaps.json and scope.json. Call this before writing knowledge.json to avoid guessing field names or section anchors.",
+    inputSchema: KnowledgeSchemaSchema.shape,
+  },
+  async (input) => {
+    const result = await toolKnowledgeSchema(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

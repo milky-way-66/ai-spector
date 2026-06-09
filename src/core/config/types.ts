@@ -5,9 +5,26 @@ export interface DocflowProjectPaths {
   templates?: string;
 }
 
+/** Supported language codes. */
+export const SUPPORTED_LANGUAGE_CODES = ["en", "jp", "vi"] as const;
+export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
+
+/**
+ * Asserts that `code` is a supported language code and narrows its type.
+ * Throws a user-readable error if unsupported.
+ */
+export function assertSupportedLanguageCode(code: string): SupportedLanguageCode {
+  if (!(SUPPORTED_LANGUAGE_CODES as readonly string[]).includes(code)) {
+    throw new Error(
+      `Unsupported language code "${code}" — supported: ${SUPPORTED_LANGUAGE_CODES.join(", ")}`,
+    );
+  }
+  return code as SupportedLanguageCode;
+}
+
 export interface LanguageConfig {
-  /** BCP-47 language code, e.g. "en", "jp", "vi" */
-  code: string;
+  /** Supported language code: "en" | "jp" | "vi" */
+  code: SupportedLanguageCode;
   /** Human-readable display name, e.g. "English" */
   label: string;
 }
@@ -17,10 +34,12 @@ export interface DocflowConfig {
   /** Configured languages. First entry is the primary language. */
   languages: LanguageConfig[];
   paths: DocflowProjectPaths;
-  /** Template pack configuration. When absent, the builtin manifests are used. */
-  packs?: {
-    /** Active custom pack name, e.g. "kaopiz-srs". "builtin" or absent → use builtin manifests. */
-    active: string;
+  /** Active template packs per document group. "builtin" means the built-in templates. */
+  packs: {
+    /** SRS pack name: "builtin" (default) or a custom pack name, e.g. "kaopiz-srs". */
+    srs: string;
+    /** Basic-design pack name: "builtin" (default) or a custom pack name. */
+    basicDesign: string;
   };
 }
 

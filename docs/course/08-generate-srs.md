@@ -8,7 +8,7 @@
 
 **Multi-language:** SRS is generated in the **primary** language only (`languages[0]` in `docflow.config.json`, usually `en`). Secondary languages are synced in [Work 10 — Multi-language](10-multi-language.md).
 
-**Custom template pack:** This work applies to the **builtin** SRS template only. If a custom pack is active (`packs.active` in config), use `generate <pack-name>` instead — see [Work 17 — Custom Template Packs](17-custom-template-packs.md).
+**Custom template pack:** This work applies to the **builtin** SRS template only. If a custom SRS pack is active (`packs.srs` in config is not `"builtin"`), use `generate <pack-name>` instead — see [Work 17 — Custom Template Packs](17-custom-template-packs.md).
 
 ---
 

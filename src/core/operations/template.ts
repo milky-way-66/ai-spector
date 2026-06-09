@@ -73,22 +73,28 @@ async function listInstalledPackNames(root: string): Promise<string[]> {
 
 async function runTemplateList(opts: { cwd?: string }) {
   const { root, config } = await loadConfigAndRoot(opts.cwd);
-  const active = config.packs?.active;
+  const srsPack = config.packs.srs;
+  const bdPack = config.packs.basicDesign;
   const installed = await listInstalledPackNames(root);
 
   console.log("Template packs:");
+  console.log("  (srs = SRS pack, bd = basic-design pack)\n");
 
   // builtin entry
-  const builtinActive = !active || active === "builtin";
-  const builtinMarker = builtinActive ? "●" : "○";
-  const builtinStatus = builtinActive ? "(active)" : "(default — used when no custom pack is active)";
+  const srsBuiltin = srsPack === "builtin";
+  const bdBuiltin = bdPack === "builtin";
+  const builtinTags = [srsBuiltin ? "srs" : null, bdBuiltin ? "bd" : null].filter(Boolean).join(", ");
+  const builtinMarker = srsBuiltin || bdBuiltin ? "●" : "○";
+  const builtinStatus = builtinTags ? `(active for: ${builtinTags})` : "(inactive)";
   console.log(`  ${builtinMarker} builtin        ${builtinStatus}`);
 
   // installed custom packs
   for (const name of installed) {
-    const isActive = active === name;
-    const marker = isActive ? "●" : "○";
-    const status = isActive ? "(active)" : "(inactive)";
+    const srsActive = srsPack === name;
+    const bdActive = bdPack === name;
+    const tags = [srsActive ? "srs" : null, bdActive ? "bd" : null].filter(Boolean).join(", ");
+    const marker = srsActive || bdActive ? "●" : "○";
+    const status = tags ? `(active for: ${tags})` : "(inactive)";
 
     let description = "";
     try {
@@ -682,9 +688,7 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
   const { root, config, configFile } = await loadConfigAndRoot(opts.cwd);
 
   if (name === "builtin" || name === "default") {
-    if (config.packs) {
-      delete config.packs;
-    }
+    config.packs = { srs: "builtin", basicDesign: "builtin" };
     await saveConfig(configFile, config);
     console.log("Switched to builtin templates. Restoring builtin DAG config...");
     await restoreBuiltinDagFiles(root);
@@ -698,7 +702,7 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
       return;
     }
     const manifest = await readJson<PackManifest>(manifestPath);
-    config.packs = { active: name };
+    config.packs = { ...config.packs, srs: name };
     await saveConfig(configFile, config);
     console.log(`Switched to pack "${name}". Rebuilding registry, graph, and DAG config...`);
 
@@ -722,7 +726,7 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
       `${stats.graphNodes} graph nodes, ${stats.graphEdges} edges.`,
   );
 
-  const activePack = config.packs?.active ?? "builtin";
+  const activePack = config.packs.srs;
   const docIdList = stats.documentIds?.map((id: string) => `  - ${id}`).join("\n") ??
     `  (run \`npx ai-spector template inspect ${activePack}\` to list them)`;
   console.log(`Active graph document ids (valid query seeds):\n${docIdList}`);
@@ -967,7 +971,7 @@ async function runTemplateInstall(opts: {
 
   // Patch config FIRST
   const previousPacks = config.packs;
-  config.packs = { active: packName };
+  config.packs = { ...config.packs, srs: packName };
   await saveConfig(configFile, config);
 
   // Build registry + graph, roll back on failure
@@ -976,11 +980,7 @@ async function runTemplateInstall(opts: {
     stats = await rebuildRegistryAndGraph(root, config);
   } catch (err) {
     // Roll back config
-    if (previousPacks === undefined) {
-      delete config.packs;
-    } else {
-      config.packs = previousPacks;
-    }
+    config.packs = previousPacks ?? { srs: "builtin", basicDesign: "builtin" };
     await saveConfig(configFile, config);
     throw err;
   }
@@ -1047,7 +1047,7 @@ async function runTemplateInstall(opts: {
  */
 async function runTemplateVerify(name: string, opts: { cwd?: string }) {
   const { root, config } = await loadConfigAndRoot(opts.cwd);
-  const resolvedName = name === "active" ? (config.packs?.active ?? "builtin") : name;
+  const resolvedName = name === "active" ? config.packs.srs : name;
 
   if (resolvedName === "builtin") {
     console.log("Builtin pack — no verification needed.");
@@ -1091,7 +1091,7 @@ async function runTemplateVerify(name: string, opts: { cwd?: string }) {
     }
   }
   const dagDir = join(root, ".ai-spector", ".docflow", "config");
-  if (config.packs?.active === resolvedName) {
+  if (config.packs.srs === resolvedName) {
     for (const f of ["dag.srs.json", "dag.srs.graph-seeds.json"]) {
       if (!(await pathExists(join(dagDir, f)))) {
         warnings.push(`${f} is missing — run \`template use ${resolvedName}\` to regenerate`);
@@ -1167,7 +1167,7 @@ async function runTemplateVerify(name: string, opts: { cwd?: string }) {
  */
 async function runTemplateStatus(name: string | undefined, opts: { cwd?: string }) {
   const { root, config } = await loadConfigAndRoot(opts.cwd);
-  const resolvedName = name ?? config.packs?.active ?? "builtin";
+  const resolvedName = name ?? config.packs.srs;
 
   if (resolvedName === "builtin") {
     console.log("Builtin pack has no breakout items to track.");
@@ -1265,7 +1265,7 @@ async function runTemplateRemove(name: string, opts: { cwd?: string }) {
     return;
   }
 
-  if (config.packs?.active === name) {
+  if (config.packs.srs === name) {
     console.error(
       `Error: pack '${name}' is currently active. Run \`template use builtin\` first.`,
     );
@@ -1289,7 +1289,7 @@ async function runTemplateExport(
   const { root, config } = await loadConfigAndRoot(cwd);
 
   // Determine pack name to export
-  let packName = opts.pack ?? config.packs?.active ?? "builtin";
+  let packName = opts.pack ?? config.packs.srs;
   if (!packName || packName === "default") packName = "builtin";
 
   // Resolve output path

@@ -24,8 +24,8 @@ Agents use this when intent is ambiguous.
 | link graph, semantic edges | `ai-spector-graph` | `references/link-graph.md` |
 | sync graph | `ai-spector-graph` | `references/sync-graph.md` |
 | doc summaries | `ai-spector-graph` | `references/summary.md` |
-| generate docs, write SRS, requirements, use cases, features | `ai-spector-generate` | `SKILL.md` (checks active pack, then routes) |
-| screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (builtin → `ai-spector-generate-basic-design`) |
+| generate docs, write SRS, requirements, use cases, features | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
+| screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |

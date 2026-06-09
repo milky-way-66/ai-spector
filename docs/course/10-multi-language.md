@@ -27,7 +27,8 @@ This is the **project config** ai-spector reads on every command. Multi-language
     "templates": ".ai-spector/templates"
   },
   "packs": {
-    "active": "builtin"
+    "srs": "builtin",
+    "basicDesign": "builtin"
   }
 }
 ```
@@ -40,7 +41,7 @@ This is the **project config** ai-spector reads on every command. Multi-language
 | `paths.graph` | Graph gets `translationOf` edges when you `lang add`. |
 | `paths.registry` | Section registry spans all languages after index. |
 | `paths.templates` | Builtin template root — unchanged by language setup. |
-| `packs.active` | Independent of language — see [Work 17](17-custom-template-packs.md). Can be `builtin` or a custom pack name alongside multiple languages. |
+| `packs.srs` / `packs.basicDesign` | Independent of language — see [Work 17](17-custom-template-packs.md). Each can be `"builtin"` or a custom pack name; both work alongside multiple languages. |
 
 **Not in this file:** translated file paths (derived from doc type + `languages[].code`), translation queue state (`.ai-spector/.docflow/translation-queue/`), or per-document output patterns (custom packs → pack `manifest.json`).
 

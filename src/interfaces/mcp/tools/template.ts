@@ -27,11 +27,12 @@ async function listInstalledPackNames(projectRoot: string): Promise<string[]> {
 export async function toolTemplateList(input: z.infer<typeof TemplateListSchema>) {
   const projectRoot = await findRoot(input.root);
   const { config } = await loadDocflowConfig(input.root);
-  const active = config.packs?.active;
+  const srsPack = config.packs.srs;
+  const bdPack = config.packs.basicDesign;
   const installed = await listInstalledPackNames(projectRoot);
 
-  const packs: Array<{ name: string; active: boolean; description?: string }> = [
-    { name: "builtin", active: !active || active === "builtin" },
+  const packs: Array<{ name: string; activeSrs: boolean; activeBasicDesign: boolean; description?: string }> = [
+    { name: "builtin", activeSrs: srsPack === "builtin", activeBasicDesign: bdPack === "builtin" },
   ];
 
   for (const name of installed) {
@@ -43,10 +44,10 @@ export async function toolTemplateList(input: z.infer<typeof TemplateListSchema>
     } catch {
       // ignore missing manifest
     }
-    packs.push({ name, active: active === name, description });
+    packs.push({ name, activeSrs: srsPack === name, activeBasicDesign: bdPack === name, description });
   }
 
-  return { packs, activePack: active ?? "builtin" };
+  return { packs, activeSrsPack: srsPack, activeBasicDesignPack: bdPack };
 }
 
 export async function toolTemplateInspect(input: z.infer<typeof TemplateInspectSchema>) {

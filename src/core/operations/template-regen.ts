@@ -267,7 +267,7 @@ export async function runTemplateRegen(opts: {
 }): Promise<void> {
   const root = opts.cwd ?? findProjectRoot();
   const { config } = await loadDocflowConfig(root);
-  const packName = opts.pack ?? config.packs?.active;
+  const packName = opts.pack ?? config.packs.srs;
 
   if (!packName || packName === "builtin") {
     console.error("No custom pack active. Run `template use <pack>` first.");

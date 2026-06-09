@@ -2,7 +2,7 @@
 
 **Course:** [Index](README.md) · [Overview](00-overview.md) · [Previous](16-visualize-the-graph.md)
 
-**Goal:** Replace or extend the builtin SRS layout with your team's own markdown templates — installed as a **template pack** and switched on when you generate documents.
+**Goal:** Replace or extend the builtin SRS or basic-design layout with your team's own markdown templates — installed as a **template pack** and switched on per document group when you generate documents.
 
 **Before you start:** Work 02 (Initialize a Project), Work 04 (Enable Agent Skills). Enable the `ai-spector-template-import` skill for the import workflow.
 
@@ -30,16 +30,18 @@ This is the **project config** ai-spector reads on every command. Template pack 
     "templates": ".ai-spector/templates"
   },
   "packs": {
-    "active": "kaopiz-srs"
+    "srs": "kaopiz-srs",
+    "basicDesign": "builtin"
   }
 }
 ```
 
 | Field | Template / pack role |
 |-------|----------------------|
-| `packs.active` | **Which pack drives generation.** Omit field or use `"builtin"` → default SRS + basic design. Any other string must match `.ai-spector/packs/<name>/`. |
+| `packs.srs` | **Which pack drives SRS generation.** `"builtin"` → default SRS templates. Any other string must match `.ai-spector/packs/<name>/`. |
+| `packs.basicDesign` | **Which pack drives basic-design generation.** `"builtin"` → default basic-design templates. Can differ from `packs.srs`. |
 | `paths.templates` | Always **builtin copy** from `init` (`.ai-spector/templates/`). Stays the same when a custom pack is active. |
-| `paths.graph` | Rebuilt when you `template install` or `template use` — registry + graph follow the active pack manifest. |
+| `paths.graph` | Rebuilt when you `template install` or `template use` — registry + graph follow the active pack manifests. |
 | `paths.registry` | Same — rebuilt on pack switch. |
 | `languages[]` | Independent of packs — see [Work 10](10-multi-language.md). Works with builtin or custom packs. |
 
@@ -60,7 +62,7 @@ cat .ai-spector/docflow.config.json | grep -A2 packs
 npx ai-spector template list
 ```
 
-`template install` and `template use` update `packs.active` for you. `template use builtin` **removes** the `packs` key entirely.
+`template install` and `template use` update `packs.srs` for you (custom packs apply to SRS by default). `template use builtin` resets both `packs.srs` and `packs.basicDesign` to `"builtin"`.
 
 ---
 
@@ -68,12 +70,12 @@ npx ai-spector template list
 
 | | **Builtin** (default) | **Custom pack** |
 |---|----------------------|-----------------|
-| When | `packs` missing or `packs.active: "builtin"` | `packs.active: "<pack-name>"` |
+| When | `packs.srs: "builtin"` / `packs.basicDesign: "builtin"` | `packs.srs: "<pack-name>"` or `packs.basicDesign: "<pack-name>"` |
 | Templates | `.ai-spector/templates/` (SRS + basic design from package) | `.ai-spector/packs/<name>/templates/` |
 | Generation skill | `ai-spector-generate-srs`, `ai-spector-generate-basic-design` | `ai-spector-generate-<pack-name>` (written at install) |
 | Output paths | `docs/srs/{lang}/…`, `docs/basic-design/{lang}/…` | Paths you define in the pack `manifest.json` |
 
-Only **one pack is active** at a time. You can install several; switch with `template use`.
+SRS and basic-design can use **different packs independently** — e.g. `packs.srs: "kaopiz-srs"` with `packs.basicDesign: "builtin"`. Install several packs and switch each group with `template use`.
 
 ---
 
@@ -127,13 +129,13 @@ After you approve the manifest:
 npx ai-spector template install
 ```
 
-Install copies the pack to `.ai-spector/packs/<pack-name>/`, sets `packs.active`, rebuilds registry/graph, writes `generate-hints.md`, and adds a dedicated generate skill under `.cursor/skills/`.
+Install copies the pack to `.ai-spector/packs/<pack-name>/`, sets `packs.srs` to the pack name, rebuilds registry/graph, writes `generate-hints.md`, and adds a dedicated generate skill under `.cursor/skills/`.
 
 ---
 
 ## Generate with a custom pack active
 
-The router skill reads **`packs.active`** from `.ai-spector/docflow.config.json` before generating.
+The router skill reads **`packs.srs`** and **`packs.basicDesign`** from `.ai-spector/docflow.config.json` before generating.
 
 **Wrong** (builtin skill while custom pack is active):
 
@@ -181,7 +183,7 @@ npx ai-spector template use kaopiz-srs
 npx ai-spector template use builtin
 ```
 
-`template use builtin` restores default SRS/basic-design DAGs and **deletes `packs` from `docflow.config.json`**. Installed custom packs stay on disk under `.ai-spector/packs/`.
+`template use builtin` restores default SRS/basic-design DAGs and **resets both `packs.srs` and `packs.basicDesign` to `"builtin"`**. Installed custom packs stay on disk under `.ai-spector/packs/`.
 
 ---
 
@@ -249,14 +251,14 @@ Every `documents[].template` in the manifest must exist under `.ai-spector/packs
 
 **Edited `.ai-spector/templates/` but generation unchanged**
 
-With a custom pack active, templates are read from `.ai-spector/packs/<active>/templates/`, not the builtin copy.
+With a custom pack active, templates are read from `.ai-spector/packs/<pack-name>/templates/`, not the builtin copy.
 
 **Multi-language + custom pack**
 
 Both features use the same `docflow.config.json`:
 
 - `languages[]` — primary + secondary (Work 10)
-- `packs.active` — which template pack (this work)
+- `packs.srs` / `packs.basicDesign` — which template pack per group (this work)
 
 Primary docs are generated from the graph in `languages[0]`; secondary langs are translated ([Work 10](10-multi-language.md)). If the pack manifest uses per-language folders, include `{lang}` in `output` / `outputPattern` — the core config does not add `{lang}` automatically.
 

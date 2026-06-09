@@ -6,6 +6,7 @@ import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translati
 import { addLangToPendingJobs, reconcileTranslationQueue } from "../lang/queue.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import type { LanguageConfig } from "../config/types.js";
+import { assertSupportedLanguageCode } from "../config/types.js";
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
@@ -47,7 +48,7 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   }
 
   const label = opts.label ?? LANGUAGE_LABELS[code] ?? code;
-  const newLang: LanguageConfig = { code, label };
+  const newLang: LanguageConfig = { code: assertSupportedLanguageCode(code), label };
   const primary = config.languages[0];
   void primary; // used for context; translation edges handle wiring
 

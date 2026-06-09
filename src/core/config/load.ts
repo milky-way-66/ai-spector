@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DocflowConfig, DocumentsManifest, LanguageConfig, PackManifest } from "./types.js";
+import { assertSupportedLanguageCode } from "./types.js";
 import { readJson } from "../util/fs.js";
 
 const CONFIG_NAME = "docflow.config.json";
@@ -80,27 +81,35 @@ export async function loadDocflowConfig(
     version: raw.version ?? 1,
     languages:
       Array.isArray(raw.languages) && raw.languages.length > 0
-        ? raw.languages
+        ? raw.languages.map((l: { code: string; label: string }) => ({
+            code: assertSupportedLanguageCode(l.code),
+            label: l.label,
+          }))
         : [DEFAULT_LANGUAGE],
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
       templates: raw.paths?.templates ?? DEFAULT_PATHS.templates,
     },
-    ...(raw.packs ? { packs: raw.packs } : {}),
+    packs: {
+      srs: (raw.packs as Record<string, string> | undefined)?.srs
+        ?? (raw.packs as Record<string, string> | undefined)?.active
+        ?? "builtin",
+      basicDesign: (raw.packs as Record<string, string> | undefined)?.basicDesign ?? "builtin",
+    },
   };
   return { root, config, configFile };
 }
 
 /**
  * Load the active pack's PackManifest, or null if using builtin.
- * Returns null when packs.active is absent, empty, or "builtin".
+ * Returns null when packs.srs is "builtin" (i.e. no custom SRS pack is active).
  */
 export async function resolveActivePackManifest(
   root: string,
   config: DocflowConfig,
 ): Promise<PackManifest | null> {
-  const active = config.packs?.active;
+  const active = config.packs.srs;
   if (!active || active === "builtin") return null;
   const packDir = join(root, ".ai-spector/packs", active);
   const manifest = await readJson<PackManifest>(join(packDir, "manifest.json"));
@@ -112,24 +121,37 @@ export async function resolveActivePackManifest(
  * Legacy / builtin path: both builtin manifests.
  * Custom pack path: single pack manifest from .ai-spector/packs/<active>/.
  */
+async function resolvePackManifest(
+  root: string,
+  packName: string,
+  loadBuiltin: () => Promise<{ bundleRoot: string; manifest: DocumentsManifest }>,
+): Promise<{ manifest: DocumentsManifest; templatesDir: string }> {
+  if (!packName || packName === "builtin") {
+    const { bundleRoot, manifest } = await loadBuiltin();
+    return { manifest, templatesDir: join(bundleRoot, manifest.templatesDir) };
+  }
+  const packDir = join(root, ".ai-spector/packs", packName);
+  const manifest = await readJson<PackManifest>(join(packDir, "manifest.json"));
+  return { manifest, templatesDir: join(packDir, manifest.templatesDir ?? "templates") };
+}
+
 export async function resolveActiveManifests(
   root: string,
   config: DocflowConfig,
 ): Promise<Array<{ manifest: DocumentsManifest; templatesDir: string }>> {
-  const active = config.packs?.active;
-  if (!active || active === "builtin") {
-    // Legacy builtin path — same as before
-    const { bundleRoot, manifest: srsManifest } = await loadDocumentsManifest();
-    const bdManifest = await loadBasicDesignListManifest();
-    return [
-      { manifest: srsManifest, templatesDir: join(bundleRoot, srsManifest.templatesDir) },
-      { manifest: bdManifest, templatesDir: join(bundleRoot, bdManifest.templatesDir) },
-    ];
-  }
-  const packDir = join(root, ".ai-spector/packs", active);
-  const manifest = await readJson<PackManifest>(join(packDir, "manifest.json"));
-  const templatesDir = join(packDir, manifest.templatesDir ?? "templates");
-  return [{ manifest, templatesDir }];
+  const srsPack = config.packs.srs;
+  const bdPack = config.packs.basicDesign;
+
+  const [srsEntry, bdEntry] = await Promise.all([
+    resolvePackManifest(root, srsPack, loadDocumentsManifest),
+    resolvePackManifest(root, bdPack, async () => {
+      const bundleRoot = packageBundleRoot();
+      const manifest = await loadBasicDesignListManifest();
+      return { bundleRoot, manifest };
+    }),
+  ]);
+
+  return [srsEntry, bdEntry];
 }
 
 /** Returns the primary (first) language from config. */
