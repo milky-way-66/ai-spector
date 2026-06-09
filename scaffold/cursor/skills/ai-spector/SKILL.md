@@ -18,14 +18,40 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
-| Re-index project | `index({})` | `npx ai-spector index` |
+| Prepare graph scaffold | `analyze({})` | `npx ai-spector analyze` |
+| Check knowledge.json entity counts | `knowledge_status({})` | *(no CLI equivalent)* |
+| Validate knowledge.json schema | `knowledge_validate({})` | *(no CLI equivalent)* |
 | Merge knowledge → graph | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
 | Validate graph | `graph_validate({})` | `npx ai-spector graph validate` |
+| Graph layer health audit | `graph_report({})` | `npx ai-spector graph report --json` |
 | Impact analysis | `graph_impact({ originId, change })` | `npx ai-spector graph impact …` |
-| Walk graph from node | `graph_query({ id, … })` | `npx ai-spector graph query <id> --json` |
-| **Analyze data-source** | *(no MCP tool — CLI only)* | `npx ai-spector analyze` |
+| Walk graph from node | `graph_query({ seedId })` | `npx ai-spector graph query <id> --json` |
+| Re-index project | `index({})` | `npx ai-spector index` |
+| Re-index + refresh embeddings | `index({ cocoindexSync: true })` | `npx ai-spector index && npx ai-spector cocoindex index` |
+| Translation queue status | `lang_queue({})` | `npx ai-spector lang queue pending --json` |
+| CocoIndex readiness | `cocoindex_status({})` | `npx ai-spector setup --check` |
+| Rebuild semantic embeddings | `cocoindex_index({})` | `npx ai-spector cocoindex index` |
+| Semantic doc search | `docs_search({ query })` | `npx ai-spector cocoindex search --query …` |
+| Natural language graph lookup | `graph_query_fuzzy({ query })` | *(no CLI equivalent)* |
+| **Visualize graph** | *(no MCP tool)* | `npx ai-spector graph visualize --open` |
 
-Use CLI **only** when: MCP server is not configured, the tool errors and MCP is unavailable, or the operation has no MCP equivalent (e.g. `analyze`).
+Use CLI **only** when: MCP server is not configured, the tool errors, or no MCP equivalent exists (visualize, `lang add`, template mutations).
+
+### After any batch of doc edits
+
+When you finish editing files under `docs/` — always close out with:
+
+```
+index({ cocoindexSync: true })   # preferred: refreshes graph + embeddings in one call
+```
+
+Or if CocoIndex is not configured:
+
+```
+index({})
+```
+
+**Never skip the embedding refresh** when CocoIndex is set up — semantic search and `graph_impact` `semanticSuggestions` go stale silently.
 
 ## CLI and tool failure (non-negotiable)
 

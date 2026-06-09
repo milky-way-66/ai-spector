@@ -20,14 +20,24 @@ paths:
 
 2. **Refresh the index first** — the queue is only accurate after indexing:
 
-```bash
-npx ai-spector index
+```
+index({})                    # MCP preferred
+npx ai-spector index         # CLI fallback
 ```
 
-This scans all doc files, updates fingerprints, and reconciles pending/resolved jobs in the translation queue. Skip only if the user explicitly says they just ran it.
+Skip only if the user explicitly says they just ran it.
 
-3. Run the translation queue CLI (primary source of truth):
+3. Read the translation queue (primary source of truth):
 
+**MCP (preferred):**
+```
+lang_queue({})                          # pending jobs + summary
+lang_queue({ status: "failed" })        # failed jobs
+lang_queue({ status: "all" })           # everything
+lang_queue({ lang: "jp" })              # filter by language
+```
+
+**CLI fallback:**
 ```bash
 npx ai-spector lang queue pending --json
 npx ai-spector lang queue failed --json
@@ -113,7 +123,7 @@ List actionable items per job:
 
 ## After any file edit (outside of generate skills)
 
-When the user edits any language file directly, run `npx ai-spector index` (or `lang queue scan`). The queue enqueues section-level sync jobs automatically — no manual stale notes needed.
+When the user edits any language file directly, run `index({})` (MCP) or `npx ai-spector index`. The queue enqueues section-level sync jobs automatically — no manual stale notes needed.
 
 If the user defers translation, the job stays in `pending.json` until processed.
 

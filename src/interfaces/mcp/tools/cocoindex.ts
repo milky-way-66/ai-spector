@@ -1,9 +1,20 @@
+import { join } from "node:path";
 import {
   runCocoindexSearch,
   runGraphQueryFuzzy,
   isCocoindexConfigured,
+  checkCocoindexReadiness,
+  cocoindexDir,
+  cocoindexPipelinePath,
+  findPython,
 } from "../../../core/operations/cocoindex.js";
-import type { DocsSearchSchema, GraphQueryFuzzySchema } from "../schemas.js";
+import { loadDocflowConfig } from "../../../core/config/load.js";
+import type {
+  DocsSearchSchema,
+  GraphQueryFuzzySchema,
+  CocoindexStatusSchema,
+  CocoindexIndexSchema,
+} from "../schemas.js";
 import type { z } from "zod";
 
 export async function toolDocsSearch(input: z.infer<typeof DocsSearchSchema>) {
@@ -25,6 +36,69 @@ export async function toolDocsSearch(input: z.infer<typeof DocsSearchSchema>) {
   });
 
   return result;
+}
+
+export async function toolCocoindexStatus(input: z.infer<typeof CocoindexStatusSchema>) {
+  const { root: projectRoot } = await loadDocflowConfig(input.root);
+  const readiness = await checkCocoindexReadiness(projectRoot);
+
+  if (!readiness.configured) {
+    return {
+      configured: false,
+      message: "CocoIndex not set up. Run: npx ai-spector cocoindex setup",
+    };
+  }
+
+  const issues: string[] = [];
+  if (!readiness.pythonBin) issues.push("Python not found (need Python 3.11+)");
+  else if (!readiness.pythonVersion) issues.push("Could not determine Python version");
+  if (!readiness.depsInstalled) issues.push("Dependencies not installed — run: npx ai-spector cocoindex setup");
+  if (!readiness.indexed) issues.push("Index not built yet — run: cocoindex_index or npx ai-spector cocoindex index");
+
+  return {
+    configured: true,
+    pythonBin: readiness.pythonBin,
+    pythonVersion: readiness.pythonVersion,
+    depsInstalled: readiness.depsInstalled,
+    indexed: readiness.indexed,
+    ready: issues.length === 0,
+    issues,
+  };
+}
+
+export async function toolCocoindexIndex(input: z.infer<typeof CocoindexIndexSchema>) {
+  const { root: projectRoot } = await loadDocflowConfig(input.root);
+  const readiness = await checkCocoindexReadiness(projectRoot);
+
+  if (!readiness.configured) {
+    throw new Error("CocoIndex not set up. Run: npx ai-spector cocoindex setup");
+  }
+  if (!readiness.depsInstalled) {
+    throw new Error("CocoIndex dependencies not installed. Run: npx ai-spector cocoindex setup");
+  }
+
+  const cocoDir = cocoindexDir(projectRoot);
+  const pipelinePath = cocoindexPipelinePath(projectRoot);
+  const pythonBin = await findPython(cocoDir);
+
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const exec = promisify(execFile);
+
+  try {
+    const { stdout, stderr } = await exec(pythonBin, [pipelinePath, "update"], {
+      cwd: cocoDir,
+      env: {
+        ...process.env,
+        AI_SPECTOR_ROOT: projectRoot,
+        COCOINDEX_DB: join(cocoDir, "cocoindex_state"),
+      },
+    });
+    return { updated: true, output: stdout || stderr || "Index updated." };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`CocoIndex update failed: ${msg}`);
+  }
 }
 
 export async function toolGraphQueryFuzzy(input: z.infer<typeof GraphQueryFuzzySchema>) {

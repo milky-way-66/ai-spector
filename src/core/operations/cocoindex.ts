@@ -74,7 +74,7 @@ export interface CocoindexReadiness {
   pythonBin: string | null;
   pythonVersion: string | null;
   depsInstalled: boolean;
-  indexed: boolean;      // lance_data/ exists
+  indexed: boolean;      // lancedb_data/ exists
 }
 
 export async function checkCocoindexReadiness(root: string): Promise<CocoindexReadiness> {
@@ -108,7 +108,7 @@ export async function checkCocoindexReadiness(root: string): Promise<CocoindexRe
     }
   }
 
-  const indexed = await pathExists(join(dir, "lance_data"));
+  const indexed = await pathExists(join(dir, "lancedb_data"));
 
   return { configured, pythonBin, pythonVersion, depsInstalled, indexed };
 }
@@ -229,7 +229,10 @@ async function writeCocoindexMcpEntry(root: string, pipelinePath: string, cocoDi
   const entry = {
     command: await findPython(cocoDir),
     args: [join(cocoDir, "server.py")],
-    env: { AI_SPECTOR_ROOT: root },
+    env: {
+      AI_SPECTOR_ROOT: root,
+      COCOINDEX_DB: join(cocoDir, "cocoindex_state"),
+    },
   };
 
   // Write to all MCP config files that exist or should be created
@@ -239,13 +242,15 @@ async function writeCocoindexMcpEntry(root: string, pipelinePath: string, cocoDi
   ];
 
   for (const mcpPath of mcpFiles) {
-    // Only write to .cursor/mcp.json if .cursor/ dir already exists
+    // .cursor/mcp.json — only if .cursor/ dir exists
     if (mcpPath.includes(".cursor") && !(await pathExists(join(root, ".cursor")))) {
       continue;
     }
-    const existing = (await pathExists(mcpPath))
-      ? await readJson<{ mcpServers?: Record<string, unknown> }>(mcpPath)
-      : {};
+    // root .mcp.json — only if it already exists (don't create it for cursor-only projects)
+    if (!mcpPath.includes(".cursor") && !(await pathExists(mcpPath))) {
+      continue;
+    }
+    const existing = await readJson<{ mcpServers?: Record<string, unknown> }>(mcpPath).catch(() => ({} as { mcpServers?: Record<string, unknown> }));
     await writeJson(mcpPath, {
       ...existing,
       mcpServers: { ...(existing.mcpServers ?? {}), "ai-spector-cocoindex": entry },

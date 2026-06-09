@@ -8,7 +8,12 @@ import {
   GraphImpactSchema,
   GraphValidateSchema,
   GraphMergeSchema,
+  GraphReportSchema,
   IndexSchema,
+  AnalyzeSchema,
+  KnowledgeStatusSchema,
+  KnowledgeValidateSchema,
+  LangQueueSchema,
   CommentsListSchema,
   CommentsInboxSchema,
   CommentsShowSchema,
@@ -17,9 +22,13 @@ import {
   TemplateInspectSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
+  CocoindexStatusSchema,
+  CocoindexIndexSchema,
 } from "./schemas.js";
 
-import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge } from "./tools/graph.js";
+import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
+import { toolAnalyze, toolKnowledgeStatus, toolKnowledgeValidate } from "./tools/analyze.js";
+import { toolLangQueue } from "./tools/lang.js";
 import { toolIndex } from "./tools/index.js";
 import {
   toolCommentsList,
@@ -28,7 +37,7 @@ import {
   toolCommentsResolve,
 } from "./tools/comments.js";
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
-import { toolDocsSearch, toolGraphQueryFuzzy } from "./tools/cocoindex.js";
+import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexIndex } from "./tools/cocoindex.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -85,6 +94,75 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolGraphMerge(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "graph_report",
+  {
+    description:
+      "Audit graph layer health — returns provenance coverage, hub completeness, empty domain layers, and missing traceability links",
+    inputSchema: GraphReportSchema.shape,
+  },
+  async (input) => {
+    const result = await toolGraphReport(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Analyze / Knowledge tools ─────────────────────────────────────────────────
+
+server.registerTool(
+  "analyze",
+  {
+    description:
+      "Prepare graph scaffold from project templates — creates section/document nodes and writes the section registry. Run before entity extraction. Replaces `npx ai-spector analyze` for the structure-prep step.",
+    inputSchema: AnalyzeSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAnalyze(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "knowledge_status",
+  {
+    description:
+      "Check whether knowledge.json is present and report entity counts (actors, useCases, features, …). Use before graph_merge to confirm extraction is complete.",
+    inputSchema: KnowledgeStatusSchema.shape,
+  },
+  async (input) => {
+    const result = await toolKnowledgeStatus(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "knowledge_validate",
+  {
+    description:
+      "Validate knowledge.json against schema.knowledge.json and return any errors or warnings. Run after entity extraction and before graph_merge.",
+    inputSchema: KnowledgeValidateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolKnowledgeValidate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Lang queue tool ───────────────────────────────────────────────────────────
+
+server.registerTool(
+  "lang_queue",
+  {
+    description:
+      "Read the translation queue — returns pending/failed/resolved jobs and summary counts. Use after doc edits or before starting translation work to see what needs updating.",
+    inputSchema: LangQueueSchema.shape,
+  },
+  async (input) => {
+    const result = await toolLangQueue(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -180,6 +258,32 @@ server.registerTool(
 );
 
 // ── CocoIndex tools ───────────────────────────────────────────────────────────
+
+server.registerTool(
+  "cocoindex_status",
+  {
+    description:
+      "Check whether CocoIndex is configured and ready: Python version, dependencies installed, index built. Use to diagnose why cocoindexSync was skipped or docs_search returned no results.",
+    inputSchema: CocoindexStatusSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCocoindexStatus(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "cocoindex_index",
+  {
+    description:
+      "Run the CocoIndex pipeline update — rebuilds semantic embeddings from project docs. Call after adding or editing doc files. Equivalent to `npx ai-spector cocoindex index`.",
+    inputSchema: CocoindexIndexSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCocoindexIndex(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
 
 server.registerTool(
   "docs_search",

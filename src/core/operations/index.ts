@@ -546,17 +546,26 @@ export async function runIndex(
       cocoindexSkipped = true;
     } else {
       try {
+        const { findPython, cocoindexDir } = await import("./cocoindex.js");
+        const cocoDir = cocoindexDir(projectRoot);
         const pipelinePath = cocoindexPipelinePath(projectRoot);
+        const pythonBin = await findPython(cocoDir);
         const { execFile } = await import("node:child_process");
         const { promisify } = await import("node:util");
         const exec = promisify(execFile);
-        await exec("python", [pipelinePath, "cocoindex", "update"], {
-          cwd: projectRoot,
-          env: { ...process.env },
+        await exec(pythonBin, [pipelinePath, "update"], {
+          cwd: cocoDir,
+          env: {
+            ...process.env,
+            AI_SPECTOR_ROOT: projectRoot,
+            COCOINDEX_DB: join(cocoDir, "cocoindex_state"),
+          },
         });
         cocoindexUpdated = true;
-      } catch {
-        // CocoIndex update failure is non-fatal
+      } catch (err) {
+        // CocoIndex update failure is non-fatal but should be visible
+        const msg = err instanceof Error ? err.message : String(err);
+        steps.push({ id: "cocoindex-sync", label: "CocoIndex sync", status: "failed", detail: msg });
         cocoindexSkipped = true;
       }
     }

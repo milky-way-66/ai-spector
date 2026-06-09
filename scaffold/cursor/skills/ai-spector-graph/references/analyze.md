@@ -2,7 +2,7 @@
 
 Ingest `docs/data-source/` and commit knowledge into the traceability graph.
 
-Step 0 (`npx ai-spector analyze`) is **CLI-only** — no MCP equivalent. Steps B (merge, validate) use **MCP when available**.
+All steps have MCP equivalents. Use MCP when the `ai-spector` server is configured.
 
 ## Usage
 
@@ -20,6 +20,12 @@ Step 0 (`npx ai-spector analyze`) is **CLI-only** — no MCP equivalent. Steps B
 
 ### 0. Prepare graph structure
 
+**MCP (preferred):**
+```
+analyze({})
+```
+
+**CLI fallback:**
 ```bash
 npx ai-spector analyze
 ```
@@ -82,7 +88,10 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 
 | Step | MCP (preferred) | CLI fallback |
 |------|-----------------|--------------|
-| 0 | *(CLI only — no MCP tool)* | `npx ai-spector analyze` |
+| 0 prepare | `analyze({})` | `npx ai-spector analyze` |
+| A extraction | Agent writes `knowledge.json` | Agent writes `knowledge.json` |
+| A verify | `knowledge_status({})` → check `ready: true` | *(no CLI)* |
+| A validate | `knowledge_validate({})` → check `valid: true` | *(no CLI)* |
 | B merge | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
 | B validate | `graph_validate({})` | `npx ai-spector graph validate` |
 

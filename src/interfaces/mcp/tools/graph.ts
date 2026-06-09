@@ -15,12 +15,14 @@ import {
 import { collectGitDiff } from "../../../core/util/git-diff.js";
 import { validateGraph } from "../../../core/operations/validate.js";
 import { runGraphMerge } from "../../../core/operations/graph-merge.js";
+import { runGraphReport } from "../../../core/operations/graph-report.js";
 import type { EdgeType } from "../../../types.js";
 import type {
   GraphQuerySchema,
   GraphImpactSchema,
   GraphValidateSchema,
   GraphMergeSchema,
+  GraphReportSchema,
 } from "../schemas.js";
 import type { z } from "zod";
 
@@ -117,4 +119,8 @@ export async function toolGraphMerge(input: z.infer<typeof GraphMergeSchema>) {
     validate: false,
   });
   return { merged: true };
+}
+
+export async function toolGraphReport(input: z.infer<typeof GraphReportSchema>) {
+  return runGraphReport({ root: input.root });
 }

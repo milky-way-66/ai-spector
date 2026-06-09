@@ -13,86 +13,88 @@ description: "Runs AI Spector traceability graph operations: analyze data-source
 - "what's the impact of my changes", "what should I regenerate"
 - "visualize the graph"
 
-## Workflow
+## Invocation rule
 
-```
-1. Identify intent → pick runbook below
-2. Run CLI from project root (npx ai-spector)
-3. On failure: show output, offer fix/workaround/pause
-4. If the tool or workflow caused friction (even if recovered): offer to write a feedback report to docs/feedback/
-```
+Use **MCP tools** when `ai-spector` server is configured. CLI is fallback only.
 
 ## Runbooks by intent
 
 ### Analyze (ingest data-source)
 
-```bash
-npx ai-spector analyze
+```
+analyze({})                              # MCP — prepare graph scaffold
+# agent extracts entities → writes knowledge.json
+knowledge_validate({})                   # MCP — validate before merge
+knowledge_status({})                     # MCP — confirm entity counts
+graph_merge({ fromKnowledge: true })     # MCP — commit to graph
+graph_validate({})                       # MCP — verify result
 ```
 
-Reads `docs/data-source/`, builds knowledge graph, writes `.ai-spector/graph/`. Run after adding or changing source files.
+CLI fallback: `npx ai-spector analyze` → `npx ai-spector graph merge --from-knowledge` → `npx ai-spector graph validate`
 
 ### Index (refresh after doc edits)
 
-```bash
-npx ai-spector index
+```
+index({ cocoindexSync: true })           # MCP — refresh graph + embeddings
 ```
 
-Updates fingerprints, reconciles translation queue. Run after any doc edit. **Always run index before checking translation status.**
+CLI fallback: `npx ai-spector index && npx ai-spector cocoindex index`
+
+**Always run index before checking translation status.**
 
 ### Validate
 
-```bash
-npx ai-spector graph validate
+```
+graph_validate({})                       # MCP
+graph_report({})                         # MCP — layer health audit
 ```
 
-Reports broken references, missing nodes, DAG errors. Fix errors before generating docs.
+CLI fallback: `npx ai-spector graph validate`
 
 ### Impact (what to regenerate)
 
-```bash
-# Current git diff (most common)
-npx ai-spector graph impact --git --change content_change --json
-
-# Specific file
-npx ai-spector graph impact --file <repo-relative-path> --json
-
-# Specific node
-npx ai-spector graph impact <originId> --change content_change --json
+```
+graph_impact({ git: true, change: "content_change" })        # git diff
+graph_impact({ originId: "<id>", change: "content_change" }) # specific node
+graph_impact({ file: "<path>", change: "content_change" })   # specific file
 ```
 
-Output buckets: `regenerate` (must redo), `review` (may need update).
-- `noTraceabilityImpact: true` → changed files not in graph (config, source code, etc.) — no doc regen needed
-- `truncated: true` → BFS hit propagation cap — results may be incomplete, warn user
+CLI fallback: `npx ai-spector graph impact --git --change content_change --json`
 
-Report the table with `projectionPath`. For each `regenerate` entry, suggest the appropriate generate skill.
+Output buckets: `regenerate` (must redo), `review` (may need update), `semanticSuggestions` (CocoIndex).
+- `noTraceabilityImpact: true` → changed files not in graph — no doc regen needed
+- `truncated: true` → BFS hit cap — results may be incomplete, warn user
 
-**Run this after every doc edit**, then run `npx ai-spector index`.
+**Run after every doc edit**, then `index({ cocoindexSync: true })`.
+
+### Query a node
+
+```
+graph_query({ seedId: "<id>" })          # MCP — walk subgraph
+graph_query_fuzzy({ query: "…" })       # MCP — natural language lookup
+```
+
+CLI fallback: `npx ai-spector graph query <id> --json`
 
 ### Visualize
 
 ```bash
-npx ai-spector graph visualize --open
-```
-
-### Query a node
-
-```bash
-npx ai-spector graph query <id-or-text> --json
+npx ai-spector graph visualize --open    # CLI only — no MCP equivalent
 ```
 
 ## Checklist
 
 ```
 - [ ] Identified correct runbook
-- [ ] Ran CLI from project root
+- [ ] Used MCP tools (not CLI) when ai-spector server is configured
+- [ ] After doc edits: graph_impact + index({ cocoindexSync: true })
 - [ ] Presented output to user (impact table, validate errors, etc.)
-- [ ] After doc edits: ran impact + index
 - [ ] On failure: showed output, offered fix/workaround
 ```
 
 ## Rules
 
-- Do not implement impact BFS manually — always use CLI
-- Do not invent regen lists if impact CLI failed
-- Do not run whole-repo regen outside CLI buckets
+- Do not implement impact BFS manually — always use MCP or CLI tool
+- Do not invent regen lists if impact tool failed
+- Do not run whole-repo regen outside tool buckets
+- Never skip `cocoindexSync` when CocoIndex is configured and docs changed

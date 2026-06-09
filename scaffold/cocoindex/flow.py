@@ -28,6 +28,11 @@ from cocoindex.resources.id import IdGenerator
 # ── Config ────────────────────────────────────────────────────────────────────
 
 _SCRIPT_DIR = Path(__file__).parent
+
+# COCOINDEX_DB is required by CocoIndex 1.0+ for its LMDB state store.
+# Default to a sibling directory so the pipeline works without any .env setup.
+os.environ.setdefault("COCOINDEX_DB", str(_SCRIPT_DIR / "cocoindex_state"))
+
 PROJECT_ROOT = Path(os.getenv("AI_SPECTOR_ROOT", str(Path.cwd())))
 INDEX_CONFIG = PROJECT_ROOT / ".ai-spector/.docflow/config/index.docs.json"
 LANCEDB_URI = os.getenv(

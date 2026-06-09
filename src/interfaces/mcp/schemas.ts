@@ -109,6 +109,10 @@ export const DocsSearchSchema = RootSchema.extend({
     .describe("Minimum similarity score 0–1 (default: 0.75)"),
 });
 
+export const CocoindexStatusSchema = RootSchema;
+
+export const CocoindexIndexSchema = RootSchema;
+
 export const GraphQueryFuzzySchema = RootSchema.extend({
   query: z.string().describe("Natural language description of the graph node to find"),
   direction: z
@@ -122,6 +126,30 @@ export const GraphQueryFuzzySchema = RootSchema.extend({
     .max(1)
     .optional()
     .describe("Minimum similarity score for node resolution (default: 0.75)"),
+});
+
+// ── Analyze / Knowledge ───────────────────────────────────────────────────────
+
+export const AnalyzeSchema = RootSchema.extend({
+  merge: z
+    .boolean()
+    .optional()
+    .describe("Also merge knowledge.json into graph after prep (if knowledge.json exists)"),
+});
+
+export const KnowledgeStatusSchema = RootSchema;
+
+export const KnowledgeValidateSchema = RootSchema;
+
+// ── Lang queue ────────────────────────────────────────────────────────────────
+
+export const LangQueueSchema = RootSchema.extend({
+  lang: z.string().optional().describe("Filter by language code (e.g. 'jp', 'vi')"),
+  limit: z.number().int().min(1).optional().describe("Max pending jobs to return (default: all)"),
+  status: z
+    .enum(["pending", "failed", "resolved", "all"])
+    .optional()
+    .describe("Which queue to read (default: pending)"),
 });
 
 // ── Template ──────────────────────────────────────────────────────────────────

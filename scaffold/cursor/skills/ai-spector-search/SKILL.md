@@ -35,13 +35,14 @@ surface related docs that have no formal graph edge.
 
 Find all document sections about a concept:
 
-```bash
-npx ai-spector cocoindex search --query "rate limiting" --json
-```
-
-Or via MCP:
+**MCP (preferred):**
 ```
 docs_search(query: "rate limiting", limit: 5)
+```
+
+**CLI fallback:**
+```bash
+npx ai-spector cocoindex search --query "rate limiting" --json
 ```
 
 Response includes `graphNodeId` when the matched section maps to a traceability node.
@@ -109,19 +110,37 @@ No code change needed — chain two MCP calls:
 
 ## Setup check
 
-Before using any semantic workflow, verify CocoIndex is configured:
+Before using any semantic workflow, verify CocoIndex is ready:
 
+**MCP (preferred):**
+```
+cocoindex_status({})
+```
+
+Check `ready: true`. If any issue is listed, fix it before searching.
+
+**CLI fallback:**
 ```bash
 npx ai-spector setup --check
 ```
 
-If CocoIndex is missing:
-```bash
-npx ai-spector cocoindex setup
-cd .ai-spector/.docflow/cocoindex
-cp .env.example .env   # edit if needed
-pip install -r requirements.txt
-python pipeline.py cocoindex update
+If CocoIndex is missing, run `npx ai-spector cocoindex setup` (or ask agent to set it up via `ai-spector-setup` skill).
+
+---
+
+## Rebuild embeddings after doc edits
+
+Semantic search goes stale when docs change. After any batch of doc edits:
+
+**Preferred — one call:**
+```
+index({ cocoindexSync: true })
+```
+
+**Or separately:**
+```
+cocoindex_index({})
+index({})
 ```
 
 ---
@@ -129,8 +148,8 @@ python pipeline.py cocoindex update
 ## Checklist
 
 ```
-- [ ] CocoIndex configured (pipeline.py present)
-- [ ] Embeddings up to date (run pipeline.py cocoindex update after doc edits)
+- [ ] cocoindex_status({}) → ready: true (or setup done)
+- [ ] Embeddings refreshed after doc edits: index({ cocoindexSync: true })
 - [ ] Used graph_query_fuzzy when node ID is unknown (not graph_query with a guess)
 - [ ] Treated semanticSuggestions as "review recommended", not "must regenerate"
 ```

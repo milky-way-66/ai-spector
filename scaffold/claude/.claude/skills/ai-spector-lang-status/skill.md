@@ -21,14 +21,23 @@ If only one language: reply "Only one language configured — nothing to compare
 
 ### 2. Refresh the index first (MANDATORY)
 
-```bash
-npx ai-spector index
+```
+index({})                    # MCP preferred
+npx ai-spector index         # CLI fallback
 ```
 
 The queue is only accurate after indexing. **Never skip this step** — reading `pending.json` without indexing shows stale data.
 
 ### 3. Read the queue
 
+**MCP (preferred):**
+```
+lang_queue({})                      # pending + summary
+lang_queue({ status: "failed" })    # failed jobs
+lang_queue({ lang: "jp" })          # filter by language
+```
+
+**CLI fallback:**
 ```bash
 npx ai-spector lang queue pending --json
 npx ai-spector lang queue failed --json
@@ -70,9 +79,9 @@ If queue is empty or missing after index, fall back to git mtime comparison acro
 
 ```
 - [ ] Read docflow.config.json → languages[]
-- [ ] Ran npx ai-spector index (mandatory before queue read)
-- [ ] Ran lang queue pending --json
-- [ ] Ran lang queue failed --json
+- [ ] Ran index({}) MCP (or npx ai-spector index) — mandatory before queue read
+- [ ] Ran lang_queue({}) MCP (or lang queue pending --json)
+- [ ] Ran lang_queue({ status: "failed" }) MCP (or lang queue failed --json)
 - [ ] Rendered pending + failed tables
 - [ ] Offered resolve-translation if pending jobs exist
 ```
