@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.8.7",
+  "version": "0.8.12",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -34,6 +34,7 @@
     "scaffold",
     "assets",
     "README.md",
+    "README.vi.md",
     "LICENSE"
   ],
   "exports": {
@@ -63,7 +64,8 @@
     "graph:visualize": "node dist/cli.js -r example graph visualize --open",
     "ai-spector": "node dist/cli.js",
     "themes:install-previews": "node dist/cli.js prototype install-previews",
-    "themes:preview": "node dist/cli.js prototype preview"
+    "themes:preview": "node dist/cli.js prototype preview",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

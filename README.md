@@ -1,32 +1,126 @@
 # AI Spector
 
-Documentation workflow in **Cursor**: traceability graph, SRS / basic / detail design. **Describe what you need in chat** — skills route the agent, which runs `ai-spector` CLI. You usually do not run CLI yourself.
+Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS / basic / detail design. **Describe what you need in chat** — skills route the agent, which runs `ai-spector` CLI or MCP tools. You usually do not run CLI yourself.
 
-**Needs:** Node 20+, [Cursor](https://cursor.com), [uv](https://docs.astral.sh/uv/) (Graphify MCP after `init`).
+**Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
+
+Full setup reference: [docs/setup-guide.md](docs/setup-guide.md)
+
+**Tiếng Việt:** [README.vi.md](README.vi.md)
+
+---
 
 ## Setup (once)
 
-**In Cursor:** ask **"setup ai-spector project"** (agent runs the setup skill).
+### Prerequisites
 
-**CLI:**
+| Requirement | Check |
+|-------------|-------|
+| Node.js ≥ 20 | `node --version` |
+| Git repository | `git status` |
+| Cursor and/or Claude Code | IDE open in project root |
+| Python ≥ 3.11 *(optional)* | only for CocoIndex semantic search |
+
+---
+
+### Step 1 — Scaffold *(only CLI step)*
+
+Run once in your project root:
 
 ```bash
-npm install -D ai-spector
-npx ai-spector setup              # guided wizard
-npx ai-spector setup -y -l en,jp  # non-interactive
-npx ai-spector setup --check      # audit checklist
+npx ai-spector init
 ```
 
-1. Open the project in Cursor → reload **MCP** → enable **all** skills under `.cursor/skills/`.
-2. Put source material in `docs/data-source/`.
+The wizard prompts for editor (Cursor, Claude Code, or both), languages, git hook, and optional CocoIndex.
 
-Re-init scaffold: `npx ai-spector init --force` or `npx ai-spector setup -y --force`. After upgrading: `npx ai-spector sync-cursor`.
+This creates:
+
+- `.ai-spector/` — config, graph, templates
+- `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
+- **Cursor:** `.cursor/` — skills, rules, `mcp.json`
+- **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
+- Pre-commit hook (when git is available)
+
+---
+
+### Step 2 — Finish setup in chat
+
+Open the project in **Cursor** or **Claude Code** and say:
+
+```text
+setup ai-spector project
+```
+
+The agent installs the npm dependency (if needed), verifies the checklist, offers CocoIndex, and reminds you what is left to do manually.
+
+---
+
+### Step 3 — Enable the agent *(manual, one-time)*
+
+**Cursor**
+
+1. **Settings → Rules → Agent Skills** — enable **all** folders under `.cursor/skills/` (see `.cursor/skills/README.md`)
+2. **Reload MCP** — `.cursor/mcp.json` registers the `ai-spector` MCP server
+
+**Claude Code**
+
+1. Skills load automatically from `.claude/skills/` (see `CLAUDE.md`)
+2. **Reload MCP** — `.mcp.json` registers the `ai-spector` MCP server
+
+---
+
+### Step 4 — Add source material
+
+Drop requirements docs, meeting notes, user stories, or any input into `docs/data-source/`. Supported formats: `.md`, `.txt`, `.pdf`.
+
+---
+
+### Step 5 — Start the pipeline
+
+In chat:
+
+```text
+analyze my data source
+```
+
+Then continue in chat as needed — see [Workflow](#workflow) below.
+
+---
+
+### Optional — CocoIndex semantic search
+
+Enables `docs_search` and `graph_query_fuzzy` MCP tools. Requires Python ≥ 3.11.
+
+In chat:
+
+```text
+enable CocoIndex for this project
+```
+
+See [docs/setup-guide.md](docs/setup-guide.md) for Postgres / OpenAI embedding options.
+
+---
+
+### Add another editor later
+
+In chat:
+
+```text
+add Claude Code support to ai-spector
+sync ai-spector cursor skills
+```
+
+After upgrading ai-spector, say **"sync ai-spector cursor skills"** in chat.
+
+---
 
 ## Workflow
 
-See `.cursor/WORKFLOW.md` after `init`. Enable all skills under `.cursor/skills/`.
+See `.cursor/WORKFLOW.md` (Cursor) or `CLAUDE.md` (Claude Code) after `init`.
 
-### First run (natural language)
+### First run
+
+Say in chat:
 
 ```text
 “analyze the data source”
@@ -35,23 +129,11 @@ See `.cursor/WORKFLOW.md` after `init`. Enable all skills under `.cursor/skills/
 “refresh the index”
 ```
 
-Then: “generate basic design” → “generate detail design” as needed.
+Then: **“generate basic design”** → **“generate detail design”** as needed.
 
-HTML prototype:
+**HTML prototype** — say **“generate HTML prototype”**. If no theme is saved, the agent recommends 3 themes, opens previews in your browser, and waits for you to pick. Or name one upfront: **“prototype with stripe theme”**.
 
-```bash
-npx ai-spector prototype themes
-```
-
-Ask in chat: **“generate HTML prototype”** — if no theme is saved, the agent recommends 3 themes, opens previews in your browser, and waits for you to pick. Or name one upfront: “prototype with stripe theme”.
-
-```bash
-npx ai-spector prototype auth --username demo --password '<secret>'  # once per project
-npx ai-spector prototype preview stripe --open   # optional: preview yourself
-npx ai-spector prototype setup --theme vercel    # after you choose
-```
-
-Then ask: “generate HTML prototype for all screens” → `npx ai-spector prototype manifest` → `prototype validate --strict`.
+Then: **“generate HTML prototype for all screens”**.
 
 ### Day to day
 
@@ -75,21 +157,30 @@ docs/data-source/  →  analyze  →  validate graph  →  generate SRS  →  in
                               →  prototype setup  →  generate HTML screens
 ```
 
+---
+
 ## CLI (optional)
 
-For scripts or debugging: `npx ai-spector index`, `graph validate`, `graph visualize --open`, `graph impact --git`, `prototype auth|themes|preview|setup|manifest|validate`. See `npx ai-spector --help`.
+For scripts or debugging only: `npx ai-spector index`, `graph validate`, `graph visualize --open`, `graph impact --git`, `prototype auth|themes|preview|setup|manifest|validate`. See `npx ai-spector --help`.
+
+---
 
 ## If something breaks
 
 | Issue | Fix |
 |-------|-----|
-| Graphify / MCP | Install `uv`, reload MCP — `.cursor/commands/_cli-failures.md` |
-| Validate errors after edits | `/index` |
-| Old slash commands | `npx ai-spector sync-cursor` |
+| MCP tools unavailable | Reload MCP; confirm `.cursor/mcp.json` or `.mcp.json` has `ai-spector` server |
+| Setup incomplete | In chat: **“check ai-spector setup”** |
+| Skills not routing (Cursor) | Re-enable all folders under `.cursor/skills/` in Settings → Rules |
+| Validate errors after edits | In chat: **“re-index the graph”** |
+| Pre-commit hook missing | In chat: **“install ai-spector git hook”** |
+| Agent stuck on CLI error | `.cursor/skills/ai-spector/references/cli-failures.md` |
+
+---
 
 ## Web / graph SDK
 
-For **browser or custom dashboards** (not the Cursor CLI), use the read-only npm package **`ai-spector-graph`**. Your backend serves repo JSON; the frontend loads it into `ProjectSession`.
+For **browser or custom dashboards** (not the Cursor/Claude CLI), use the read-only npm package **`ai-spector-graph`**. Your backend serves repo JSON; the frontend loads it into `ProjectSession`.
 
 - **[Integration guide](docs/ai-spector-graph-integration-guide.md)** — architecture, API examples, React, recipes
 - **[API reference](docs/ai-spector-graph.md)** — types and exports
@@ -97,6 +188,8 @@ For **browser or custom dashboards** (not the Cursor CLI), use the read-only npm
 ```bash
 npm install ai-spector-graph
 ```
+
+---
 
 ## Develop
 

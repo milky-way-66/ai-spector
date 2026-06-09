@@ -55,13 +55,15 @@ describe("runInit", () => {
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-basic-design/SKILL.md"))).toBe(
       true,
     );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-detail-design/SKILL.md"))).toBe(
-      true,
-    );
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
       true,
     );
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-setup/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-lang-status/SKILL.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-translation/SKILL.md"))).toBe(
+      true,
+    );
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-comments/SKILL.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/README.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/_skill-router.md"))).toBe(true);
