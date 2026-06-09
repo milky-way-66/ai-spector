@@ -290,7 +290,6 @@ export async function runInit(opts: InitOptions): Promise<void> {
   process.stdout.write("\n");
   process.stdout.write(`  editor    -> ${target}\n`);
   process.stdout.write(`  languages -> ${langCodes.join(", ")}\n`);
-  process.stdout.write(`  npmrc     -> .npmrc (internal registry)\n`);
   process.stdout.write(`  gitignore -> ${gitignorePath}\n`);
   if (gitInitialized) {
     process.stdout.write(`  git       -> initialized new repository\n`);

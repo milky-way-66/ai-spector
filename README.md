@@ -1,10 +1,10 @@
 # AI Spector
 
-Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS / basic / detail design. **Describe what you need in chat** — skills route the agent, which runs `ai-spector` CLI or MCP tools. You usually do not run CLI yourself.
+Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, and UI prototypes (static HTML or SPA static build). **Describe what you need in chat** — skills route the agent, which runs `ai-spector` CLI or MCP tools. You usually do not run CLI yourself.
 
 **Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
 
-Full setup reference: [docs/setup-guide.md](docs/setup-guide.md)
+**Course (step-by-step):** [docs/course/README.md](docs/course/README.md)
 
 **Tiếng Việt:** [README.vi.md](README.vi.md)
 
@@ -31,13 +31,10 @@ Run once at your project root. On the **first** run, pass `--registry` so `npx` 
 npx ai-spector@latest init --registry http://10.101.0.239:4873
 ```
 
-`init` also creates `.npmrc` in the project root, so later `npm install` and `npx ai-spector …` use that registry automatically — no `--registry` flag needed.
-
 The wizard prompts for editor (Cursor, Claude Code, or both), languages, git hook, and optional CocoIndex.
 
 This creates:
 
-- `.npmrc` — `registry=http://10.101.0.239:4873`
 - `.ai-spector/` — config, graph, templates
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
 - **Cursor:** `.cursor/` — skills, rules, `mcp.json`
@@ -132,11 +129,11 @@ Say in chat:
 “refresh the index”
 ```
 
-Then: **“generate basic design”** → **“generate detail design”** as needed.
+Then: **“generate basic design”** as needed.
 
-**HTML prototype** — say **“generate HTML prototype”**. If no theme is saved, the agent recommends 3 themes, opens previews in your browser, and waits for you to pick. Or name one upfront: **“prototype with stripe theme”**.
+**Prototype** — static HTML (default) or SPA (React/Vue/etc. built to static files in `prototype/dist/`). Say **“generate prototype”** or **“generate HTML prototype”** for plain HTML; **“generate prototype with Vue”** (or React) for SPA. If no theme is saved, the agent recommends 3 themes, opens previews, and waits for you to pick. Or name one upfront: **“prototype with stripe theme”**.
 
-Then: **“generate HTML prototype for all screens”**.
+Then: **“generate prototype for all screens”**. For SPA, run the framework build and `npx ai-spector prototype sync`.
 
 ### Day to day
 
@@ -145,9 +142,11 @@ Then: **“generate HTML prototype for all screens”**.
 | New or changed data source | “analyze data source” |
 | Check graph | “validate the graph” |
 | Regenerate docs | “generate SRS”, “generate basic design”, … |
-| HTML prototype | “generate prototype with stripe theme” |
+| Prototype (HTML or SPA) | “generate prototype”, “generate prototype with Vue”, “prototype with stripe theme” |
 | Choose a theme | “help me pick a prototype theme”, “show me theme options” |
 | After doc edits | “re-index the graph” |
+| Multi-language sync | “add language vi”, “resolve translations”, “translation status” — [Work 10](docs/course/10-multi-language.md) |
+| Custom templates | “set up template pack”, “template list”, `generate <pack-name>` — [Work 17](docs/course/17-custom-template-packs.md) |
 | What to redo | “what’s the impact of my changes” |
 | Review comments | “resolve comments” |
 | Explore graph | “visualize the graph” |
@@ -156,8 +155,8 @@ Then: **“generate HTML prototype for all screens”**.
 
 ```text
 docs/data-source/  →  analyze  →  validate graph  →  generate SRS  →  index
-                              →  generate basic design  →  generate detail design
-                              →  prototype setup  →  generate HTML screens
+                              →  generate basic design
+                              →  prototype setup  →  generate screens (HTML or SPA build)
 ```
 
 ---
@@ -178,6 +177,22 @@ For scripts or debugging only: `npx ai-spector index`, `graph validate`, `graph 
 | Validate errors after edits | In chat: **“re-index the graph”** |
 | Pre-commit hook missing | In chat: **“install ai-spector git hook”** |
 | Agent stuck on CLI error | `.cursor/skills/ai-spector/references/cli-failures.md` |
+
+---
+
+## Node SDK
+
+For **scripts, CI, or custom backends** that call the same operations as the CLI and MCP server:
+
+- **[SDK guide](docs/sdk.md)** — install, entry points, examples, API reference
+
+```bash
+npm install ai-spector
+```
+
+```ts
+import { runIndex, runGraphImpact, validateGraph } from "ai-spector";
+```
 
 ---
 

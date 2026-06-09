@@ -11,15 +11,6 @@ import { runInit } from "../../src/core/operations/init.js";
 import { pathExists } from "../../src/core/util/fs.js";
 
 describe("runInit", () => {
-  it("copies .npmrc with internal registry", async () => {
-    const root = await mkdtemp(join(tmpdir(), "ai-spector-init-npmrc-"));
-
-    await runInit({ targetDir: root, yes: true });
-
-    const npmrc = await readFile(join(root, ".npmrc"), "utf8");
-    expect(npmrc).toContain("registry=http://10.101.0.239:4873");
-  });
-
   it("copies templates into .ai-spector/templates", async () => {
     const root = await mkdtemp(join(tmpdir(), "ai-spector-init-"));
 

@@ -1,6 +1,6 @@
 # AI Spector
 
-Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**: sơ đồ liên kết, SRS, basic design, detail design. **Bạn chỉ cần nói trong chat** — agent sẽ tự chạy lệnh `ai-spector` hoặc MCP. Thường bạn không cần gõ lệnh terminal.
+Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**: sơ đồ liên kết, SRS, basic design và prototype UI (HTML tĩnh hoặc SPA build ra file tĩnh). **Bạn chỉ cần nói trong chat** — agent sẽ tự chạy lệnh `ai-spector` hoặc MCP. Thường bạn không cần gõ lệnh terminal.
 
 **Cần có:** Node 20+, Git, [Cursor](https://cursor.com) và/hoặc [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(không bắt buộc — dùng cho tìm kiếm thông minh với CocoIndex)*.
 
@@ -31,13 +31,10 @@ Chạy một lần ở thư mục gốc project. **Lần đầu** cần thêm `-
 npx ai-spector@latest init --registry http://10.101.0.239:4873
 ```
 
-`init` cũng tạo `.npmrc` trong project — sau đó `npm install` và `npx ai-spector …` tự dùng registry đó, không cần `--registry` nữa.
-
 Lệnh sẽ hỏi: dùng Cursor, Claude Code hay cả hai; ngôn ngữ tài liệu; git hook; và có bật CocoIndex không.
 
 Sau khi chạy xong sẽ có:
 
-- `.npmrc` — `registry=http://10.101.0.239:4873`
 - `.ai-spector/` — cấu hình, sơ đồ, mẫu tài liệu
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
 - **Cursor:** `.cursor/` — skills, rules, `mcp.json`
@@ -132,11 +129,11 @@ Gõ trong chat:
 “refresh the index”
 ```
 
-Tiếp theo: **“generate basic design”** → **“generate detail design”** khi cần.
+Tiếp theo: **“generate basic design”** khi cần.
 
-**Làm prototype HTML** — gõ **“generate HTML prototype”**. Nếu chưa chọn theme, agent gợi ý 3 theme, mở xem trên trình duyệt, rồi chờ bạn chọn. Hoặc nói luôn: **“prototype with stripe theme”**.
+**Prototype** — HTML tĩnh (mặc định) hoặc SPA (React/Vue/… build ra `prototype/dist/`). Gõ **“generate prototype”** hoặc **“generate HTML prototype”** cho HTML; **“generate prototype with Vue”** (hoặc React) cho SPA. Nếu chưa chọn theme, agent gợi ý 3 theme, mở xem trên trình duyệt, rồi chờ bạn chọn. Hoặc nói luôn: **“prototype with stripe theme”**.
 
-Sau đó: **“generate HTML prototype for all screens”**.
+Sau đó: **“generate prototype for all screens”**. Với SPA, chạy build framework rồi `npx ai-spector prototype sync`.
 
 ### Dùng hàng ngày
 
@@ -145,9 +142,11 @@ Sau đó: **“generate HTML prototype for all screens”**.
 | Có tài liệu nguồn mới hoặc sửa | “analyze data source” |
 | Kiểm tra sơ đồ | “validate the graph” |
 | Tạo lại tài liệu | “generate SRS”, “generate basic design”, … |
-| Làm prototype HTML | “generate prototype with stripe theme” |
+| Prototype (HTML hoặc SPA) | “generate prototype”, “generate prototype with Vue”, “prototype with stripe theme” |
 | Chọn theme | “help me pick a prototype theme”, “show me theme options” |
 | Vừa sửa tài liệu xong | “re-index the graph” |
+| Đồng bộ đa ngôn ngữ | “add language vi”, “resolve translations”, “translation status” — [Work 10](docs/course/10-multi-language.md) |
+| Template tùy chỉnh | “set up template pack”, “template list”, `generate <pack-name>` — [Work 17](docs/course/17-custom-template-packs.md) |
 | Xem phần nào bị ảnh hưởng | “what’s the impact of my changes” |
 | Xử lý comment | “resolve comments” |
 | Xem sơ đồ trực quan | “visualize the graph” |
@@ -156,8 +155,8 @@ Sau đó: **“generate HTML prototype for all screens”**.
 
 ```text
 docs/data-source/  →  analyze  →  validate graph  →  generate SRS  →  index
-                              →  generate basic design  →  generate detail design
-                              →  prototype setup  →  generate HTML screens
+                              →  generate basic design
+                              →  prototype setup  →  generate screens (HTML hoặc SPA build)
 ```
 
 ---
@@ -178,6 +177,22 @@ Chỉ dùng khi viết script hoặc debug: `npx ai-spector index`, `graph valid
 | Validate báo lỗi sau khi sửa | Trong chat: **“re-index the graph”** |
 | Thiếu hook git | Trong chat: **“install ai-spector git hook”** |
 | Agent bị kẹt vì lỗi CLI | Xem `.cursor/skills/ai-spector/references/cli-failures.md` |
+
+---
+
+## Node SDK
+
+Dùng khi bạn viết **script, CI, hoặc backend tùy chỉnh** — cùng các thao tác typed như CLI và MCP:
+
+- **[Hướng dẫn SDK](docs/sdk.md)** — cài đặt, entry points, ví dụ, tham chiếu API
+
+```bash
+npm install ai-spector
+```
+
+```ts
+import { runIndex, runGraphImpact, validateGraph } from "ai-spector";
+```
 
 ---
 

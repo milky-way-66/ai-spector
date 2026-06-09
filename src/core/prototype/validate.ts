@@ -134,6 +134,18 @@ export async function validatePrototype(
   if (buildMode === "spa") {
     const buildDest =
       opts.config.buildDest?.trim() || `${opts.config.prototypeDir}/dist`;
+
+    const allowedPrefixes = [
+      `${opts.config.prototypeDir}/dist`,
+      `${opts.config.prototypeDir}/out`,
+    ];
+    if (!allowedPrefixes.some((p) => buildDest === p || buildDest.startsWith(p + "/"))) {
+      issues.push({
+        severity: "error",
+        code: "SPA_BUILD_DEST_INVALID",
+        message: `SPA buildDest must be under ${opts.config.prototypeDir}/dist or ${opts.config.prototypeDir}/out (got: "${buildDest}") — update prototype.buildDest in docflow.config.json`,
+      });
+    }
     const indexPath = join(opts.projectRoot, buildDest, "index.html");
 
     if (!(await pathExists(indexPath))) {
