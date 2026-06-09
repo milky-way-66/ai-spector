@@ -25,16 +25,19 @@ Full setup reference: [docs/setup-guide.md](docs/setup-guide.md)
 
 ### Step 1 — Scaffold *(only CLI step)*
 
-Run once in your project root:
+Run once at your project root. On the **first** run, pass `--registry` so `npx` can download the package from the internal Verdaccio registry (`http://10.101.0.239:4873`). No `npm login` required.
 
 ```bash
-npx ai-spector init
+npx ai-spector@latest init --registry http://10.101.0.239:4873
 ```
+
+`init` also creates `.npmrc` in the project root, so later `npm install` and `npx ai-spector …` use that registry automatically — no `--registry` flag needed.
 
 The wizard prompts for editor (Cursor, Claude Code, or both), languages, git hook, and optional CocoIndex.
 
 This creates:
 
+- `.npmrc` — `registry=http://10.101.0.239:4873`
 - `.ai-spector/` — config, graph, templates
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
 - **Cursor:** `.cursor/` — skills, rules, `mcp.json`

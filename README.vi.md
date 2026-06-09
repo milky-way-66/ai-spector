@@ -25,16 +25,19 @@ Hướng dẫn chi tiết: [docs/setup-guide.md](docs/setup-guide.md)
 
 ### Bước 1 — Khởi tạo project *(bước duy nhất cần gõ lệnh)*
 
-Chạy một lần ở thư mục gốc project:
+Chạy một lần ở thư mục gốc project. **Lần đầu** cần thêm `--registry` để `npx` tải gói từ registry nội bộ (`http://10.101.0.239:4873`). **Không cần** `npm login`.
 
 ```bash
-npx ai-spector init
+npx ai-spector@latest init --registry http://10.101.0.239:4873
 ```
 
-Lệnh sẽ hỏi bạn: dùng Cursor, Claude Code hay cả hai; ngôn ngữ tài liệu; git hook; và có bật CocoIndex không.
+`init` cũng tạo `.npmrc` trong project — sau đó `npm install` và `npx ai-spector …` tự dùng registry đó, không cần `--registry` nữa.
+
+Lệnh sẽ hỏi: dùng Cursor, Claude Code hay cả hai; ngôn ngữ tài liệu; git hook; và có bật CocoIndex không.
 
 Sau khi chạy xong sẽ có:
 
+- `.npmrc` — `registry=http://10.101.0.239:4873`
 - `.ai-spector/` — cấu hình, sơ đồ, mẫu tài liệu
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
 - **Cursor:** `.cursor/` — skills, rules, `mcp.json`
