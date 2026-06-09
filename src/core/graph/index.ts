@@ -5,7 +5,7 @@ export type {
   ImpactOptions,
 } from "./session.js";
 
-export { ProjectSession } from "./project.js";
+export { ProjectSession, createProjectSession } from "./project.js";
 export type { ProjectBundle, ProjectSessionOptions } from "./project.js";
 
 export {

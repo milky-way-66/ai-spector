@@ -1,4 +1,5 @@
-import { computeImpact, loadImpactRules } from "../graph/impact.js";
+import { computeImpact } from "../graph/impact.js";
+import { loadImpactRules } from "../graph/impact-loader.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import {
   pickPrimaryImpactOrigin,

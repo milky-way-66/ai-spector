@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.8.19",
+  "version": "0.8.20",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -38,10 +38,26 @@
     "LICENSE"
   ],
   "exports": {
-    ".": "./dist/sdk.js",
-    "./graph": "./dist/core/graph/index.js",
-    "./mcp": "./dist/interfaces/mcp/server.js",
-    "./cli": "./dist/cli.js"
+    ".": {
+      "types": "./dist/sdk.d.ts",
+      "default": "./dist/sdk.js"
+    },
+    "./graph": {
+      "types": "./dist/core/graph/index.d.ts",
+      "default": "./dist/core/graph/index.js"
+    },
+    "./types": {
+      "types": "./dist/interfaces/types/index.d.ts",
+      "default": "./dist/interfaces/types/index.js"
+    },
+    "./mcp": {
+      "types": "./dist/interfaces/mcp/server.d.ts",
+      "default": "./dist/interfaces/mcp/server.js"
+    },
+    "./cli": {
+      "default": "./dist/cli.js"
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "ai-spector": "./dist/cli.js",

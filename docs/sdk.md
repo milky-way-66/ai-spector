@@ -1,22 +1,18 @@
-# ai-spector Node SDK
+# ai-spector SDK
 
-Programmatic access to the same typed operations used by the CLI and MCP server. Use the SDK when you want to automate indexing, graph queries, impact analysis, or comment workflows from Node scripts, CI jobs, or custom backends.
+Programmatic access to the same typed operations used by the CLI and MCP server.
 
-**Requirements:** Node.js ≥ 20. CocoIndex helpers additionally need Python ≥ 3.11 when semantic search is enabled.
+**Requirements:** Node.js ≥ 20 for Node operations. Browser/SSR environments use `ai-spector/graph` only — no Node required.
 
 ---
 
 ## Install
 
-`ai-spector` is published to **npm** and the internal **Verdaccio** registry (`http://10.101.0.239:4873`).
-
-**npm (default registry):**
-
 ```bash
 npm install ai-spector
 ```
 
-**Internal registry:**
+Internal Verdaccio registry:
 
 ```bash
 npm install ai-spector --registry http://10.101.0.239:4873
@@ -26,28 +22,51 @@ npm install ai-spector --registry http://10.101.0.239:4873
 
 ## Entry points
 
-| Import | Use for |
-|--------|---------|
-| `ai-spector` | Full SDK — graph sessions, `run*` operations, CocoIndex, comments |
-| `ai-spector/graph` | Pure graph algorithms only (no filesystem I/O) — browser-safe subset |
-| `ai-spector/mcp` | MCP server entry (`ai-spector-mcp` bin) |
-| `ai-spector/cli` | CLI entry (`ai-spector` bin) |
+| Import | Runtime | What it contains |
+|--------|---------|-----------------|
+| `ai-spector` | Node ≥ 20 | Everything: graph sessions + file operations + CocoIndex + comments |
+| `ai-spector/graph` | Browser · SSR · Node | Pure graph algorithms + sessions — **zero Node built-ins** |
+| `ai-spector/types` | Anywhere | Shared TypeScript types only — no runtime code |
+| `ai-spector/mcp` | Node | MCP server entry (`ai-spector-mcp` bin) |
+| `ai-spector/cli` | Node | CLI entry (`ai-spector` bin) |
 
-The main SDK re-exports graph primitives plus file-backed operations. Prefer `ai-spector/graph` in bundlers that must not pull Node built-ins.
+**Rule of thumb:**
+- Frontend app (Vue, React, Next)? → use `ai-spector/graph`
+- Node script, CI, backend, or CLI? → use `ai-spector`
+- Types only in a shared type package? → use `ai-spector/types`
+
+> For a complete browser integration walkthrough see **[Browser integration guide](browser-integration.md)**.
 
 ---
 
-## Design
+## TypeScript config
+
+All subpaths ship `types` fields in the export map. Any `moduleResolution` that respects export conditions works without extra config:
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler"   // Vite / esbuild / webpack 5
+    // or "node16" / "nodenext"     // Node ESM
+  }
+}
+```
+
+No `paths` overrides needed.
+
+---
+
+## SDK design
 
 - Every `run*` function accepts typed options and returns a typed result — no `console.log`, no formatted strings.
-- File-backed operations resolve paths from `root` (defaults to `process.cwd()`) via `.ai-spector/` layout, same as the CLI.
-- In-memory helpers (`GraphSession`, `ProjectSession`, `querySubgraph`, `computeImpact`) accept JSON you already loaded — useful when your API serves graph data to a frontend.
-
-Errors are thrown as standard `Error` objects with actionable messages (same text the CLI surfaces).
+- File-backed operations resolve paths from `root` (defaults to `process.cwd()`) via the `.ai-spector/` layout, same as the CLI.
+- In-memory helpers (`GraphSession`, `ProjectSession`, `querySubgraph`, `computeImpact`) accept JSON you already loaded — no filesystem access. These are the same functions the `run*` helpers call internally.
+- Errors throw as standard `Error` objects with actionable messages (same text the CLI surfaces).
 
 ---
 
-## Quick start
+## Node SDK quick start
 
 ### Re-index a project
 
@@ -70,10 +89,10 @@ console.log(report.steps.map((s) => `${s.id}: ${s.status}`));
 import { validateGraph } from "ai-spector";
 
 const issues = await validateGraph({
-  graphPath: ".ai-spector/traceability.graph.json",
+  graphPath: ".ai-spector/graph/traceability.graph.json",
   schemaPath: "node_modules/ai-spector/schemas/traceability.graph.schema.json",
-  registryPath: ".ai-spector/section-registry.json",
-  rulesPath: ".ai-spector/rules/impact.json",
+  registryPath: ".ai-spector/registry/section-registry.json",
+  rulesPath: "schemas/rules.impact.json",
 });
 
 const errors = issues.filter((i) => i.severity === "error");
@@ -88,14 +107,14 @@ if (errors.length > 0) {
 ```ts
 import { runGraphQuery } from "ai-spector";
 
-const subgraph = await runGraphQuery({
-  graphPath: ".ai-spector/traceability.graph.json",
+const result = await runGraphQuery({
+  graphPath: ".ai-spector/graph/traceability.graph.json",
   seedId: "UC-01",
   direction: "both",
   depth: 2,
 });
 
-console.log(subgraph.nodes.length, subgraph.edges.length);
+console.log(result.nodes.length, result.edges.length);
 ```
 
 ### Impact analysis from git changes
@@ -105,8 +124,8 @@ import { runGraphImpact } from "ai-spector";
 
 const impact = await runGraphImpact({
   projectRoot: process.cwd(),
-  graphPath: ".ai-spector/traceability.graph.json",
-  rulesPath: ".ai-spector/rules/impact.json",
+  graphPath: ".ai-spector/graph/traceability.graph.json",
+  rulesPath: "schemas/rules.impact.json",
   git: true,
   change: "edited requirements",
 });
@@ -121,37 +140,43 @@ for (const entry of impact.review) {
 
 ---
 
-## In-memory graph sessions
+## In-memory sessions (browser + Node)
 
-When you already have JSON (e.g. from an HTTP API), use sessions instead of path-based `run*` helpers.
+Use sessions when you already have JSON — from an HTTP API, a file you loaded yourself, or a test fixture.  
+Import from `ai-spector/graph` in browser code; from `ai-spector` in Node code.
 
 ### `GraphSession`
 
+Single-graph in-memory session.
+
 ```ts
-import { GraphSession, DEFAULT_IMPACT_RULES } from "ai-spector";
-import graphJson from "./traceability.graph.json" with { type: "json" };
+import { GraphSession, DEFAULT_IMPACT_RULES } from "ai-spector/graph";
 
 const session = GraphSession.fromJson(graphJson, {
   impactRules: DEFAULT_IMPACT_RULES,
 });
 
-const stats = session.stats();
+const stats    = session.stats();
 const subgraph = session.query("UC-01", { direction: "out", depth: 3 });
-const impact = session.impactFromNode("UC-01", { change: "title updated" });
+const impact   = session.impactFromNode("UC-01", { change: "title updated" });
 ```
 
-### `ProjectSession`
+### `ProjectSession` / `createProjectSession`
 
-Bundles graph + optional knowledge, section registry, config, state, and translation queue — same shape a dashboard backend would fetch.
+Multi-file session: graph + optional knowledge, section registry, config, state, and translation queue.
 
 ```ts
-import { ProjectSession } from "ai-spector";
+import { createProjectSession } from "ai-spector/graph";
+import type { ProjectBundle } from "ai-spector/types";
 
-const project = ProjectSession.fromBundle({
-  graph: graphJson,
-  knowledge: knowledgeJson,
-  registry: registryJson,
-});
+// bundle comes from your API — see Browser integration guide for the full contract
+const bundle: ProjectBundle = {
+  graph:     graphJson,
+  knowledge: knowledgeJson,   // optional
+  registry:  registryJson,    // optional
+};
+
+const project = createProjectSession(bundle);
 
 console.log(project.knowledgeStats());
 console.log(project.knowledgeCoverage());
@@ -159,28 +184,69 @@ console.log(project.sectionLabel("sec.use-cases"));
 console.log(project.healthSummary());
 ```
 
-See also the browser-focused **`ai-spector-graph`** package if you only need read-only visualization in the frontend.
+`createProjectSession(bundle)` and `ProjectSession.fromBundle(bundle)` are identical — use whichever reads more naturally.
+
+---
+
+## Repo file layout reference
+
+Your backend must serve these files. Paths are relative to the project root.
+
+| File | Bundle field | Required |
+|------|-------------|----------|
+| `.ai-spector/graph/traceability.graph.json` | `graph` | **Yes** |
+| `schemas/rules.impact.json` | `impactRules` | No — falls back to built-in defaults |
+| `.ai-spector/registry/section-registry.json` | `registry` | No — disables `sectionLabel()` |
+| `.ai-spector/.docflow/knowledge.json` | `knowledge` | No — disables knowledge coverage |
+| `.ai-spector/.docflow/state.json` | `state` | No |
+| `.ai-spector/.docflow/translation-queue/` (merged) | `translationQueue` | No |
 
 ---
 
 ## API reference
 
-### Graph primitives
+### Browser-safe exports (`ai-spector/graph`)
+
+#### Sessions
 
 | Export | Description |
 |--------|-------------|
-| `querySubgraph(graph, seedId, options?)` | BFS subgraph from a seed node |
+| `createProjectSession(bundle)` | Free-function alias for `ProjectSession.fromBundle(bundle)` |
+| `ProjectSession.fromBundle(bundle)` | Multi-file project session |
+| `GraphSession.fromJson(graph, opts?)` | Single-graph session |
+
+#### Algorithms
+
+| Export | Description |
+|--------|-------------|
+| `querySubgraph(graph, seedId, opts?)` | BFS subgraph from a seed node |
 | `computeImpact(graph, originId, change, rules)` | Formal impact buckets (`regenerate`, `review`) |
-| `parseImpactRules(data)` | Parse `impact.json` rules file |
-| `DEFAULT_IMPACT_RULES` | Built-in default rules object |
-| `auditGraphLayers(graph, options?)` | Tri-layer coverage audit |
+| `mergeImpactResults(results, gitSeeds?)` | Merge multiple impact results (multi-seed git diff) |
+| `parseImpactRules(data)` | Parse a `rules.impact.json` object |
+| `DEFAULT_IMPACT_RULES` | Built-in rules — used when `impactRules` is omitted from bundle |
+| `auditGraphLayers(graph, opts?)` | Tri-layer coverage audit |
 | `knowledgeGraphCoverage(graph, knowledge)` | Knowledge ↔ graph coverage report |
 | `computeKnowledgeStats(knowledge)` | Count actors, use cases, features, etc. |
-| `expandPathTargetNodes(graph, options?)` | Expand path/file nodes for visualization |
+| `expandPathTargetNodes(graph, opts?)` | Expand path/file nodes for visualization |
+| `nodesForVisualization(graph, opts?)` | Flat node list ready for a graph canvas |
+| `resolveImpactOrigins(graph, hints)` | Resolve a file/heading/id to impact origin nodes |
+| `pickPrimaryImpactOrigin(origins)` | Pick the best origin from a resolve result |
+| `sectionLabel(registry, id)` | Human label for a registry section id |
+| `registryDocuments(registry)` | All registry document entries |
+| `graphHealthSummary(graph, audit)` | Structured health summary |
+| `computeGraphStats(graph)` | Node/edge count stats |
 
-**Types:** `GraphQueryResult`, `ImpactResult`, `ImpactRulesFile`, `LayerAuditReport`, `KnowledgeCoverageReport`, `AnalysisKnowledge`, `ResolvedOrigin`, `GraphSessionOptions`, `ProjectSessionOptions`, `ProjectBundle`
+#### Types (also in `ai-spector/types`)
 
-### Graph operations (filesystem)
+`ProjectBundle` · `ProjectSessionOptions` · `GraphSessionOptions` · `ImpactRulesFile` · `ImpactEntry` · `ImpactResult` · `QueryOptions` · `GraphQueryResult` · `LayerAuditReport` · `KnowledgeCoverageReport` · `AnalysisKnowledge` · `ResolvedOrigin` · `GraphHealthSummary` · `GraphStats` · `SectionRegistry` · `RegistryDocument` · `TranslationJob` · `TranslationQueueStats` · `StaleTranslationLink` · `ExtractPatch` · `PatchSimulationResult`
+
+---
+
+### Node-only exports (`ai-spector`)
+
+> Do not import these in browser bundles — they use `node:fs`, `node:path`, `node:child_process`.
+
+#### Graph operations (file-backed)
 
 | Function | Returns | Notes |
 |----------|---------|-------|
@@ -188,45 +254,39 @@ See also the browser-focused **`ai-spector-graph`** package if you only need rea
 | `runGraphMerge(opts)` | `GraphMergeResult` | Apply extract/knowledge patch |
 | `runGraphQuery(opts)` | `GraphQueryResult` | Load graph from disk, then query |
 | `runGraphImpact(opts)` | `GraphImpactResult` | Impact from node id, file/heading, or `--git` |
-| `runGraphImpactFromGit(graph, opts)` | `GraphImpactResult` | Git diff seeds when graph is already loaded |
-
-**`GraphMergeOptions` highlights:** `root`, `fromKnowledge`, `semantic`, `withKnowledge`, `dryRun`, `validate`
-
-**`GraphImpactCliOptions` highlights:** `projectRoot`, `graphPath`, `rulesPath`, `originId`, `file`, `heading`, `git`, `change`, `output`
+| `runGraphImpactFromGit(graph, opts)` | `GraphImpactResult` | Git diff seeds when graph already loaded |
 
 `GraphImpactResult` extends `ImpactResult` with optional `semanticSuggestions` when CocoIndex is configured.
 
-### Index
+#### Index
 
 ```ts
+import { runIndex } from "ai-spector";
+
 const report = await runIndex({
   root: "/path/to/project",
-  graphOnly: false,      // skip doc indexing
+  graphOnly: false,      // skip doc indexing steps
   docsOnly: false,       // skip graph steps
   skipMerge: false,
   skipValidate: false,
   cocoindexSync: false,  // trigger CocoIndex re-index when configured
 });
+// IndexReport: { steps: IndexStepResult[]; failed: boolean; cocoindexUpdated?; cocoindexSkipped? }
+// Each step: { id, label, status: "ok" | "skipped" | "failed", detail? }
 ```
 
-**`IndexReport`:** `{ steps: IndexStepResult[]; failed: boolean; cocoindexUpdated?; cocoindexSkipped? }`
-
-Each step has `id`, `label`, `status` (`ok` | `skipped` | `failed`), and optional `detail`.
-
-### CocoIndex (optional)
+#### CocoIndex (optional semantic search)
 
 | Function | Description |
 |----------|-------------|
-| `isCocoindexConfigured(root)` | Whether `.ai-spector/.docflow/cocoindex/pipeline.py` exists |
+| `isCocoindexConfigured(root)` | Whether CocoIndex pipeline exists |
 | `runCocoindexSetup(opts?)` | Scaffold CocoIndex pipeline + optional venv deps |
-| `runCocoindexSearch(opts)` | Semantic doc search; returns `CocoindexSearchResult` |
-| `runGraphQueryFuzzy(opts)` | Resolve query via embeddings, then run subgraph query |
+| `runCocoindexSearch(opts)` | Semantic doc search — returns `CocoindexSearchResult` |
+| `runGraphQueryFuzzy(opts)` | Resolve via embeddings, then run subgraph query |
 
-**`CocoindexSearchOptions`:** `root`, `query`, `limit`, `threshold`
+Requires Python ≥ 3.11 when enabled.
 
-**`FuzzyQueryOptions`:** `root`, `query`, `direction`, `depth`, `threshold`
-
-### Comments
+#### Comments
 
 | Function | Returns |
 |----------|---------|
@@ -236,38 +296,36 @@ Each step has `id`, `label`, `status` (`ok` | `skipped` | `failed`), and optiona
 | `runCommentsShow(opts)` | Full thread object |
 | `runCommentsResolve(opts)` | `ResolveThreadResult` |
 
-All accept `root` and optional `filePath`. List/inbox accept `status`: `open` | `resolved` | `all`.
+All accept `root` and optional `filePath`. List/inbox accept `status`: `"open"` | `"resolved"` | `"all"`.
 
 ---
 
-## Subpath: `ai-spector/graph`
-
-Exports the pure graph module — sessions, query, impact, registry helpers, translation queue parsers, and shared types. No `runIndex`, no comments, no CocoIndex spawn.
-
-Use this subpath when:
-
-- Building a browser bundle that receives JSON from your backend
-- Unit-testing graph algorithms without touching the filesystem
-- Publishing a thin wrapper around graph logic
+## What not to do
 
 ```ts
-import { ProjectSession, querySubgraph, computeImpact } from "ai-spector/graph";
-```
+// ❌ Don't import the Node root package in a browser bundle
+import { createProjectSession } from "ai-spector";      // pulls in node:fs
 
-For a full browser integration guide, see [ai-spector-graph integration](ai-spector-graph-integration-guide.md) (companion package).
+// ✅ Use the browser entry instead
+import { createProjectSession } from "ai-spector/graph";
+
+// ❌ Don't call runIndex / runGraphImpact from frontend code
+import { runIndex } from "ai-spector/graph";            // not exported — will error
+
+// ✅ Run operations server-side, pass resulting JSON to the frontend session
+```
 
 ---
 
 ## MCP and CLI
 
-The MCP server and CLI are thin adapters over the same `run*` functions:
+The MCP server and CLI are thin adapters over the same `run*` functions. SDK callers get identical result shapes:
 
 ```bash
-node dist/interfaces/mcp/server.js   # or: npx ai-spector-mcp
-node dist/cli.js index --json          # or: npx ai-spector index --json
+npx ai-spector index --json         # same shape as runIndex() result
+npx ai-spector graph impact --json  # same shape as runGraphImpact() result
+npx ai-spector-mcp                  # MCP server
 ```
-
-SDK callers get identical result shapes as `npx ai-spector <cmd> --json`.
 
 ---
 
@@ -275,6 +333,5 @@ SDK callers get identical result shapes as `npx ai-spector <cmd> --json`.
 
 | Doc | Audience |
 |-----|----------|
-| [Setup guide](setup-guide.md) | End-user project setup |
-| [ai-spector-graph integration](ai-spector-graph-integration-guide.md) | Browser dashboards |
-| [ARCHITECTURE.md](../ARCHITECTURE.md) | Contributor architecture |
+| [Browser integration guide](browser-integration.md) | Vue / React / Next.js frontend apps |
+| [ARCHITECTURE.md](../ARCHITECTURE.md) | Contributor architecture reference |

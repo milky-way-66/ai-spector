@@ -1,8 +1,6 @@
-import { readJson } from "../util/fs.js";
 import type { NodeType } from "../../types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import { projectionPathForNode } from "./query.js";
-import { createRequire } from "module";
 
 type EdgeRule = { direction: "in" | "out"; depth: number | "unbounded" };
 
@@ -14,8 +12,29 @@ export interface ImpactRulesFile {
   maxNodes?: number;
 }
 
-const _require = createRequire(import.meta.url);
-const defaultImpactRules = _require("./rules/default-impact.json") as ImpactRulesFile;
+const defaultImpactRules: ImpactRulesFile = {
+  version: 2,
+  pass1_expand: {
+    partOf:      { direction: "out", depth: "unbounded" },
+    listedIn:    { direction: "in",  depth: 1 },
+    definedIn:   { direction: "in",  depth: 1 },
+    describedIn: { direction: "in",  depth: 1 },
+    dependsOn:   { direction: "in",  depth: "unbounded" },
+  },
+  pass2_downstream: {
+    tracesTo:    { direction: "in",  depth: "unbounded" },
+    satisfies:   { direction: "in",  depth: 1 },
+    references:  { direction: "in",  depth: 2 },
+    listedIn:    { direction: "out", depth: "unbounded" },
+    definedIn:   { direction: "out", depth: "unbounded" },
+    describedIn: { direction: "out", depth: "unbounded" },
+    partOf:      { direction: "out", depth: "unbounded" },
+  },
+  buckets: {
+    regenerate: ["section", "document"] as NodeType[],
+    review:     ["useCase", "feature", "requirement", "nfr", "actor", "dataEntity"] as NodeType[],
+  },
+};
 
 export interface ImpactEntry {
   id: string;
@@ -285,6 +304,3 @@ export function mergeImpactResults(
   return merged;
 }
 
-export async function loadImpactRules(path: string): Promise<ImpactRulesFile> {
-  return parseImpactRules(await readJson(path));
-}

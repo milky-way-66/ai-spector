@@ -88,7 +88,7 @@ export async function copyScaffoldToProject(
 ): Promise<void> {
   const scaffold = scaffoldBundleRoot();
   const entries = await readdir(scaffold, { withFileTypes: true });
-  const skipDirs = new Set(["cursor", "claude"]);
+  const skipDirs = new Set(["cursor", "claude", "cocoindex"]);
   for (const ent of entries) {
     if (skipDirs.has(ent.name)) {
       continue;

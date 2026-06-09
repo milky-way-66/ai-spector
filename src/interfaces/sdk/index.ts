@@ -1,30 +1,96 @@
-// Graph domain — pure algorithms and sessions
+// ─── Browser-safe (also works in Node) ───────────────────────────────────────
+// These exports come from ai-spector/graph — no Node built-ins, safe to import
+// in Vite / webpack / Next.js. Prefer "ai-spector/graph" in frontend bundles;
+// the re-exports here are for Node callers who want everything in one import.
+
 export {
-  querySubgraph,
-  computeImpact,
+  // Session classes
   GraphSession,
   ProjectSession,
-  DEFAULT_IMPACT_RULES,
+  createProjectSession,        // free-function alias for ProjectSession.fromBundle()
+
+  // Graph algorithms
+  querySubgraph,
+  computeImpact,
+  mergeImpactResults,
   parseImpactRules,
+  DEFAULT_IMPACT_RULES,
+
+  // Audit / coverage
   auditGraphLayers,
   knowledgeGraphCoverage,
   computeKnowledgeStats,
+
+  // Visualization helpers
   expandPathTargetNodes,
-} from "../../core/graph/index.js";
-export type {
-  GraphQueryResult,
-  ImpactResult,
-  LayerAuditReport,
-  ResolvedOrigin,
-  GraphSessionOptions,
-  ProjectSessionOptions,
-  ProjectBundle,
-  ImpactRulesFile,
-  KnowledgeCoverageReport,
-  AnalysisKnowledge,
+  nodesForVisualization,
+
+  // Impact origin helpers
+  resolveImpactOrigins,
+  pickPrimaryImpactOrigin,
+
+  // Registry helpers
+  sectionLabel,
+  registryDocuments,
+
+  // Health
+  graphHealthSummary,
+
+  // Stats
+  computeGraphStats,
 } from "../../core/graph/index.js";
 
-// Graph commands
+export type {
+  // Sessions
+  GraphSessionOptions,
+  ResolveOriginsHints,
+  ProjectBundle,
+  ProjectSessionOptions,
+
+  // Impact
+  ImpactRulesFile,
+  ImpactEntry,
+  ImpactResult,
+
+  // Query
+  QueryOptions,
+  GraphQueryResult,
+
+  // Audit / coverage
+  LayerAuditReport,
+  KnowledgeCoverageReport,
+  AnalysisKnowledge,
+  KnowledgeStats,
+
+  // Resolve
+  ResolvedOrigin,
+
+  // Health / stats
+  GraphHealthSummary,
+  GraphStats,
+
+  // Patch
+  ExtractPatch,
+  PatchSimulationResult,
+
+  // Registry
+  SectionRegistry,
+  RegistryDocument,
+
+  // Translation
+  TranslationJob,
+  TranslationQueueStats,
+  StaleTranslationLink,
+} from "../../core/graph/index.js";
+
+// Shared primitive types (also in ai-spector/types)
+export type { NodeType, BundleRole, EdgeType, GraphNode, GraphEdge, TraceabilityGraph, ValidationIssue } from "../../types.js";
+
+
+// ─── Node-only ────────────────────────────────────────────────────────────────
+// These use the filesystem, git, or child_process. Do NOT import in browser bundles.
+
+// Graph commands (file-backed)
 export { validateGraph } from "../../core/operations/validate.js";
 export { runGraphMerge } from "../../core/operations/graph-merge.js";
 export type { GraphMergeOptions, GraphMergeResult } from "../../core/operations/graph-merge.js";

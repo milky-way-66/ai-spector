@@ -3,7 +3,8 @@ import { dirname } from "node:path";
 import { writeJson } from "../util/fs.js";
 import { collectGitDiff } from "../util/git-diff.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
-import { computeImpact, loadImpactRules, mergeImpactResults } from "../graph/impact.js";
+import { computeImpact, mergeImpactResults } from "../graph/impact.js";
+import { loadImpactRules } from "../graph/impact-loader.js";
 import {
   parseGitDiffRegions,
   pickPrimaryImpactOrigin,

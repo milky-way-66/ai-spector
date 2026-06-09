@@ -3,9 +3,9 @@ import { loadInMemoryGraph } from "../../../core/graph/loadGraph.js";
 import { querySubgraph } from "../../../core/graph/query.js";
 import {
   computeImpact,
-  loadImpactRules,
   mergeImpactResults,
 } from "../../../core/graph/impact.js";
+import { loadImpactRules } from "../../../core/graph/impact-loader.js";
 import {
   resolveImpactOrigins,
   pickPrimaryImpactOrigin,

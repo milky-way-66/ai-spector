@@ -268,3 +268,8 @@ export class ProjectSession {
     return linkStaleTranslationsToQueue(impact, this.pendingTranslationJobs());
   }
 }
+
+/** Free-function alias for `ProjectSession.fromBundle(bundle)`. */
+export function createProjectSession(bundle: ProjectBundle): ProjectSession {
+  return ProjectSession.fromBundle(bundle);
+}
