@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import {
   runCocoindexSearch,
+  runCocoindexStats,
   runGraphQueryFuzzy,
   isCocoindexConfigured,
   checkCocoindexReadiness,
@@ -13,6 +14,7 @@ import type {
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
+  CocoindexStatsSchema,
   CocoindexIndexSchema,
 } from "../schemas.js";
 import type { z } from "zod";
@@ -55,15 +57,46 @@ export async function toolCocoindexStatus(input: z.infer<typeof CocoindexStatusS
   if (!readiness.depsInstalled) issues.push("Dependencies not installed — run: npx ai-spector cocoindex setup");
   if (!readiness.indexed) issues.push("Index not built yet — run: cocoindex_index or npx ai-spector cocoindex index");
 
+  // Embedding-store stats (best-effort): an "indexed" flag based only on the
+  // lancedb_data dir existing is misleading when the table has zero rows.
+  let chunkCount: number | undefined;
+  let fileCount: number | undefined;
+  let sampleFilenames: string[] | undefined;
+  if (readiness.indexed && readiness.depsInstalled) {
+    try {
+      const stats = await runCocoindexStats({ root: projectRoot });
+      chunkCount = stats.chunkCount;
+      fileCount = stats.fileCount;
+      sampleFilenames = stats.files.slice(0, 10);
+      if (stats.error) {
+        issues.push(`Embedding store unreadable: ${stats.error}`);
+      } else if (stats.chunkCount === 0) {
+        issues.push("Embedding store is empty — run cocoindex_index to embed docs");
+      }
+    } catch (err) {
+      issues.push(
+        `Could not read embedding stats: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   return {
     configured: true,
     pythonBin: readiness.pythonBin,
     pythonVersion: readiness.pythonVersion,
     depsInstalled: readiness.depsInstalled,
     indexed: readiness.indexed,
+    ...(chunkCount !== undefined ? { chunkCount } : {}),
+    ...(fileCount !== undefined ? { fileCount } : {}),
+    ...(sampleFilenames !== undefined ? { sampleFilenames } : {}),
     ready: issues.length === 0,
     issues,
   };
+}
+
+export async function toolCocoindexStats(input: z.infer<typeof CocoindexStatsSchema>) {
+  const { root: projectRoot } = await loadDocflowConfig(input.root);
+  return runCocoindexStats({ root: projectRoot });
 }
 
 export async function toolCocoindexIndex(input: z.infer<typeof CocoindexIndexSchema>) {

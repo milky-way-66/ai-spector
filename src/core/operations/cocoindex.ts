@@ -295,12 +295,58 @@ export async function runCocoindexSearch(
   const limit = opts.limit ?? 5;
   const threshold =
     opts.threshold ??
-    Number(process.env["COCOINDEX_SIMILARITY_THRESHOLD"] ?? "0.75");
+    Number(process.env["COCOINDEX_SIMILARITY_THRESHOLD"] ?? "0.35");
 
   const rawResults = await spawnPythonSearch(root, pipelinePath, opts.query, limit, threshold);
   const enriched = await enrichWithGraphNodeIds(root, rawResults);
 
   return { query: opts.query, results: enriched, cocoindexConfigured: true };
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+export interface CocoindexStatsResult {
+  cocoindexConfigured: boolean;
+  chunkCount: number;
+  fileCount: number;
+  files: string[];
+  error?: string;
+}
+
+/** Embedding-store diagnostics via `pipeline.py stats` (chunk/file counts, embedded paths). */
+export async function runCocoindexStats(
+  opts: { root?: string } = {},
+): Promise<CocoindexStatsResult> {
+  const root = resolve(opts.root ?? process.cwd());
+  if (!(await isCocoindexConfigured(root))) {
+    return { cocoindexConfigured: false, chunkCount: 0, fileCount: 0, files: [] };
+  }
+
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const exec = promisify(execFile);
+
+  const dir = cocoindexDir(root);
+  const pythonBin = await findPython(dir);
+  const { stdout } = await exec(pythonBin, [cocoindexPipelinePath(root), "stats"], {
+    cwd: root,
+    env: { ...process.env, AI_SPECTOR_ROOT: root },
+    maxBuffer: 4 * 1024 * 1024,
+  });
+
+  const parsed = JSON.parse(stdout) as {
+    chunkCount?: number;
+    fileCount?: number;
+    files?: string[];
+    error?: string;
+  };
+  return {
+    cocoindexConfigured: true,
+    chunkCount: parsed.chunkCount ?? 0,
+    fileCount: parsed.fileCount ?? 0,
+    files: parsed.files ?? [],
+    ...(parsed.error ? { error: parsed.error } : {}),
+  };
 }
 
 // ── Python bridge ─────────────────────────────────────────────────────────────
@@ -369,9 +415,13 @@ async function enrichWithGraphNodeIds(
     const graph = await readJson<TraceabilityGraph>(join(root, config.paths.graph));
     nodeFileMap = new Map<string, string>();
     for (const node of graph.nodes) {
-      const file = (node as { file?: string }).file;
+      // Document nodes record their markdown path in `output`; `file` kept as
+      // a fallback for older graphs.
+      const file =
+        (node as { output?: string; file?: string }).output ??
+        (node as { file?: string }).file;
       if (file) {
-        const rel = relative(root, resolve(root, file));
+        const rel = relative(root, resolve(root, file)).replace(/\\/g, "/");
         nodeFileMap.set(rel, node.id);
       }
     }
@@ -380,8 +430,10 @@ async function enrichWithGraphNodeIds(
   }
 
   return results.map((r) => {
+    const docPath = r.docPath.replace(/\\/g, "/");
     const graphNodeId = nodeFileMap
-      ? (nodeFileMap.get(r.docPath) ?? nodeFileMap.get(relative(root, resolve(root, r.docPath))))
+      ? (nodeFileMap.get(docPath) ??
+        nodeFileMap.get(relative(root, resolve(root, docPath)).replace(/\\/g, "/")))
       : undefined;
     return { ...r, graphNodeId };
   });

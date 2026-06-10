@@ -111,6 +111,7 @@ export type { IndexReport, IndexOptions } from "../../core/operations/index.js";
 export {
   runCocoindexSetup,
   runCocoindexSearch,
+  runCocoindexStats,
   runGraphQueryFuzzy,
   isCocoindexConfigured,
 } from "../../core/operations/cocoindex.js";
@@ -119,6 +120,7 @@ export type {
   CocoindexSetupResult,
   CocoindexSearchOptions,
   CocoindexSearchResult,
+  CocoindexStatsResult,
   SearchResult as CocoindexSearchHit,
   FuzzyQueryOptions,
   FuzzyQueryResult,

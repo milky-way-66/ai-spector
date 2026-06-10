@@ -3,6 +3,7 @@ export interface IndexDocsConfig {
   outputs: {
     srs: string;
     basicDesign: string;
+    dataSource?: string;
   };
   sources: Record<
     string,

@@ -24,7 +24,15 @@ async def _search(query: str, limit: int, threshold: float) -> list[dict]:
         query_vec = await embedder.embed(query)
         conn = await lancedb.connect_async(LANCEDB_URI)
         table = await conn.open_table(TABLE_NAME)
-        results = await (await table.search(query_vec, vector_column_name="embedding")).limit(limit).to_list()
+        # Cosine distance so that score = 1 - distance is a real similarity in
+        # [0, 1]. The LanceDB default (L2) makes 1 - distance meaningless and
+        # silently filters out every result.
+        results = await (
+            (await table.search(query_vec, vector_column_name="embedding"))
+            .distance_type("cosine")
+            .limit(limit)
+            .to_list()
+        )
         return [
             {
                 "docPath": r["filename"],
@@ -38,6 +46,19 @@ async def _search(query: str, limit: int, threshold: float) -> list[dict]:
     except Exception as e:
         sys.stderr.write(f"Search failed: {e}\n")
         return []
+
+
+async def _stats() -> dict:
+    from cocoindex.connectors import lancedb
+    try:
+        conn = await lancedb.connect_async(LANCEDB_URI)
+        table = await conn.open_table(TABLE_NAME)
+        chunk_count = await table.count_rows()
+        rows = await table.query().select(["filename"]).limit(1_000_000).to_list()
+        files = sorted({r["filename"] for r in rows})
+        return {"chunkCount": chunk_count, "fileCount": len(files), "files": files}
+    except Exception as e:
+        return {"error": str(e), "chunkCount": 0, "fileCount": 0, "files": []}
 
 
 if __name__ == "__main__":
@@ -55,10 +76,13 @@ if __name__ == "__main__":
         parser.add_argument(
             "--threshold",
             type=float,
-            default=float(os.getenv("COCOINDEX_SIMILARITY_THRESHOLD", "0.75")),
+            default=float(os.getenv("COCOINDEX_SIMILARITY_THRESHOLD", "0.35")),
         )
         args = parser.parse_args(sys.argv[2:])
         print(json.dumps(asyncio.run(_search(args.query, args.limit, args.threshold))))
+
+    elif cmd == "stats":
+        print(json.dumps(asyncio.run(_stats())))
 
     elif cmd == "update":
         app.update_blocking(report_to_stdout=True)
@@ -68,3 +92,4 @@ if __name__ == "__main__":
         print("  python pipeline.py mcp              Run MCP server")
         print("  python pipeline.py update           Build / refresh index")
         print("  python pipeline.py search --query X Semantic search")
+        print("  python pipeline.py stats            Embedding store stats (JSON)")

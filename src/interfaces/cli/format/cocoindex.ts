@@ -1,8 +1,33 @@
 import type {
   CocoindexSetupResult,
   CocoindexSearchResult,
+  CocoindexStatsResult,
   FuzzyQueryResult,
 } from "../../../core/operations/cocoindex.js";
+
+export function formatCocoindexStats(r: CocoindexStatsResult): string {
+  if (!r.cocoindexConfigured) {
+    return [
+      "CocoIndex is not configured for this project.",
+      "Run: npx ai-spector cocoindex setup",
+    ].join("\n");
+  }
+  const lines: string[] = [
+    "Embedding store",
+    `  chunks: ${r.chunkCount}`,
+    `  files:  ${r.fileCount}`,
+  ];
+  if (r.error) {
+    lines.push(`  error:  ${r.error}`);
+  }
+  for (const f of r.files) {
+    lines.push(`    ${f}`);
+  }
+  if (r.chunkCount === 0 && !r.error) {
+    lines.push("", "Store is empty — run: npx ai-spector cocoindex index");
+  }
+  return lines.join("\n");
+}
 
 export function formatCocoindexSetup(r: CocoindexSetupResult): string {
   if (r.alreadyExists) {

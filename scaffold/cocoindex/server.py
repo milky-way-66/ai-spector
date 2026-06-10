@@ -1,8 +1,9 @@
 """
 MCP server for ai-spector CocoIndex.
 
-Exposes two tools:
+Exposes three tools:
   docs_search  — semantic search over indexed project docs
+  docs_stats   — chunk/file counts and embedded file paths (diagnostics)
   docs_update  — rebuild the index from current project docs
 
 Embedder and LanceDB connection are kept warm for the lifetime of the server
@@ -61,7 +62,7 @@ async def docs_search(
     query: str,
     ctx: Context,
     limit: int = 5,
-    threshold: float = 0.75,
+    threshold: float = 0.35,
 ) -> list[SearchResult]:
     """
     Semantic search over project docs by meaning, not keywords.
@@ -73,7 +74,7 @@ async def docs_search(
     Args:
         query: Natural-language description of the concept to search for.
         limit: Maximum number of results to return (default 5).
-        threshold: Minimum similarity score 0–1 to include a result (default 0.75).
+        threshold: Minimum cosine similarity 0–1 to include a result (default 0.35).
 
     Returns:
         List of matching doc chunks with docPath, heading, excerpt, and score.
@@ -85,9 +86,14 @@ async def docs_search(
         query_vec = await state.embedder.embed(query)
 
         table = await state.db.open_table(TABLE_NAME)
+        # Cosine distance so that score = 1 - distance is a real similarity in
+        # [0, 1]; the LanceDB default (L2) silently filters out every result.
         raw = await (
-            await table.search(query_vec, vector_column_name="embedding")
-        ).limit(limit).to_list()
+            (await table.search(query_vec, vector_column_name="embedding"))
+            .distance_type("cosine")
+            .limit(limit)
+            .to_list()
+        )
 
     except Exception as exc:
         raise ToolError(f"Search failed: {exc}") from exc
@@ -105,6 +111,28 @@ async def docs_search(
 
     await ctx.info(f"Returning {len(results)} result(s) above threshold {threshold}")
     return results
+
+
+@mcp.tool()
+async def docs_stats(ctx: Context) -> dict:
+    """
+    Inspect the embedding store: chunk count, file count, and embedded file paths.
+
+    Use this to verify which files are actually embedded when docs_search returns
+    fewer results than expected.
+
+    Returns:
+        Dict with chunkCount, fileCount, and files (embedded file paths).
+    """
+    state: ServerState = ctx.request_context.lifespan_context
+    try:
+        table = await state.db.open_table(TABLE_NAME)
+        chunk_count = await table.count_rows()
+        rows = await table.query().select(["filename"]).limit(1_000_000).to_list()
+        files = sorted({r["filename"] for r in rows})
+    except Exception as exc:
+        raise ToolError(f"Stats failed: {exc}") from exc
+    return {"chunkCount": chunk_count, "fileCount": len(files), "files": files}
 
 
 @mcp.tool()

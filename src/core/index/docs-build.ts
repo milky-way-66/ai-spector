@@ -112,19 +112,37 @@ export function firstMeaningfulLine(content: string): string {
   return "(empty file)";
 }
 
+export type DocIndexKind = "srs" | "basicDesign" | "dataSource";
+
+export const DOC_INDEX_DEFAULT_ROOTS: Record<DocIndexKind, string> = {
+  srs: "docs/srs",
+  basicDesign: "docs/basic-design",
+  dataSource: "docs/data-source",
+};
+
+export const DOC_INDEX_DEFAULT_OUTPUTS: Record<DocIndexKind, string> = {
+  srs: ".ai-spector/index/srs.md",
+  basicDesign: ".ai-spector/index/basic-design.md",
+  dataSource: ".ai-spector/index/data-source.md",
+};
+
+const DOC_INDEX_TITLES: Record<DocIndexKind, string> = {
+  srs: "SRS Document Index",
+  basicDesign: "Basic Design Document Index",
+  dataSource: "Data Source Document Index",
+};
+
 export async function buildDocIndex(params: {
-  kind: "srs" | "basicDesign";
+  kind: DocIndexKind;
   config: IndexDocsConfig;
   projectRoot: string;
   files: DiscoveredDocFile[];
   graph: TraceabilityGraph | null;
   indexedAt?: string;
 }): Promise<BuiltDocIndex> {
-  const sourceKey = params.kind === "srs" ? "srs" : "basicDesign";
-  const source = params.config.sources[sourceKey];
-  const sourceRoot = source?.root ?? (params.kind === "srs" ? "docs/srs" : "docs/basic-design");
-  const title =
-    params.kind === "srs" ? "SRS Document Index" : "Basic Design Document Index";
+  const source = params.config.sources[params.kind];
+  const sourceRoot = source?.root ?? DOC_INDEX_DEFAULT_ROOTS[params.kind];
+  const title = DOC_INDEX_TITLES[params.kind];
   const indexedAt = params.indexedAt ?? new Date().toISOString();
   const headingTemplate =
     params.config.entryFormat?.heading ?? "## File: {basename}";

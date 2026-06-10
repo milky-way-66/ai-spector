@@ -66,6 +66,7 @@ import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./cor
 import {
   formatCocoindexSetup,
   formatCocoindexSearch,
+  formatCocoindexStats,
   formatGraphQueryFuzzy,
 } from "./interfaces/cli/format/cocoindex.js";
 import {
@@ -832,7 +833,7 @@ cocoindex
   .option("--root <path>", "Project root (default: cwd)")
   .option("--direction <dir>", "out | in | both", "out")
   .option("--depth <n>", "Max traversal depth", "3")
-  .option("--threshold <n>", "Minimum similarity score 0–1", "0.75")
+  .option("--threshold <n>", "Minimum cosine similarity 0–1", "0.35")
   .option("--json", "JSON output")
   .action(async (opts) => {
     try {
@@ -857,7 +858,7 @@ cocoindex
   .requiredOption("--query <text>", "Natural language search query")
   .option("--root <path>", "Project root (default: cwd)")
   .option("--limit <n>", "Max results", "5")
-  .option("--threshold <n>", "Minimum similarity score 0–1", "0.75")
+  .option("--threshold <n>", "Minimum cosine similarity 0–1", "0.35")
   .option("--json", "JSON output")
   .action(async (opts) => {
     const result = await runCocoindexSearch({
@@ -868,6 +869,18 @@ cocoindex
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCocoindexSearch(result));
+  });
+
+cocoindex
+  .command("stats")
+  .description("Embedding store diagnostics: chunk count, file count, embedded paths")
+  .option("--root <path>", "Project root (default: cwd)")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const { runCocoindexStats } = await import("./core/operations/cocoindex.js");
+    const result = await runCocoindexStats({ root: opts.root });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCocoindexStats(result));
   });
 
 program.parseAsync(process.argv).catch((err) => {

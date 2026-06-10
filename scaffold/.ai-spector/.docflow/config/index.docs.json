@@ -2,7 +2,8 @@
   "version": 1,
   "outputs": {
     "srs": ".ai-spector/index/srs.md",
-    "basicDesign": ".ai-spector/index/basic-design.md"
+    "basicDesign": ".ai-spector/index/basic-design.md",
+    "dataSource": ".ai-spector/index/data-source.md"
   },
   "sources": {
     "srs": {
@@ -12,6 +13,10 @@
     },
     "basicDesign": {
       "root": "docs/basic-design",
+      "glob": "**/*.md"
+    },
+    "dataSource": {
+      "root": "docs/data-source",
       "glob": "**/*.md"
     }
   },

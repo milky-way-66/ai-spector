@@ -30,6 +30,8 @@ import {
   buildDocIndex,
   computeIndexSourceHash,
   discoverMarkdownFiles,
+  DOC_INDEX_DEFAULT_OUTPUTS,
+  DOC_INDEX_DEFAULT_ROOTS,
 } from "../index/docs-build.js";
 import { reconcileTranslationQueue } from "../lang/queue.js";
 
@@ -405,9 +407,15 @@ export async function runIndex(
         const indexedAt = new Date().toISOString();
         const hashes: Record<string, string> = {};
 
-        for (const kind of ["srs", "basicDesign"] as const) {
-          const sourceKey = kind === "srs" ? "srs" : "basicDesign";
-          const source = config.sources[sourceKey];
+        for (const kind of ["srs", "basicDesign", "dataSource"] as const) {
+          const sourceKey = kind;
+          // dataSource may be absent from older configs — fall back to the
+          // conventional root so existing projects get indexed without migration.
+          const source =
+            config.sources[sourceKey] ??
+            (kind === "dataSource"
+              ? { root: DOC_INDEX_DEFAULT_ROOTS.dataSource }
+              : undefined);
           if (!source) {
             continue;
           }
@@ -448,7 +456,10 @@ export async function runIndex(
             graph: graphJson,
             indexedAt,
           });
-          const outPath = join(projectRoot, config.outputs[sourceKey]);
+          const outPath = join(
+            projectRoot,
+            config.outputs[sourceKey] ?? DOC_INDEX_DEFAULT_OUTPUTS[kind],
+          );
           await mkdir(dirname(outPath), { recursive: true });
           await writeFile(outPath, built.markdown, "utf8");
         }
@@ -468,7 +479,7 @@ export async function runIndex(
           id: "docs-index",
           label: "Document indexes (.ai-spector/index/)",
           status: "ok",
-          detail: `srs hash ${hashes.srs ?? "—"}, basic-design hash ${hashes.basicDesign ?? "—"}`,
+          detail: `srs hash ${hashes.srs ?? "—"}, basic-design hash ${hashes.basicDesign ?? "—"}, data-source hash ${hashes.dataSource ?? "—"}`,
         });
       }
     } catch (err) {

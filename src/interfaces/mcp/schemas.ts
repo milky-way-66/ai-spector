@@ -106,10 +106,12 @@ export const DocsSearchSchema = RootSchema.extend({
     .min(0)
     .max(1)
     .optional()
-    .describe("Minimum similarity score 0–1 (default: 0.75)"),
+    .describe("Minimum cosine similarity 0–1 (default: 0.35)"),
 });
 
 export const CocoindexStatusSchema = RootSchema;
+
+export const CocoindexStatsSchema = RootSchema;
 
 export const CocoindexIndexSchema = RootSchema;
 
@@ -125,7 +127,7 @@ export const GraphQueryFuzzySchema = RootSchema.extend({
     .min(0)
     .max(1)
     .optional()
-    .describe("Minimum similarity score for node resolution (default: 0.75)"),
+    .describe("Minimum cosine similarity for node resolution (default: 0.35)"),
 });
 
 // ── Analyze / Knowledge ───────────────────────────────────────────────────────

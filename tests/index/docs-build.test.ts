@@ -28,6 +28,20 @@ describe("globToRegExp", () => {
     expect(re.test("a/b.md")).toBe(true);
     expect(re.test("a/b.txt")).toBe(false);
   });
+
+  it("matches nested paths at any depth with **", () => {
+    const re = globToRegExp("**/*.md");
+    expect(re.test("en/screens/trip-editor.md")).toBe(true);
+    expect(re.test("en/api/get-api-v1-trips.md")).toBe(true);
+    expect(re.test("a/b/c/d/e.md")).toBe(true);
+  });
+
+  it("matches mid-pattern ** segments", () => {
+    const re = globToRegExp("docs/**/api/*.md");
+    expect(re.test("docs/basic-design/en/api/auth-sso.md")).toBe(true);
+    expect(re.test("docs/api/auth-sso.md")).toBe(true);
+    expect(re.test("docs/basic-design/en/screens/auth.md")).toBe(false);
+  });
 });
 
 describe("findDocumentNodeIdForPath", () => {
@@ -73,6 +87,28 @@ describe("buildDocIndex", () => {
     expect(built.markdown).toContain("## File: a.md");
     expect(built.markdown).toContain("- location: docs/srs/a.md");
     expect(indexHasPlaceholderContent(built.markdown)).toBe(false);
+  });
+
+  it("builds a data-source index with default root when config lacks the source", async () => {
+    const built = await buildDocIndex({
+      kind: "dataSource",
+      config,
+      projectRoot: "/proj",
+      files: [
+        {
+          relativePath: "docs/data-source/notes.md",
+          absolutePath: "/proj/docs/data-source/notes.md",
+          basename: "notes.md",
+          sizeBytes: 10,
+          contentHash: "abc",
+        },
+      ],
+      graph: null,
+      indexedAt: "2026-06-10T00:00:00.000Z",
+    });
+
+    expect(built.markdown).toContain("# Data Source Document Index");
+    expect(built.markdown).toContain("- location: docs/data-source/notes.md");
   });
 });
 

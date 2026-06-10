@@ -277,6 +277,21 @@ describe("classifyBasicDesignDetailFile", () => {
       classifyBasicDesignDetailFile("docs/basic-design/screens/dashboard.md"),
     ).toBe("screenDetail");
   });
+
+  it("classifies locale-scoped detail paths correctly", () => {
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/api/get-trips.md"),
+    ).toBe("apiDetail");
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/screens/trip-editor.md"),
+    ).toBe("screenDetail");
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/api-list.md"),
+    ).toBeNull();
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/list-screens.md"),
+    ).toBeNull();
+  });
 });
 
 describe("extractBasicDesignDetailMeta", () => {
@@ -462,5 +477,38 @@ describe("buildDocExtractPatch", () => {
     expect(stats.bdDetailDocuments).toBe(2);
     expect(patch.nodes.some((n) => n.id === "doc.bd.api-get-session")).toBe(true);
     expect(patch.nodes.some((n) => n.id === "doc.bd.screen-login")).toBe(true);
+  });
+
+  it("merges locale-scoped basic-design detail files (en/api/, en/screens/)", async () => {
+    const { patch, stats } = await buildDocExtractPatch([
+      {
+        relativePath: "docs/basic-design/en/api/get-trips.md",
+        content: "### 1.1 `GET /api/v1/trips`\n\n**Source Requirement:** F-03",
+      },
+      {
+        relativePath: "docs/basic-design/en/screens/trip-editor.md",
+        content: "## 1. Screen: Trip Editor\n\n**Purpose:**\n\n> Edit trip details",
+      },
+    ]);
+    expect(stats.bdDetailDocuments).toBe(2);
+    expect(patch.nodes.some((n) => n.id === "doc.bd.api-get-trips")).toBe(true);
+    expect(patch.nodes.some((n) => n.id === "doc.bd.screen-trip-editor")).toBe(true);
+    const apiNode = patch.nodes.find((n) => n.id === "doc.bd.api-get-trips");
+    expect(apiNode?.output).toBe("docs/basic-design/en/api/get-trips.md");
+    expect(patch.edges).toContainEqual({
+      type: "contains",
+      from: "doc.bd.list-api",
+      to: "doc.bd.api-get-trips",
+    });
+    expect(patch.edges).toContainEqual({
+      type: "partOf",
+      from: "doc.bd.api-get-trips",
+      to: "doc.bd.detail-api",
+    });
+    expect(patch.edges).toContainEqual({
+      type: "contains",
+      from: "doc.bd.list-screen",
+      to: "doc.bd.screen-trip-editor",
+    });
   });
 });

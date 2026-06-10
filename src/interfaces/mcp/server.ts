@@ -24,6 +24,7 @@ import {
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
+  CocoindexStatsSchema,
   CocoindexIndexSchema,
 } from "./schemas.js";
 
@@ -38,7 +39,7 @@ import {
   toolCommentsResolve,
 } from "./tools/comments.js";
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
-import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexIndex } from "./tools/cocoindex.js";
+import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -282,6 +283,19 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolCocoindexStatus(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "cocoindex_stats",
+  {
+    description:
+      "Inspect the CocoIndex embedding store: chunk count, file count, and embedded file paths. Use to verify whether specific docs were embedded when docs_search returns no results.",
+    inputSchema: CocoindexStatsSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCocoindexStats(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

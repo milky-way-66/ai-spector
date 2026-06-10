@@ -22,12 +22,18 @@ export interface ResolvedOrigin {
 
 export function globToRegExp(glob: string): RegExp {
   const TMPL = "\x00";
+  const GLOBSTAR_SLASH = "\x01";
+  const GLOBSTAR = "\x02";
+  // Placeholder tokens keep the regex fragments inserted for ** from being
+  // re-mangled by the later single-* replacement.
   const escaped = glob
     .replace(/\{[^}]+\}/g, TMPL)
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*\//g, "(?:.*/)?")
-    .replace(/\*\*/g, ".*")
+    .replace(/\*\*\//g, GLOBSTAR_SLASH)
+    .replace(/\*\*/g, GLOBSTAR)
     .replace(/\*/g, "[^/]*")
+    .replace(new RegExp(GLOBSTAR_SLASH, "g"), "(?:.*/)?")
+    .replace(new RegExp(GLOBSTAR, "g"), ".*")
     .replace(new RegExp(TMPL, "g"), "[^/]+");
   return new RegExp(`^${escaped}$`, "i");
 }
