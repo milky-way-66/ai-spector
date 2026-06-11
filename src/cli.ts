@@ -8,7 +8,7 @@ import { buildSectionRegistry } from "./core/registry/build.js";
 import { bootstrapFromRegistry } from "./core/operations/bootstrap.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
-import { runLangAdd } from "./core/operations/lang.js";
+import { runLangAdd, runLangSetClient } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
   runLangQueueFail,
@@ -45,6 +45,7 @@ import {
   formatHooksInstall,
   formatSetupAudit,
   formatLangAdd,
+  formatLangSetClient,
   formatQueueScan,
   formatResolveTask,
 } from "./interfaces/cli/format/misc.js";
@@ -133,6 +134,7 @@ program
   .option("-y, --yes", "Non-interactive: skip prompts, use defaults or provided flags")
   .option("-C, --cwd <path>", "Target directory", process.cwd())
   .option("-l, --languages <codes>", "Comma-separated language codes (e.g. en,jp,vi)")
+  .option("--client-language <code>", "Client-preferred language for document review (must be in --languages)")
   .option("--target <agent>", "cursor | claude | both — skip the editor prompt")
   .action(async (opts) => {
     const langCodes = opts.languages
@@ -144,6 +146,7 @@ program
       force: opts.force,
       yes: opts.yes,
       languages: langCodes,
+      clientLanguage: opts.clientLanguage as string | undefined,
       target,
     });
   });
@@ -190,6 +193,15 @@ lang
   .action(async (code: string, opts) => {
     const result = await runLangAdd(code, { root: resolve(opts.cwd ?? process.cwd()), label: opts.label });
     console.log(formatLangAdd(result));
+  });
+
+lang
+  .command("set-client <code>")
+  .description("Set the client-preferred language for document review (must already be configured)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .action(async (code: string, opts) => {
+    const result = await runLangSetClient(code, { root: resolve(opts.cwd ?? process.cwd()) });
+    console.log(formatLangSetClient(result));
   });
 
 const langQueue = lang.command("queue").description("Translation sync job queue");

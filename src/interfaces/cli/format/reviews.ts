@@ -41,9 +41,12 @@ export function formatApproveResult(result: ReviewApproveResult): string {
 }
 
 export function formatReviewStatus(result: ReviewStatusResult): string {
-  const { approval, diff, history } = result;
+  const { approval, diff, history, stale, approvedContentHash } = result;
   const lines: string[] = [];
   lines.push(`${approval.logicalPath}`);
+  if (stale) {
+    lines.push(`  ⚠ content changed since last approval (hash ${approvedContentHash} → ${approval.contentHash})`);
+  }
   lines.push(`  overall:  ${approval.overallStatus}`);
   lines.push(
     approval.internal.status === "approved"
@@ -139,7 +142,8 @@ export function formatReviewList(result: ReviewListResult): string {
   }
   const lines: string[] = [`${result.total} document(s):`];
   for (const e of result.entries) {
-    lines.push(`  ${e.logicalPath}  [${e.overallStatus}]  hash ${e.contentHash}`);
+    const staleNote = e.stale ? "  ⚠ changed since review" : "";
+    lines.push(`  ${e.logicalPath}  [${e.overallStatus}]  hash ${e.contentHash}${staleNote}`);
   }
   return lines.join("\n");
 }

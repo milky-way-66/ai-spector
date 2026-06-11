@@ -12,6 +12,7 @@ export interface LanguageConfig {
 export interface DocflowConfig {
   version: number;
   languages: LanguageConfig[];
+  clientLanguage?: string;
   paths: DocflowProjectPaths;
 }
 
@@ -28,12 +29,20 @@ export function parseDocflowConfig(json: unknown): DocflowConfig {
     throw new Error("docflow.config.json must be an object");
   }
   const raw = json as Partial<DocflowConfig>;
+  const languages =
+    Array.isArray(raw.languages) && raw.languages.length > 0
+      ? raw.languages
+      : [DEFAULT_LANGUAGE];
+  const languageCodes = new Set(languages.map((l) => l.code));
+  const clientLanguage =
+    raw.clientLanguage && languageCodes.has(raw.clientLanguage)
+      ? raw.clientLanguage
+      : undefined;
+
   return {
     version: raw.version ?? 1,
-    languages:
-      Array.isArray(raw.languages) && raw.languages.length > 0
-        ? raw.languages
-        : [DEFAULT_LANGUAGE],
+    languages,
+    ...(clientLanguage ? { clientLanguage } : {}),
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
@@ -44,6 +53,14 @@ export function parseDocflowConfig(json: unknown): DocflowConfig {
 
 export function primaryLanguage(config: DocflowConfig): LanguageConfig {
   return config.languages[0] ?? DEFAULT_LANGUAGE;
+}
+
+export function clientLanguage(config: DocflowConfig): LanguageConfig {
+  if (config.clientLanguage) {
+    const match = config.languages.find((l) => l.code === config.clientLanguage);
+    if (match) return match;
+  }
+  return primaryLanguage(config);
 }
 
 export function languageCodes(config: DocflowConfig): string[] {

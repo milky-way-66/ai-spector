@@ -1,7 +1,6 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { resolveReviewDocPath } from "./doc-resolve.js";
 import { computeLineDiff } from "../util/diff.js";
+import { contentHash, resolveApprovalDocPath } from "./staleness.js";
 import {
   discoverApprovals,
   getApproval,
@@ -47,7 +46,7 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
       let absDocPath: string;
       let docPath: string;
       try {
-        ({ absPath: absDocPath, docPath } = await resolveReviewDocPath(projectRoot, logicalPath));
+        ({ absPath: absDocPath, docPath } = await resolveApprovalDocPath(projectRoot, approval));
       } catch (err) {
         result.errors.push({
           logicalPath,
@@ -57,7 +56,7 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
       }
 
       const currentContent = await readFile(absDocPath, "utf8");
-      const currentHash = createHash("sha256").update(currentContent).digest("hex").slice(0, 16);
+      const currentHash = contentHash(currentContent);
 
       if (currentHash === approval.contentHash) continue;
 

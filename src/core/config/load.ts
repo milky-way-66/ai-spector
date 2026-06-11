@@ -77,15 +77,25 @@ export async function loadDocflowConfig(
 ): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
   const configFile = configPath(root);
   const raw = await readJson<Partial<DocflowConfig>>(configFile);
+  const languages =
+    Array.isArray(raw.languages) && raw.languages.length > 0
+      ? raw.languages.map((l: { code: string; label: string }) => ({
+          code: assertSupportedLanguageCode(l.code),
+          label: l.label,
+        }))
+      : [DEFAULT_LANGUAGE];
+
+  const languageCodes = new Set(languages.map((l) => l.code));
+  let clientLanguage: DocflowConfig["clientLanguage"];
+  if (raw.clientLanguage) {
+    const code = assertSupportedLanguageCode(raw.clientLanguage);
+    clientLanguage = languageCodes.has(code) ? code : undefined;
+  }
+
   const config: DocflowConfig = {
     version: raw.version ?? 1,
-    languages:
-      Array.isArray(raw.languages) && raw.languages.length > 0
-        ? raw.languages.map((l: { code: string; label: string }) => ({
-            code: assertSupportedLanguageCode(l.code),
-            label: l.label,
-          }))
-        : [DEFAULT_LANGUAGE],
+    languages,
+    ...(clientLanguage ? { clientLanguage } : {}),
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,
@@ -157,6 +167,23 @@ export async function resolveActiveManifests(
 /** Returns the primary (first) language from config. */
 export function primaryLanguage(config: DocflowConfig): LanguageConfig {
   return config.languages[0] ?? DEFAULT_LANGUAGE;
+}
+
+/** Returns the client-preferred language, falling back to primary. */
+export function clientLanguage(config: DocflowConfig): LanguageConfig {
+  if (config.clientLanguage) {
+    const match = config.languages.find((l) => l.code === config.clientLanguage);
+    if (match) return match;
+  }
+  return primaryLanguage(config);
+}
+
+/** Language code to prefer when resolving document paths for a review track. */
+export function preferredLanguageCode(
+  config: DocflowConfig,
+  track: "internal" | "client" = "internal",
+): string {
+  return track === "client" ? clientLanguage(config).code : primaryLanguage(config).code;
 }
 
 /** Resolved absolute path to project-local templates (`.ai-spector/templates`). */

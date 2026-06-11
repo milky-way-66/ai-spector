@@ -37,6 +37,16 @@ export interface LangAddResult {
   queueEnqueued?: number;
 }
 
+export interface LangSetClientOptions {
+  root?: string;
+}
+
+export interface LangSetClientResult {
+  code: string;
+  label: string;
+  previousCode: string | null;
+}
+
 export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promise<LangAddResult> {
   const { root: projectRoot, config, configFile } = await loadDocflowConfig(
     opts.root ? resolve(opts.root) : undefined,
@@ -99,4 +109,33 @@ async function registerTranslationEdges(
     wireTranslationDocNode(graphMem, primary, lang);
   }
   await writeJson(graphPath, graphMem.toTraceabilityGraph());
+}
+
+export async function runLangSetClient(
+  code: string,
+  opts: LangSetClientOptions = {},
+): Promise<LangSetClientResult> {
+  const { config, configFile } = await loadDocflowConfig(
+    opts.root ? resolve(opts.root) : undefined,
+  );
+
+  const normalized = assertSupportedLanguageCode(code);
+  const match = config.languages.find((l) => l.code === normalized);
+  if (!match) {
+    const configured = config.languages.map((l) => l.code).join(", ");
+    throw new Error(
+      `Language "${normalized}" is not configured. Add it first with: npx ai-spector lang add ${normalized}. ` +
+        `Configured languages: ${configured || "(none)"}`,
+    );
+  }
+
+  const previousCode = config.clientLanguage ?? null;
+  const raw = await readJson<Record<string, unknown>>(configFile);
+  await writeJson(configFile, { ...raw, clientLanguage: normalized });
+
+  return {
+    code: normalized,
+    label: match.label,
+    previousCode,
+  };
 }

@@ -33,6 +33,11 @@ export interface DocflowConfig {
   version: number;
   /** Configured languages. First entry is the primary language. */
   languages: LanguageConfig[];
+  /**
+   * Language code the client prefers for document review and delivery.
+   * Must be one of `languages[].code`. Defaults to the primary language when unset.
+   */
+  clientLanguage?: SupportedLanguageCode;
   paths: DocflowProjectPaths;
   /** Active template packs per document group. "builtin" means the built-in templates. */
   packs: {

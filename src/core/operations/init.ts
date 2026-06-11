@@ -12,7 +12,7 @@ import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import { isInteractive, promptLine, promptSelect, promptYesNo } from "../util/prompt.js";
 import { checkCocoindexReadiness, runCocoindexSetup } from "./cocoindex.js";
 import type { CocoindexInstallMode } from "./cocoindex.js";
-import type { LanguageConfig } from "../config/types.js";
+import type { LanguageConfig, SupportedLanguageCode } from "../config/types.js";
 import { assertSupportedLanguageCode } from "../config/types.js";
 
 const MCP_SERVER_ENTRY = {
@@ -40,6 +40,8 @@ export interface InitOptions {
   force?: boolean;
   /** Language codes to set up, e.g. ["en", "jp"]. Defaults to ["en"]. */
   languages?: string[];
+  /** Client-preferred language code — must be one of `languages`. */
+  clientLanguage?: string;
   /** Which AI agent scaffold to install. Prompted interactively when not set. */
   target?: AgentTarget;
   /** Skip all prompts and use defaults / provided flags. */
@@ -110,6 +112,7 @@ export async function copyScaffoldToProject(
 interface WizardAnswers {
   target: AgentTarget;
   langCodes: string[];
+  clientLanguageCode: string | undefined;
   installHook: boolean;
   cocoindexMode: CocoindexInstallMode | "skip";
 }
@@ -145,6 +148,29 @@ async function runWizard(opts: InitOptions, alreadyInitialized: boolean): Promis
     langCodes = ["en"];
   }
 
+  // --- Client language preference ---
+  let clientLanguageCode: SupportedLanguageCode | undefined = opts.clientLanguage
+    ? assertSupportedLanguageCode(opts.clientLanguage)
+    : undefined;
+  if (!clientLanguageCode && langCodes.length > 1 && interactive) {
+    const languageOptions = langCodes.map((code) => ({
+      value: code,
+      label: `${LANGUAGE_LABELS[code] ?? code} (${code})`,
+      hint: code === langCodes[0] ? "primary — generation language" : "secondary",
+    }));
+    const picked = await promptSelect<string>(
+      "\nWhich language does the client prefer for document review?",
+      languageOptions,
+      langCodes[langCodes.length - 1]!,
+    );
+    clientLanguageCode = assertSupportedLanguageCode(picked);
+  }
+  if (clientLanguageCode && !langCodes.includes(clientLanguageCode)) {
+    throw new Error(
+      `Client language "${clientLanguageCode}" must be one of the configured languages: ${langCodes.join(", ")}`,
+    );
+  }
+
   // --- Git hook ---
   let installHook = false;
   if (interactive) {
@@ -170,7 +196,7 @@ async function runWizard(opts: InitOptions, alreadyInitialized: boolean): Promis
     );
   }
 
-  return { target, langCodes, installHook, cocoindexMode };
+  return { target, langCodes, clientLanguageCode, installHook, cocoindexMode };
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +221,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     process.stdout.write("Re-initializing (--force). Existing scaffold files will be overwritten.\n");
   }
 
-  const { target, langCodes, installHook, cocoindexMode } = await runWizard(opts, alreadyInitialized);
+  const { target, langCodes, clientLanguageCode, installHook, cocoindexMode } = await runWizard(opts, alreadyInitialized);
   const languages = buildLanguageConfigs(langCodes);
 
   process.stdout.write("\nSetting up…\n");
@@ -208,6 +234,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   await writeJson(configPath, {
     ...existingConfig,
     languages,
+    ...(clientLanguageCode ? { clientLanguage: clientLanguageCode } : {}),
     packs: (existingConfig.packs as Record<string, unknown>) ?? { srs: "builtin", basicDesign: "builtin" },
   });
 

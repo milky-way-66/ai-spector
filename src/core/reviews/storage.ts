@@ -5,6 +5,7 @@ import {
   reviewQueuePaths,
   snapshotPath,
   changePath,
+  legacyApprovalJsonPath,
   type ReviewQueuePaths,
 } from "./paths.js";
 import type {
@@ -98,7 +99,15 @@ export async function getApproval(
   logicalPath: string,
 ): Promise<ApprovalRecord | null> {
   const registry = await loadRegistry(projectRoot);
-  return registry.documents[logicalPath] ?? null;
+  const fromRegistry = registry.documents[logicalPath];
+  if (fromRegistry) return fromRegistry;
+
+  const legacyPath = join(projectRoot, legacyApprovalJsonPath(logicalPath));
+  if (await pathExists(legacyPath)) {
+    const record = await readJson<ApprovalRecord>(legacyPath).catch(() => null);
+    if (record) return { ...record, version: 2 };
+  }
+  return null;
 }
 
 export async function saveApproval(
@@ -329,7 +338,32 @@ export async function deleteDiff(
 
 export async function discoverApprovals(projectRoot: string): Promise<string[]> {
   const registry = await loadRegistry(projectRoot);
-  return Object.keys(registry.documents).sort();
+  const paths = new Set(Object.keys(registry.documents));
+
+  const legacyRoot = join(projectRoot, "reviews");
+  if (await pathExists(legacyRoot)) {
+    const { readdir } = await import("node:fs/promises");
+    async function walk(dir: string, rel: string): Promise<void> {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const ent of entries) {
+        if (ent.isDirectory()) {
+          const nextRel = rel ? `${rel}/${ent.name}` : ent.name;
+          if (nextRel === "internal_queue" || nextRel === "client_queue") continue;
+          await walk(join(dir, ent.name), nextRel);
+        } else if (ent.name === "approval.json" && rel) {
+          paths.add(rel);
+        }
+      }
+    }
+    await walk(legacyRoot, "");
+  }
+
+  return [...paths].sort();
 }
 
 export async function reviewQueueInitialized(projectRoot: string): Promise<boolean> {

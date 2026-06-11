@@ -27,6 +27,7 @@ import {
   updateFingerprint,
 } from "../reviews/storage.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
+import { computeLiveStaleness } from "../reviews/staleness.js";
 import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
 import type { ApprovalRecord, QueueEntry, DiffFile, HistoryLine } from "../reviews/types.js";
 
@@ -58,6 +59,10 @@ export interface ReviewStatusOptions {
 export interface ReviewStatusResult {
   approval: ApprovalRecord;
   diff: DiffFile | null;
+  /** True when live content hash differs from last approved hash (computed, not yet reconciled). */
+  stale?: boolean;
+  /** Hash of the approved snapshot when stale is true. */
+  approvedContentHash?: string;
   history?: HistoryLine[];
 }
 
@@ -111,6 +116,10 @@ export interface ReviewListEntry {
   contentHash: string;
   internal: { status: string; approvedBy: string | null; approvedAt: string | null };
   client: { status: string };
+  /** True when live content differs from last approved hash. */
+  stale?: boolean;
+  /** Hash at last approval when stale is true. */
+  approvedContentHash?: string;
 }
 
 export interface ReviewListResult {
@@ -228,34 +237,43 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
 
-  const approval = await getApproval(projectRoot, lp);
-  if (!approval) {
+  const persisted = await getApproval(projectRoot, lp);
+  if (!persisted) {
     throw new Error(`No approval record found for: ${lp}. Run 'review check' to initialise.`);
   }
 
+  const approvedContentHash = persisted.contentHash;
+  const live = await computeLiveStaleness(projectRoot, persisted, {
+    showDiff: opts.showDiff !== false,
+  });
+  const approval = live.effectiveApproval;
+
   let diff: DiffFile | null = null;
   if (opts.showDiff !== false) {
-    // Try internal diff first, then client
+    // Persisted diff from reconcile takes precedence
     diff = await loadDiff(projectRoot, "internal", lp);
     if (!diff) diff = await loadDiff(projectRoot, "client", lp);
+    if (!diff) diff = live.diff;
 
-    // Recompute if missing but snapshot + doc exist
+    // Recompute if missing but already pending internal
     if (!diff && approval.overallStatus === "pending_internal") {
       try {
-        const { absPath: absDocPath } = await resolveReviewDocPath(projectRoot, lp);
         const snapshot = await readSnapshot(projectRoot, lp);
+        const { absPath: absDocPath } = await resolveReviewDocPath(projectRoot, lp);
         if (snapshot && (await pathExists(absDocPath))) {
           const current = await readFile(absDocPath, "utf8");
           const currentHash = createHash("sha256").update(current).digest("hex").slice(0, 16);
           const diffResult = computeLineDiff(snapshot, current);
           diff = {
             logicalPath: lp,
-            approvedHash: approval.contentHash,
+            approvedHash: approvedContentHash,
             currentHash,
             ...diffResult,
             computedAt: new Date().toISOString(),
           };
-          await saveDiff(projectRoot, "internal", diff);
+          if (!live.stale) {
+            await saveDiff(projectRoot, "internal", diff);
+          }
         }
       } catch {
         // Doc file not resolvable — skip diff recomputation
@@ -263,7 +281,11 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     }
   }
 
-  const result: ReviewStatusResult = { approval, diff };
+  const result: ReviewStatusResult = {
+    approval,
+    diff,
+    ...(live.stale ? { stale: true, approvedContentHash } : {}),
+  };
 
   if (opts.includeHistory) {
     result.history = await readHistory(projectRoot, lp, {
@@ -329,9 +351,19 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
   await Promise.all(
     logicalPaths.map(async (lp) => {
       if (opts.prefix && !lp.startsWith(opts.prefix)) return;
-      const approval = await getApproval(projectRoot, lp);
-      if (!approval) return;
-      if (opts.status && opts.status !== "all" && approval.overallStatus !== opts.status) return;
+      const persisted = await getApproval(projectRoot, lp);
+      if (!persisted) return;
+
+      const live = await computeLiveStaleness(projectRoot, persisted, { showDiff: false });
+      const approval = live.effectiveApproval;
+
+      if (opts.status && opts.status !== "all") {
+        const filterStatus = opts.status;
+        const matchesPersisted = persisted.overallStatus === filterStatus;
+        const matchesLive = approval.overallStatus === filterStatus;
+        if (!matchesPersisted && !matchesLive) return;
+      }
+
       entries.push({
         logicalPath: lp,
         overallStatus: approval.overallStatus,
@@ -342,6 +374,9 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
           approvedAt: approval.internal.approvedAt,
         },
         client: { status: approval.client.status },
+        ...(live.stale
+          ? { stale: true, approvedContentHash: persisted.contentHash }
+          : {}),
       });
     }),
   );
