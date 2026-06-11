@@ -4,9 +4,11 @@ Agents use this when intent is ambiguous.
 
 ## Priority
 
-1. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill).
-2. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
-3. **Still unclear** — `ai-spector` core + one question (graph vs SRS vs basic design vs prototype vs comments).
+1. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
+2. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
+3. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
+4. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
+5. **Still unclear** — `ai-spector` core + one question (incremental change vs full generate vs graph vs comments).
 
 ## Task → skill → runbook
 
@@ -24,11 +26,12 @@ Agents use this when intent is ambiguous.
 | link graph, semantic edges | `ai-spector-graph` | `references/link-graph.md` |
 | sync graph | `ai-spector-graph` | `references/sync-graph.md` |
 | doc summaries | `ai-spector-graph` | `references/summary.md` |
-| generate docs, write SRS, requirements, use cases, features | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
+| generate docs, write SRS (full chapter/DAG), generate use cases from graph | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
+| add feature, add requirement, update section, "I want to add…", "we need…" | `ai-spector-resolve-task` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
-| create task, new task, resolve task, add requirement, update docs, change prototype, new section, "I want to…", "we need to…" | `ai-spector-resolve-task` | `references/runbook.md` |
+| create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |

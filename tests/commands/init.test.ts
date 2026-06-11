@@ -69,6 +69,7 @@ describe("runInit", () => {
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-task/references/runbook.md"))).toBe(
       true,
     );
+    expect(await pathExists(join(root, ".cursor/rules/ai-spector-resolve-task.mdc"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/README.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/_skill-router.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/commands/_workflow.md"))).toBe(true);

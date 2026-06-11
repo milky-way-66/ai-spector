@@ -1,43 +1,34 @@
 ---
 name: ai-spector-resolve-task
 description: >-
-  Conversational task workflow (create task, resolve task): clarify intent, build
-  GoalSpec + TaskPlan, get approval, then execute via resolve_task MCP or CLI.
-  Use for create task, add/update requirements, doc edits, prototype changes, or
-  any multi-step change described in natural language.
+  FIRST CHOICE for incremental changes: add feature, add requirement, update section,
+  "I want to…", create task. Mandatory: clarify → plan → explicit yes → execute.
+  No graph_impact or edits before approval. Not for full SRS generation — use
+  ai-spector-generate-srs for DAG waves.
 ---
 
 # AI Spector — Resolve Task
 
-## When to use
+## Plan-first mode
 
-- "create task", "create a task", "new task", "resolve task"
-- "add requirement", "update docs", "change prototype", "I want to…", "we need to…"
-- Any open-ended doc/graph change that is not a full generate-from-scratch workflow
+**Forbidden before user approves the plan:** `graph_impact`, `index`, `graph_merge`, `resolve_task`, Edit/Write.
+
+**Allowed for discovery only:** `docs_search`, `graph_query_fuzzy`, `graph_query`, Read (structure).
 
 ## Workflow
 
 ```
-1. Receive user intent (do not act yet)
-2. Ask ≤3 clarifying questions → build GoalSpec
-3. Show GoalSpec + TaskPlan → wait for approval
-4. Execute: direct edits + resolve_task MCP (or CLI)
-5. Report state update
+1. Acknowledge resolve-task workflow
+2. Clarify (≤3 questions) → GoalSpec
+3. Discover scope (read-only, optional)
+4. Show GoalSpec + TaskPlan → wait for yes
+5. Execute approved steps (edits + resolve_task)
+6. Report state update
 ```
 
-Full runbook: `.cursor/skills/ai-spector-resolve-task/references/runbook.md` (same content after init/sync-cursor).
+## Routing
 
-## Checklist
+| "I want to add login with Google" | **this skill** |
+| "generate SRS" / "write chapter 4" | `ai-spector-generate-srs` |
 
-```
-- [ ] Clarified intent → GoalSpec (domain, scope, criteria)
-- [ ] Showed plan and got user approval
-- [ ] Executed steps (edits + resolve_task for index/graph steps)
-- [ ] Reported results + state update
-```
-
-## MCP
-
-`resolve_task({ intent, goalSpec, plan, dryRun? })` — only after user approves the plan.
-
-CLI fallback: `npx ai-spector resolve-task plan.json`
+Runbook: `.cursor/skills/ai-spector-resolve-task/references/runbook.md`

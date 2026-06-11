@@ -1,14 +1,22 @@
 ---
 name: ai-spector-generate
 description: >-
-  Routes document-generation requests to the correct skill based on the active template packs.
-  Use when the user says "generate docs", "generate requirements", "write SRS", or names a
-  document type without specifying a layer. Always checks packs.srs and packs.basicDesign before routing.
+  Routes full document-generation requests to the correct skill based on active template packs.
+  Use for "generate docs", "generate SRS", "write chapter N" (DAG waves from graph). If the user
+  wants to add/update a single feature or section ("I want to add…"), route to ai-spector-resolve-task
+  instead. Always checks packs.srs and packs.basicDesign before routing.
 ---
 
 # AI Spector — Generate (router)
 
-## Step 0 — Check active packs (always first)
+## Step 0 — Incremental vs full generate
+
+| User intent | Route to |
+|-------------|----------|
+| add / update / change one feature, section, API, screen | `ai-spector-resolve-task` |
+| generate SRS / basic design / full chapter from graph | continue below |
+
+## Step 1 — Check active packs (always first)
 
 Read `.ai-spector/docflow.config.json`. Check `packs.srs` and `packs.basicDesign` independently.
 

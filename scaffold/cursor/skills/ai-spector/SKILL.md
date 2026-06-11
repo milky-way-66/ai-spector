@@ -80,8 +80,9 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 |--------|-------|
 | Setup / bootstrap project | `ai-spector-setup` |
 | Analyze, index, validate, impact, visualize | `ai-spector-graph` |
-| SRS | `ai-spector-generate-srs` |
-| Basic design | `ai-spector-generate-basic-design` |
+| Add/update one feature or section ("I want to add…") | `ai-spector-resolve-task` |
+| Generate SRS (full chapter / DAG) | `ai-spector-generate-srs` |
+| Generate basic design (full wave) | `ai-spector-generate-basic-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
 | Translation status / stale languages | `ai-spector-lang-status` |

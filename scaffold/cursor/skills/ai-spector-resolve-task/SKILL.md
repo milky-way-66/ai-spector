@@ -1,11 +1,11 @@
 ---
 name: ai-spector-resolve-task
 description: >-
-  Conversational task workflow (create task, resolve task): agent clarifies user
-  intent, builds a GoalSpec + TaskPlan, shows it for approval, then executes via
-  the resolve_task MCP tool or CLI. Use when the user wants to create a task,
-  add/update a requirement, change a prototype, update docs, regenerate
-  sections, or any multi-step doc/graph change described in natural language.
+  FIRST CHOICE for incremental doc/graph changes: add feature, add requirement, update
+  section, change prototype, "I want to…", "we need to…", create task. Mandatory
+  workflow: clarify → show GoalSpec + TaskPlan → wait for explicit yes → then execute.
+  Do NOT jump to edits or graph_impact before approval. Do NOT use generate-srs or
+  generate-basic-design for single-feature additions — use this skill instead.
 paths:
   - "docs/**"
   - "prototype/**"
@@ -14,25 +14,69 @@ paths:
 
 # AI Spector — Resolve Task
 
-**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
+**Read first:** [references/runbook.md](references/runbook.md) — follow every phase in order.
 
-## Required reading
+## You are in plan-first mode
 
-[references/runbook.md](references/runbook.md) — follow phases in order.
+The user described a **change**, not a full generate-from-scratch run. Your job is to **plan and get approval before any write or impact tool**.
+
+### Forbidden until the user replies **yes** to the plan
+
+| Do NOT call | Do NOT do |
+|-------------|-----------|
+| `graph_impact` | Edit or Write any file |
+| `index`, `graph_merge`, `resolve_task` | Generate SRS/basic-design chapters |
+| `graph_validate`, `graph_report` | "Quick preview" edits |
+| Bulk reads of `docs/**` for writing | Run impact "to check scope" |
+
+### Allowed before approval (discover only)
+
+`docs_search`, `graph_query_fuzzy`, `graph_query` — to find **where** a change belongs. No impact, no edits.
+
+## Workflow (strict)
+
+```
+Phase 1  Receive intent          → acknowledge, no tools
+Phase 2  Clarify (≤3 questions) → fill GoalSpec fields
+Phase 3  Discover (optional)    → read-only lookup for scope
+Phase 4  Show plan              → GoalSpec + TaskPlan table
+Phase 5  Wait for approval      → user must say yes / approve / go ahead
+Phase 6  Execute                → edits + resolve_task for index/graph steps
+Phase 7  Report                 → state update summary
+```
+
+**Never skip Phase 2–5.** "Add login with Google" is not specific enough — you still clarify domain, target file/section, and done criteria.
+
+## First response template
+
+When this skill activates, start like this (adapt to the user's message):
+
+> I'll handle this through the **resolve-task** workflow — plan first, execute after you approve.
+>
+> To build the right plan:
+> 1. …
+> 2. …
+> 3. …
+
+Do not run tools in this first message unless the user already named exact file paths.
+
+## Triggers → this skill (not generate-*)
+
+| User says | Route here |
+|-----------|------------|
+| "I want to add login with Google" | **this skill** |
+| "add a requirement for …" | **this skill** |
+| "update the SRS section on …" | **this skill** |
+| "change prototype theme" | **this skill** |
+| "generate SRS" / "write chapter 4" | `ai-spector-generate-srs` |
+| "generate basic design" / "screen list" | `ai-spector-generate-basic-design` |
 
 ## Checklist
 
 ```
-- [ ] Receive user intent (free-form)
-- [ ] Ask ≤3 clarifying questions → build GoalSpec
-- [ ] Show GoalSpec + TaskPlan → wait for approval
-- [ ] Execute via resolve_task MCP tool (or CLI)
-- [ ] Report results + state update
+- [ ] Announced resolve-task workflow (plan-first)
+- [ ] Asked clarifying questions → GoalSpec complete
+- [ ] Showed GoalSpec + TaskPlan → got explicit yes
+- [ ] Executed approved steps only
+- [ ] Reported state update
 ```
-
-## Natural language triggers → this skill
-
-"create task", "create a task", "new task", "resolve task", "run a task",
-"add requirement", "update docs", "change prototype", "new feature section",
-"update SRS", "regenerate screens", "I want to…", "we need to…",
-any open-ended change request that is not a full generate-from-scratch workflow.

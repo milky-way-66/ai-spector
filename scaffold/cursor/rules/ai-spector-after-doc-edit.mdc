@@ -6,6 +6,8 @@ alwaysApply: false
 
 # After doc edits — impact + queue
 
+When following **ai-spector-resolve-task**, run impact and index only **after plan approval**, as steps in the approved TaskPlan — not during planning.
+
 When you **finish editing** any file under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`:
 
 ## 1. Check traceability impact

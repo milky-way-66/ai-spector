@@ -90,7 +90,8 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | Translation status | `ai-spector-lang-status` |
 | Resolve translations | `ai-spector-resolve-translation` |
 | Resolve comments | `ai-spector-resolve-comments` |
-| Create task / open-ended doc change | `ai-spector-resolve-task` |
+| Add/update feature or section ("I want to add…") | `ai-spector-resolve-task` (plan-first — no impact/edits before approval) |
+| Generate SRS / basic design (full chapter) | `ai-spector-generate-srs` / `ai-spector-generate-basic-design` |
 
 ## Quick reference
 

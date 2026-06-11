@@ -1,10 +1,10 @@
 ---
 name: ai-spector-generate-basic-design
 description: >-
-  Generates or updates basic design documents from the traceability graph and SRS: screen list and
-  screen details, API list and endpoint details, database design under docs/basic-design/. Use when
-  the user asks for basic design, wireframes, screen map, API design, ERD, or list-screens.md. Do not
-  use for SRS-only work, HTML prototype, or graph analyze/index without doc generation.
+  Generates basic design chapters from the traceability graph in DAG order (screen list, API list,
+  wireframes wave). Do NOT use for incremental adds like "add an API endpoint" or "update screen X"
+  — use ai-spector-resolve-task instead. Do not use for SRS-only work, HTML prototype, or graph-only
+  analyze/index tasks.
 paths:
   - "docs/basic-design/**"
   - ".ai-spector/templates/basic_design/**"

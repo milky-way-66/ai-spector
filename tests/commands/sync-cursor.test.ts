@@ -26,7 +26,8 @@ describe("sync-cursor", () => {
     );
     expect(router).toContain("ai-spector-resolve-comments");
     expect(router).toContain("ai-spector-resolve-task");
-    expect(router).toContain("create task");
+    expect(router).toContain("add login with Google");
+    expect(await pathExists(join(root, ".cursor/rules/ai-spector-resolve-task.mdc"))).toBe(true);
     expect(router).toContain("ai-spector-generate");
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
       true,

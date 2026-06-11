@@ -17,7 +17,7 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules �
 | Screens, APIs, DB basic design | `ai-spector-generate-basic-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
 | Review comments | `ai-spector-resolve-comments` |
-| Create task / open-ended doc change | `ai-spector-resolve-task` |
+| Add/update feature or section (“I want to add…”) | `ai-spector-resolve-task` (plan-first) |
 | Translation status (read-only) | `ai-spector-lang-status` |
 | Resolve / sync translations | `ai-spector-resolve-translation` |
 | Unsure | `ai-spector` (core) |

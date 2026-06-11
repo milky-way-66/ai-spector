@@ -1,9 +1,9 @@
 ---
 name: ai-spector-generate-srs
 description: >-
-  Generates or updates the System Requirements Specification from the traceability graph and
-  docs/data-source context. Use when the user asks to generate or update SRS, requirements, use cases
-  (UC-xx), features (F-xx), or files under docs/srs/. Do not use for basic design screens/APIs,
+  Generates SRS chapters from the traceability graph in DAG order (full waves, "generate SRS",
+  "write chapter 4", use case list from graph). Do NOT use for incremental adds like "add a feature",
+  "I want to add login" — use ai-spector-resolve-task instead. Do not use for basic design,
   HTML prototype, or graph-only analyze/index tasks.
 paths:
   - "docs/srs/**"
@@ -35,4 +35,6 @@ paths:
 ## On CLI failure
 Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-"generate SRS", "write requirements", "use case chapter", "feature list" → this skill.
+"generate SRS", "write chapter 3", "feature list from graph", "all UC details" → this skill.
+
+"add feature", "I want to add …", "update auth section" → **ai-spector-resolve-task** (plan-first).
