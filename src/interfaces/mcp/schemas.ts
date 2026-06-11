@@ -189,6 +189,33 @@ export const ResolveTaskSchema = RootSchema.extend({
   dryRun: z.boolean().optional().describe("Validate and plan without writing any changes"),
 });
 
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export const ReviewApproveSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
+  by: z.string().optional().describe("Reviewer name or id (default: local)"),
+});
+
+export const ReviewStatusSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path"),
+  showDiff: z.boolean().optional().describe("Include diff content in result (default: true)"),
+});
+
+export const ReviewQueueSchema = RootSchema.extend({
+  track: z
+    .enum(["internal", "client", "all"])
+    .optional()
+    .describe("Which queue to show (default: all)"),
+  showDiff: z.boolean().optional().describe("Include diff content for pending entries (default: true)"),
+});
+
+export const ReviewCheckSchema = RootSchema;
+
+export const ReviewRejectSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path to dismiss from internal queue"),
+  reason: z.string().optional().describe("Why the change does not require re-approval"),
+});
+
 // ── Template ──────────────────────────────────────────────────────────────────
 
 export const TemplateListSchema = RootSchema;

@@ -26,6 +26,11 @@ import {
   CocoindexStatsSchema,
   CocoindexIndexSchema,
   ResolveTaskSchema,
+  ReviewApproveSchema,
+  ReviewStatusSchema,
+  ReviewQueueSchema,
+  ReviewCheckSchema,
+  ReviewRejectSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -41,6 +46,13 @@ import {
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
+import {
+  toolReviewApprove,
+  toolReviewStatus,
+  toolReviewQueue,
+  toolReviewCheck,
+  toolReviewReject,
+} from "./tools/reviews.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -338,6 +350,68 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolResolveTask(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Review tools ─────────────────────────────────────────────────────────────
+
+server.registerTool(
+  "review_approve",
+  {
+    description: "Approve a document for internal review and move it to the client review queue",
+    inputSchema: ReviewApproveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewApprove(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "review_status",
+  {
+    description: "Get the review approval status of a document including both internal and client tracks, and the diff since last approval",
+    inputSchema: ReviewStatusSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewStatus(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "review_queue",
+  {
+    description: "List documents pending review in internal and/or client queues",
+    inputSchema: ReviewQueueSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewQueue(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "review_check",
+  {
+    description: "Scan all approved documents for content changes and invalidate stale approvals",
+    inputSchema: ReviewCheckSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewCheck(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "review_reject",
+  {
+    description: "Dismiss a document from the internal review queue without requiring re-approval (e.g. for trivial changes)",
+    inputSchema: ReviewRejectSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewReject(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

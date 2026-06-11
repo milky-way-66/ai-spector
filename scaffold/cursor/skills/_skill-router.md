@@ -33,6 +33,7 @@ Agents use this when intent is ambiguous.
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
+| review documents, approve doc, review queue, pending review, what changed since last approval | `ai-spector-review` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | `SKILL.md` |

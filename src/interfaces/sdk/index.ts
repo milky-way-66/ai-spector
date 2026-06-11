@@ -126,6 +126,27 @@ export type {
   FuzzyQueryResult,
 } from "../../core/operations/cocoindex.js";
 
+// Reviews
+export {
+  runApprove,
+  runReviewStatus,
+  runReviewQueue,
+  runReviewCheck,
+  runReviewReject,
+} from "../../core/operations/review.js";
+export type {
+  ReviewApproveOptions,
+  ReviewApproveResult,
+  ReviewStatusOptions,
+  ReviewStatusResult,
+  ReviewQueueOptions,
+  ReviewQueueResult,
+  ReviewCheckOptions,
+  ReviewCheckResult,
+  ReviewRejectOptions,
+  ReviewRejectResult,
+} from "../../core/operations/review.js";
+
 // Comments
 export {
   runCommentsList,

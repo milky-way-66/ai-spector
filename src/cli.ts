@@ -60,6 +60,20 @@ import {
   runCommentsShow,
 } from "./core/operations/comments.js";
 import { runProvenanceLink } from "./core/graph/provenance.js";
+import {
+  runApprove,
+  runReviewStatus,
+  runReviewQueue,
+  runReviewCheck,
+  runReviewReject,
+} from "./core/operations/review.js";
+import {
+  formatApproveResult,
+  formatReviewStatus,
+  formatReviewQueue,
+  formatReviewCheck,
+  formatReviewReject,
+} from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
@@ -584,6 +598,71 @@ comments
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCommentsResolve(result, threadId));
+  });
+
+// ── Review commands ───────────────────────────────────────────────────────────
+
+const review = program
+  .command("review")
+  .description("Two-track document review: internal approval → client approval");
+
+review
+  .command("approve <logicalPath>")
+  .description("Mark document as internally approved and move to client review queue")
+  .option("--by <reviewer>", "Reviewer name or id (default: local)")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runApprove({ root: projectRootOpt(cmd), logicalPath, by: opts.by });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatApproveResult(result));
+  });
+
+review
+  .command("status <logicalPath>")
+  .description("Show review status for a document (both tracks + diff if pending)")
+  .option("--no-diff", "Skip diff content")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runReviewStatus({ root: projectRootOpt(cmd), logicalPath, showDiff: opts.diff !== false });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewStatus(result));
+  });
+
+review
+  .command("queue")
+  .description("List documents pending review across internal and client queues")
+  .option("--track <track>", "internal | client | all (default: all)")
+  .option("--no-diff", "Skip diff content")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewQueue({
+      root: projectRootOpt(cmd),
+      track: opts.track as "internal" | "client" | "all" | undefined,
+      showDiff: opts.diff !== false,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewQueue(result));
+  });
+
+review
+  .command("check")
+  .description("Scan approved documents for content changes and invalidate stale approvals")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewCheck({ root: projectRootOpt(cmd) });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewCheck(result));
+  });
+
+review
+  .command("reject <logicalPath>")
+  .description("Dismiss document from internal queue without re-approval (trivial changes)")
+  .option("--reason <text>", "Why the change does not require re-approval")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runReviewReject({ root: projectRootOpt(cmd), logicalPath, reason: opts.reason });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewReject(result));
   });
 
 const prototype = program

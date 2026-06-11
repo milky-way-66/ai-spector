@@ -36,6 +36,11 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 | Natural language graph lookup | `graph_query_fuzzy({ query })` | *(no CLI equivalent)* |
 | Execute approved task plan | `resolve_task({ intent, goalSpec, plan })` | `npx ai-spector resolve-task plan.json` |
 | **Visualize graph** | *(no MCP tool)* | `npx ai-spector graph visualize --open` |
+| Detect changed docs | `review_check({})` | `npx ai-spector review check --json` |
+| Review queue | `review_queue({ track, showDiff })` | `npx ai-spector review queue --json` |
+| Doc review status + diff | `review_status({ logicalPath })` | `npx ai-spector review status <path> --json` |
+| Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
+| Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 
 Use CLI **only** when: MCP server is not configured, the tool errors, or no MCP equivalent exists (visualize, `lang add`, template mutations).
 
@@ -85,6 +90,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Generate basic design (full wave) | `ai-spector-generate-basic-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
+| Review / approve documents, review queue | `ai-spector-review` |
 | Translation status / stale languages | `ai-spector-lang-status` |
 | Resolve / sync translations | `ai-spector-resolve-translation` |
 | Create task, open-ended doc/graph change | `ai-spector-resolve-task` |
