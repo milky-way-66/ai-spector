@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathExists } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
-import { normalizeLogicalPath, logicalPathToDocPath } from "../comments/paths.js";
+import { normalizeLogicalPath } from "../comments/paths.js";
+import { resolveReviewDocPath } from "../reviews/doc-resolve.js";
 import { listThreads } from "../comments/storage.js";
 import { computeLineDiff } from "../util/diff.js";
 import {
@@ -21,6 +22,7 @@ import {
   saveDiff,
   deleteDiff,
   deriveOverallStatus,
+  discoverApprovals,
 } from "../reviews/storage.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
 import type { ApprovalRecord, QueueEntry, DiffFile } from "../reviews/types.js";
@@ -87,6 +89,27 @@ export interface ReviewRejectResult {
   message: string;
 }
 
+export interface ReviewListOptions {
+  root?: string;
+  /** Filter by overallStatus. Omit to return all. */
+  status?: "pending_internal" | "pending_client" | "approved" | "rejected" | "all";
+  /** Filter to logical paths starting with this prefix, e.g. "srs" */
+  prefix?: string;
+}
+
+export interface ReviewListEntry {
+  logicalPath: string;
+  overallStatus: string;
+  contentHash: string;
+  internal: { status: string; approvedBy: string | null; approvedAt: string | null };
+  client: { status: string };
+}
+
+export interface ReviewListResult {
+  entries: ReviewListEntry[];
+  total: number;
+}
+
 // ── Operations ────────────────────────────────────────────────────────────────
 
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
@@ -94,13 +117,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
   const lp = normalizeLogicalPath(opts.logicalPath);
   const approvedBy = opts.by ?? "local";
 
-  const docPath = logicalPathToDocPath(lp);
-  if (!docPath) throw new Error(`Cannot resolve doc path for: ${lp}`);
-
-  const absDocPath = join(paths.root, docPath);
-  if (!(await pathExists(absDocPath))) {
-    throw new Error(`Document not found: ${docPath}`);
-  }
+  const { absPath: absDocPath } = await resolveReviewDocPath(paths.root, lp);
 
   const content = await readFile(absDocPath, "utf8");
   const contentHash = createHash("sha256").update(content).digest("hex").slice(0, 16);
@@ -190,9 +207,8 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
 
     // Recompute if missing but snapshot + doc exist
     if (!diff && approval.overallStatus === "pending_internal") {
-      const docPath = logicalPathToDocPath(lp);
-      if (docPath) {
-        const absDocPath = join(paths.root, docPath);
+      try {
+        const { absPath: absDocPath } = await resolveReviewDocPath(paths.root, lp);
         const snapshot = await readSnapshot(paths.root, lp);
         if (snapshot && (await pathExists(absDocPath))) {
           const current = await readFile(absDocPath, "utf8");
@@ -207,6 +223,8 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
           };
           await saveDiff(paths.root, "internal", diff);
         }
+      } catch {
+        // Doc file not resolvable — skip diff recomputation
       }
     }
   }
@@ -257,6 +275,37 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
     },
     diffs,
   };
+}
+
+export async function runReviewList(opts: ReviewListOptions): Promise<ReviewListResult> {
+  const paths = await resolveProjectPaths(opts.root);
+  const logicalPaths = await discoverApprovals(paths.root);
+
+  const entries: ReviewListEntry[] = [];
+
+  await Promise.all(
+    logicalPaths.map(async (lp) => {
+      if (opts.prefix && !lp.startsWith(opts.prefix)) return;
+      const approval = await getApproval(paths.root, lp);
+      if (!approval) return;
+      if (opts.status && opts.status !== "all" && approval.overallStatus !== opts.status) return;
+      entries.push({
+        logicalPath: lp,
+        overallStatus: approval.overallStatus,
+        contentHash: approval.contentHash,
+        internal: {
+          status: approval.internal.status,
+          approvedBy: approval.internal.approvedBy,
+          approvedAt: approval.internal.approvedAt,
+        },
+        client: { status: approval.client.status },
+      });
+    }),
+  );
+
+  entries.sort((a, b) => a.logicalPath.localeCompare(b.logicalPath));
+
+  return { entries, total: entries.length };
 }
 
 export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCheckResult> {

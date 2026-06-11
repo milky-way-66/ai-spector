@@ -41,6 +41,7 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 | Doc review status + diff | `review_status({ logicalPath })` | `npx ai-spector review status <path> --json` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
+| List all docs with review status | `review_list({ status?, prefix? })` | `npx ai-spector review list --json` |
 
 Use CLI **only** when: MCP server is not configured, the tool errors, or no MCP equivalent exists (visualize, `lang add`, template mutations).
 

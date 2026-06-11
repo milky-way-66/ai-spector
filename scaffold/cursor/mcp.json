@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "ai-spector": {
-      "command": "npx",
-      "args": ["ai-spector-mcp"]
+      "command": "node",
+      "args": ["node_modules/ai-spector/dist/interfaces/mcp/server.js"]
     }
   }
 }

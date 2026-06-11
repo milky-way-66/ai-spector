@@ -133,6 +133,7 @@ export {
   runReviewQueue,
   runReviewCheck,
   runReviewReject,
+  runReviewList,
 } from "../../core/operations/review.js";
 export type {
   ReviewApproveOptions,
@@ -145,6 +146,9 @@ export type {
   ReviewCheckResult,
   ReviewRejectOptions,
   ReviewRejectResult,
+  ReviewListOptions,
+  ReviewListResult,
+  ReviewListEntry,
 } from "../../core/operations/review.js";
 
 // Comments

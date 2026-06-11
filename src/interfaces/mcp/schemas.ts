@@ -216,6 +216,17 @@ export const ReviewRejectSchema = RootSchema.extend({
   reason: z.string().optional().describe("Why the change does not require re-approval"),
 });
 
+export const ReviewListSchema = RootSchema.extend({
+  status: z
+    .enum(["pending_internal", "pending_client", "approved", "rejected", "all"])
+    .optional()
+    .describe("Filter by approval status (default: all)"),
+  prefix: z
+    .string()
+    .optional()
+    .describe("Filter to documents whose logical path starts with this prefix (e.g. 'srs', 'bd')"),
+});
+
 // ── Template ──────────────────────────────────────────────────────────────────
 
 export const TemplateListSchema = RootSchema;

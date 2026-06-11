@@ -1,28 +1,35 @@
-# Document Review & Approval
+# Document Review — Agent Runbook
 
-Two-track sequential workflow: **internal approval first**, then **client approval** (done via web app). This runbook covers the internal track — what the agent handles.
+The agent's job is not just to show a diff — it is to **read the document, understand the change, assess impact, and write a review** so the user can make an informed decision quickly.
+
+Two-track flow: **internal (you)** → **client (web app)**. This runbook covers internal review only.
 
 Storage is git-backed under `reviews/`. No Writer API.
+
+---
 
 ## MCP tools vs CLI
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
 | Detect changed documents | `review_check({})` | `npx ai-spector review check --json` |
-| Show review queue | `review_queue({ track, showDiff })` | `npx ai-spector review queue --track internal --json` |
-| Show single doc status + diff | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json` |
+| Show review queue | `review_queue({ track: "internal", showDiff: true })` | `npx ai-spector review queue --track internal --json` |
+| Load status + diff for one doc | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
+| Check downstream impact | `graph_impact({ file: "<docPath>", change: "content updated" })` | `npx ai-spector graph impact --file <path> --json` |
 
 ---
 
-## Usage
+## Usage triggers
 
-| You say | Agent does |
-|---------|------------|
-| `/review` | Run check → show internal queue → wait for pick |
-| `/review srs/01-overview` | Show status + diff for that doc → ask to approve |
-| `/review approve srs/01-overview` | Approve immediately if already checked |
+| User says | Agent does |
+|-----------|------------|
+| `/review` | Detect changes → queue table → wait for pick → full review |
+| `/review srs/01-overview` | Skip to review of that specific doc |
+| `/review approve srs/01-overview` | Still run review first, then approve if no concerns |
+| "what changed since last approval" | `review_status` with diff for the named doc |
+| "review queue" | Show pending table only, no auto-review |
 
 ---
 
@@ -32,136 +39,203 @@ Storage is git-backed under `reviews/`. No Writer API.
 review_check({})
 ```
 
-Reports: how many documents scanned, how many invalidated (content changed since last approval), errors.
+Report in one line: `"Scanned N documents — M changed since last approval."`.
 
-Show summary in chat. If `invalidated === 0`, tell the user everything is up to date and stop.
+If `invalidated === 0`: tell the user, stop here.
 
----
-
-## Phase 1 — Show internal review queue
-
-```
-review_queue({ track: "internal", showDiff: true })
-```
-
-**Present in chat as a table** — do not dump raw JSON:
-
-| # | Document | Changed | Lines +/- | Reason |
-|---|----------|---------|-----------|--------|
-| 1 | `srs/01-overview` | 2026-06-11 | +3 / -1 | content_changed |
-| 2 | `bd/api-design` | 2026-06-10 | +12 / -5 | content_changed |
-
-Use `linesAdded` / `linesRemoved` from the diff payload for the +/- column.
-
-**Stop and ask:** "Which document would you like to review? Reply with the number or path."
-
-Do not approve anything until the user picks.
+If errors exist, list them but continue with valid documents.
 
 ---
 
-## Phase 2 — Show document diff
+## Phase 1 — Show queue, wait for pick
 
 ```
-review_status({ logicalPath: "srs/01-overview", showDiff: true })
+review_queue({ track: "internal", showDiff: false })
 ```
 
-**Present the diff in chat:**
+Present as a table — never raw JSON:
 
-```
-srs/01-overview
-  internal: needs_review
-  +3 lines / -1 line since approved by alice on 2026-06-01
+| # | Document | Queued | +Lines | -Lines | Reason |
+|---|----------|--------|--------|--------|--------|
+| 1 | `srs/01-overview` | 2026-06-11 | +3 | -1 | content changed |
+| 2 | `bd/api-design` | 2026-06-10 | +12 | -5 | content changed |
 
-  42 - ## Old Section Title
-  42 + ## New Section Title
-  67 + > Note: this requirement was updated.
-  68 + >
-  71 - See section 3.
-```
+Use `linesAdded` / `linesRemoved` from the queue diff payload.
 
-Show at most 30 diff lines. If more, show count: "…and 15 more lines changed."
+**Stop and ask:** "Which document should I review? Reply with a number or path. I'll read it and write a review before asking you to approve."
 
-Also show any open comment thread warning if `openThreadWarning` is set in the result.
-
-**Stop and ask:** "Approve this document, dismiss the change, or skip?"
+Do not proceed until the user picks.
 
 ---
 
-## Phase 3 — Act on user decision
+## Phase 2 — Load diff and document
 
-### Approve
-
-```
-review_approve({ logicalPath: "srs/01-overview", by: "<user name or 'local'>" })
-```
-
-On success, confirm in chat:
-```
-✅ srs/01-overview approved by alice
-   Hash: abc123def456ef78
-   Moved to client review queue.
-```
-
-If `openThreadWarning` is returned, surface it:
-```
-⚠️  Warning: 2 open comment thread(s) on this document. Consider resolving them too.
-```
-
-### Dismiss (trivial change — no re-approval needed)
+Run both in parallel:
 
 ```
-review_reject({ logicalPath: "srs/01-overview", reason: "whitespace / formatting only" })
+review_status({ logicalPath: "<picked>", showDiff: true })
 ```
 
-Confirm in chat and move to next item in queue.
+Then read the actual document file (get `docPath` from `logicalPathToDocPath` — typically `docs/srs/en/<file>.md` or `docs/basic-design/en/<file>.md`).
 
-### Skip
-
-Note the skip and move to next item.
+**Read the document to understand context.** The diff alone is not enough — you need to see what the changed sections mean in the full document.
 
 ---
 
-## Phase 4 — Continue queue
+## Phase 3 — Check graph impact
 
-After acting on a document, return to Phase 1 and show the remaining queue.
+```
+graph_impact({ file: "<docPath>", change: "content updated — reviewing for approval" })
+```
 
-When the internal queue is empty:
+Note which downstream nodes or documents are affected. This tells you whether approving this change will require regenerating other docs.
+
+---
+
+## Phase 4 — Write the review
+
+This is the core of the skill. Write a structured review in chat **before** asking the user to decide.
+
+### Review format
+
+```
+## Review: <logicalPath>
+
+**Summary of changes**
+<2-4 sentences describing what actually changed in plain language.
+Not a list of line numbers — explain the meaning of the change.>
+
+**Diff**
+<Show the diff from review_status. Lines starting with "{n} +" are additions,
+"{n} -" are removals. Cap at 30 lines; show count if more.>
+
+**Impact**
+<What downstream documents or graph nodes are affected, from graph_impact.
+If none: "No downstream impact detected.">
+
+**Open comment threads**
+<List any open threads on this document if openThreadWarning was returned.
+If none: omit this section.>
+
+**Concerns** *(omit section if none)*
+<Flag anything that looks wrong, incomplete, inconsistent, or risky.
+Examples: a section was deleted without explanation, a requirement ID was
+changed (breaks traceability), a constraint was weakened, new content
+contradicts an earlier section.>
+
+**Recommendation**
+<One of:>
+  ✅ Approve — changes look correct and complete.
+  ⚠️  Approve with note — minor issues, safe to approve but worth flagging.
+  ❌ Request changes — specific concern that should be addressed first.
+```
+
+### What makes a good review
+
+- **Be specific** — name the lines or sections that changed, not just "some changes were made".
+- **Explain the meaning** — "Section 3.2 now requires OAuth 2.0 instead of API keys" not "line 42 was changed".
+- **Flag traceability breaks** — if a requirement ID or section anchor was removed or renamed, call it out explicitly.
+- **Note missing content** — if lines were deleted without replacement and the section now reads incomplete, say so.
+- **Be honest about concerns** — recommend "Request changes" when something looks wrong. Do not approve to be helpful.
+
+---
+
+## Phase 5 — Wait for user decision
+
+After the review, ask exactly:
+
+```
+Decision for <logicalPath>:
+  1. ✅ Approve
+  2. ❌ Request changes (describe what to fix)
+  3. ↩️  Dismiss (trivial / formatting only)
+  4. ⏭️  Skip (review later)
+```
+
+Wait for the user's reply. Do not auto-approve.
+
+---
+
+## Phase 6 — Execute decision
+
+### 1 — Approve
+
+```
+review_approve({ logicalPath: "<path>", by: "<reviewer name>" })
+```
+
+Confirm in chat:
+```
+✅ <logicalPath> approved — moved to client review queue.
+   Hash: <contentHash>
+```
+
+If `openThreadWarning` was returned:
+```
+⚠️  Note: <N> open comment thread(s) on this document. Consider resolving them.
+```
+
+### 2 — Request changes
+
+Do **not** call `review_approve`. Tell the user what needs to be fixed. Optionally open the relevant comment thread workflow (`ai-spector-resolve-comments`).
+
+### 3 — Dismiss
+
+```
+review_reject({ logicalPath: "<path>", reason: "<user's reason or 'trivial formatting change'>" })
+```
+
+Confirm and continue to next item.
+
+### 4 — Skip
+
+Note the skip and continue to next item in queue.
+
+---
+
+## Phase 7 — Continue queue
+
+After each decision, return to Phase 1 and show the remaining queue.
+
+When internal queue is empty:
 ```
 ✅ Internal review queue is clear.
-   N document(s) are now in the client review queue.
+   <N> document(s) are now waiting in the client review queue.
 ```
 
 ---
 
-## Phase 5 — Optional: commit review state
+## Phase 8 — Commit review state
 
-Review state is stored as JSON files under `reviews/`. Commit them so the team sees the updated approval status:
+Review state is stored under `reviews/`. Commit after a review session so the team sees updated approval status:
 
 ```bash
 git add reviews/
-git commit -m "chore(review): approve srs/01-overview and bd/api-design"
+git commit -m "chore(review): approve <doc1>, <doc2>"
 git push
 ```
 
 ---
 
-## Status badges quick reference
+## Guardrails
 
-| `overallStatus` | Meaning |
-|-----------------|---------|
-| `pending_internal` | Waiting for internal review (you) |
-| `pending_client` | Internal approved — waiting for client via web app |
-| `approved` | Fully approved by both tracks |
-| `rejected` | Client rejected — needs internal re-review |
+- **Never skip the review write (Phase 4).** Even for a one-line change, write a brief summary.
+- **Never approve without showing the full review first.** Even if the user says "just approve it", still write the review — then approve.
+- **Never approve if `overallStatus` is already `pending_client` or `approved`.** Tell the user the current state.
+- **Recommend "Request changes" honestly.** Do not approve to avoid friction.
+- **Never touch `internal_queue/` files directly.** Always go through MCP tools / CLI.
+- **Read the document, not just the diff.** Phase 2 requires reading the actual file.
 
 ---
 
-## Guardrails
+## Status reference
 
-- Never approve without showing the diff first (Phase 2 is mandatory).
-- Never approve if `overallStatus` is already `pending_client` or `approved` — tell the user.
-- Never touch `internal_queue/` files directly — always go through MCP tools or CLI.
-- Do not approve on the user's behalf without explicit confirmation ("approve this").
+| `overallStatus` | Meaning |
+|-----------------|---------|
+| `pending_internal` | Waiting for internal review (this runbook) |
+| `pending_client` | Internal approved — waiting for client via web app |
+| `approved` | Fully signed off |
+| `rejected` | Client rejected — needs internal re-review |
 
 ---
 
@@ -171,8 +245,9 @@ See [../../ai-spector/references/cli-failures.md](../../ai-spector/references/cl
 
 | Issue | Fix |
 |-------|-----|
-| `review check` finds no approvals | No documents have been approved yet. Run `review approve` on a doc first. |
-| Doc path not found | Check logical path format: `srs/01-overview` not `docs/srs/en/01-overview.md` |
-| `Cannot approve: state is pending_client` | Document already internally approved — waiting for client web app |
-| `Cannot resolve doc path` | Logical path prefix not recognised — check `logicalPathToDocPath` mapping in `src/core/comments/paths.ts` |
+| `review check` finds no approvals | No documents approved yet — run `review approve` on a doc to register it first |
+| Doc path not found | Use logical path format: `srs/01-overview` not `docs/srs/en/01-overview.md` |
+| `Cannot approve: state is pending_client` | Already internally approved — tell user it is awaiting client |
+| `Cannot resolve doc path` | Logical path prefix not recognised — check paths.ts mapping |
 | Diff file missing | Run `review check` again to recompute |
+| graph_impact returns no data | Graph may be stale — suggest `index({})` then retry |

@@ -19,6 +19,8 @@ npx ai-spector setup --check      # audit only
 
 Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/skills/`, reload MCP.
 
+> **After upgrading ai-spector** (`npm install -D ai-spector@latest`): reload the MCP server in Cursor (Cmd+Shift+P → "Reload MCP Servers") so new tools are picked up. The server logs its version and tool count to stderr on startup — check Cursor's MCP output panel if a tool is missing.
+
 ## What to say → skill → agent does
 
 | You want to… | Say (examples) | Skill | Agent runs (MCP preferred) |

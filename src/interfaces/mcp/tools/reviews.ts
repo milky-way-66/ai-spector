@@ -5,6 +5,7 @@ import type {
   ReviewQueueSchema,
   ReviewCheckSchema,
   ReviewRejectSchema,
+  ReviewListSchema,
 } from "../schemas.js";
 import {
   runApprove,
@@ -12,6 +13,7 @@ import {
   runReviewQueue,
   runReviewCheck,
   runReviewReject,
+  runReviewList,
 } from "../../../core/operations/review.js";
 
 export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchema>) {
@@ -32,4 +34,8 @@ export async function toolReviewCheck(input: z.infer<typeof ReviewCheckSchema>) 
 
 export async function toolReviewReject(input: z.infer<typeof ReviewRejectSchema>) {
   return runReviewReject({ root: input.root, logicalPath: input.logicalPath, reason: input.reason });
+}
+
+export async function toolReviewList(input: z.infer<typeof ReviewListSchema>) {
+  return runReviewList({ root: input.root, status: input.status, prefix: input.prefix });
 }

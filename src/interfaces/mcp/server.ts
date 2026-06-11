@@ -31,6 +31,7 @@ import {
   ReviewQueueSchema,
   ReviewCheckSchema,
   ReviewRejectSchema,
+  ReviewListSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -52,6 +53,7 @@ import {
   toolReviewQueue,
   toolReviewCheck,
   toolReviewReject,
+  toolReviewList,
 } from "./tools/reviews.js";
 
 const require = createRequire(import.meta.url);
@@ -416,7 +418,38 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "review_list",
+  {
+    description:
+      "List all documents that have an approval record, with their review status (approved / pending_internal / pending_client / rejected). Use to answer questions like 'which SRS docs have been reviewed?', 'show all approved documents', or 'what is the review status of all documents'. Filter by status or logical path prefix.",
+    inputSchema: ReviewListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
+
+// Log registered tools to stderr so users can verify the full tool set is loaded.
+// Set AI_SPECTOR_MCP_DEBUG=1 to suppress (e.g. in tests that parse stderr).
+if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
+  const toolNames = [
+    "graph_query", "graph_impact", "graph_validate", "graph_merge", "graph_report",
+    "knowledge_status", "knowledge_validate", "knowledge_schema",
+    "lang_queue", "index",
+    "comments_list", "comments_inbox", "comments_show", "comments_resolve",
+    "template_list", "template_inspect",
+    "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
+    "resolve_task",
+    "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
+  ];
+  process.stderr.write(
+    `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,
+  );
+}

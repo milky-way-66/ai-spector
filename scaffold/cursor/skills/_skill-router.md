@@ -10,6 +10,15 @@ Agents use this when intent is ambiguous.
 4. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
 5. **Still unclear** — `ai-spector` core + one question (incremental change vs full generate vs graph vs comments).
 
+## DISAMBIGUATION: "review" means two different things
+
+| "review" context | Correct skill |
+|---|---|
+| Document **approval** — approve, status, queue, "which docs reviewed", "has this been approved", "pending client review" | `ai-spector-review` |
+| Comment **threads** — C-001, inbox, resolve, open threads, feedback on content | `ai-spector-resolve-comments` |
+
+When in doubt: if the user names a document and asks about approval/status → `ai-spector-review`. If the user mentions threads, comments, or C-00N → `ai-spector-resolve-comments`.
+
 ## Task → skill → runbook
 
 | User intent (examples) | Skill | Read first |
@@ -32,8 +41,8 @@ Agents use this when intent is ambiguous.
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
-| review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
-| review documents, approve doc, review queue, pending review, what changed since last approval | `ai-spector-review` | `references/runbook.md` |
+| comment threads, C-001, inbox, resolve comments, open threads | `ai-spector-resolve-comments` | `references/runbook.md` |
+| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed" | `ai-spector-review` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | `SKILL.md` |

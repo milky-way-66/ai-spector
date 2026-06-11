@@ -1,8 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { pathExists } from "../util/fs.js";
-import { logicalPathToDocPath } from "../comments/paths.js";
+import { resolveReviewDocPath } from "./doc-resolve.js";
 import { computeLineDiff } from "../util/diff.js";
 import {
   discoverApprovals,
@@ -43,15 +41,14 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
         continue;
       }
 
-      const docPath = logicalPathToDocPath(logicalPath);
-      if (!docPath) {
-        result.errors.push({ logicalPath, error: "Cannot resolve doc path" });
-        continue;
-      }
-
-      const absDocPath = join(projectRoot, docPath);
-      if (!(await pathExists(absDocPath))) {
-        result.errors.push({ logicalPath, error: `Doc file not found: ${docPath}` });
+      let absDocPath: string;
+      try {
+        ({ absPath: absDocPath } = await resolveReviewDocPath(projectRoot, logicalPath));
+      } catch (err) {
+        result.errors.push({
+          logicalPath,
+          error: err instanceof Error ? err.message : String(err),
+        });
         continue;
       }
 
