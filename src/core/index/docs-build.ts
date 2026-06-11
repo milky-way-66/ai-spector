@@ -37,6 +37,20 @@ export interface BuiltDocIndex {
   markdown: string;
 }
 
+/**
+ * Single discovery contract for a doc source declared in index.docs.json:
+ * walk `source.root` recursively, apply `source.glob` (default all .md),
+ * return project-root-relative paths. Language folders (en/, vi/) are just
+ * nested directories — every index step (docs-index, semantic merge, hashes)
+ * must use this same file set so they cannot disagree.
+ */
+export async function discoverDocSourceFiles(
+  projectRoot: string,
+  source: { root: string; glob?: string },
+): Promise<DiscoveredDocFile[]> {
+  return discoverMarkdownFiles(projectRoot, source.root, source.glob ?? "**/*.md");
+}
+
 export async function discoverMarkdownFiles(
   projectRoot: string,
   sourceRoot: string,

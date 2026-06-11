@@ -591,7 +591,7 @@ export function buildVisualizationHtml(payload: VisualizePayload): string {
   function graphEmptyMsg() {
     const container = document.getElementById("graph-network");
     if (P.graph.nodes.length === 0) {
-      container.innerHTML = '<div style="color:#8b9cb3;padding:2rem;text-align:center">Graph is empty — run <code>npx ai-spector analyze</code> then <code>npx ai-spector graph merge</code></div>';
+      container.innerHTML = '<div style="color:#8b9cb3;padding:2rem;text-align:center">Graph is empty — run <code>npx ai-spector index</code></div>';
       return true;
     }
     return false;

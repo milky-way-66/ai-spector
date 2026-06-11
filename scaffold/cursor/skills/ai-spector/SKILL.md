@@ -18,7 +18,7 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
-| Prepare graph scaffold | `analyze({})` | `npx ai-spector analyze` |
+| Prepare graph scaffold | `index({})` | `npx ai-spector index` |
 | Check knowledge.json entity counts | `knowledge_status({})` | *(no CLI equivalent)* |
 | Validate knowledge.json schema | `knowledge_validate({})` | *(no CLI equivalent)* |
 | Merge knowledge → graph | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |

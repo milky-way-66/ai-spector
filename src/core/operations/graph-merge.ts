@@ -87,7 +87,7 @@ function collectSectionWarnings(patch: ExtractPatch, graph: InMemoryGraph): Sect
       suggestion,
       message: suggestion
         ? `listedInSection "${edge.to}" not found in graph — did you mean "${suggestion}"?`
-        : `listedInSection "${edge.to}" not found in graph and no close match was found. Run analyze first or check the section registry.`,
+        : `listedInSection "${edge.to}" not found in graph and no close match was found. Run \`npx ai-spector index\` first or check the section registry.`,
     });
   }
   return warnings;

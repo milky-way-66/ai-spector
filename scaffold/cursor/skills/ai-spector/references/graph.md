@@ -14,7 +14,7 @@ Run from project root: always `npx ai-spector …` (see [project-conventions.md]
 ## Commands (quick)
 
 ```bash
-npx ai-spector analyze
+npx ai-spector index
 npx ai-spector graph merge --from-knowledge
 npx ai-spector graph validate
 npx ai-spector graph visualize [--open]

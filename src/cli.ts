@@ -21,7 +21,6 @@ import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./co
 import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./core/operations/hooks.js";
 import { runSetup, runSetupCheck } from "./core/operations/setup.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
-import { runAnalyzePrep } from "./core/operations/analyze.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
 import { runGraphMerge } from "./core/operations/graph-merge.js";
@@ -42,7 +41,6 @@ import {
   formatCommentsResolve,
 } from "./interfaces/cli/format/comments.js";
 import {
-  formatAnalyzePrep,
   formatSyncCursor,
   formatHooksInstall,
   formatSetupAudit,
@@ -89,7 +87,7 @@ const packageJson = require("../package.json") as { version: string };
 program
   .name("ai-spector")
   .description(
-    "AI Spector — init project, analyze prep, traceability graph, templates, Cursor workflow",
+    "AI Spector — init project, index, traceability graph, templates, Cursor workflow",
   )
   .version(packageJson.version)
   .option("-r, --root <path>", "Project root (auto-detect via .ai-spector/docflow.config.json)");
@@ -314,29 +312,6 @@ program
       cocoindexSync: opts.cocoindexSync,
     });
     console.log(formatIndexReport(report));
-  });
-
-program
-  .command("analyze [paths...]")
-  .description(
-    "Prepare graph structure (registry + bootstrap). Entity extraction runs via the analyze skill in Cursor — not this command.",
-  )
-  .option(
-    "--merge",
-    "After prep, merge knowledge.json or extract/patch.json into the graph if present",
-  )
-  .action(async (paths: string[], opts, cmd) => {
-    if (paths.length > 0) {
-      console.error(
-        `error: analyze does not accept file path arguments — it only rebuilds graph structure.\n` +
-        `Entity extraction (reading docs/data-source/ files) is an agent step.\n` +
-        `In Cursor, ask: "analyze the data source"\n` +
-        `\nTo rebuild graph structure: npx ai-spector analyze`,
-      );
-      process.exit(1);
-    }
-    const result = await runAnalyzePrep(projectRootOpt(cmd), { merge: opts.merge });
-    console.log(formatAnalyzePrep(result));
   });
 
 const graph = program.command("graph").description("Traceability graph operations");

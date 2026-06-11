@@ -29,6 +29,7 @@ import {
 import {
   buildDocIndex,
   computeIndexSourceHash,
+  discoverDocSourceFiles,
   discoverMarkdownFiles,
   DOC_INDEX_DEFAULT_OUTPUTS,
   DOC_INDEX_DEFAULT_ROOTS,
@@ -55,11 +56,55 @@ export interface IndexOptions {
   cocoindexSync?: boolean;
 }
 
+export interface IndexSources {
+  dataSource: boolean;
+  srs: boolean;
+  basicDesign: boolean;
+  knowledgeExtracted: boolean;
+}
+
 export interface IndexReport {
   steps: IndexStepResult[];
   failed: boolean;
+  sources: IndexSources;
+  /** Agent guidance: what to do after this run (analyze data source, generate SRS, or nothing). */
+  nextAction?: string;
   cocoindexUpdated?: boolean;
   cocoindexSkipped?: boolean;
+}
+
+async function detectIndexSources(
+  projectRoot: string,
+  config?: IndexDocsConfig,
+): Promise<IndexSources> {
+  const hasFiles = async (kind: "srs" | "basicDesign" | "dataSource") => {
+    const root = config?.sources[kind]?.root ?? DOC_INDEX_DEFAULT_ROOTS[kind];
+    const files = await discoverMarkdownFiles(projectRoot, root, "**/*.md").catch(() => []);
+    return files.length > 0;
+  };
+  const knowledgePath = join(projectRoot, ".ai-spector/.docflow/analysis/knowledge.json");
+  let knowledgeExtracted = false;
+  if (await pathExists(knowledgePath)) {
+    const raw = await readJson<unknown>(knowledgePath).catch(() => null);
+    knowledgeExtracted =
+      raw !== null && isKnowledgePayload(raw) && knowledgeHasDomainEntries(raw as AnalysisKnowledge);
+  }
+  return {
+    dataSource: await hasFiles("dataSource"),
+    srs: await hasFiles("srs"),
+    basicDesign: await hasFiles("basicDesign"),
+    knowledgeExtracted,
+  };
+}
+
+function indexNextAction(sources: IndexSources): string | undefined {
+  if (sources.dataSource && !sources.knowledgeExtracted) {
+    return "Data source found but no extracted knowledge — analyze docs/data-source/ (agent skill writes analysis/knowledge.json), then re-run index.";
+  }
+  if (!sources.srs) {
+    return "No SRS documents yet — stop after analysis. Generate the SRS next, then re-run index.";
+  }
+  return undefined;
 }
 
 export async function runIndex(
@@ -76,6 +121,19 @@ export async function runIndex(
       failed = true;
     }
   };
+
+  const docsConfigFile = indexDocsConfigPath(projectRoot);
+  const docsConfig = (await pathExists(docsConfigFile))
+    ? await readJson<IndexDocsConfig>(docsConfigFile).catch(() => undefined)
+    : undefined;
+  const sources = await detectIndexSources(projectRoot, docsConfig);
+  const mark = (v: boolean) => (v ? "✓" : "—");
+  record({
+    id: "source-detect",
+    label: "Source detection",
+    status: "ok",
+    detail: `data-source ${mark(sources.dataSource)}, srs ${mark(sources.srs)}, basic-design ${mark(sources.basicDesign)}, knowledge.json ${mark(sources.knowledgeExtracted)}`,
+  });
 
   const graphOnly = opts.graphOnly === true;
   const docsOnly = opts.docsOnly === true;
@@ -406,6 +464,7 @@ export async function runIndex(
         }
         const indexedAt = new Date().toISOString();
         const hashes: Record<string, string> = {};
+        const fileCounts: Record<string, number> = {};
 
         for (const kind of ["srs", "basicDesign", "dataSource"] as const) {
           const sourceKey = kind;
@@ -420,34 +479,15 @@ export async function runIndex(
             continue;
           }
 
-          // Collect files across all configured languages (docs/{type}/{lang.code}/**)
-          // and fall back to the bare source root for projects that predate per-lang folders.
-          const baseRoot = source.root; // e.g. "docs/srs"
-          const langs = docflowConfig.languages;
-          const allFiles: Awaited<ReturnType<typeof discoverMarkdownFiles>> = [];
-          for (const lang of langs) {
-            const langRoot = `${baseRoot}/${lang.code}`;
-            const langFiles = await discoverMarkdownFiles(
-              projectRoot,
-              langRoot,
-              source.glob ?? "**/*.md",
-            ).catch(() => []);
-            allFiles.push(...langFiles);
-          }
-          // Legacy fallback: scan base root directly only when no lang-scoped files exist
-          // AND the base root itself contains .md files (pre-multi-lang project layout).
-          if (allFiles.length === 0) {
-            const legacyFiles = await discoverMarkdownFiles(
-              projectRoot,
-              baseRoot,
-              source.glob ?? "**/*.md",
-            ).catch(() => []);
-            // Only use legacy files if they're not just .gitkeep or empty folders
-            const mdFiles = legacyFiles.filter((f) => f.relativePath.endsWith(".md"));
-            allFiles.push(...mdFiles);
-          }
+          // Single discovery contract: scan source.root recursively with source.glob.
+          // Per-language folders (en/, vi/) and flat legacy layouts are both just
+          // nested paths — the semantic merge uses the same walk, so hashes match.
+          const allFiles = await discoverDocSourceFiles(projectRoot, source).catch(
+            () => [],
+          );
 
           hashes[sourceKey] = computeIndexSourceHash(allFiles);
+          fileCounts[sourceKey] = allFiles.length;
           const built = await buildDocIndex({
             kind,
             config,
@@ -479,7 +519,7 @@ export async function runIndex(
           id: "docs-index",
           label: "Document indexes (.ai-spector/index/)",
           status: "ok",
-          detail: `srs hash ${hashes.srs ?? "—"}, basic-design hash ${hashes.basicDesign ?? "—"}, data-source hash ${hashes.dataSource ?? "—"}`,
+          detail: `srs ${fileCounts.srs ?? 0} files (hash ${hashes.srs ?? "—"}), basic-design ${fileCounts.basicDesign ?? 0} files (hash ${hashes.basicDesign ?? "—"}), data-source ${fileCounts.dataSource ?? 0} files (hash ${hashes.dataSource ?? "—"})`,
         });
       }
     } catch (err) {
@@ -574,13 +614,30 @@ export async function runIndex(
         });
         cocoindexUpdated = true;
       } catch (err) {
-        // CocoIndex update failure is non-fatal but should be visible
-        const msg = err instanceof Error ? err.message : String(err);
+        let msg = err instanceof Error ? err.message : String(err);
+        if (/already exists/i.test(msg)) {
+          msg +=
+            "\nLikely cause: the same doc root is mounted twice in .ai-spector/.docflow/cocoindex/flow.py " +
+            "(index.docs.json sources + hardcoded docs/data-source fallback). " +
+            "Re-run `npx ai-spector cocoindex setup` to regenerate flow.py with deduplicated roots.";
+        }
         steps.push({ id: "cocoindex-sync", label: "CocoIndex sync", status: "failed", detail: msg });
         cocoindexSkipped = true;
+        // Explicitly requested sync that fails should fail the overall report,
+        // otherwise callers relying on `failed` miss stale embeddings.
+        if (opts.cocoindexSync) {
+          failed = true;
+        }
       }
     }
   }
 
-  return { steps, failed, cocoindexUpdated, cocoindexSkipped };
+  return {
+    steps,
+    failed,
+    sources,
+    nextAction: indexNextAction(sources),
+    cocoindexUpdated,
+    cocoindexSkipped,
+  };
 }

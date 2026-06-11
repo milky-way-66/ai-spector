@@ -12,7 +12,7 @@ description: "Generates SRS documents from the knowledge graph using DAG waves. 
 ## Prerequisites
 
 - `npx ai-spector graph validate` passes
-- Data source analyzed (`npx ai-spector analyze`)
+- Data source analyzed (`npx ai-spector index`)
 
 > **Scope:** This skill is for the **builtin SRS template** only. If a custom pack is active,
 > use `ai-spector-generate-<packname>` instead (installed when the pack was activated).

@@ -130,14 +130,7 @@ export const GraphQueryFuzzySchema = RootSchema.extend({
     .describe("Minimum cosine similarity for node resolution (default: 0.35)"),
 });
 
-// ── Analyze / Knowledge ───────────────────────────────────────────────────────
-
-export const AnalyzeSchema = RootSchema.extend({
-  merge: z
-    .boolean()
-    .optional()
-    .describe("Also merge knowledge.json into graph after prep (if knowledge.json exists)"),
-});
+// ── Knowledge ─────────────────────────────────────────────────────────────────
 
 export const KnowledgeStatusSchema = RootSchema;
 

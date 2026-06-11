@@ -120,16 +120,23 @@ async def process_file(
 
 
 def _load_doc_roots() -> list[Path]:
+    # Deduplicate by resolved path: docs/data-source is usually already listed
+    # in index.docs.json, and mounting the same tree twice makes CocoIndex
+    # collide on filename keys ("Path ... already exists").
     roots: list[Path] = []
+    seen: set[Path] = set()
+
+    def add_root(path: Path) -> None:
+        resolved = path.resolve()
+        if path.exists() and resolved not in seen:
+            seen.add(resolved)
+            roots.append(path)
+
     if INDEX_CONFIG.exists():
         cfg = json.loads(INDEX_CONFIG.read_text())
         for src in cfg.get("sources", {}).values():
-            p = PROJECT_ROOT / src["root"]
-            if p.exists():
-                roots.append(p)
-    data_source = PROJECT_ROOT / "docs" / "data-source"
-    if data_source.exists():
-        roots.append(data_source)
+            add_root(PROJECT_ROOT / src["root"])
+    add_root(PROJECT_ROOT / "docs" / "data-source")
     return roots
 
 

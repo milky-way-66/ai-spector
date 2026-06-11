@@ -21,8 +21,9 @@ export function formatIndexReport(report: IndexReport): string {
     lines.push("Re-run after fixing, or use flags: --skip-merge, --graph-only");
   } else {
     lines.push("All requested steps completed.");
-    lines.push("Index merges existing knowledge.json plus UC/F/actor ids parsed from docs/srs and docs/basic-design bodies.");
-    lines.push("Full semantic re-extract (actors, NFRs, data model): run /analyze in Cursor → knowledge.json.");
+  }
+  if (report.nextAction) {
+    lines.push("", `Next: ${report.nextAction}`);
   }
   return lines.join("\n");
 }

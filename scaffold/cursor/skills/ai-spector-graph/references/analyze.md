@@ -14,7 +14,7 @@ All steps have MCP equivalents. Use MCP when the `ai-spector` server is configur
 1. **`npx ai-spector init`** was run once (project scaffold exists).
 2. `docs/data-source/` has at least one real input file.
 
-**On success, suggest:** visualize graph (optional) → validate graph → generate SRS.
+**On success:** if no SRS documents exist yet (`index` report shows `srs: —`), **stop here** — report that analysis is done and suggest `/generate-srs`. Otherwise suggest: visualize graph (optional) → validate graph.
 
 ## Required Behavior
 
@@ -22,12 +22,12 @@ All steps have MCP equivalents. Use MCP when the `ai-spector` server is configur
 
 **MCP (preferred):**
 ```
-analyze({})
+index({})
 ```
 
 **CLI fallback:**
 ```bash
-npx ai-spector analyze
+npx ai-spector index
 ```
 
 Creates section/document nodes from templates. Do not ask the user to run this separately.
@@ -54,18 +54,18 @@ Creates section/document nodes from templates. Do not ask the user to run this s
 
 ### B. Commit to graph
 
+Re-run index — it merges `knowledge.json` into the graph and validates in one pass:
+
 **MCP (preferred when ai-spector server is configured):**
 
 ```
-graph_merge({ fromKnowledge: true })
-graph_validate({})
+index({})
 ```
 
 **CLI fallback:**
 
 ```bash
-npx ai-spector graph merge --from-knowledge
-npx ai-spector graph validate
+npx ai-spector index
 ```
 
 Optional for the user:
@@ -88,12 +88,11 @@ Update `state.json`: `analysis.lastRunAt`, `analysis.dataSource`, scope hash. Me
 
 | Step | MCP (preferred) | CLI fallback |
 |------|-----------------|--------------|
-| 0 prepare | `analyze({})` | `npx ai-spector analyze` |
+| 0 prepare | `index({})` | `npx ai-spector index` |
 | A extraction | Agent writes `knowledge.json` | Agent writes `knowledge.json` |
 | A verify | `knowledge_status({})` → check `ready: true` | *(no CLI)* |
 | A validate | `knowledge_validate({})` → check `valid: true` | *(no CLI)* |
-| B merge | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
-| B validate | `graph_validate({})` | `npx ai-spector graph validate` |
+| B index (merge + validate) | `index({})` | `npx ai-spector index` |
 
 If any step fails, **pause** and use [cli-failures.md](../../ai-spector/references/cli-failures.md). Do not skip to generate SRS without user choice.
 

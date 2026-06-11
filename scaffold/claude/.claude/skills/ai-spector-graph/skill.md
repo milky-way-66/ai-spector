@@ -22,7 +22,7 @@ Use **MCP tools** when `ai-spector` server is configured. CLI is fallback only.
 ### Analyze (ingest data-source)
 
 ```
-analyze({})                              # MCP — prepare graph scaffold
+index({})                              # MCP — prepare graph scaffold
 # agent extracts entities → writes knowledge.json
 knowledge_validate({})                   # MCP — validate before merge
 knowledge_status({})                     # MCP — confirm entity counts
@@ -30,7 +30,7 @@ graph_merge({ fromKnowledge: true })     # MCP — commit to graph
 graph_validate({})                       # MCP — verify result
 ```
 
-CLI fallback: `npx ai-spector analyze` → `npx ai-spector graph merge --from-knowledge` → `npx ai-spector graph validate`
+CLI fallback: `npx ai-spector index` → `npx ai-spector graph merge --from-knowledge` → `npx ai-spector graph validate`
 
 ### Index (refresh after doc edits)
 

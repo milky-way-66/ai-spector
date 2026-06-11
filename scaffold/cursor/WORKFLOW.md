@@ -24,7 +24,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | You want to… | Say (examples) | Skill | Agent runs (MCP preferred) |
 |--------------|----------------|-------|---------------------------|
 | **Setup project** | “setup ai-spector”, “initialize project”, “get started” | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
-| Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `analyze({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |
+| Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `index({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |
 | Check graph health | “validate the graph”, “graph errors”, “graph report” | `ai-spector-graph` | `graph_validate({})` · `graph_report({})` |
 | Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
 | Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | DAG waves → docs/srs → `graph_merge` → `index({ cocoindexSync: true })` |

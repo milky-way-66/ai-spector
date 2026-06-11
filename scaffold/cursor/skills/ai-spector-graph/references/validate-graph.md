@@ -30,7 +30,7 @@ npx ai-spector graph validate
 Follow [cli-failures.md](../../ai-spector/references/cli-failures.md). Typical fixes:
 
 - `DOMAIN-ANCHORED` → domain node missing `listedIn` / `describedIn` → re-run `/analyze` or fix one node and `graph merge` again.
-- `SECTION-TREE` → structure edge wrong → re-run `npx ai-spector analyze` (agent), not manual graph surgery at scale.
-- `REGISTRY-COMPLETE` → re-run `/analyze` step 0 (`npx ai-spector analyze`).
+- `SECTION-TREE` → structure edge wrong → re-run `npx ai-spector index` (agent), not manual graph surgery at scale.
+- `REGISTRY-COMPLETE` → re-run `/analyze` step 0 (`npx ai-spector index`).
 
 After fix, user re-runs **`/validate-graph`**.

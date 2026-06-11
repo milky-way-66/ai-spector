@@ -1,19 +1,11 @@
 import { join } from "node:path";
 import { resolveProjectPaths } from "../../../core/util/paths.js";
 import { loadDocflowConfig } from "../../../core/config/load.js";
-import { runAnalyzePrep } from "../../../core/operations/analyze.js";
 import { pathExists, readJson } from "../../../core/util/fs.js";
 import { packageBundleRoot } from "../../../core/config/load.js";
 import { DEFAULT_LISTED_IN } from "../../../core/graph/defaults.js";
-import type { AnalyzeSchema, KnowledgeStatusSchema, KnowledgeValidateSchema, KnowledgeSchemaSchema } from "../schemas.js";
+import type { KnowledgeStatusSchema, KnowledgeValidateSchema, KnowledgeSchemaSchema } from "../schemas.js";
 import type { z } from "zod";
-
-// ── analyze ───────────────────────────────────────────────────────────────────
-
-export async function toolAnalyze(input: z.infer<typeof AnalyzeSchema>) {
-  const result = await runAnalyzePrep(input.root, { merge: input.merge });
-  return result;
-}
 
 // ── knowledge_status ──────────────────────────────────────────────────────────
 
@@ -157,7 +149,7 @@ export async function toolKnowledgeSchema(input: z.infer<typeof KnowledgeSchemaS
     sectionIdsNote:
       sectionIds.length > 0
         ? `${sectionIds.length} section IDs loaded from section registry. Use these as listedInSection values.`
-        : "Section registry not found — run analyze first to populate section IDs.",
+        : "Section registry not found — run the index tool first to populate section IDs.",
     outputPath: join(analysisDir, "knowledge.json"),
     examplePayload: {
       knowledgeVersion: 1,

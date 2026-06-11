@@ -10,7 +10,6 @@ import {
   GraphMergeSchema,
   GraphReportSchema,
   IndexSchema,
-  AnalyzeSchema,
   KnowledgeStatusSchema,
   KnowledgeValidateSchema,
   KnowledgeSchemaSchema,
@@ -29,7 +28,7 @@ import {
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
-import { toolAnalyze, toolKnowledgeStatus, toolKnowledgeValidate, toolKnowledgeSchema } from "./tools/analyze.js";
+import { toolKnowledgeStatus, toolKnowledgeValidate, toolKnowledgeSchema } from "./tools/analyze.js";
 import { toolLangQueue } from "./tools/lang.js";
 import { toolIndex } from "./tools/index.js";
 import {
@@ -113,20 +112,7 @@ server.registerTool(
   },
 );
 
-// ── Analyze / Knowledge tools ─────────────────────────────────────────────────
-
-server.registerTool(
-  "analyze",
-  {
-    description:
-      "Prepare graph scaffold from project templates — creates section/document nodes and writes the section registry. Run before entity extraction. Replaces `npx ai-spector analyze` for the structure-prep step.",
-    inputSchema: AnalyzeSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAnalyze(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
+// ── Knowledge tools ───────────────────────────────────────────────────────────
 
 server.registerTool(
   "knowledge_status",

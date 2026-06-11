@@ -19,11 +19,19 @@ Skills auto-route for natural language; **slash commands stay the source of trut
 
 | Step | You run | Agent runs (CLI) |
 |------|---------|------------------|
-| 1 | **`/analyze`** | `npx ai-spector analyze` → read markdown from `docs/data-source/` → `graph merge --from-knowledge` → `graph validate` → optional `graph visualize --open` |
+| 1 | **`/index`** | `npx ai-spector index` → the report's **Source detection** + **Next** line decide what happens (see decision tree below) |
 | 2 | **`/validate-graph`** | `npx ai-spector graph validate` |
 | 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
-| — | **`/index`** | After manual edits or **`/generate-srs`**: `npx ai-spector index` (structure + knowledge merge + **SRS body extract** + doc indexes) |
+
+### `/index` decision tree
+
+Run `npx ai-spector index`, then follow the report:
+
+1. `docs/data-source/` has files but no extracted knowledge → **analyze**: read the data-source markdown, write `analysis/knowledge.json`, re-run `npx ai-spector index`.
+2. SRS docs exist → already indexed by the same run (SRS body extract + doc index).
+3. Basic-design docs exist → already indexed by the same run.
+4. **No SRS generated yet → STOP after the analyze step.** Tell the user the analysis is done and the next step is `/generate-srs`. Do not generate anything unasked.
 | 5 | **`/generate-basic-design`** [paths or request] — same targeting + waves as SRS (`generate-basic-design.md`) |
 | 6 | **`/generate-detail-design`** | same `graph query` pattern |
 | 7 | **`/generate-prototype`** [--theme name] | `npx ai-spector prototype setup --theme …` → agent writes `prototype/src/*.html` → `prototype manifest` → `prototype validate --strict` |
@@ -38,10 +46,10 @@ Skills auto-route for natural language; **slash commands stay the source of trut
 ```text
 npx ai-spector init          ← only CLI step you run yourself
 docs/data-source/            ← add files
-/analyze
+/index                       ← detects data source → analyzes → stops (no SRS yet)
 /validate-graph
 /generate-srs
-/index
+/index                       ← now also indexes SRS (and basic design once generated)
 ```
 
 ## If something fails

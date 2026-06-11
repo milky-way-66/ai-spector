@@ -42,7 +42,7 @@
           "id": "graph-file",
           "type": "pathExists",
           "path": ".ai-spector/graph/traceability.graph.json",
-          "fail": "Missing traceability graph — run npx ai-spector analyze first."
+          "fail": "Missing traceability graph — run npx ai-spector index first."
         }
       ],
       "onSuccess": {
@@ -63,7 +63,7 @@
           "id": "graph-file",
           "type": "pathExists",
           "path": ".ai-spector/graph/traceability.graph.json",
-          "fail": "Missing traceability graph — run npx ai-spector analyze and /analyze."
+          "fail": "Missing traceability graph — run npx ai-spector index and /analyze."
         },
         {
           "id": "graph-merged",
@@ -82,7 +82,7 @@
       "onBlock": {
         "doFirst": [
           "Add or update files in docs/data-source/",
-          "Run npx ai-spector analyze",
+          "Run npx ai-spector index",
           "Run /analyze (merge into graph)",
           "Run /validate-graph"
         ]

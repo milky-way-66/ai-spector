@@ -17,7 +17,7 @@ When the `ai-spector` MCP server is available, **call the MCP tool** instead of 
 | Validate graph | `graph_validate({})` | `npx ai-spector graph validate` |
 | Impact analysis | `graph_impact({ originId, change })` | `npx ai-spector graph impact …` |
 | Walk graph from node | `graph_query({ id })` | `npx ai-spector graph query <id> --json` |
-| **Analyze data-source** | *(CLI only — no MCP tool)* | `npx ai-spector analyze` |
+| **Analyze data-source** | *(agent step — read `docs/data-source/`, write `analysis/knowledge.json`, then `index({})`)* | — |
 
 ### 2. Refresh index before any staleness check
 
@@ -59,7 +59,7 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 
 | Need | MCP (preferred) | CLI fallback |
 |------|-----------------|--------------|
-| Prepare graph scaffold | `analyze({})` | `npx ai-spector analyze` |
+| Prepare graph scaffold | `index({})` | `npx ai-spector index` |
 | Check knowledge.json before merge | `knowledge_status({})` · `knowledge_validate({})` | *(no CLI)* |
 | Merge knowledge → graph | `graph_merge({ fromKnowledge: true })` | `npx ai-spector graph merge --from-knowledge` |
 | Find what needs regeneration | `graph_impact({ git: true, change: "content_change" })` | `npx ai-spector graph impact --git --json` |
@@ -97,7 +97,6 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 
 | Tool | Purpose |
 |------|---------|
-| `analyze({})` | Prepare graph scaffold from templates |
 | `knowledge_status({})` | Check knowledge.json entity counts |
 | `knowledge_validate({})` | Validate knowledge.json schema |
 | `graph_merge({ fromKnowledge: true })` | Merge knowledge.json into graph |
@@ -105,7 +104,7 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | `graph_report({})` | Graph layer health audit |
 | `graph_impact({ git: true, change: "…" })` | Impact of current git diff |
 | `graph_query({ seedId: "…" })` | Walk graph from a node |
-| `index({})` | Refresh graph + translation queue |
+| `index({})` | Full index pipeline: graph structure, knowledge merge, SRS/basic-design body extract, doc indexes, translation queue. Report includes `sources` + `nextAction` |
 | `index({ cocoindexSync: true })` | Refresh graph + translation queue + embeddings |
 | `lang_queue({})` | Translation queue status |
 | `cocoindex_status({})` | CocoIndex readiness check |
@@ -116,7 +115,6 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 ### CLI (fallback / MCP-unavailable or no tool equivalent)
 
 ```bash
-npx ai-spector analyze              # ingest data-source, build graph (no MCP equivalent)
 npx ai-spector index                # fallback for index({})
 npx ai-spector graph validate       # fallback for graph_validate({})
 npx ai-spector graph impact --git --json   # fallback for graph_impact({ git: true })
@@ -136,8 +134,17 @@ On MCP tool or CLI failure: show the output, offer fix / workaround / pause. Do 
 
 ## Pipeline order
 
+The entry point is **index**. Run `index({})` and follow the report's `sources` / `nextAction`:
+
 ```
-analyze → validate graph → generate SRS → index
+index
+  → data-source files present, knowledge not extracted?
+      analyze (agent: read docs/data-source/, write analysis/knowledge.json) → index again
+  → SRS exists?          indexed by the same run
+  → basic design exists? indexed by the same run
+  → no SRS yet?          STOP — report analysis done; wait for user to ask "generate SRS"
+
+generate SRS → index → validate graph
   → generate basic design → index
   → generate detail design
   → prototype setup → generate HTML screens

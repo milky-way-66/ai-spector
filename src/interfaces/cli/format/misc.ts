@@ -1,23 +1,9 @@
-import type { AnalyzePrepResult } from "../../../core/operations/analyze.js";
 import type { SyncCursorResult } from "../../../core/operations/sync-cursor.js";
 import type { HooksInstallResult } from "../../../core/operations/hooks.js";
 import type { PreCommitReport } from "../../../core/operations/hooks.js";
 import type { SetupAudit } from "../../../core/operations/setup.js";
 import type { LangAddResult } from "../../../core/operations/lang.js";
 import type { QueueScanResult } from "../../../core/operations/lang-queue.js";
-
-export function formatAnalyzePrep(result: AnalyzePrepResult): string {
-  const lines = [
-    `Graph structure ready: ${result.documentCount} documents, ${result.sectionCount} sections`,
-    `  registry → ${result.registryPath}`,
-    `  graph    → ${result.graphPath}`,
-    `  (entity extraction did not run — domain nodes are not created here)`,
-    "",
-  ];
-  if (result.merged) lines.push("", "Merged domain knowledge into graph.");
-  else lines.push("Next: in Cursor ask the agent to 'analyze the data source'");
-  return lines.join("\n");
-}
 
 export function formatSyncCursor(result: SyncCursorResult): string {
   return [

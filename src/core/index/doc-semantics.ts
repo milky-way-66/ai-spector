@@ -6,11 +6,12 @@ import {
   basicDesignAnchorStructurePatch,
   basicDesignListChaptersNeedSections,
   buildDocExtractPatch,
+  classifyBasicDesignDetailFile,
 } from "../graph/doc-extract.js";
 import { mergeStructurePatches } from "../registry/structure-patch.js";
 import {
   computeIndexSourceHash,
-  discoverMarkdownFiles,
+  discoverDocSourceFiles,
 } from "./docs-build.js";
 import { indexDocsConfigPath, type IndexDocsConfig } from "./docs-config.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
@@ -49,11 +50,7 @@ export async function runDocSemanticMerge(
     if (!source?.root) {
       continue;
     }
-    const files = await discoverMarkdownFiles(
-      opts.projectRoot,
-      source.root,
-      source.glob ?? "**/*.md",
-    );
+    const files = await discoverDocSourceFiles(opts.projectRoot, source);
     sourceHashes[key] = computeIndexSourceHash(files);
     for (const f of files) {
       const content = await readFile(
@@ -106,6 +103,16 @@ export async function runDocSemanticMerge(
   state.docsSemantic = docsSemantic;
   await writeJson(statePath, state);
 
+  // Detail files on disk that never became graph nodes indicate a discovery
+  // or classification gap — surface it instead of letting the graph go stale.
+  const bdDetailOnDisk = entries.filter((e) =>
+    classifyBasicDesignDetailFile(e.relativePath),
+  ).length;
+  const detailGapWarning =
+    bdDetailOnDisk > 0 && stats.bdDetailDocuments === 0
+      ? `\n      ⚠ ${bdDetailOnDisk} basic-design detail file(s) on disk (screens/, api/) produced 0 graph detail nodes — check sources in ${configPath}`
+      : "";
+
   return {
     merged: true,
     detail:
@@ -117,7 +124,8 @@ export async function runDocSemanticMerge(
             : "")
         : "") +
       (stats.detailSections > 0 ? `, ${stats.detailSections} detail sections` : "") +
-      ` (+${mergeStats.nodesCreated} nodes, ~${mergeStats.nodesUpdated} updated, +${mergeStats.edgesAdded} edges)`,
+      ` (+${mergeStats.nodesCreated} nodes, ~${mergeStats.nodesUpdated} updated, +${mergeStats.edgesAdded} edges)` +
+      detailGapWarning,
     sourceHashes,
   };
 }
