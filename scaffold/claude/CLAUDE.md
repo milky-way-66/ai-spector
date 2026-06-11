@@ -90,6 +90,7 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | Translation status | `ai-spector-lang-status` |
 | Resolve translations | `ai-spector-resolve-translation` |
 | Resolve comments | `ai-spector-resolve-comments` |
+| Create task / open-ended doc change | `ai-spector-resolve-task` |
 
 ## Quick reference
 
@@ -111,6 +112,7 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | `cocoindex_index({})` | Rebuild semantic embeddings |
 | `docs_search({ query })` | Semantic doc search (CocoIndex) |
 | `graph_query_fuzzy({ query })` | Natural language graph lookup (CocoIndex) |
+| `resolve_task({ intent, goalSpec, plan })` | Execute an approved task plan (index, graph_merge, etc.) |
 
 ### CLI (fallback / MCP-unavailable or no tool equivalent)
 
@@ -124,6 +126,7 @@ npx ai-spector template list        # list installed packs + active
 npx ai-spector template scan <path> # scan a template folder → scan-result.json
 npx ai-spector template install     # install pack from staging (AI writes manifest first)
 npx ai-spector template use <name>  # switch active pack (use "builtin" to revert)
+npx ai-spector resolve-task plan.json   # execute approved task plan
 
 # CocoIndex (opt-in — requires Python 3.11+)
 npx ai-spector cocoindex setup      # scaffold pipeline into project

@@ -38,6 +38,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Translation status | “what’s stale in JP”, “pending translations” | `ai-spector-lang-status` | `lang_queue({})` MCP |
 | Sync translations | “resolve translations”, “update JP from EN” | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
+| Create task / change docs | “create a task”, “add requirement”, “update SRS section”, “I want to…” | `ai-spector-resolve-task` | clarify → show GoalSpec + TaskPlan → approve → `resolve_task` MCP or direct edits |
 | Explore graph | “show the graph” | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
 Unsure? The agent uses [skills/_skill-router.md](./skills/_skill-router.md) or asks one clarifying question.

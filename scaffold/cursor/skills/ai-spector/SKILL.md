@@ -5,7 +5,8 @@ description: >-
   and routing to task skills. Use when the user mentions ai-spector, docflow, or .npx ai-spector but the
   task is unclear, or for init and project layout. Do not use when the user clearly wants SRS,
   basic design, HTML prototype, graph operations, or comment resolution — use the
-  matching task skill instead.
+  matching task skill instead. For open-ended doc/graph changes or "create task",
+  use ai-spector-resolve-task.
 ---
 
 # AI Spector (core)
@@ -33,6 +34,7 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 | Rebuild semantic embeddings | `cocoindex_index({})` | `npx ai-spector cocoindex index` |
 | Semantic doc search | `docs_search({ query })` | `npx ai-spector cocoindex search --query …` |
 | Natural language graph lookup | `graph_query_fuzzy({ query })` | *(no CLI equivalent)* |
+| Execute approved task plan | `resolve_task({ intent, goalSpec, plan })` | `npx ai-spector resolve-task plan.json` |
 | **Visualize graph** | *(no MCP tool)* | `npx ai-spector graph visualize --open` |
 
 Use CLI **only** when: MCP server is not configured, the tool errors, or no MCP equivalent exists (visualize, `lang add`, template mutations).
@@ -84,6 +86,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Comments | `ai-spector-resolve-comments` |
 | Translation status / stale languages | `ai-spector-lang-status` |
 | Resolve / sync translations | `ai-spector-resolve-translation` |
+| Create task, open-ended doc/graph change | `ai-spector-resolve-task` |
 | “Generate docs” (vague) | `ai-spector-generate` |
 
 When a task skill applies, read its `references/` runbook fully before acting.

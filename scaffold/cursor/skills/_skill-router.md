@@ -28,6 +28,7 @@ Agents use this when intent is ambiguous.
 | screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
+| create task, new task, resolve task, add requirement, update docs, change prototype, new section, "I want to…", "we need to…" | `ai-spector-resolve-task` | `references/runbook.md` |
 | review comments, C-001, inbox | `ai-spector-resolve-comments` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
