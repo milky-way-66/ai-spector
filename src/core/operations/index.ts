@@ -35,6 +35,7 @@ import {
   DOC_INDEX_DEFAULT_ROOTS,
 } from "../index/docs-build.js";
 import { reconcileTranslationQueue } from "../lang/queue.js";
+import { reconcileReviews } from "../reviews/reconcile.js";
 
 export type IndexStepStatus = "ok" | "skipped" | "failed";
 
@@ -71,6 +72,7 @@ export interface IndexReport {
   nextAction?: string;
   cocoindexUpdated?: boolean;
   cocoindexSkipped?: boolean;
+  reviewQueue?: { scanned: number; invalidated: number; alreadyPending: number; errors: number };
 }
 
 async function detectIndexSources(
@@ -565,6 +567,43 @@ export async function runIndex(
     });
   }
 
+  let reviewQueueSummary: IndexReport["reviewQueue"];
+  try {
+    const rr = await reconcileReviews(projectRoot);
+    reviewQueueSummary = {
+      scanned: rr.scanned,
+      invalidated: rr.invalidated,
+      alreadyPending: rr.alreadyPending,
+      errors: rr.errors.length,
+    };
+    if (rr.scanned === 0) {
+      record({
+        id: "review-queue",
+        label: "Review queue",
+        status: "skipped",
+        detail: "no approval records yet — run review approve to initialise",
+      });
+    } else {
+      const parts = [`${rr.scanned} scanned`];
+      if (rr.invalidated > 0) parts.push(`+${rr.invalidated} invalidated`);
+      if (rr.alreadyPending > 0) parts.push(`${rr.alreadyPending} already pending`);
+      if (rr.errors.length > 0) parts.push(`${rr.errors.length} error(s)`);
+      record({
+        id: "review-queue",
+        label: "Review queue",
+        status: "ok",
+        detail: rr.errors.length > 0 ? `${parts.join(", ")} (${rr.errors.length} path error(s) skipped)` : parts.join(", "),
+      });
+    }
+  } catch (err) {
+    record({
+      id: "review-queue",
+      label: "Review queue",
+      status: "failed",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   if (failed) {
     const first = steps.find((s) => s.status === "failed");
     throw new Error(
@@ -639,5 +678,6 @@ export async function runIndex(
     nextAction: indexNextAction(sources),
     cocoindexUpdated,
     cocoindexSkipped,
+    reviewQueue: reviewQueueSummary,
   };
 }

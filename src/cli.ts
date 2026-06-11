@@ -66,6 +66,8 @@ import {
   runReviewQueue,
   runReviewCheck,
   runReviewReject,
+  runReviewList,
+  runReviewMigrate,
 } from "./core/operations/review.js";
 import {
   formatApproveResult,
@@ -73,6 +75,8 @@ import {
   formatReviewQueue,
   formatReviewCheck,
   formatReviewReject,
+  formatReviewList,
+  formatReviewMigrate,
 } from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
@@ -621,11 +625,40 @@ review
   .command("status <logicalPath>")
   .description("Show review status for a document (both tracks + diff if pending)")
   .option("--no-diff", "Skip diff content")
+  .option("--history", "Include approval history")
+  .option("--history-limit <n>", "Max history entries to return", parseInt)
+  .option("--history-since <iso>", "Only history entries after this ISO timestamp")
   .option("--json", "JSON output for agents")
   .action(async (logicalPath: string, opts, cmd) => {
-    const result = await runReviewStatus({ root: projectRootOpt(cmd), logicalPath, showDiff: opts.diff !== false });
+    const result = await runReviewStatus({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      showDiff: opts.diff !== false,
+      includeHistory: opts.history,
+      historyLimit: opts.historyLimit,
+      historySince: opts.historySince,
+    });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewStatus(result));
+  });
+
+review
+  .command("list")
+  .description("List all documents with approval records")
+  .option("--prefix <prefix>", "Filter by logical path prefix (e.g. srs/)")
+  .option(
+    "--status <status>",
+    "Filter by overall status: pending_internal | pending_client | approved | rejected | all",
+  )
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewList({
+      root: projectRootOpt(cmd),
+      prefix: opts.prefix,
+      status: opts.status,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewList(result));
   });
 
 review
@@ -663,6 +696,16 @@ review
     const result = await runReviewReject({ root: projectRootOpt(cmd), logicalPath, reason: opts.reason });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewReject(result));
+  });
+
+review
+  .command("migrate")
+  .description("Migrate legacy reviews/ directory to .ai-spector/.docflow/review-queue/")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewMigrate({ root: projectRootOpt(cmd) });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewMigrate(result));
   });
 
 const prototype = program

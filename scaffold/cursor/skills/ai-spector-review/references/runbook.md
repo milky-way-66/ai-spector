@@ -4,7 +4,7 @@ The agent's job is not just to show a diff — it is to **read the document, und
 
 Two-track flow: **internal (you)** → **client (web app)**. This runbook covers internal review only.
 
-Storage is git-backed under `reviews/`. No Writer API.
+Storage lives under `.ai-spector/.docflow/review-queue/` (registry, pending jobs, snapshots, history). Legacy `reviews/` is migrated automatically on first review command, or via `npx ai-spector review migrate`.
 
 ---
 
@@ -14,7 +14,8 @@ Storage is git-backed under `reviews/`. No Writer API.
 |-----------|----------|--------------|
 | Detect changed documents | `review_check({})` | `npx ai-spector review check --json` |
 | Show review queue | `review_queue({ track: "internal", showDiff: true })` | `npx ai-spector review queue --track internal --json` |
-| Load status + diff for one doc | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json` |
+| Load status + diff + history | `review_status({ logicalPath, showDiff: true, includeHistory: true })` | `npx ai-spector review status <path> --json --history` |
+| List all docs with review status | `review_list({ prefix?, status? })` | `npx ai-spector review list --json` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 | Check downstream impact | `graph_impact({ file: "<docPath>", change: "content updated" })` | `npx ai-spector graph impact --file <path> --json` |
@@ -207,10 +208,10 @@ When internal queue is empty:
 
 ## Phase 8 — Commit review state
 
-Review state is stored under `reviews/`. Commit after a review session so the team sees updated approval status:
+Review state is stored under `.ai-spector/.docflow/review-queue/`. Commit after a review session if team-shared approvals are desired:
 
 ```bash
-git add reviews/
+git add .ai-spector/.docflow/review-queue/
 git commit -m "chore(review): approve <doc1>, <doc2>"
 git push
 ```

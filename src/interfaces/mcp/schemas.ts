@@ -199,6 +199,9 @@ export const ReviewApproveSchema = RootSchema.extend({
 export const ReviewStatusSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path"),
   showDiff: z.boolean().optional().describe("Include diff content in result (default: true)"),
+  includeHistory: z.boolean().optional().describe("Include approval history events (default: false)"),
+  historyLimit: z.number().int().min(0).optional().describe("Max history entries to return"),
+  historySince: z.string().optional().describe("Only return history entries after this ISO timestamp"),
 });
 
 export const ReviewQueueSchema = RootSchema.extend({
@@ -210,6 +213,8 @@ export const ReviewQueueSchema = RootSchema.extend({
 });
 
 export const ReviewCheckSchema = RootSchema;
+
+export const ReviewMigrateSchema = RootSchema;
 
 export const ReviewRejectSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path to dismiss from internal queue"),

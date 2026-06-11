@@ -4,6 +4,8 @@ import type {
   ReviewQueueResult,
   ReviewCheckResult,
   ReviewRejectResult,
+  ReviewListResult,
+  ReviewMigrateResult,
 } from "../../../core/operations/review.js";
 import type { DiffFile, QueueEntry } from "../../../core/reviews/types.js";
 
@@ -39,7 +41,7 @@ export function formatApproveResult(result: ReviewApproveResult): string {
 }
 
 export function formatReviewStatus(result: ReviewStatusResult): string {
-  const { approval, diff } = result;
+  const { approval, diff, history } = result;
   const lines: string[] = [];
   lines.push(`${approval.logicalPath}`);
   lines.push(`  overall:  ${approval.overallStatus}`);
@@ -56,6 +58,17 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
   if (diff) {
     lines.push("");
     lines.push(formatDiff(diff));
+  }
+  if (history && history.length > 0) {
+    lines.push("");
+    lines.push(`History (${history.length} event(s)):`);
+    for (const h of history) {
+      const parts = [h.at.slice(0, 19), h.event];
+      if (h.track) parts.push(`[${h.track}]`);
+      if (h.by) parts.push(`by ${h.by}`);
+      if (h.hash) parts.push(`hash ${h.hash}`);
+      lines.push(`  ${parts.join(" ")}`);
+    }
   }
   return lines.join("\n");
 }
@@ -102,6 +115,7 @@ export function formatReviewQueue(result: ReviewQueueResult): string {
 
 export function formatReviewCheck(result: ReviewCheckResult): string {
   const lines: string[] = [];
+  if (result.migrated) lines.push("Migrated legacy reviews/ to .ai-spector/.docflow/review-queue/");
   lines.push(`Scanned ${result.scanned} approval(s)`);
   if (result.invalidated > 0) lines.push(`  ${result.invalidated} invalidated (content changed)`);
   if (result.alreadyPending > 0) lines.push(`  ${result.alreadyPending} already pending`);
@@ -116,5 +130,20 @@ export function formatReviewCheck(result: ReviewCheckResult): string {
 }
 
 export function formatReviewReject(result: ReviewRejectResult): string {
+  return result.message;
+}
+
+export function formatReviewList(result: ReviewListResult): string {
+  if (result.entries.length === 0) {
+    return "No documents with approval records.";
+  }
+  const lines: string[] = [`${result.total} document(s):`];
+  for (const e of result.entries) {
+    lines.push(`  ${e.logicalPath}  [${e.overallStatus}]  hash ${e.contentHash}`);
+  }
+  return lines.join("\n");
+}
+
+export function formatReviewMigrate(result: ReviewMigrateResult): string {
   return result.message;
 }

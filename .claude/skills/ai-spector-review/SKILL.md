@@ -26,7 +26,7 @@ This skill handles the two-track document approval workflow:
 
 If unsure: "review" in the context of **documents and approval** → this skill. "review" in the context of **feedback, threads, or comments** → resolve-comments.
 
-## MCP tools (use these, never read `reviews/` files directly)
+## MCP tools (use these, never read review-queue files directly)
 
 | What you need | MCP tool |
 |---|---|
@@ -34,8 +34,11 @@ If unsure: "review" in the context of **documents and approval** → this skill.
 | Find pending docs in queue | `review_queue({ track: "internal", showDiff: true })` |
 | Detect content changes | `review_check({})` |
 | Status + diff for one doc | `review_status({ logicalPath, showDiff: true })` |
+| Status + approval history | `review_status({ logicalPath, includeHistory: true })` |
 | Approve a document | `review_approve({ logicalPath, by })` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` |
+
+Storage: `.ai-spector/.docflow/review-queue/` (registry, pending jobs, snapshots, history).
 
 ## Common questions → correct tool
 
@@ -64,7 +67,7 @@ See [SKILL.md in scaffold](../../../scaffold/cursor/skills/ai-spector-review/SKI
 7. Write a review summary (what changed, impact, concerns, recommendation)
 8. Wait for user decision: approve / request changes / dismiss
 9. `review_approve(...)` or `review_reject(...)`
-10. `git add reviews/ && git commit`
+10. Commit `.ai-spector/.docflow/review-queue/` if team-shared approvals are desired
 
 ## Presenting `review_list` results
 
@@ -80,7 +83,7 @@ Status icons: ✅ approved · ⏳ pending_internal · 👁 pending_client · ❌
 
 ## Guardrails
 
-- Never read `reviews/` files directly — always use MCP tools.
+- Never read `.ai-spector/.docflow/review-queue/` files directly — always use MCP tools.
 - Never approve without showing the diff review first.
 - Never confuse document approval with comment threads.
 - If `overallStatus` is `pending_client` or `approved`, tell the user — do not re-approve.

@@ -23,9 +23,12 @@ import {
   deleteDiff,
   deriveOverallStatus,
   discoverApprovals,
+  readHistory,
+  updateFingerprint,
 } from "../reviews/storage.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
-import type { ApprovalRecord, QueueEntry, DiffFile } from "../reviews/types.js";
+import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
+import type { ApprovalRecord, QueueEntry, DiffFile, HistoryLine } from "../reviews/types.js";
 
 // ── Options / Results ─────────────────────────────────────────────────────────
 
@@ -47,11 +50,15 @@ export interface ReviewStatusOptions {
   root?: string;
   logicalPath: string;
   showDiff?: boolean;
+  includeHistory?: boolean;
+  historyLimit?: number;
+  historySince?: string;
 }
 
 export interface ReviewStatusResult {
   approval: ApprovalRecord;
   diff: DiffFile | null;
+  history?: HistoryLine[];
 }
 
 export interface ReviewQueueOptions {
@@ -75,6 +82,7 @@ export interface ReviewCheckResult {
   invalidated: number;
   alreadyPending: number;
   errors: Array<{ logicalPath: string; error: string }>;
+  migrated?: boolean;
 }
 
 export interface ReviewRejectOptions {
@@ -110,30 +118,48 @@ export interface ReviewListResult {
   total: number;
 }
 
+export interface ReviewMigrateOptions {
+  root?: string;
+}
+
+export interface ReviewMigrateResult {
+  migrated: boolean;
+  documents: number;
+  pendingJobs: number;
+  historyLines: number;
+  message: string;
+}
+
+async function prepareReviewRoot(root?: string): Promise<string> {
+  const paths = await resolveProjectPaths(root);
+  await ensureReviewQueueMigrated(paths.root);
+  return paths.root;
+}
+
 // ── Operations ────────────────────────────────────────────────────────────────
 
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
-  const paths = await resolveProjectPaths(opts.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
   const approvedBy = opts.by ?? "local";
 
-  const { absPath: absDocPath } = await resolveReviewDocPath(paths.root, lp);
+  const { absPath: absDocPath, docPath } = await resolveReviewDocPath(projectRoot, lp);
 
   const content = await readFile(absDocPath, "utf8");
   const contentHash = createHash("sha256").update(content).digest("hex").slice(0, 16);
 
   // Warn about open threads but don't block
   let openThreadWarning: string | null = null;
-  const openThreads = await listThreads({ projectRoot: paths.root, filePath: lp, status: "open" });
+  const openThreads = await listThreads({ projectRoot, filePath: lp, status: "open" });
   if (openThreads.length > 0) {
     openThreadWarning = `${openThreads.length} open comment thread(s) on this document`;
   }
 
   const now = new Date().toISOString();
 
-  let approval = await getApproval(paths.root, lp);
+  let approval = await getApproval(projectRoot, lp);
   if (!approval) {
-    approval = makeApproval(lp, contentHash);
+    approval = makeApproval(lp, contentHash, docPath);
   }
 
   // Only internal can approve via this tool
@@ -144,6 +170,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     );
   }
 
+  approval.docPath = docPath;
   approval.contentHash = contentHash;
   approval.internal = {
     status: "approved",
@@ -151,29 +178,36 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     approvedBy,
     invalidatedAt: null,
   };
+  approval.lastEventAt = now;
   approval.overallStatus = deriveOverallStatus(approval);
-  await saveApproval(paths.root, approval);
 
-  // Write snapshot on first approval or re-approval
-  await writeSnapshot(paths.root, lp, content);
+  const snapshotRef = await writeSnapshot(projectRoot, lp, content);
+  approval.snapshotRef = snapshotRef;
+  await saveApproval(projectRoot, approval);
+
+  await updateFingerprint(projectRoot, lp, {
+    hash: contentHash,
+    docPath,
+    scannedAt: now,
+  });
 
   // Move from internal pending → internal resolved
-  const entry = await removeFromQueue(paths.root, "internal", lp);
+  const entry = await removeFromQueue(projectRoot, "internal", lp);
   if (entry) {
-    await archiveQueueEntry(paths.root, "internal", "resolved", { ...entry, queuedAt: entry.queuedAt });
-    await deleteDiff(paths.root, "internal", lp);
+    await archiveQueueEntry(projectRoot, "internal", "resolved", { ...entry, queuedAt: entry.queuedAt });
+    await deleteDiff(projectRoot, "internal", lp);
   }
 
   // Add to client queue
-  await addToQueue(paths.root, "client", {
+  await addToQueue(projectRoot, "client", {
     logicalPath: lp,
     queuedAt: now,
-    reason: "content_changed",
-    approvedHash: null,
+    reason: "awaiting_client_signoff",
+    approvedHash: contentHash,
     currentHash: contentHash,
   });
 
-  await appendHistory(paths.root, lp, {
+  await appendHistory(projectRoot, lp, {
     event: "approved",
     track: "internal",
     at: now,
@@ -191,10 +225,10 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
 }
 
 export async function runReviewStatus(opts: ReviewStatusOptions): Promise<ReviewStatusResult> {
-  const paths = await resolveProjectPaths(opts.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
 
-  const approval = await getApproval(paths.root, lp);
+  const approval = await getApproval(projectRoot, lp);
   if (!approval) {
     throw new Error(`No approval record found for: ${lp}. Run 'review check' to initialise.`);
   }
@@ -202,14 +236,14 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
   let diff: DiffFile | null = null;
   if (opts.showDiff !== false) {
     // Try internal diff first, then client
-    diff = await loadDiff(paths.root, "internal", lp);
-    if (!diff) diff = await loadDiff(paths.root, "client", lp);
+    diff = await loadDiff(projectRoot, "internal", lp);
+    if (!diff) diff = await loadDiff(projectRoot, "client", lp);
 
     // Recompute if missing but snapshot + doc exist
     if (!diff && approval.overallStatus === "pending_internal") {
       try {
-        const { absPath: absDocPath } = await resolveReviewDocPath(paths.root, lp);
-        const snapshot = await readSnapshot(paths.root, lp);
+        const { absPath: absDocPath } = await resolveReviewDocPath(projectRoot, lp);
+        const snapshot = await readSnapshot(projectRoot, lp);
         if (snapshot && (await pathExists(absDocPath))) {
           const current = await readFile(absDocPath, "utf8");
           const currentHash = createHash("sha256").update(current).digest("hex").slice(0, 16);
@@ -221,7 +255,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
             ...diffResult,
             computedAt: new Date().toISOString(),
           };
-          await saveDiff(paths.root, "internal", diff);
+          await saveDiff(projectRoot, "internal", diff);
         }
       } catch {
         // Doc file not resolvable — skip diff recomputation
@@ -229,22 +263,31 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     }
   }
 
-  return { approval, diff };
+  const result: ReviewStatusResult = { approval, diff };
+
+  if (opts.includeHistory) {
+    result.history = await readHistory(projectRoot, lp, {
+      limit: opts.historyLimit,
+      since: opts.historySince,
+    });
+  }
+
+  return result;
 }
 
 export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQueueResult> {
-  const paths = await resolveProjectPaths(opts.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
   const track = opts.track ?? "all";
 
   const [iPending, iResolved, iRejected, iFailed, cPending, cResolved, cRejected] =
     await Promise.all([
-      track !== "client" ? loadQueueIndex(paths.root, "internal", "pending") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "client" ? loadQueueIndex(paths.root, "internal", "resolved") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "client" ? loadQueueIndex(paths.root, "internal", "rejected") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "client" ? loadQueueIndex(paths.root, "internal", "failed") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "internal" ? loadQueueIndex(paths.root, "client", "pending") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "internal" ? loadQueueIndex(paths.root, "client", "resolved") : Promise.resolve({ version: 1 as const, entries: [] }),
-      track !== "internal" ? loadQueueIndex(paths.root, "client", "rejected") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "client" ? loadQueueIndex(projectRoot, "internal", "pending") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "client" ? loadQueueIndex(projectRoot, "internal", "resolved") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "client" ? loadQueueIndex(projectRoot, "internal", "rejected") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "client" ? loadQueueIndex(projectRoot, "internal", "failed") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "internal" ? loadQueueIndex(projectRoot, "client", "pending") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "internal" ? loadQueueIndex(projectRoot, "client", "resolved") : Promise.resolve({ version: 1 as const, entries: [] }),
+      track !== "internal" ? loadQueueIndex(projectRoot, "client", "rejected") : Promise.resolve({ version: 1 as const, entries: [] }),
     ]);
 
   // Load diffs for pending entries if requested
@@ -256,7 +299,7 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
     ];
     await Promise.all(
       pendingPaths.map(async ({ lp, t }) => {
-        diffs[lp] = await loadDiff(paths.root, t, lp);
+        diffs[lp] = await loadDiff(projectRoot, t, lp);
       }),
     );
   }
@@ -278,15 +321,15 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
 }
 
 export async function runReviewList(opts: ReviewListOptions): Promise<ReviewListResult> {
-  const paths = await resolveProjectPaths(opts.root);
-  const logicalPaths = await discoverApprovals(paths.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const logicalPaths = await discoverApprovals(projectRoot);
 
   const entries: ReviewListEntry[] = [];
 
   await Promise.all(
     logicalPaths.map(async (lp) => {
       if (opts.prefix && !lp.startsWith(opts.prefix)) return;
-      const approval = await getApproval(paths.root, lp);
+      const approval = await getApproval(projectRoot, lp);
       if (!approval) return;
       if (opts.status && opts.status !== "all" && approval.overallStatus !== opts.status) return;
       entries.push({
@@ -309,15 +352,20 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
 }
 
 export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCheckResult> {
-  const paths = await resolveProjectPaths(opts.root);
-  return reconcileReviews(paths.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const migration = await ensureReviewQueueMigrated(projectRoot);
+  const result = await reconcileReviews(projectRoot);
+  if (migration?.migrated) {
+    return { ...result, migrated: true };
+  }
+  return result;
 }
 
 export async function runReviewReject(opts: ReviewRejectOptions): Promise<ReviewRejectResult> {
-  const paths = await resolveProjectPaths(opts.root);
+  const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
 
-  const entry = await removeFromQueue(paths.root, "internal", lp);
+  const entry = await removeFromQueue(projectRoot, "internal", lp);
   if (!entry) {
     return {
       logicalPath: lp,
@@ -326,20 +374,20 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
     };
   }
 
-  await archiveQueueEntry(paths.root, "internal", "rejected", entry);
-  await deleteDiff(paths.root, "internal", lp);
+  await archiveQueueEntry(projectRoot, "internal", "rejected", entry);
+  await deleteDiff(projectRoot, "internal", lp);
 
   // Reset approval back to approved (dismiss the change)
-  const approval = await getApproval(paths.root, lp);
+  const approval = await getApproval(projectRoot, lp);
   if (approval) {
     approval.internal.status = "approved";
     approval.internal.invalidatedAt = null;
     approval.overallStatus = deriveOverallStatus(approval);
-    await saveApproval(paths.root, approval);
+    await saveApproval(projectRoot, approval);
   }
 
   const now = new Date().toISOString();
-  await appendHistory(paths.root, lp, {
+  await appendHistory(projectRoot, lp, {
     event: "rejected",
     track: "internal",
     at: now,
@@ -353,4 +401,9 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
       ? `Dismissed change for ${lp}: ${opts.reason}`
       : `Dismissed change for ${lp} (no re-approval required)`,
   };
+}
+
+export async function runReviewMigrate(opts: ReviewMigrateOptions): Promise<ReviewMigrateResult> {
+  const paths = await resolveProjectPaths(opts.root);
+  return migrateLegacyReviews(paths.root);
 }

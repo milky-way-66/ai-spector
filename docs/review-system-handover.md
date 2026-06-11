@@ -53,32 +53,28 @@ document created / content changes
 
 ## 3. Directory Structure
 
-All review data lives under `reviews/` at the project root:
+All review data lives under `.ai-spector/.docflow/review-queue/`:
 
 ```
-reviews/
-  <logicalPath>/                      e.g. reviews/srs/01-overview/
-    approval.json                     primary status record
-    approval_snapshot.md              document content at last approval (read-only for web)
-    approval_history.jsonl            append-only audit log
-
-  internal_queue/                     owned by ai-spector — do not write
-    pending.json
-    resolved.json
-    rejected.json
-    failed.json
-    diffs/
-      srs--01-overview.json
-
-  client_queue/                       web app reads and partially writes here
-    pending.json                      ← poll this for documents awaiting client review
-    resolved.json
-    rejected.json
-    diffs/
-      srs--01-overview.json           ← load on demand for diff display
+.ai-spector/.docflow/review-queue/
+  registry.json                       logicalPath → approval state (replaces per-doc approval.json)
+  fingerprints.json                   logicalPath → { hash, docPath, scannedAt }
+  pending.json                        unified pending jobs (internal + client tracks)
+  history.jsonl                       global append-only audit log
+  internal-resolved.json              archived internal queue entries
+  internal-rejected.json
+  internal-failed.json
+  client-resolved.json
+  client-rejected.json
+  snapshots/
+    srs__01-overview.md               approved content snapshot (read-only for web)
+  changes/
+    srs__01-overview.json             diff since last approval (load on demand)
 ```
 
-> **Filename convention:** logical paths use `/` in directory names (`reviews/srs/01-overview/`) but `--` in filenames (`srs--01-overview.json`).
+> **Filename convention:** logical paths use `/` in keys (`srs/01-overview`) but `__` in snapshot/diff filenames (`srs__01-overview`).
+
+Legacy projects may still have `reviews/` at the project root — run `npx ai-spector review migrate` once to move to the layout above.
 
 ---
 

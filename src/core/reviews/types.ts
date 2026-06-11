@@ -1,8 +1,19 @@
 export type OverallStatus = "pending_internal" | "pending_client" | "approved" | "rejected";
 export type TrackStatus = "pending" | "approved" | "needs_review";
 export type ClientStatus = "pending" | "approved" | "rejected";
-export type QueueReason = "content_changed" | "client_rejected";
-export type HistoryEvent = "approved" | "invalidated" | "rejected";
+export type QueueReason =
+  | "content_changed"
+  | "client_rejected"
+  | "awaiting_client_signoff"
+  | "first_review"
+  | "invalidated";
+export type HistoryEvent =
+  | "registered"
+  | "approved"
+  | "invalidated"
+  | "rejected"
+  | "client_approved"
+  | "client_rejected";
 export type ReviewTrack = "internal" | "client";
 
 export interface InternalTrack {
@@ -18,15 +29,53 @@ export interface ClientTrack {
   comment: string | null;
 }
 
+/** Per-document approval state stored in registry.json. */
 export interface ApprovalRecord {
-  version: 1;
+  version: 1 | 2;
   logicalPath: string;
+  /** Repo-relative path to the resolved document file. */
+  docPath?: string;
   contentHash: string;
   overallStatus: OverallStatus;
   internal: InternalTrack;
   client: ClientTrack;
+  snapshotRef?: string;
+  lastEventAt?: string;
 }
 
+export interface ReviewFingerprint {
+  hash: string;
+  docPath: string;
+  scannedAt: string;
+}
+
+export interface FingerprintsFile {
+  version: 1;
+  files: Record<string, ReviewFingerprint>;
+}
+
+export interface RegistryFile {
+  version: 2;
+  documents: Record<string, ApprovalRecord>;
+}
+
+/** Unified pending job (replaces per-track QueueEntry in pending index). */
+export interface ReviewJob {
+  id: string;
+  logicalPath: string;
+  track: ReviewTrack;
+  reason: QueueReason;
+  queuedAt: string;
+  baselineHash: string | null;
+  currentHash: string;
+}
+
+export interface PendingQueueFile {
+  version: 2;
+  jobs: ReviewJob[];
+}
+
+/** @deprecated Use ReviewJob — kept for queue result compatibility. */
 export interface QueueEntry {
   logicalPath: string;
   queuedAt: string;
@@ -52,6 +101,7 @@ export interface DiffFile {
 
 export interface HistoryLine {
   event: HistoryEvent;
+  logicalPath?: string;
   track?: ReviewTrack;
   at: string;
   by?: string;
@@ -59,4 +109,19 @@ export interface HistoryLine {
   previousHash?: string;
   newHash?: string;
   reason?: string;
+  meta?: Record<string, unknown>;
+}
+
+export function jobToQueueEntry(job: ReviewJob): QueueEntry {
+  return {
+    logicalPath: job.logicalPath,
+    queuedAt: job.queuedAt,
+    reason: job.reason,
+    approvedHash: job.baselineHash,
+    currentHash: job.currentHash,
+  };
+}
+
+export function reviewJobId(logicalPath: string, track: ReviewTrack): string {
+  return `${logicalPath}:${track}`;
 }

@@ -166,6 +166,20 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
 Tools are defined in `src/interfaces/mcp/tools/`. Schemas are Zod objects in
 `src/interfaces/mcp/schemas.ts` — pass `.shape` to `server.tool()`.
 
+### Review MCP tools
+
+| MCP tool | CLI equivalent | Purpose |
+|----------|----------------|---------|
+| `review_check({})` | `review check --json` | Scan approved docs for content changes |
+| `review_queue({ track?, showDiff? })` | `review queue --json` | List pending internal/client queue |
+| `review_status({ logicalPath, showDiff?, includeHistory?, historyLimit?, historySince? })` | `review status <path> --json [--history]` | Status + diff + optional history |
+| `review_approve({ logicalPath, by? })` | `review approve <path> --by <name>` | Internal approval → client queue |
+| `review_reject({ logicalPath, reason? })` | `review reject <path> --reason "..."` | Dismiss from internal queue |
+| `review_list({ prefix?, status? })` | `review list --json [--prefix srs/]` | All docs with approval records |
+
+Review state lives under `.ai-spector/.docflow/review-queue/` (not project-root `reviews/`).
+Run `review migrate` once if upgrading from legacy `reviews/` layout.
+
 ---
 
 ## SDK

@@ -12,7 +12,9 @@ import {
   saveDiff,
   appendHistory,
   deriveOverallStatus,
+  updateFingerprint,
 } from "./storage.js";
+import { ensureReviewQueueMigrated } from "./migrate.js";
 
 export interface ReconcileReviewsResult {
   scanned: number;
@@ -22,6 +24,7 @@ export interface ReconcileReviewsResult {
 }
 
 export async function reconcileReviews(projectRoot: string): Promise<ReconcileReviewsResult> {
+  await ensureReviewQueueMigrated(projectRoot);
   const logicalPaths = await discoverApprovals(projectRoot);
   const result: ReconcileReviewsResult = {
     scanned: logicalPaths.length,
@@ -42,8 +45,9 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
       }
 
       let absDocPath: string;
+      let docPath: string;
       try {
-        ({ absPath: absDocPath } = await resolveReviewDocPath(projectRoot, logicalPath));
+        ({ absPath: absDocPath, docPath } = await resolveReviewDocPath(projectRoot, logicalPath));
       } catch (err) {
         result.errors.push({
           logicalPath,
@@ -78,6 +82,7 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
       const now = new Date().toISOString();
       const prevHash = approval.contentHash;
       approval.contentHash = currentHash;
+      approval.docPath = docPath;
       approval.internal.status = "needs_review";
       approval.internal.invalidatedAt = now;
       approval.client.status = "pending";
@@ -102,6 +107,12 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
         reason: "content_changed",
         previousHash: prevHash,
         newHash: currentHash,
+      });
+
+      await updateFingerprint(projectRoot, logicalPath, {
+        hash: currentHash,
+        docPath,
+        scannedAt: now,
       });
 
       result.invalidated++;

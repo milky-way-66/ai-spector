@@ -16,8 +16,9 @@ export interface ResolvedDocPath {
  * Tries in order:
  *   1. Flat path: `docs/srs/1-introduction.md`
  *   2. Primary-language subfolder: `docs/srs/{primaryLang}/1-introduction.md`
+ *   3. Any configured language subfolder (first match)
  *
- * Throws a descriptive error if neither exists.
+ * Throws a descriptive error if none exist.
  */
 export async function resolveReviewDocPath(
   projectRoot: string,
@@ -34,30 +35,47 @@ export async function resolveReviewDocPath(
     return { docPath: flatRel, absPath: flatAbs };
   }
 
-  // 2. Primary-language subfolder (multilingual projects)
-  let langCode: string;
+  let config;
   try {
-    const { config } = await loadDocflowConfig(projectRoot);
-    langCode = primaryLanguage(config).code;
+    ({ config } = await loadDocflowConfig(projectRoot));
   } catch {
-    // If config cannot be loaded fall through to error below
     throw new Error(
       `Document not found: ${flatRel}. ` +
         `Could not load docflow.config.json to try language subfolders.`,
     );
   }
 
-  // Insert lang between the `docs/<section>/` prefix and the chapter name.
-  // flatRel: "docs/srs/1-introduction.md"  →  "docs/srs/vi/1-introduction.md"
-  const langRel = flatRel.replace(/^(docs\/[^/]+\/)/, `$1${langCode}/`);
-  const langAbs = join(projectRoot, langRel);
-  if (await pathExists(langAbs)) {
-    return { docPath: langRel, absPath: langAbs };
+  const tried: string[] = [flatRel];
+  const prefixMatch = flatRel.match(/^(docs\/[^/]+\/)/);
+
+  // 2. Primary-language subfolder
+  const primaryLang = primaryLanguage(config).code;
+  if (prefixMatch) {
+    const langRel = flatRel.replace(prefixMatch[0], `${prefixMatch[0]}${primaryLang}/`);
+    tried.push(langRel);
+    const langAbs = join(projectRoot, langRel);
+    if (await pathExists(langAbs)) {
+      return { docPath: langRel, absPath: langAbs };
+    }
+  }
+
+  // 3. Fallback: any configured language subfolder
+  if (prefixMatch) {
+    for (const lang of config.languages) {
+      if (lang.code === primaryLang) continue;
+      const langRel = flatRel.replace(prefixMatch[0], `${prefixMatch[0]}${lang.code}/`);
+      if (tried.includes(langRel)) continue;
+      tried.push(langRel);
+      const langAbs = join(projectRoot, langRel);
+      if (await pathExists(langAbs)) {
+        return { docPath: langRel, absPath: langAbs };
+      }
+    }
   }
 
   throw new Error(
-    `Document not found: ${flatRel}. ` +
-      `Also tried language subfolder: ${langRel} (primary language: ${langCode}). ` +
-      `Ensure the document exists at one of these paths or update the primary language in docflow.config.json.`,
+    `Document not found for logical path "${logicalPath}". ` +
+      `Tried: ${tried.join(", ")}. ` +
+      `Primary language is "${primaryLang}" — ensure the document exists or add the language to docflow.config.json.`,
   );
 }

@@ -21,7 +21,14 @@ export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchem
 }
 
 export async function toolReviewStatus(input: z.infer<typeof ReviewStatusSchema>) {
-  return runReviewStatus({ root: input.root, logicalPath: input.logicalPath, showDiff: input.showDiff });
+  return runReviewStatus({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    showDiff: input.showDiff,
+    includeHistory: input.includeHistory,
+    historyLimit: input.historyLimit,
+    historySince: input.historySince,
+  });
 }
 
 export async function toolReviewQueue(input: z.infer<typeof ReviewQueueSchema>) {

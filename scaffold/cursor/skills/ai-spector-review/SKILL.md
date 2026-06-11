@@ -10,7 +10,7 @@ description: >-
   "what changed". Do not use for comment threads — use
   ai-spector-resolve-comments for those.
 paths:
-  - "reviews/**"
+  - ".ai-spector/.docflow/review-queue/**"
 ---
 
 # AI Spector — Document Review
@@ -36,7 +36,7 @@ It **reads the document**, **understands the change in context**, **checks graph
 - [ ] write review summary → what changed, why it matters, concerns, recommendation
 - [ ] wait for user        → approve / request changes / dismiss
 - [ ] review approve / reject (if approved)
-- [ ] git commit reviews/
+- [ ] git commit .ai-spector/.docflow/review-queue/ (if team-shared)
 ```
 
 ## Natural language triggers

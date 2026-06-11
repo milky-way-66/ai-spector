@@ -38,7 +38,7 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 | **Visualize graph** | *(no MCP tool)* | `npx ai-spector graph visualize --open` |
 | Detect changed docs | `review_check({})` | `npx ai-spector review check --json` |
 | Review queue | `review_queue({ track, showDiff })` | `npx ai-spector review queue --json` |
-| Doc review status + diff | `review_status({ logicalPath })` | `npx ai-spector review status <path> --json` |
+| Doc review status + diff | `review_status({ logicalPath, includeHistory? })` | `npx ai-spector review status <path> --json [--history]` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 | List all docs with review status | `review_list({ status?, prefix? })` | `npx ai-spector review list --json` |

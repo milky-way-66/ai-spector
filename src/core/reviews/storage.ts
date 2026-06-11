@@ -1,15 +1,11 @@
-import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import {
-  approvalJsonPath,
-  approvalSnapshotPath,
-  approvalHistoryPath,
-  diffFilePath,
-  queuePendingPath,
-  queueResolvedPath,
-  queueRejectedPath,
-  queueFailedPath,
+  reviewQueuePaths,
+  snapshotPath,
+  changePath,
+  type ReviewQueuePaths,
 } from "./paths.js";
 import type {
   ApprovalRecord,
@@ -18,7 +14,82 @@ import type {
   DiffFile,
   HistoryLine,
   OverallStatus,
+  ReviewTrack,
+  FingerprintsFile,
+  RegistryFile,
+  PendingQueueFile,
+  ReviewJob,
+  ReviewFingerprint,
 } from "./types.js";
+import { jobToQueueEntry, reviewJobId } from "./types.js";
+
+const EMPTY_REGISTRY: RegistryFile = { version: 2, documents: {} };
+const EMPTY_FINGERPRINTS: FingerprintsFile = { version: 1, files: {} };
+const EMPTY_PENDING: PendingQueueFile = { version: 2, jobs: [] };
+const EMPTY_INDEX: QueueIndex = { version: 1, entries: [] };
+
+function archivePath(paths: ReviewQueuePaths, track: ReviewTrack, kind: "resolved" | "rejected" | "failed"): string {
+  if (track === "internal") {
+    if (kind === "resolved") return paths.internalResolved;
+    if (kind === "rejected") return paths.internalRejected;
+    return paths.internalFailed;
+  }
+  if (kind === "resolved") return paths.clientResolved;
+  return paths.clientRejected;
+}
+
+async function ensureQueueDirs(paths: ReviewQueuePaths): Promise<void> {
+  await mkdir(paths.dir, { recursive: true });
+  await mkdir(paths.snapshots, { recursive: true });
+  await mkdir(paths.changes, { recursive: true });
+}
+
+export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
+  const paths = reviewQueuePaths(projectRoot);
+  if (!(await pathExists(paths.registry))) return { ...EMPTY_REGISTRY };
+  const raw = await readJson<Partial<RegistryFile>>(paths.registry).catch(() => EMPTY_REGISTRY);
+  return { version: 2, documents: raw.documents ?? {} };
+}
+
+export async function saveRegistry(projectRoot: string, registry: RegistryFile): Promise<void> {
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  await writeJson(paths.registry, registry);
+}
+
+export async function loadFingerprints(projectRoot: string): Promise<FingerprintsFile> {
+  const paths = reviewQueuePaths(projectRoot);
+  if (!(await pathExists(paths.fingerprints))) return { ...EMPTY_FINGERPRINTS };
+  return readJson<FingerprintsFile>(paths.fingerprints).catch(() => ({ ...EMPTY_FINGERPRINTS }));
+}
+
+export async function saveFingerprints(projectRoot: string, fingerprints: FingerprintsFile): Promise<void> {
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  await writeJson(paths.fingerprints, fingerprints);
+}
+
+export async function updateFingerprint(
+  projectRoot: string,
+  logicalPath: string,
+  fp: ReviewFingerprint,
+): Promise<void> {
+  const fingerprints = await loadFingerprints(projectRoot);
+  fingerprints.files[logicalPath] = fp;
+  await saveFingerprints(projectRoot, fingerprints);
+}
+
+async function loadPending(projectRoot: string): Promise<PendingQueueFile> {
+  const paths = reviewQueuePaths(projectRoot);
+  if (!(await pathExists(paths.pending))) return { ...EMPTY_PENDING };
+  return readJson<PendingQueueFile>(paths.pending).catch(() => ({ ...EMPTY_PENDING }));
+}
+
+async function savePending(projectRoot: string, pending: PendingQueueFile): Promise<void> {
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  await writeJson(paths.pending, pending);
+}
 
 // ── Approval ──────────────────────────────────────────────────────────────────
 
@@ -26,22 +97,24 @@ export async function getApproval(
   projectRoot: string,
   logicalPath: string,
 ): Promise<ApprovalRecord | null> {
-  const p = join(projectRoot, approvalJsonPath(logicalPath));
-  if (!(await pathExists(p))) return null;
-  return readJson<ApprovalRecord>(p);
+  const registry = await loadRegistry(projectRoot);
+  return registry.documents[logicalPath] ?? null;
 }
 
 export async function saveApproval(
   projectRoot: string,
   record: ApprovalRecord,
 ): Promise<void> {
-  await writeJson(join(projectRoot, approvalJsonPath(record.logicalPath)), record);
+  const registry = await loadRegistry(projectRoot);
+  registry.documents[record.logicalPath] = { ...record, version: 2 };
+  await saveRegistry(projectRoot, registry);
 }
 
-export function makeApproval(logicalPath: string, contentHash: string): ApprovalRecord {
+export function makeApproval(logicalPath: string, contentHash: string, docPath?: string): ApprovalRecord {
   return {
-    version: 1,
+    version: 2,
     logicalPath,
+    docPath,
     contentHash,
     overallStatus: "pending_internal",
     internal: { status: "pending", approvedAt: null, approvedBy: null, invalidatedAt: null },
@@ -62,7 +135,11 @@ export async function readSnapshot(
   projectRoot: string,
   logicalPath: string,
 ): Promise<string | null> {
-  const p = join(projectRoot, approvalSnapshotPath(logicalPath));
+  const paths = reviewQueuePaths(projectRoot);
+  const approval = await getApproval(projectRoot, logicalPath);
+  const p = approval?.snapshotRef
+    ? join(projectRoot, approval.snapshotRef).replace(/\\/g, "/")
+    : snapshotPath(paths, logicalPath);
   if (!(await pathExists(p))) return null;
   return readFile(p, "utf8");
 }
@@ -71,10 +148,14 @@ export async function writeSnapshot(
   projectRoot: string,
   logicalPath: string,
   content: string,
-): Promise<void> {
-  const p = join(projectRoot, approvalSnapshotPath(logicalPath));
-  await mkdir(dirname(p), { recursive: true });
-  await writeFile(p, content, "utf8");
+): Promise<string> {
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  const rel = join(".ai-spector/.docflow/review-queue/snapshots", `${logicalPath.replace(/\//g, "__")}.md`);
+  const abs = join(projectRoot, rel);
+  await mkdir(join(projectRoot, paths.snapshots), { recursive: true });
+  await writeFile(abs, content, "utf8");
+  return rel.replace(/\\/g, "/");
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -84,29 +165,55 @@ export async function appendHistory(
   logicalPath: string,
   line: HistoryLine,
 ): Promise<void> {
-  const p = join(projectRoot, approvalHistoryPath(logicalPath));
-  await mkdir(dirname(p), { recursive: true });
-  await writeFile(p, `${JSON.stringify(line)}\n`, { flag: "a" });
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  const entry: HistoryLine = { ...line, logicalPath };
+  await writeFile(paths.history, `${JSON.stringify(entry)}\n`, { flag: "a" });
+}
+
+export async function readHistory(
+  projectRoot: string,
+  logicalPath: string,
+  opts?: { limit?: number; since?: string },
+): Promise<HistoryLine[]> {
+  const paths = reviewQueuePaths(projectRoot);
+  if (!(await pathExists(paths.history))) return [];
+
+  const content = await readFile(paths.history, "utf8");
+  let lines = content
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => JSON.parse(l) as HistoryLine)
+    .filter((l) => l.logicalPath === logicalPath);
+
+  if (opts?.since) {
+    lines = lines.filter((l) => l.at >= opts.since!);
+  }
+  if (opts?.limit !== undefined && opts.limit >= 0) {
+    lines = lines.slice(-opts.limit);
+  }
+  return lines;
 }
 
 // ── Queue index ───────────────────────────────────────────────────────────────
-
-const EMPTY_INDEX: QueueIndex = { version: 1, entries: [] };
 
 export async function loadQueueIndex(
   projectRoot: string,
   track: "internal" | "client",
   kind: "pending" | "resolved" | "rejected" | "failed",
 ): Promise<QueueIndex> {
-  let p: string;
-  if (kind === "pending") p = queuePendingPath(track);
-  else if (kind === "resolved") p = queueResolvedPath(track);
-  else if (kind === "rejected") p = queueRejectedPath(track);
-  else p = queueFailedPath();
+  if (kind === "pending") {
+    const pending = await loadPending(projectRoot);
+    const entries = pending.jobs
+      .filter((j) => j.track === track)
+      .map(jobToQueueEntry);
+    return { version: 1, entries };
+  }
 
-  const abs = join(projectRoot, p);
-  if (!(await pathExists(abs))) return { ...EMPTY_INDEX };
-  return readJson<QueueIndex>(abs).catch(() => ({ ...EMPTY_INDEX }));
+  const paths = reviewQueuePaths(projectRoot);
+  const p = archivePath(paths, track, kind);
+  if (!(await pathExists(p))) return { ...EMPTY_INDEX };
+  return readJson<QueueIndex>(p).catch(() => ({ ...EMPTY_INDEX }));
 }
 
 export async function saveQueueIndex(
@@ -115,13 +222,26 @@ export async function saveQueueIndex(
   kind: "pending" | "resolved" | "rejected" | "failed",
   index: QueueIndex,
 ): Promise<void> {
-  let p: string;
-  if (kind === "pending") p = queuePendingPath(track);
-  else if (kind === "resolved") p = queueResolvedPath(track);
-  else if (kind === "rejected") p = queueRejectedPath(track);
-  else p = queueFailedPath();
+  if (kind === "pending") {
+    const pending = await loadPending(projectRoot);
+    const otherJobs = pending.jobs.filter((j) => j.track !== track);
+    const newJobs: ReviewJob[] = index.entries.map((e) => ({
+      id: reviewJobId(e.logicalPath, track),
+      logicalPath: e.logicalPath,
+      track,
+      reason: e.reason,
+      queuedAt: e.queuedAt,
+      baselineHash: e.approvedHash,
+      currentHash: e.currentHash,
+    }));
+    pending.jobs = [...otherJobs, ...newJobs];
+    await savePending(projectRoot, pending);
+    return;
+  }
 
-  await writeJson(join(projectRoot, p), index);
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  await writeJson(archivePath(paths, track, kind), index);
 }
 
 export async function addToQueue(
@@ -129,10 +249,19 @@ export async function addToQueue(
   track: "internal" | "client",
   entry: QueueEntry,
 ): Promise<void> {
-  const idx = await loadQueueIndex(projectRoot, track, "pending");
-  idx.entries = idx.entries.filter((e) => e.logicalPath !== entry.logicalPath);
-  idx.entries.push(entry);
-  await saveQueueIndex(projectRoot, track, "pending", idx);
+  const pending = await loadPending(projectRoot);
+  const id = reviewJobId(entry.logicalPath, track);
+  pending.jobs = pending.jobs.filter((j) => j.id !== id);
+  pending.jobs.push({
+    id,
+    logicalPath: entry.logicalPath,
+    track,
+    reason: entry.reason,
+    queuedAt: entry.queuedAt,
+    baselineHash: entry.approvedHash,
+    currentHash: entry.currentHash,
+  });
+  await savePending(projectRoot, pending);
 }
 
 export async function removeFromQueue(
@@ -140,13 +269,15 @@ export async function removeFromQueue(
   track: "internal" | "client",
   logicalPath: string,
 ): Promise<QueueEntry | null> {
-  const idx = await loadQueueIndex(projectRoot, track, "pending");
-  const found = idx.entries.find((e) => e.logicalPath === logicalPath) ?? null;
+  const pending = await loadPending(projectRoot);
+  const id = reviewJobId(logicalPath, track);
+  const found = pending.jobs.find((j) => j.id === id) ?? null;
   if (found) {
-    idx.entries = idx.entries.filter((e) => e.logicalPath !== logicalPath);
-    await saveQueueIndex(projectRoot, track, "pending", idx);
+    pending.jobs = pending.jobs.filter((j) => j.id !== id);
+    await savePending(projectRoot, pending);
+    return jobToQueueEntry(found);
   }
-  return found;
+  return null;
 }
 
 export async function archiveQueueEntry(
@@ -167,56 +298,41 @@ export async function loadDiff(
   track: "internal" | "client",
   logicalPath: string,
 ): Promise<DiffFile | null> {
-  const p = join(projectRoot, diffFilePath(track, logicalPath));
+  const paths = reviewQueuePaths(projectRoot);
+  const p = changePath(paths, logicalPath);
   if (!(await pathExists(p))) return null;
   return readJson<DiffFile>(p).catch(() => null);
 }
 
 export async function saveDiff(
   projectRoot: string,
-  track: "internal" | "client",
+  _track: "internal" | "client",
   diff: DiffFile,
 ): Promise<void> {
-  await writeJson(join(projectRoot, diffFilePath(track, diff.logicalPath)), diff);
+  const paths = reviewQueuePaths(projectRoot);
+  await ensureQueueDirs(paths);
+  await writeJson(changePath(paths, diff.logicalPath), diff);
 }
 
 export async function deleteDiff(
   projectRoot: string,
-  track: "internal" | "client",
+  _track: "internal" | "client",
   logicalPath: string,
 ): Promise<void> {
   const { unlink } = await import("node:fs/promises");
-  const p = join(projectRoot, diffFilePath(track, logicalPath));
+  const paths = reviewQueuePaths(projectRoot);
+  const p = changePath(paths, logicalPath);
   if (await pathExists(p)) await unlink(p);
 }
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
 export async function discoverApprovals(projectRoot: string): Promise<string[]> {
-  const root = join(projectRoot, "reviews");
-  if (!(await pathExists(root))) return [];
+  const registry = await loadRegistry(projectRoot);
+  return Object.keys(registry.documents).sort();
+}
 
-  const logicalPaths: string[] = [];
-
-  async function walk(dir: string, rel: string): Promise<void> {
-    let entries;
-    try {
-      entries = await readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const ent of entries) {
-      if (ent.isDirectory()) {
-        const nextRel = rel ? `${rel}/${ent.name}` : ent.name;
-        // Skip queue dirs
-        if (nextRel === "internal_queue" || nextRel === "client_queue") continue;
-        await walk(join(dir, ent.name), nextRel);
-      } else if (ent.name === "approval.json" && rel) {
-        logicalPaths.push(rel);
-      }
-    }
-  }
-
-  await walk(root, "");
-  return logicalPaths;
+export async function reviewQueueInitialized(projectRoot: string): Promise<boolean> {
+  const paths = reviewQueuePaths(projectRoot);
+  return pathExists(paths.registry);
 }
