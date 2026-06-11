@@ -149,6 +149,46 @@ export const LangQueueSchema = RootSchema.extend({
     .describe("Which queue to read (default: pending)"),
 });
 
+// ── Resolve Task ─────────────────────────────────────────────────────────────
+
+export const TaskDomainEnum = z.enum([
+  "docs",
+  "prototype",
+  "graph",
+  "template",
+  "lang",
+  "index",
+  "comments",
+  "other",
+]);
+
+export const GoalSpecSchema = z.object({
+  trigger: z.string().describe("Original user intent verbatim"),
+  domain: TaskDomainEnum.describe("Affected domain"),
+  scope: z.array(z.string()).describe("File paths or node IDs expected to change"),
+  criteria: z.array(z.string()).describe("Acceptance criteria — what done looks like"),
+  notes: z.string().optional().describe("Extra context from clarification"),
+});
+
+export const TaskStepSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  tool: z.string().describe("Which run* function or MCP tool handles this step"),
+  args: z.record(z.string(), z.unknown()),
+});
+
+export const TaskPlanSchema = z.object({
+  goal: GoalSpecSchema,
+  steps: z.array(TaskStepSchema),
+});
+
+export const ResolveTaskSchema = RootSchema.extend({
+  intent: z.string().describe("Free-form user intent (for context)"),
+  goalSpec: GoalSpecSchema,
+  plan: TaskPlanSchema,
+  dryRun: z.boolean().optional().describe("Validate and plan without writing any changes"),
+});
+
 // ── Template ──────────────────────────────────────────────────────────────────
 
 export const TemplateListSchema = RootSchema;

@@ -46,6 +46,7 @@ import {
   formatSetupAudit,
   formatLangAdd,
   formatQueueScan,
+  formatResolveTask,
 } from "./interfaces/cli/format/misc.js";
 import { ensureHubBundles } from "./core/graph/bundles.js";
 import { loadInMemoryGraph } from "./core/graph/loadGraph.js";
@@ -856,6 +857,102 @@ cocoindex
     const result = await runCocoindexStats({ root: opts.root });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCocoindexStats(result));
+  });
+
+// ── resolve-task ──────────────────────────────────────────────────────────────
+
+program
+  .command("resolve-task <planJson>")
+  .description(
+    "Execute a resolve-task plan from a JSON file. The file must contain { intent, goalSpec, plan }.",
+  )
+  .option("--root <path>", "Project root (default: cwd)")
+  .option("--dry-run", "Validate plan without writing any changes")
+  .option("--json", "JSON output")
+  .action(async (planJson: string, opts) => {
+    const { readJson } = await import("./core/util/fs.js");
+    const {
+      runResolveTask,
+      createGoalSpec,
+      createPlan,
+    } = await import("./core/operations/resolve-task.js");
+    type TaskDomain = import("./core/operations/resolve-task.js").TaskDomain;
+    type StepExecutor = import("./core/operations/resolve-task.js").StepExecutor;
+    const { runIndex } = await import("./core/operations/index.js");
+    const { runGraphMerge } = await import("./core/operations/graph-merge.js");
+    const { runGraphReport } = await import("./core/operations/graph-report.js");
+    const { runGraphImpact } = await import("./core/operations/graph-impact.js");
+    const { resolveProjectPaths } = await import("./core/util/paths.js");
+
+    const raw = await readJson<{
+      intent: string;
+      goalSpec: {
+        trigger: string;
+        domain: string;
+        scope: string[];
+        criteria: string[];
+        notes?: string;
+      };
+      plan: {
+        steps: Array<{ id: string; description: string; tool: string; args: Record<string, unknown> }>;
+      };
+    }>(resolve(planJson));
+
+    const paths = await resolveProjectPaths(opts.root);
+
+    const executors: Record<string, StepExecutor> = {
+      index: async (_args: Record<string, unknown>, root: string) => {
+        await runIndex({ root, graphOnly: false, docsOnly: false });
+        return { artifacts: [] };
+      },
+      graph_merge: async (_args: Record<string, unknown>, root: string) => {
+        const r = await runGraphMerge({ root });
+        return { artifacts: r.graphPath ? [r.graphPath] : [] };
+      },
+      graph_report: async (_args: Record<string, unknown>, root: string) => {
+        await runGraphReport({ root });
+        return { artifacts: [] };
+      },
+      graph_impact: async (args: Record<string, unknown>, root: string) => {
+        await runGraphImpact({
+          graphPath: String(args.graphPath ?? paths.graph),
+          rulesPath: String(args.rulesPath ?? paths.rulesImpact),
+          projectRoot: root,
+          change: String(args.change ?? ""),
+          originId: args.originId != null ? String(args.originId) : undefined,
+          file: args.file != null ? String(args.file) : undefined,
+        });
+        return { artifacts: [] };
+      },
+    };
+
+    const goalSpec = createGoalSpec(
+      raw.goalSpec.trigger,
+      raw.goalSpec.domain as TaskDomain,
+      raw.goalSpec.scope,
+      raw.goalSpec.criteria,
+      raw.goalSpec.notes,
+    );
+    const plan = createPlan(
+      goalSpec,
+      raw.plan.steps,
+      goalSpec.scope.map((nodeId) => ({ nodeId, directCallers: 0, riskLevel: "low" as const })),
+    );
+    plan.approvedAt = new Date().toISOString();
+
+    const result = await runResolveTask({
+      intent: raw.intent,
+      goalSpec,
+      plan,
+      projectRoot: paths.root,
+      graphPath: paths.graph,
+      rulesPath: paths.rulesImpact,
+      executors,
+      dryRun: opts.dryRun,
+    });
+
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatResolveTask(result));
   });
 
 program.parseAsync(process.argv).catch((err) => {

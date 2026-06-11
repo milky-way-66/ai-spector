@@ -4,6 +4,7 @@ import type { PreCommitReport } from "../../../core/operations/hooks.js";
 import type { SetupAudit } from "../../../core/operations/setup.js";
 import type { LangAddResult } from "../../../core/operations/lang.js";
 import type { QueueScanResult } from "../../../core/operations/lang-queue.js";
+import type { ResolveTaskResult } from "../../../core/operations/resolve-task.js";
 
 export function formatSyncCursor(result: SyncCursorResult): string {
   return [
@@ -65,4 +66,41 @@ export function formatLangAdd(result: LangAddResult): string {
 export function formatQueueScan(result: QueueScanResult): string {
   if (result.skipped) return `Translation queue: skipped (${result.skipReason})`;
   return `Translation queue: ${result.pendingCount} pending, +${result.enqueued} enqueued, ${result.resolved} resolved, ${result.failed} failed`;
+}
+
+export function formatResolveTask(result: ResolveTaskResult): string {
+  const { plan, execution, stateUpdate, status } = result;
+  const lines: string[] = [];
+
+  const statusIcon = status === "complete" ? "✓" : status === "blocked" ? "✗" : "~";
+  lines.push(`${statusIcon} Task ${plan.id} — ${status.toUpperCase()}`);
+  lines.push(`  goal: ${plan.goal.trigger}`);
+  lines.push(`  domain: ${plan.goal.domain}  risk: ${plan.riskLevel}`);
+  lines.push("");
+
+  lines.push("Steps:");
+  for (const step of plan.steps) {
+    const s = execution.steps.find((r) => r.stepId === step.id);
+    const icon = s?.status === "done" ? "✓" : s?.status === "blocked" ? "✗" : "○";
+    lines.push(`  ${icon} [${step.id}] ${step.description}`);
+    if (s?.issue) lines.push(`      blocked: ${s.issue}`);
+    if (s?.artifacts.length) lines.push(`      wrote: ${s.artifacts.join(", ")}`);
+  }
+
+  lines.push("");
+  lines.push("State update:");
+  lines.push(`  reindexed: ${stateUpdate.reindexed.length} file(s)`);
+  lines.push(
+    `  graph diff: +${stateUpdate.graphDiff.added} -${stateUpdate.graphDiff.removed} ~${stateUpdate.graphDiff.modified}`,
+  );
+  if (stateUpdate.commitSha) lines.push(`  commit: ${stateUpdate.commitSha}`);
+  lines.push(`  ${stateUpdate.summary}`);
+
+  if (execution.issues.length) {
+    lines.push("");
+    lines.push("Issues:");
+    for (const issue of execution.issues) lines.push(`  ! ${issue}`);
+  }
+
+  return lines.join("\n");
 }

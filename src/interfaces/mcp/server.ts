@@ -25,6 +25,7 @@ import {
   CocoindexStatusSchema,
   CocoindexStatsSchema,
   CocoindexIndexSchema,
+  ResolveTaskSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -39,6 +40,7 @@ import {
 } from "./tools/comments.js";
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
+import { toolResolveTask } from "./tools/resolve-task.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -321,6 +323,21 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolGraphQueryFuzzy(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Resolve task tool ─────────────────────────────────────────────────────────
+
+server.registerTool(
+  "resolve_task",
+  {
+    description:
+      "Execute a structured resolve-task workflow: validate a GoalSpec + TaskPlan and run each step against registered executors (index, graph_merge, graph_impact, graph_report). Returns execution results and a state-update summary.",
+    inputSchema: ResolveTaskSchema.shape,
+  },
+  async (input) => {
+    const result = await toolResolveTask(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
