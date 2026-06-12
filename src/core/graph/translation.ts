@@ -1,4 +1,8 @@
 import type { GraphNode } from "../../types.js";
+import {
+  localizedOutputForLang,
+  localizedOutputForPrimary,
+} from "../paths/localized-output.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 
 export interface TranslationLang {
@@ -10,11 +14,9 @@ export interface TranslationLang {
 export function translationOutputForLang(
   primary: GraphNode,
   langCode: string,
+  primaryLangCode?: string,
 ): string | undefined {
-  const map = (p: string) =>
-    p
-      .replace(/^docs\/srs\//, `docs/srs/${langCode}/`)
-      .replace(/^docs\/basic-design\//, `docs/basic-design/${langCode}/`);
+  const map = (p: string) => localizedOutputForLang(p, langCode, primaryLangCode);
   const outputPattern =
     typeof primary.outputPattern === "string" ? primary.outputPattern : undefined;
   const output = typeof primary.output === "string" ? primary.output : undefined;
@@ -23,9 +25,42 @@ export function translationOutputForLang(
   return undefined;
 }
 
+/** Localize builtin primary document output paths (docs/srs/{lang}/…). */
+export function applyPrimaryLanguageOutputs(
+  graph: InMemoryGraph,
+  primaryLangCode: string,
+  langCodes: string[],
+): number {
+  let updated = 0;
+  for (const node of primaryDocumentNodes(graph, langCodes)) {
+    let changed = false;
+    const next: GraphNode = { ...node };
+    if (typeof node.output === "string") {
+      const localized = localizedOutputForPrimary(node.output, primaryLangCode);
+      if (localized !== node.output) {
+        next.output = localized;
+        changed = true;
+      }
+    }
+    if (typeof node.outputPattern === "string") {
+      const localized = localizedOutputForPrimary(node.outputPattern, primaryLangCode);
+      if (localized !== node.outputPattern) {
+        next.outputPattern = localized;
+        changed = true;
+      }
+    }
+    if (changed) {
+      graph.upsertNode(next);
+      updated++;
+    }
+  }
+  return updated;
+}
+
 export function buildTranslationDocNode(
   primary: GraphNode,
   lang: TranslationLang,
+  primaryLangCode?: string,
 ): GraphNode {
   const id = `doc:${lang.code}:${primary.id}`;
   const node: GraphNode = {
@@ -37,10 +72,10 @@ export function buildTranslationDocNode(
   if (typeof primary.template === "string") node.template = primary.template;
   if (typeof primary.title === "string") node.title = primary.title;
   if (typeof primary.outputPattern === "string") {
-    node.outputPattern = translationOutputForLang(primary, lang.code);
+    node.outputPattern = translationOutputForLang(primary, lang.code, primaryLangCode);
     if (typeof primary.perDomain === "string") node.perDomain = primary.perDomain;
   } else {
-    const out = translationOutputForLang(primary, lang.code);
+    const out = translationOutputForLang(primary, lang.code, primaryLangCode);
     if (out) node.output = out;
   }
   return node;
@@ -51,9 +86,10 @@ export function wireTranslationDocNode(
   graph: InMemoryGraph,
   primary: GraphNode,
   lang: TranslationLang,
+  primaryLangCode?: string,
 ): "created" | "updated" {
   const translatedId = `doc:${lang.code}:${primary.id}`;
-  const built = buildTranslationDocNode(primary, lang);
+  const built = buildTranslationDocNode(primary, lang, primaryLangCode);
   const outcome = graph.upsertNode(built);
   graph.addEdgeIfAbsent({
     type: "translationOf",

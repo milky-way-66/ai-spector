@@ -7,8 +7,8 @@ hook, CI, and the agent all call `runCheck`.
 
 | Surface | Call |
 |---------|------|
-| MCP (preferred) | `workspace_check({ fix?: boolean })` |
-| CLI fallback | `npx ai-spector check [--fix] [--json]` |
+| MCP (preferred) | `workspace_check({ fix?: boolean, paths?: string[] })` |
+| CLI fallback | `npx ai-spector check [--fix] [--path <rel>] [--json]` |
 
 `fix: true` repairs only `autoFixable` findings (creates missing directories);
 everything else is reported with a remediation hint.
@@ -19,7 +19,8 @@ everything else is reported with a remediation hint.
 |------|----------|--------|
 | STRUCT-001 | error | Required dirs exist: `docs/data-source/`, `.ai-spector/.docflow/config/` |
 | STRUCT-002 | error | `.ai-spector/docflow.config.json` present and parseable |
-| STRUCT-003 | warning | Each configured language has its output folder (`docs/srs/{lang}/`) |
+| STRUCT-003 | warning | Each configured language has its output folder (`docs/srs/{lang}/`, `docs/basic-design/{lang}/`) |
+| STRUCT-004 | error | Builtin SRS/BD docs live under `docs/{type}/{lang}/` — not at `docs/srs/{filename}` root |
 | CFG-001 | error | `languages[]` non-empty in the raw config |
 | TMPL-001 | warning | `.ai-spector/templates/` exists |
 | CTX-001 | warning | Context store dir exists; **stale clarifications** are surfaced (Q-ids listed) |
@@ -36,7 +37,13 @@ Severities are configurable per project in
 3. Warnings → show them, then continue. CTX-001 stale clarifications feed
    directly into the clarify stage: re-ask exactly those Q-ids
    ([clarify.md](./clarify.md)).
-4. `check` validates structure/config only — chain `graph validate` when graph
+4. After **each primary file write** during generation, run
+   `workspace_check({ paths: ["docs/srs/{lang}/{filename}"] })` (or CLI
+   `check --path …`). STRUCT-004 errors mean the file landed outside the
+   language folder — move it to the suggested path before merge/index.
+5. After **manual doc edits**, re-run `workspace_check({ paths: [editedPath] })`
+   when the path is under `docs/srs/` or `docs/basic-design/`.
+6. `check` validates structure/config only — chain `graph validate` when graph
    semantics matter.
 
 The pre-commit hook runs the same check and blocks commits on error-severity

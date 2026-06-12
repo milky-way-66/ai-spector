@@ -104,6 +104,7 @@ do not skip them.
 - [ ] Load matching srs-context/ or bd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write primary language file from summary + template
+- [ ] `workspace_check({ paths: ["docs/{docType}/{primaryLang}/{filename}"] })` — STRUCT-004 must pass (move file if misplaced)
 - [ ] [PAUSE — translation prompt] (see below)
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave
 - [ ] npx ai-spector graph validate

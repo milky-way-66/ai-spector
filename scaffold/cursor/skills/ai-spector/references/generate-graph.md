@@ -89,7 +89,7 @@ After **all files in a wave** are written, write a single patch covering the who
   "version": 1,
   "nodes": [],
   "edges": [
-    { "type": "rendersTo", "from": "doc.srs.3-use-cases", "to": "docs/srs/3-use-cases.md" },
+    { "type": "rendersTo", "from": "doc.srs.3-use-cases", "to": "docs/srs/en/3-use-cases.md" },
     { "type": "dependsOn", "from": "doc.srs.3-use-cases", "to": "doc.srs.1-introduction" }
   ]
 }

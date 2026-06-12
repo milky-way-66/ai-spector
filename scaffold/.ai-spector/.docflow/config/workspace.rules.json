@@ -5,6 +5,7 @@
     { "id": "STRUCT-001", "severity": "error" },
     { "id": "STRUCT-002", "severity": "error" },
     { "id": "STRUCT-003", "severity": "warning" },
+    { "id": "STRUCT-004", "severity": "error" },
     { "id": "CFG-001", "severity": "error" },
     { "id": "TMPL-001", "severity": "warning" },
     { "id": "CTX-001", "severity": "warning" },

@@ -1,6 +1,8 @@
+import { loadDocflowConfig, primaryLanguage } from "../../../core/config/load.js";
 import { resolveProjectPaths } from "../../../core/util/paths.js";
 import { loadInMemoryGraph } from "../../../core/graph/loadGraph.js";
 import { querySubgraph } from "../../../core/graph/query.js";
+import { localizeProjectionPaths } from "../../../core/paths/localized-output.js";
 import {
   computeImpact,
   mergeImpactResults,
@@ -50,7 +52,16 @@ export async function toolGraphQuery(input: z.infer<typeof GraphQuerySchema>) {
     edgeTypes,
   });
 
-  return result;
+  try {
+    const { config } = await loadDocflowConfig(paths.root);
+    const primary = primaryLanguage(config);
+    return {
+      ...result,
+      projectionPaths: localizeProjectionPaths(result.projectionPaths, primary.code),
+    };
+  } catch {
+    return result;
+  }
 }
 
 export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) {

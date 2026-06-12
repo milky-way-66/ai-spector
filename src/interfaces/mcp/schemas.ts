@@ -301,6 +301,12 @@ export const WorkspaceCheckSchema = RootSchema.extend({
     .boolean()
     .optional()
     .describe("Attempt to repair auto-fixable findings (create missing dirs)"),
+  paths: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Validate specific doc output paths after writing (e.g. ['docs/srs/en/3-use-cases.md'])",
+    ),
 });
 
 export const ReviewRejectSchema = RootSchema.extend({

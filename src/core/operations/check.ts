@@ -1,6 +1,11 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { loadDocflowConfig } from "../config/load.js";
+import { loadDocflowConfig, primaryLanguage } from "../config/load.js";
+import { discoverMarkdownFiles } from "../index/docs-build.js";
+import {
+  isMisplacedBuiltinDocPath,
+  suggestLocalizedPath,
+} from "../paths/localized-output.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
 
@@ -32,6 +37,8 @@ export interface CheckOptions {
   root?: string;
   /** Attempt to repair autoFixable findings. */
   fix?: boolean;
+  /** Validate specific output paths (e.g. after writing a generated doc). */
+  paths?: string[];
 }
 
 /** A single structural rule. `severity` may be overridden by config. */
@@ -50,6 +57,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "STRUCT-001", severity: "error" },
   { id: "STRUCT-002", severity: "error" },
   { id: "STRUCT-003", severity: "warning" },
+  { id: "STRUCT-004", severity: "error" },
   { id: "CFG-001", severity: "error" },
   { id: "TMPL-001", severity: "warning" },
   { id: "CTX-001", severity: "warning" },
@@ -169,18 +177,56 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
   // STRUCT-003 — language output folders for each configured language.
   if (enabled(rules, "STRUCT-003") && configReadable) {
     for (const lang of config?.languages ?? []) {
-      const rel = `docs/srs/${lang.code}`;
-      if (!(await pathExists(join(root, rel)))) {
-        const fixed = await fixDir(rel);
-        add({
-          ruleId: "STRUCT-003",
-          severity: severityOf(rules, "STRUCT-003", "warning"),
-          message: `Output folder missing for configured language "${lang.code}": ${rel}`,
-          path: rel,
-          fix: `mkdir -p ${rel}`,
-          autoFixable: true,
-          fixed,
-        });
+      for (const docType of ["srs", "basic-design"] as const) {
+        const rel = `docs/${docType}/${lang.code}`;
+        if (!(await pathExists(join(root, rel)))) {
+          const fixed = await fixDir(rel);
+          add({
+            ruleId: "STRUCT-003",
+            severity: severityOf(rules, "STRUCT-003", "warning"),
+            message: `Output folder missing for configured language "${lang.code}": ${rel}`,
+            path: rel,
+            fix: `mkdir -p ${rel}`,
+            autoFixable: true,
+            fixed,
+          });
+        }
+      }
+    }
+  }
+
+  // STRUCT-004 — builtin SRS/BD docs must live under docs/{type}/{lang}/.
+  if (enabled(rules, "STRUCT-004") && configReadable && config) {
+    const langCodes = config.languages.map((l) => l.code);
+    const primary = primaryLanguage(config);
+    const reportMisplaced = (rel: string) => {
+      const suggested = suggestLocalizedPath(rel, primary.code);
+      add({
+        ruleId: "STRUCT-004",
+        severity: severityOf(rules, "STRUCT-004", "error"),
+        message: `Document is outside the language folder — expected under docs/{type}/${primary.code}/`,
+        path: rel,
+        fix: `mv ${rel} ${suggested}`,
+      });
+    };
+
+    const explicitPaths = [...new Set((opts.paths ?? []).map((p) => p.replace(/\\/g, "/")))];
+    for (const rel of explicitPaths) {
+      if (isMisplacedBuiltinDocPath(rel, langCodes)) {
+        reportMisplaced(rel);
+      }
+    }
+
+    if (explicitPaths.length === 0) {
+      for (const docType of ["srs", "basic-design"] as const) {
+        const sourceRoot = `docs/${docType}`;
+        if (!(await pathExists(join(root, sourceRoot)))) continue;
+        const files = await discoverMarkdownFiles(root, sourceRoot);
+        for (const file of files) {
+          if (isMisplacedBuiltinDocPath(file.relativePath, langCodes)) {
+            reportMisplaced(file.relativePath);
+          }
+        }
       }
     }
   }

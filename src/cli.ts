@@ -6,6 +6,8 @@ import { writeJson, readJson } from "./core/util/fs.js";
 import { resolveProjectPaths } from "./core/util/paths.js";
 import { buildSectionRegistry } from "./core/registry/build.js";
 import { bootstrapFromRegistry } from "./core/operations/bootstrap.js";
+import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
+import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
 import { runLangAdd, runLangSetClient } from "./core/operations/lang.js";
@@ -213,10 +215,15 @@ program
   .description("Validate workspace structure & config (warns on drift; non-zero exit on errors)")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("--fix", "Auto-create missing directories where possible")
+  .option(
+    "-p, --path <paths...>",
+    "Validate specific doc output path(s) after writing (repeatable)",
+  )
   .option("--json", "JSON output")
   .action(async (opts) => {
     const root = resolve(opts.cwd ?? process.cwd());
-    const result = await runCheck({ root, fix: opts.fix });
+    const paths = opts.path as string[] | undefined;
+    const result = await runCheck({ root, fix: opts.fix, paths });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCheck(result));
     if (!result.ok) process.exitCode = 1;
@@ -537,6 +544,19 @@ graph
     const graphPath = opts.output ?? paths.graph;
     const registry = await readJson<SectionRegistry>(registryPath);
     const graph = bootstrapFromRegistry(registry);
+    try {
+      const { config } = await loadDocflowConfig(paths.root);
+      const primary = config.languages[0];
+      if (primary) {
+        applyPrimaryLanguageOutputs(
+          graph,
+          primary.code,
+          config.languages.map((l) => l.code),
+        );
+      }
+    } catch {
+      // uninitialized project — keep manifest paths as-is
+    }
     await writeJson(graphPath, graph.toTraceabilityGraph());
     console.log(
       `Wrote ${graphPath} (${graph.nodesById.size} nodes, ${graph.toTraceabilityGraph().edges.length} edges)`,
@@ -557,6 +577,7 @@ graph
     const paths = await getPaths(cmd);
     const result = await runGraphQuery({
       graphPath: paths.graph,
+      projectRoot: paths.root,
       seedId: id,
       direction: opts.direction as "out" | "in" | "both",
       depth: Number(opts.depth),

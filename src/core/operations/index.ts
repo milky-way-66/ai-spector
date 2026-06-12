@@ -20,7 +20,11 @@ import {
 } from "../graph/knowledge.js";
 import { computeKnowledgeStats } from "../visualize/stats.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
-import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translation.js";
+import {
+  applyPrimaryLanguageOutputs,
+  primaryDocumentNodes,
+  wireTranslationDocNode,
+} from "../graph/translation.js";
 import type { TraceabilityGraph } from "../../types.js";
 import {
   indexDocsConfigPath,
@@ -155,6 +159,9 @@ export async function runIndex(
       await writeJson(paths.registry, registry);
       const total = registry.documents.reduce((n, d) => n + d.sections.length, 0);
       const graph = bootstrapFromRegistry(registry);
+      const primary = primaryLanguage(docflowConfig);
+      const allLangCodes = docflowConfig.languages.map((l) => l.code);
+      applyPrimaryLanguageOutputs(graph, primary.code, allLangCodes);
       await writeJson(paths.graph, graph.toTraceabilityGraph());
       graphJson = graph.toTraceabilityGraph();
 
@@ -197,7 +204,12 @@ export async function runIndex(
           let updated = 0;
           for (const lang of secondaryLangs) {
             for (const docNode of primaryDocNodes) {
-              const outcome = wireTranslationDocNode(graphMem, docNode, lang);
+              const outcome = wireTranslationDocNode(
+                graphMem,
+                docNode,
+                lang,
+                primary.code,
+              );
               if (outcome === "created") added++;
               else updated++;
             }

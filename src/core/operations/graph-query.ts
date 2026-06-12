@@ -1,11 +1,14 @@
+import { loadDocflowConfig, primaryLanguage } from "../config/load.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { querySubgraph, type QueryOptions } from "../graph/query.js";
 import type { GraphQueryResult } from "../graph/query.js";
+import { localizeProjectionPaths } from "../paths/localized-output.js";
 import type { EdgeType } from "../../types.js";
 
 export interface GraphQueryCliOptions {
   graphPath: string;
   seedId: string;
+  projectRoot?: string;
   direction?: "out" | "in" | "both";
   depth?: number;
   edges?: string;
@@ -34,5 +37,18 @@ export async function runGraphQuery(opts: GraphQueryCliOptions): Promise<GraphQu
     queryOpts.edgeTypes = opts.edges.split(",").map((s) => s.trim()) as EdgeType[];
   }
 
-  return querySubgraph(g, opts.seedId, queryOpts);
+  const result = querySubgraph(g, opts.seedId, queryOpts);
+  if (!opts.projectRoot) {
+    return result;
+  }
+  try {
+    const { config } = await loadDocflowConfig(opts.projectRoot);
+    const primary = primaryLanguage(config);
+    return {
+      ...result,
+      projectionPaths: localizeProjectionPaths(result.projectionPaths, primary.code),
+    };
+  } catch {
+    return result;
+  }
 }

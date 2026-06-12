@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
 import {
   buildTranslationDocNode,
+  applyPrimaryLanguageOutputs,
   primaryDocumentNodes,
   translationOutputForLang,
   wireTranslationDocNode,
@@ -16,6 +17,13 @@ describe("translationOutputForLang", () => {
   it("maps SRS and basic-design output paths", () => {
     expect(
       translationOutputForLang(docNode("doc", { output: "docs/srs/1-introduction.md" }), "vi"),
+    ).toBe("docs/srs/vi/1-introduction.md");
+    expect(
+      translationOutputForLang(
+        docNode("doc", { output: "docs/srs/en/1-introduction.md" }),
+        "vi",
+        "en",
+      ),
     ).toBe("docs/srs/vi/1-introduction.md");
     expect(
       translationOutputForLang(
@@ -141,6 +149,31 @@ describe("wireTranslationDocNode", () => {
       perDomain: "useCase",
     });
     expect(built.output).toBeUndefined();
+  });
+});
+
+describe("applyPrimaryLanguageOutputs", () => {
+  it("localizes primary document output paths", () => {
+    const g = InMemoryGraph.from({
+      version: 1,
+      nodes: [
+        docNode("doc.srs.1-introduction", { output: "docs/srs/1-introduction.md" }),
+        docNode("doc.srs.uc-detail", {
+          outputPattern: "docs/srs/03-use-cases/uc-{nn}-{slug}.md",
+          perDomain: "useCase",
+        }),
+      ],
+      edges: [],
+    });
+
+    const updated = applyPrimaryLanguageOutputs(g, "en", ["en", "vi"]);
+    expect(updated).toBe(2);
+    expect(g.nodesById.get("doc.srs.1-introduction")?.output).toBe(
+      "docs/srs/en/1-introduction.md",
+    );
+    expect(g.nodesById.get("doc.srs.uc-detail")?.outputPattern).toBe(
+      "docs/srs/en/03-use-cases/uc-{nn}-{slug}.md",
+    );
   });
 });
 

@@ -12,6 +12,7 @@ import {
 } from "../config/load.js";
 import { readJson, writeJson, pathExists, copyTree } from "../util/fs.js";
 import { buildSectionRegistry } from "../registry/build.js";
+import { applyPrimaryLanguageOutputs } from "../graph/translation.js";
 import { bootstrapFromRegistry } from "./bootstrap.js";
 import type { DocflowConfig, PackManifest, DocumentsManifest } from "../config/types.js";
 import { scanTemplateFolder } from "../template/scan.js";
@@ -41,6 +42,14 @@ async function rebuildRegistryAndGraph(root: string, config: DocflowConfig) {
   await writeJson(registryPath, registry);
 
   const graph = bootstrapFromRegistry(registry);
+  const primary = config.languages[0];
+  if (primary) {
+    applyPrimaryLanguageOutputs(
+      graph,
+      primary.code,
+      config.languages.map((l) => l.code),
+    );
+  }
   await writeJson(graphPath, graph.toTraceabilityGraph());
 
   const totalSections = registry.documents.reduce((n, d) => n + d.sections.length, 0);

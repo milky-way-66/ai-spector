@@ -446,7 +446,7 @@ server.registerTool(
   "workspace_check",
   {
     description:
-      "Validate workspace structure and config (required directories, docflow.config.json, language output folders, templates, context store, graph.json parseability). Structure/config only — use graph_validate for graph semantics. Pass fix:true to auto-create missing directories. Runs in pre-commit too.",
+      "Validate workspace structure and config (required directories, docflow.config.json, language output folders, doc output paths under docs/{type}/{lang}/, templates, context store, graph.json parseability). Pass paths:[...] after writing a doc to verify location. Structure/config only — use graph_validate for graph semantics. Pass fix:true to auto-create missing directories. Runs in pre-commit too.",
     inputSchema: WorkspaceCheckSchema.shape,
   },
   async (input) => {

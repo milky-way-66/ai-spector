@@ -108,7 +108,8 @@ extend it:
 |------|----------|--------|
 | STRUCT-001 | error | Required dirs exist: `docs/data-source/`, `docs/srs/`, `.ai-spector/.docflow/config/` |
 | STRUCT-002 | error | `.ai-spector/docflow.config.json` present and parseable |
-| STRUCT-003 | warning | Each configured language has its output subfolder (`docs/srs/{lang}/`) |
+| STRUCT-003 | warning | Each configured language has its output subfolder (`docs/srs/{lang}/`, `docs/basic-design/{lang}/`) |
+| STRUCT-004 | error | Builtin SRS/BD docs must live under `docs/{type}/{lang}/` (not `docs/srs/{filename}` root) |
 | CFG-001 | error | `languages[]` non-empty; codes match `language.json` |
 | CFG-002 | warning | All `dag.*.json` referenced by configured doc types exist |
 | TMPL-001 | warning | `.ai-spector/templates/<pack>/` exists for the active template pack |

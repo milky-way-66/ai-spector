@@ -2,7 +2,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
-import { primaryDocumentNodes, wireTranslationDocNode } from "../graph/translation.js";
+import {
+  applyPrimaryLanguageOutputs,
+  primaryDocumentNodes,
+  wireTranslationDocNode,
+} from "../graph/translation.js";
 import { addLangToPendingJobs, reconcileTranslationQueue } from "../lang/queue.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import type { LanguageConfig } from "../config/types.js";
@@ -60,7 +64,6 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   const label = opts.label ?? LANGUAGE_LABELS[code] ?? code;
   const newLang: LanguageConfig = { code: assertSupportedLanguageCode(code), label };
   const primary = config.languages[0];
-  void primary; // used for context; translation edges handle wiring
 
   for (const docType of ["srs", "basic-design"]) {
     await mkdir(join(projectRoot, `docs/${docType}/${code}`), { recursive: true });
@@ -73,7 +76,13 @@ export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promi
   await writeJson(configFile, { ...raw, languages });
 
   const existingLangCodes = config.languages.map((l) => l.code);
-  await registerTranslationEdges(projectRoot, config.paths.graph, newLang, existingLangCodes);
+  await registerTranslationEdges(
+    projectRoot,
+    config.paths.graph,
+    newLang,
+    existingLangCodes,
+    primary?.code ?? code,
+  );
 
   const updatedConfig = { ...config, languages: [...config.languages, newLang] };
   await addLangToPendingJobs(projectRoot, code, updatedConfig);
@@ -96,17 +105,19 @@ async function registerTranslationEdges(
   graphRelPath: string,
   lang: LanguageConfig,
   existingLangCodes: string[],
+  primaryLangCode: string,
 ): Promise<void> {
   const graphPath = join(projectRoot, graphRelPath);
   if (!(await pathExists(graphPath))) return;
 
   const allLangCodes = [...existingLangCodes, lang.code];
   const graphMem = await loadInMemoryGraph(graphPath);
+  applyPrimaryLanguageOutputs(graphMem, primaryLangCode, allLangCodes);
   const primaryDocNodes = primaryDocumentNodes(graphMem, allLangCodes);
   if (primaryDocNodes.length === 0) return;
 
   for (const primary of primaryDocNodes) {
-    wireTranslationDocNode(graphMem, primary, lang);
+    wireTranslationDocNode(graphMem, primary, lang, primaryLangCode);
   }
   await writeJson(graphPath, graphMem.toTraceabilityGraph());
 }

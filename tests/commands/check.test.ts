@@ -75,6 +75,31 @@ describe("runCheck", () => {
     });
   });
 
+  it("flags misplaced SRS docs with STRUCT-004", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      await writeFile(join(root, "docs/srs/3-use-cases.md"), "# Use cases\n", "utf8");
+      const result = await runCheck({ root });
+      const misplaced = result.findings.find((f) => f.ruleId === "STRUCT-004");
+      expect(misplaced?.severity).toBe("error");
+      expect(misplaced?.path).toBe("docs/srs/3-use-cases.md");
+      expect(misplaced?.fix).toContain("docs/srs/en/3-use-cases.md");
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  it("validates explicit paths without scanning the whole tree", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      const okPath = await runCheck({ root, paths: ["docs/srs/en/3-use-cases.md"] });
+      expect(okPath.findings.some((f) => f.ruleId === "STRUCT-004")).toBe(false);
+
+      const badPath = await runCheck({ root, paths: ["docs/srs/3-use-cases.md"] });
+      expect(badPath.findings.some((f) => f.ruleId === "STRUCT-004")).toBe(true);
+      expect(badPath.ok).toBe(false);
+    });
+  });
+
   it("flags empty languages[] as a CFG-001 error", async () => {
     await withTempDir(async (root) => {
       await scaffoldMinimal(root);
