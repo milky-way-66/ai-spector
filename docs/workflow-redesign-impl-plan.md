@@ -146,3 +146,13 @@ extraction → review queue. `docs/data-source/` untouched by the loop.
 | PR2 | Phase 2 + 4 (context store + staleness) |
 | PR3 | Phase 3 (extracted-spec queue) |
 | PR4 | Phase 5 (skill/doc rewrite) — flips the agent onto the new flow |
+
+---
+
+## Phase 6 — Task state persistence
+
+> Full design: [task-state-plan.md](task-state-plan.md) · [task-state-impl-plan.md](task-state-impl-plan.md)
+
+File-backed workflow tasks (`.ai-spector/.docflow/tasks/`) so generate and resolve runs
+survive session breaks. Phases 0–5 of task-state-impl-plan wire CLI/MCP, resume/drift,
+resolve_task, generate waves, and `ai-spector-task` skill.

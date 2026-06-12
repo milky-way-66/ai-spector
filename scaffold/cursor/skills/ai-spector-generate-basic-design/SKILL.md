@@ -13,9 +13,10 @@ paths:
 # Generate Basic Design
 
 ## Load at start
-1. [references/runbook.md](references/runbook.md)
-2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — the gated flow (check → clarify → briefing → plan → generate → extract) is mandatory
-3. Run `workspace_check` and `context_list({ docType: "basic-design" })` before planning
+1. `task_list` → resume or `task_create({ kind: "generate", workflow: "generate-basic-design", docType: "basic-design", trigger })`
+2. [references/runbook.md](references/runbook.md)
+3. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — gated flow + task state
+4. Run `workspace_check` and `context_list({ docType: "basic-design" })` before planning
 
 ## Load when needed
 

@@ -80,6 +80,59 @@ export interface TaskContextRefs {
   docType?: string;
   contextFile?: string;
   planLog?: string | null;
+  /** Spec review queue for stage 6 extract, e.g. extracted/srs.json */
+  extractedFile?: string;
+}
+
+export interface BuildGeneratePlanOptions {
+  docType: string;
+  language?: string;
+  scope: GeneratePlan["scope"];
+  scopeDetail?: string;
+  briefing: GeneratePlanBriefing[];
+  rows: GeneratePlanRow[];
+  waves?: GeneratePlan["waves"];
+}
+
+/** Build a generate-task plan from briefing + plan table rows (+ optional wave assignments). */
+export function buildGeneratePlan(opts: BuildGeneratePlanOptions): GeneratePlan {
+  return {
+    docType: opts.docType,
+    language: opts.language,
+    scope: opts.scope,
+    scopeDetail: opts.scopeDetail,
+    briefing: opts.briefing,
+    rows: opts.rows,
+    waves: opts.waves,
+  };
+}
+
+function expandGenerateWaveSteps(task: TaskState, plan: GeneratePlan): void {
+  const placeholderIndex = task.steps.findIndex((s) => s.id === "generate-waves");
+  if (placeholderIndex < 0) return;
+
+  const waveSteps: TaskStep[] =
+    plan.waves && plan.waves.length > 0
+      ? plan.waves.map((w) => ({
+          id: `wave-${w.wave}`,
+          phase: "generate",
+          description: `Generate wave ${w.wave} (${w.nodeIds.join(", ")})`,
+          status: "pending" as const,
+          blocker: null,
+          artifacts: [],
+        }))
+      : [
+          {
+            id: "wave-1",
+            phase: "generate",
+            description: "Generate documents in DAG waves",
+            status: "pending" as const,
+            blocker: null,
+            artifacts: [],
+          },
+        ];
+
+  task.steps.splice(placeholderIndex, 1, ...waveSteps);
 }
 
 export interface TaskSnapshot {
@@ -491,21 +544,39 @@ export async function runTaskApprovePlan(
     planStep.blocker = null;
   }
 
-  const nextStep =
-    planIndex >= 0
-      ? task.steps.slice(planIndex + 1).find((s) => s.status !== "done" && s.status !== "skipped")
-      : task.steps.find((s) => s.status === "pending");
-  if (nextStep) {
-    nextStep.status = "in-progress";
-    task.currentStepId = nextStep.id;
-    task.phase = nextStep.phase;
-    task.phaseStatus = "in_progress";
-    task.nextAction = defaultNextAction(task.workflow, nextStep.id);
-  }
-
   if (task.status === "blocked") {
     task.status = "active";
     task.blockers = [];
+  }
+
+  if (task.plan.kind === "generate") {
+    expandGenerateWaveSteps(task, task.plan.plan);
+    task.contextRefs = {
+      ...task.contextRefs,
+      docType: task.plan.plan.docType,
+      contextFile: task.contextRefs.contextFile ?? `context/${task.plan.plan.docType}.json`,
+      extractedFile: `extracted/${task.plan.plan.docType}.json`,
+    };
+    const nextWave = task.steps.find((s) => s.id.startsWith("wave-") && s.status === "pending");
+    if (nextWave) {
+      nextWave.status = "in-progress";
+      task.currentStepId = nextWave.id;
+      task.phase = "generate";
+      task.phaseStatus = "in_progress";
+      task.nextAction = nextWave.description;
+    }
+  } else {
+    const nextStep =
+      planIndex >= 0
+        ? task.steps.slice(planIndex + 1).find((s) => s.status !== "done" && s.status !== "skipped")
+        : task.steps.find((s) => s.status === "pending");
+    if (nextStep) {
+      nextStep.status = "in-progress";
+      task.currentStepId = nextStep.id;
+      task.phase = nextStep.phase;
+      task.phaseStatus = "in_progress";
+      task.nextAction = defaultNextAction(task.workflow, nextStep.id);
+    }
   }
 
   const logPath = await writePlanAuditLog(root, task, now);
@@ -745,6 +816,85 @@ export interface TaskAbandonOptions {
 export interface TaskAbandonResult {
   task: TaskState;
   taskPath: string;
+}
+
+// ── generate workflow integration ───────────────────────────────────────────
+
+export interface RecordGenerateWaveOptions {
+  root?: string;
+  taskId: string;
+  waveId: string;
+  status: WorkflowStepStatus;
+  artifacts?: string[];
+  blocker?: string | null;
+}
+
+export async function recordGenerateWaveProgress(
+  opts: RecordGenerateWaveOptions,
+): Promise<TaskUpdateResult> {
+  const root = await resolveRoot(opts.root);
+  const loaded = parseTask(await loadTask(root, opts.taskId));
+
+  if (loaded.kind !== "generate") {
+    throw new Error(`Task "${loaded.id}" is kind "${loaded.kind}", not generate`);
+  }
+
+  const now = new Date().toISOString();
+  const wavePatch: TaskUpdatePatch = {
+    step: {
+      id: opts.waveId,
+      patch: {
+        status: opts.status,
+        completedAt: opts.status === "done" ? now : undefined,
+        blocker: opts.blocker ?? null,
+        artifacts: opts.artifacts,
+      },
+    },
+  };
+
+  if (opts.status === "blocked") {
+    wavePatch.status = "blocked";
+    wavePatch.blockers = [opts.blocker ?? `wave ${opts.waveId} blocked`];
+  }
+
+  let result = await runTaskUpdate({ root, taskId: opts.taskId, patch: wavePatch });
+
+  if (opts.status !== "done") {
+    return result;
+  }
+
+  const waves = result.task.steps.filter((s) => s.id.startsWith("wave-"));
+  const allWavesDone = waves.every((s) => s.status === "done");
+  if (allWavesDone) {
+    return runTaskUpdate({
+      root,
+      taskId: opts.taskId,
+      patch: {
+        currentStepId: "extract",
+        phase: "extract",
+        phaseStatus: "in_progress",
+        nextAction: defaultNextAction(result.task.workflow, "extract"),
+        step: { id: "extract", patch: { status: "in-progress" } },
+      },
+    });
+  }
+
+  const nextWave = waves.find((s) => s.status === "pending");
+  if (nextWave) {
+    result = await runTaskUpdate({
+      root,
+      taskId: opts.taskId,
+      patch: {
+        currentStepId: nextWave.id,
+        phase: "generate",
+        phaseStatus: "in_progress",
+        nextAction: nextWave.description,
+        step: { id: nextWave.id, patch: { status: "in-progress" } },
+      },
+    });
+  }
+
+  return result;
 }
 
 // ── resolve-task integration ────────────────────────────────────────────────

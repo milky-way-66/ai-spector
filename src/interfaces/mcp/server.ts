@@ -49,6 +49,7 @@ import {
   TaskResumeSchema,
   TaskCompleteSchema,
   TaskAbandonSchema,
+  TaskRecordWaveSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -77,6 +78,7 @@ import {
   toolTaskPause,
   toolTaskResume,
   toolTaskUpdate,
+  toolTaskRecordWave,
 } from "./tools/task.js";
 import {
   toolReviewApprove,
@@ -679,6 +681,19 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "task_record_wave",
+  {
+    description:
+      "Record generate-task wave completion: mark wave-N done, snapshot artifact hashes, advance to the next wave or extract step.",
+    inputSchema: TaskRecordWaveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskRecordWave(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
@@ -700,7 +715,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",
     "task_create", "task_list", "task_get", "task_update", "task_approve_plan",
-    "task_pause", "task_resume", "task_complete", "task_abandon",
+    "task_pause", "task_resume", "task_complete", "task_abandon", "task_record_wave",
   ];
   process.stderr.write(
     `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,

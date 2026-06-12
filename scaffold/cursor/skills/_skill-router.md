@@ -4,6 +4,7 @@ Agents use this when intent is ambiguous.
 
 ## Priority
 
+0. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** first (`task_list` → `task_resume`).
 1. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
 2. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
 3. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
@@ -23,6 +24,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
+| resume task, continue SRS, active tasks, pause task, list tasks | `ai-spector-task` | `references/runbook.md` |
 | setup, init, bootstrap, get started | `ai-spector-setup` | `references/runbook.md` |
 | check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `SKILL.md` |
 | clarifications, open questions, context store, "what did I answer" | `ai-spector-check` → context tools | `ai-spector/references/context-store.md` |

@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type {
   TaskAbandonSchema,
+  TaskRecordWaveSchema,
   TaskApprovePlanSchema,
   TaskCompleteSchema,
   TaskCreateSchema,
@@ -20,7 +21,8 @@ import {
   runTaskPause,
   runTaskResume,
   runTaskUpdate,
-} from "@/core/operations/task.js";
+  recordGenerateWaveProgress,
+} from "../../../core/operations/task.js";
 
 export async function toolTaskCreate(input: z.infer<typeof TaskCreateSchema>) {
   return runTaskCreate({
@@ -84,5 +86,16 @@ export async function toolTaskAbandon(input: z.infer<typeof TaskAbandonSchema>) 
     root: input.root,
     taskId: input.taskId,
     reason: input.reason,
+  });
+}
+
+export async function toolTaskRecordWave(input: z.infer<typeof TaskRecordWaveSchema>) {
+  return recordGenerateWaveProgress({
+    root: input.root,
+    taskId: input.taskId,
+    waveId: input.waveId,
+    status: input.status,
+    artifacts: input.artifacts,
+    blocker: input.blocker,
   });
 }

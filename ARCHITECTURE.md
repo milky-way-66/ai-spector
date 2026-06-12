@@ -150,6 +150,8 @@ no text formatting.
 | `workspace_check` | `runCheck()` | `CheckResult` |
 | `context_list` / `context_record` / `context_resolve` | `runContextList()` / `runContextRecord()` / `runContextResolve()` | context store results |
 | `spec_list` / `spec_record` / `spec_approve` / `spec_reject` | `runSpecList()` / `runSpecRecord()` / `runSpecApprove()` / `runSpecReject()` | extracted-spec queue results |
+| `task_create` / `task_list` / `task_get` / `task_update` / `task_approve_plan` / `task_pause` / `task_resume` / `task_record_wave` / `task_complete` / `task_abandon` | `runTask*` / `recordGenerateWaveProgress()` / `recordResolveStepProgress()` | task state under `.ai-spector/.docflow/tasks/` |
+| `resolve_task` | `runResolveTask()` (+ optional `taskId` from task file) | `ResolveTaskResult` |
 
 ### SDK (`import from 'ai-spector'`)
 

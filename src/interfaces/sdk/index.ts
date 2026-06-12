@@ -221,6 +221,8 @@ export {
   runTaskAbandon,
   loadResolveExecutionContext,
   recordResolveStepProgress,
+  buildGeneratePlan,
+  recordGenerateWaveProgress,
   buildTaskId,
   taskFilePath,
   taskIndexPath,
@@ -257,6 +259,8 @@ export type {
   TaskAbandonOptions,
   TaskAbandonResult,
   RecordResolveStepProgressOptions,
+  BuildGeneratePlanOptions,
+  RecordGenerateWaveOptions,
 } from "../../core/operations/task.js";
 
 // Comments

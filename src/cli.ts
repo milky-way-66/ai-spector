@@ -57,6 +57,7 @@ import {
   runTaskPause,
   runTaskResume,
   runTaskUpdate,
+  recordGenerateWaveProgress,
   type TaskKind,
   type TaskStatus,
   type TaskUpdatePatch,
@@ -535,6 +536,29 @@ task
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatTaskSimple("Completed", result));
+  });
+
+task
+  .command("record-wave <taskId> <waveId>")
+  .description("Record generate wave progress (e.g. wave-1 done with artifacts)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("-s, --status <status>", "done | in-progress | blocked", "done")
+  .option("--artifacts <paths>", "Comma-separated doc paths written this wave")
+  .option("--blocker <text>", "Blocker message when status is blocked")
+  .option("--json", "JSON output")
+  .action(async (taskId, waveId, opts) => {
+    const result = await recordGenerateWaveProgress({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      waveId,
+      status: opts.status as import("./core/operations/task.js").WorkflowStepStatus,
+      artifacts: opts.artifacts
+        ? (opts.artifacts as string).split(",").map((p: string) => p.trim()).filter(Boolean)
+        : undefined,
+      blocker: opts.blocker ?? null,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskUpdate(result));
   });
 
 task

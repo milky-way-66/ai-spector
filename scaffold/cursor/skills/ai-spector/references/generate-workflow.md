@@ -12,6 +12,21 @@ Used by SRS and basic design skills.
 - Context compaction / sub-agents → [context-management.md](./context-management.md)
 - CLI failures → [cli-failures.md](./cli-failures.md)
 
+## Task state (every generate run)
+
+Persist progress in `.ai-spector/.docflow/tasks/` — do not rely on chat memory.
+
+```
+1. task_list({ status: ["active", "paused"] }) — offer resume (task_resume) or new task
+2. task_create({ kind: "generate", workflow: "generate-srs"|"generate-basic-design", trigger, docType })
+3. After each gate: task_update (phase, step status, openContextIds)
+4. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
+5. After each DAG wave: task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
+6. After extract offered: task_complete when user is done
+```
+
+Pause anytime: `task_pause`. Resume: `task_resume` (validates drift before continuing).
+
 ## Gated flow (every generate run, mandatory)
 
 ```

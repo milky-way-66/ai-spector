@@ -27,11 +27,12 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 |--------------|----------------|-------|---------------------------|
 | **Setup project** | “setup ai-spector”, “initialize project”, “get started” | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
 | **Check workspace** | “check my workspace”, “why did pre-commit block me”, “stale clarifications” | `ai-spector-check` | `workspace_check({})` → findings table → optional `fix: true` |
+| **Resume / manage tasks** | “resume my SRS”, “continue generation”, “active tasks”, “pause task” | `ai-spector-task` | `task_list` → `task_resume` / `task_get` → route to generate or resolve skill |
 | Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `index({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |
 | Check graph health | “validate the graph”, “graph errors”, “graph report” | `ai-spector-graph` | `graph_validate({})` · `graph_report({})` |
 | Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
-| Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | **gated**: `workspace_check` → clarify (`context_*`) → briefing + plan (your **yes**) → DAG waves → docs/srs → `graph_merge` → `index` → `spec_record` (review queue) |
-| Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | same gates → docs/basic-design → `graph_merge` → `index({ cocoindexSync: true })` each wave |
+| Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | `task_create` → **gated**: check → clarify → briefing + plan → `task_approve_plan` → `task_record_wave` per wave → `spec_record` → `task_complete` |
+| Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | same task-state flow → docs/basic-design → index each wave |
 | Review extracted specs | “pending specs”, “approve SPEC-001” | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |
 | Answer clarifications | “open questions”, “what did I answer about auth” | `ai-spector-check` | `context_list` → `context_resolve` |
 | Detail design | “detail design for checkout” | `ai-spector-generate-detail-design` | docs/detail-design |
@@ -44,7 +45,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Sync translations | “resolve translations”, “update JP from EN” | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
 | **Review documents** | “review docs”, “approve SRS”, “pending review”, “what changed since approval” | `ai-spector-review` | `review_check` → queue table → pick → diff → approve / dismiss |
-| Add/update one feature or section | “I want to add login with Google”, “add requirement”, “update auth section” | `ai-spector-resolve-task` | clarify → plan → **explicit yes** → then edit + impact + index (never impact before approval) |
+| Add/update one feature or section | “I want to add login with Google”, “add requirement”, “update auth section” | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
 | Explore graph | “show the graph” | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
 Unsure? The agent uses [skills/_skill-router.md](./skills/_skill-router.md) or asks one clarifying question.

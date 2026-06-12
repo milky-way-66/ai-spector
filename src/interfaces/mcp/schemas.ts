@@ -421,6 +421,7 @@ export const TaskUpdatePatchSchema = z.object({
       docType: z.string().optional(),
       contextFile: z.string().optional(),
       planLog: z.string().nullable().optional(),
+      extractedFile: z.string().optional(),
     })
     .optional(),
   snapshot: z
@@ -484,6 +485,14 @@ export const TaskCompleteSchema = RootSchema.extend({
 export const TaskAbandonSchema = RootSchema.extend({
   taskId: z.string(),
   reason: z.string().optional(),
+});
+
+export const TaskRecordWaveSchema = RootSchema.extend({
+  taskId: z.string(),
+  waveId: z.string().describe("Wave step id, e.g. wave-1"),
+  status: TaskStepStatusEnum.describe("done | in-progress | blocked"),
+  artifacts: z.array(z.string()).optional().describe("Doc paths written this wave"),
+  blocker: z.string().nullable().optional(),
 });
 
 // ── Template ──────────────────────────────────────────────────────────────────
