@@ -36,6 +36,7 @@ import {
 } from "../index/docs-build.js";
 import { reconcileTranslationQueue } from "../lang/queue.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
+import { runContextStaleScan } from "./context.js";
 
 export type IndexStepStatus = "ok" | "skipped" | "failed";
 
@@ -599,6 +600,37 @@ export async function runIndex(
     record({
       id: "review-queue",
       label: "Review queue",
+      status: "failed",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  try {
+    const scan = await runContextStaleScan({ root: projectRoot });
+    if (scan.docTypes.length === 0) {
+      record({
+        id: "context-staleness",
+        label: "Context store staleness",
+        status: "skipped",
+        detail: "no context stores yet",
+      });
+    } else {
+      const parts = [`${scan.checked} answered entr${scan.checked === 1 ? "y" : "ies"} checked`];
+      if (scan.markedStale > 0) parts.push(`${scan.markedStale} marked stale`);
+      if (scan.staleTotal > 0) {
+        parts.push(`${scan.staleTotal} stale total — re-confirm via clarify before next generate`);
+      }
+      record({
+        id: "context-staleness",
+        label: "Context store staleness",
+        status: "ok",
+        detail: parts.join(", "),
+      });
+    }
+  } catch (err) {
+    record({
+      id: "context-staleness",
+      label: "Context store staleness",
       status: "failed",
       detail: err instanceof Error ? err.message : String(err),
     });

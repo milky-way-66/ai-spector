@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson } from "../util/fs.js";
@@ -199,7 +199,7 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
-  // CTX-001 — context store dir (created lazily; warn-only).
+  // CTX-001 — context store dir (created lazily; warn-only) and stale entries.
   if (enabled(rules, "CTX-001")) {
     const rel = ".ai-spector/.docflow/context";
     if (!(await pathExists(join(root, rel)))) {
@@ -212,6 +212,29 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
         autoFixable: true,
         fixed,
       });
+    } else {
+      // Surface answers invalidated by source changes (flipped by `index`).
+      const files = (await readdir(join(root, rel)).catch(() => [] as string[])).filter((f) =>
+        f.endsWith(".json"),
+      );
+      for (const file of files) {
+        const store = await readJson<{ docType?: string; entries?: { id: string; status: string }[] }>(
+          join(root, rel, file),
+        ).catch(() => undefined);
+        const stale = store?.entries?.filter((e) => e.status === "stale") ?? [];
+        if (stale.length > 0) {
+          const docType = store?.docType ?? file.slice(0, -".json".length);
+          add({
+            ruleId: "CTX-001",
+            severity: severityOf(rules, "CTX-001", "warning"),
+            message: `${stale.length} stale clarification(s) for "${docType}" (${stale
+              .map((e) => e.id)
+              .join(", ")}) — source files changed since they were answered.`,
+            path: `${rel}/${file}`,
+            fix: `Re-confirm with the user, then: npx ai-spector context resolve ${docType} <id> --answer "..."`,
+          });
+        }
+      }
     }
   }
 

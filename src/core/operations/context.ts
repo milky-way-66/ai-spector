@@ -1,4 +1,4 @@
-import { mkdir, readdir } from "node:fs/promises";
+import { mkdir, readdir, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
@@ -75,6 +75,24 @@ export interface ContextResolveResult {
   docType: string;
   entry: ContextEntry;
   storePath: string;
+}
+
+// ── stale scan ────────────────────────────────────────────────────────────────
+
+export interface ContextStaleScanOptions {
+  root?: string;
+  docType?: string;
+}
+
+export interface ContextStaleScanResult {
+  /** Doc types whose stores were scanned. */
+  docTypes: string[];
+  /** Answered entries whose sourceRefs were checked. */
+  checked: number;
+  /** Entries flipped from "answered" to "stale" in this run. */
+  markedStale: number;
+  /** Total entries currently stale (including previously stale). */
+  staleTotal: number;
 }
 
 // ── store IO ──────────────────────────────────────────────────────────────────
@@ -171,6 +189,70 @@ export async function runContextRecord(
   store.entries.push(entry);
   const storePath = await saveStore(root, store);
   return { docType: opts.docType, entry, storePath };
+}
+
+/**
+ * Flip answered entries to "stale" when any of their sourceRefs changed on
+ * disk after the answer was recorded (mtime > answeredAt). A missing ref also
+ * counts as stale — the answer was grounded in a file that no longer exists.
+ */
+export async function runContextStaleScan(
+  opts: ContextStaleScanOptions = {},
+): Promise<ContextStaleScanResult> {
+  const root = await resolveRoot(opts.root);
+  const dir = contextDir(root);
+  let docTypes: string[] = [];
+  if (opts.docType) {
+    docTypes = [opts.docType];
+  } else if (await pathExists(dir)) {
+    docTypes = (await readdir(dir))
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => f.slice(0, -".json".length));
+  }
+
+  let checked = 0;
+  let markedStale = 0;
+  let staleTotal = 0;
+
+  for (const docType of docTypes) {
+    const store = await loadStore(root, docType);
+    let dirty = false;
+    for (const entry of store.entries) {
+      if (entry.status === "stale") {
+        staleTotal++;
+        continue;
+      }
+      if (entry.status !== "answered" || !entry.sourceRefs?.length || !entry.answeredAt) {
+        continue;
+      }
+      checked++;
+      const answeredAtMs = Date.parse(entry.answeredAt);
+      let stale = false;
+      for (const ref of entry.sourceRefs) {
+        try {
+          const info = await stat(join(root, ref));
+          if (info.mtimeMs > answeredAtMs) {
+            stale = true;
+            break;
+          }
+        } catch {
+          stale = true;
+          break;
+        }
+      }
+      if (stale) {
+        entry.status = "stale";
+        dirty = true;
+        markedStale++;
+        staleTotal++;
+      }
+    }
+    if (dirty) {
+      await saveStore(root, store);
+    }
+  }
+
+  return { docTypes, checked, markedStale, staleTotal };
 }
 
 export async function runContextResolve(

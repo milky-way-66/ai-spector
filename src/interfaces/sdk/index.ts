@@ -168,6 +168,7 @@ export {
   runContextList,
   runContextRecord,
   runContextResolve,
+  runContextStaleScan,
   contextStorePath,
 } from "../../core/operations/context.js";
 export type {
@@ -181,6 +182,8 @@ export type {
   ContextRecordResult,
   ContextResolveOptions,
   ContextResolveResult,
+  ContextStaleScanOptions,
+  ContextStaleScanResult,
 } from "../../core/operations/context.js";
 
 // Extracted-spec review queue
