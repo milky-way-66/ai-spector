@@ -30,7 +30,7 @@ paths:
 
 ## Section 1 — Load at start
 
-Always include these four lines exactly:
+Always include these lines:
 
 ```markdown
 ## Load at start
@@ -39,6 +39,41 @@ Always include these four lines exactly:
 2. `.ai-spector/.docflow/config/dag.srs.json`
 3. `.ai-spector/.docflow/config/dag.srs.graph-seeds.json`
 4. [`generate-workflow.md`](../ai-spector/references/generate-workflow.md)
+5. `.ai-spector/packs/<packname>/readiness-criteria.json`
+6. `.ai-spector/packs/<packname>/workflow-setup.md`
+7. [`context-readiness.md`](../ai-spector/references/context-readiness.md)
+```
+
+## Section 1b — Step 0 task gate (mandatory)
+
+```markdown
+## Step 0 — HARD GATE
+
+Do not write pack output files until task state exists.
+
+\`\`\`
+task_list({
+  status: ["active", "paused"],
+  bootstrap: {
+    kind: "generate",
+    workflow: "generate-<packname>",
+    docType: "<packname>",
+    trigger: "<user request>"
+  }
+})
+\`\`\`
+
+Forbidden before task_approve_plan: writing under the pack output paths.
+```
+
+## Section 1c — Gated clarify flow
+
+```markdown
+## Gated flow (same as builtin SRS)
+
+CHECK → readiness report (readiness-criteria.json) → CLARIFY → BRIEFING → PLAN → GENERATE.
+
+Resolve every TODO in context-map.json during clarify.
 ```
 
 ---

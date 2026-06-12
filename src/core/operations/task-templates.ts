@@ -1,4 +1,6 @@
-export type WorkflowId = "generate-srs" | "generate-basic-design" | "resolve";
+export type BuiltinWorkflowId = "generate-srs" | "generate-basic-design" | "resolve";
+/** Builtin workflows or custom pack workflows (`generate-<pack-name>`). */
+export type WorkflowId = BuiltinWorkflowId | `generate-${string}`;
 
 export type TaskKind = "generate" | "resolve";
 
@@ -31,7 +33,7 @@ const RESOLVE_STEPS: TemplateStep[] = [
   { id: "report", phase: "report", description: "Summarize state update" },
 ];
 
-export const WORKFLOW_TEMPLATES: Record<WorkflowId, WorkflowTemplate> = {
+export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
   "generate-srs": { id: "generate-srs", kind: "generate", steps: GENERATE_STEPS },
   "generate-basic-design": {
     id: "generate-basic-design",
@@ -41,12 +43,19 @@ export const WORKFLOW_TEMPLATES: Record<WorkflowId, WorkflowTemplate> = {
   resolve: { id: "resolve", kind: "resolve", steps: RESOLVE_STEPS },
 };
 
-export function getWorkflowTemplate(workflow: WorkflowId): WorkflowTemplate {
-  const template = WORKFLOW_TEMPLATES[workflow];
-  if (!template) {
-    throw new Error(`Unknown workflow "${workflow}"`);
+const CUSTOM_GENERATE_RE = /^generate-[a-z0-9][a-z0-9-]*$/;
+
+export function isCustomGenerateWorkflow(workflow: string): boolean {
+  return CUSTOM_GENERATE_RE.test(workflow) && !(workflow in WORKFLOW_TEMPLATES);
+}
+
+export function getWorkflowTemplate(workflow: string): WorkflowTemplate {
+  const builtin = WORKFLOW_TEMPLATES[workflow as BuiltinWorkflowId];
+  if (builtin) return builtin;
+  if (isCustomGenerateWorkflow(workflow)) {
+    return { id: workflow as WorkflowId, kind: "generate", steps: GENERATE_STEPS };
   }
-  return template;
+  throw new Error(`Unknown workflow "${workflow}"`);
 }
 
 export function defaultNextAction(workflow: WorkflowId, stepId: string): string {
@@ -54,11 +63,25 @@ export function defaultNextAction(workflow: WorkflowId, stepId: string): string 
   return step?.description ?? "Continue the workflow";
 }
 
-export function activeSlotFor(kind: TaskKind, workflow: WorkflowId): string {
+export function activeSlotFor(kind: TaskKind, workflow: string, docType?: string): string {
   if (kind === "resolve") return "resolve";
   if (workflow === "generate-srs") return "generate:srs";
   if (workflow === "generate-basic-design") return "generate:basic-design";
+  if (docType?.trim()) return `generate:${docType.trim()}`;
+  if (isCustomGenerateWorkflow(workflow)) {
+    return `generate:${workflow.replace(/^generate-/, "")}`;
+  }
   return `generate:${workflow}`;
+}
+
+/** Workflow id for task_create bootstrap from docType / active pack. */
+export function workflowForPackDocType(docType: string, activePack?: string): string {
+  if (docType === "srs" && (!activePack || activePack === "builtin")) return "generate-srs";
+  if (docType === "basic-design") return "generate-basic-design";
+  if (activePack && activePack !== "builtin" && docType === activePack) {
+    return `generate-${activePack}`;
+  }
+  return `generate-${docType}`;
 }
 
 export type GenerateDocType = "srs" | "basic-design";
@@ -78,5 +101,33 @@ export function generateSlotFromDocPath(relPath: string): string | null {
   const n = relPath.replace(/\\/g, "/");
   if (/^docs\/srs\/[^/]+\/.+\.md$/i.test(n)) return "generate:srs";
   if (/^docs\/basic-design\/[^/]+\/.+\.md$/i.test(n)) return "generate:basic-design";
+  return null;
+}
+
+/** Match doc path to custom pack slot using manifest output paths. */
+export function generateSlotFromPackOutputs(
+  relPath: string,
+  packName: string,
+  documents: { output?: string; outputPattern?: string }[],
+): string | null {
+  const n = relPath.replace(/\\/g, "/");
+  for (const doc of documents) {
+    if (doc.output && n === doc.output.replace(/\\/g, "/")) {
+      return `generate:${packName}`;
+    }
+    if (doc.outputPattern) {
+      const prefix = doc.outputPattern.split("{")[0]?.replace(/\\/g, "/");
+      if (prefix && prefix.length > 3 && n.startsWith(prefix)) {
+        return `generate:${packName}`;
+      }
+    }
+  }
+  return null;
+}
+
+export function slotToDocTypeLabel(slot: string): string | null {
+  if (slot === "generate:srs") return "srs";
+  if (slot === "generate:basic-design") return "basic-design";
+  if (slot.startsWith("generate:")) return slot.slice("generate:".length);
   return null;
 }

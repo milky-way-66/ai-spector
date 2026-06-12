@@ -6,13 +6,19 @@ import {
   isMisplacedBuiltinDocPath,
   suggestLocalizedPath,
 } from "../paths/localized-output.js";
+import type { PackManifest } from "../config/types.js";
 import {
   activeSlotForDocType,
   generateSlotFromDocPath,
+  generateSlotFromPackOutputs,
   GENERATE_DOC_TYPES,
+  slotToDocTypeLabel,
   workflowForDocType,
+  workflowForPackDocType,
   type GenerateDocType,
 } from "./task-templates.js";
+import { resolveReadinessConfigStatus } from "../readiness/config.js";
+import { validateCustomPack } from "../template/pack-validate.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
 
@@ -72,6 +78,9 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "TASK-002", severity: "warning" },
   { id: "TASK-003", severity: "warning" },
   { id: "GRAPH-001", severity: "warning" },
+  { id: "PACK-001", severity: "warning" },
+  { id: "READY-001", severity: "warning" },
+  { id: "READY-002", severity: "warning" },
 ];
 
 interface TaskIndexForCheck {
@@ -112,24 +121,22 @@ async function listLocalizedGenerateDocs(
     });
 }
 
-function slotToDocType(slot: string): GenerateDocType | null {
-  if (slot === "generate:srs") return "srs";
-  if (slot === "generate:basic-design") return "basic-design";
-  return null;
-}
-
 function addGenerateTaskFinding(
   add: (f: CheckFinding) => void,
   rules: RuleConfig[],
   ruleId: "TASK-002" | "TASK-003",
   defaultSeverity: CheckSeverity,
   slot: string,
-  docType: GenerateDocType,
+  docType: string,
   path: string,
   reason: "missing" | "no-plan",
   taskId?: string,
+  activePack?: string,
 ): void {
-  const workflow = workflowForDocType(docType);
+  const workflow =
+    docType === "srs" || docType === "basic-design"
+      ? workflowForDocType(docType as GenerateDocType)
+      : workflowForPackDocType(docType, activePack);
   const fix =
     reason === "missing"
       ? `task_create({ kind: "generate", workflow: "${workflow}", docType: "${docType}", trigger: "…" }) or npx ai-spector task create -k generate -w ${workflow} -t "…" --doc-type ${docType}`
@@ -155,21 +162,22 @@ async function checkGenerateTaskGate(
   index: TaskIndexForCheck,
   root: string,
   slot: string,
-  docType: GenerateDocType,
+  docType: string,
   path: string,
+  activePack?: string,
 ): Promise<void> {
   const activeId = index.active?.[slot];
   if (!activeId) {
-    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing", undefined, activePack);
     return;
   }
   const task = await loadTaskForCheck(root, activeId);
   if (!task) {
-    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing", undefined, activePack);
     return;
   }
   if (task.status === "complete" || task.status === "abandoned") {
-    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing", undefined, activePack);
     return;
   }
   if (!task.planApprovedAt) {
@@ -183,8 +191,46 @@ async function checkGenerateTaskGate(
       path,
       "no-plan",
       activeId,
+      activePack,
     );
   }
+}
+
+async function loadActivePackManifest(
+  root: string,
+  config: DocflowConfig,
+): Promise<{ packName: string; manifest: PackManifest } | null> {
+  const packName = config.packs?.srs;
+  if (!packName || packName === "builtin") return null;
+  const manifestPath = join(root, ".ai-spector", "packs", packName, "manifest.json");
+  if (!(await pathExists(manifestPath))) return null;
+  const manifest = await readJson<PackManifest>(manifestPath).catch(() => null);
+  if (!manifest) return null;
+  return { packName, manifest };
+}
+
+async function listPackGenerateDocs(
+  root: string,
+  manifest: PackManifest,
+): Promise<string[]> {
+  const found = new Set<string>();
+  for (const doc of manifest.documents) {
+    if (doc.output) {
+      const rel = doc.output.replace(/\\/g, "/");
+      if (await pathExists(join(root, rel))) found.add(rel);
+    }
+  }
+  const sampleOutput = manifest.documents.find((d) => d.output)?.output;
+  if (sampleOutput) {
+    const dir = sampleOutput.replace(/\\/g, "/").split("/").slice(0, -1).join("/");
+    if (dir && (await pathExists(join(root, dir)))) {
+      const files = await discoverMarkdownFiles(root, dir);
+      for (const f of files) {
+        if (!f.relativePath.toLowerCase().endsWith("readme.md")) found.add(f.relativePath);
+      }
+    }
+  }
+  return [...found];
 }
 
 async function loadRules(root: string): Promise<RuleConfig[]> {
@@ -407,6 +453,78 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
+  const activePackInfo = config ? await loadActivePackManifest(root, config) : null;
+
+  // PACK-001 — custom pack install setup incomplete (validate gaps + user questions).
+  if (enabled(rules, "PACK-001") && activePackInfo) {
+    const validation = await validateCustomPack({
+      root,
+      packName: activePackInfo.packName,
+    });
+    if (!validation.ready) {
+      const setupPath = join(
+        root,
+        ".ai-spector",
+        "packs",
+        activePackInfo.packName,
+        "pack-setup.json",
+      );
+      const relSetup = setupPath.replace(root + "/", "");
+      add({
+        ruleId: "PACK-001",
+        severity: severityOf(rules, "PACK-001", "warning"),
+        message: `Custom pack "${activePackInfo.packName}" setup incomplete — ${validation.blockingCount} blocking gap(s). Run template verify before first generate.`,
+        path: relSetup,
+        fix: `npx ai-spector template verify ${activePackInfo.packName} --json`,
+      });
+      for (const q of validation.questionsForUser.slice(0, 5)) {
+        add({
+          ruleId: "PACK-001",
+          severity: severityOf(rules, "PACK-001", "warning"),
+          message: `Ask user: ${q}`,
+          path: relSetup,
+        });
+      }
+      if (validation.questionsForUser.length > 5) {
+        add({
+          ruleId: "PACK-001",
+          severity: severityOf(rules, "PACK-001", "warning"),
+          message: `…and ${validation.questionsForUser.length - 5} more question(s) — see template verify --json`,
+          path: relSetup,
+        });
+      }
+    }
+  }
+
+  // READY-001 — readiness not explicitly configured in docflow.config.json.
+  if (enabled(rules, "READY-001") && config) {
+    const readinessStatus = await resolveReadinessConfigStatus({ root });
+    if (!readinessStatus.configured) {
+      add({
+        ruleId: "READY-001",
+        severity: severityOf(rules, "READY-001", "warning"),
+        message:
+          "Readiness profile not configured — set readiness.profile in docflow.config.json (MCP: readiness_config).",
+        path: readinessStatus.configPath,
+        fix: 'Add { "readiness": { "profile": "general" | "regulated" | "arc42" } } to docflow.config.json',
+      });
+    }
+  }
+
+  // READY-002 — profile changed since last document scan.
+  if (enabled(rules, "READY-002") && config) {
+    const readinessStatus = await resolveReadinessConfigStatus({ root });
+    if (readinessStatus.profileDrift.detected) {
+      add({
+        ruleId: "READY-002",
+        severity: severityOf(rules, "READY-002", "warning"),
+        message: readinessStatus.profileDrift.message ?? "Readiness profile drift — rescan documents.",
+        path: readinessStatus.configPath,
+        fix: "MCP: readiness_scan({ updateLastScan: true }) after updating documents",
+      });
+    }
+  }
+
   // TASK-002 — generated SRS/BD docs without active tracked task (workspace scan).
   if (enabled(rules, "TASK-002")) {
     const index = await loadTaskIndexForCheck(root);
@@ -426,6 +544,24 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
         docs[0]!,
       );
     }
+    if (activePackInfo) {
+      const packDocs = await listPackGenerateDocs(root, activePackInfo.manifest);
+      if (packDocs.length > 0) {
+        const slot = `generate:${activePackInfo.packName}`;
+        await checkGenerateTaskGate(
+          add,
+          rules,
+          "TASK-002",
+          "warning",
+          index,
+          root,
+          slot,
+          activePackInfo.packName,
+          packDocs[0]!,
+          activePackInfo.packName,
+        );
+      }
+    }
   }
 
   // TASK-003 — explicit doc path writes require approved active generate task.
@@ -434,10 +570,17 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     const explicitPaths = [...new Set((opts.paths ?? []).map((p) => p.replace(/\\/g, "/")))];
     const checkedSlots = new Set<string>();
     for (const rel of explicitPaths) {
-      const slot = generateSlotFromDocPath(rel);
+      let slot = generateSlotFromDocPath(rel);
+      if (!slot && activePackInfo) {
+        slot = generateSlotFromPackOutputs(
+          rel,
+          activePackInfo.packName,
+          activePackInfo.manifest.documents,
+        );
+      }
       if (!slot || checkedSlots.has(slot)) continue;
       checkedSlots.add(slot);
-      const docType = slotToDocType(slot);
+      const docType = slotToDocTypeLabel(slot);
       if (!docType) continue;
       await checkGenerateTaskGate(
         add,
@@ -449,6 +592,7 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
         slot,
         docType,
         rel,
+        activePackInfo?.packName,
       );
     }
   }

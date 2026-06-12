@@ -30,12 +30,15 @@ Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` fo
 ```
 0. TASK      task_list → task_create(generate-srs) or task_resume
 1. CHECK     workspace_check({}) — fix errors before continuing (CLI: npx ai-spector check)
-2. CLARIFY   compute the FULL gap set (completeness rules + empty graph seeds +
-             context_list({ docType: "srs", status: "open" }) and "stale")
-             → ask the user about every gap, store each answer immediately via
-             context_record / context_resolve. No question cap; generation is
-             blocked until every gap is answered or explicitly accepted as an
-             assumption. Stale Q-ids: show old answer, re-confirm.
+2. CLARIFY   readiness assessment first (readiness-criteria.srs.json + graph +
+             gaps.json + data-source) → present readiness report table → optional
+             web search for domain baselines → compute FULL gap set (readiness +
+             completeness + empty graph seeds + context_list open/stale)
+             → ask the user about every blocking gap, store each answer via
+             context_record / context_resolve. No question cap; no single "anything
+             else?" — generation blocked until blocking gaps resolved.
+             Incremental scope: incremental-continuation.md before generating.
+             task_update: clarify step in-progress → done.
 3. BRIEFING  state per document: graph nodes pulled (and which are empty),
              data-source files used, applied Q-xxx answers, open assumptions,
              template, and notable context NOT used → user confirms
@@ -73,7 +76,9 @@ Report impact table to user.
 
 ```
 - [ ] workspace_check passed (no errors)
-- [ ] All clarification gaps answered or accepted (stored in context store)
+- [ ] Readiness report shown; all blocking gaps answered or accepted (context store)
+- [ ] task_update: check, clarify, briefing, plan steps marked done
+- [ ] task_complete or task_pause offered at session end
 - [ ] Context briefing confirmed by user
 - [ ] Plan table approved with explicit "yes" before first write
 - [ ] graph validate passes before starting

@@ -347,7 +347,12 @@ export const ReviewListSchema = RootSchema.extend({
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
 export const TaskKindEnum = z.enum(["generate", "resolve"]);
-export const WorkflowIdEnum = z.enum(["generate-srs", "generate-basic-design", "resolve"]);
+export const BuiltinWorkflowIdEnum = z.enum(["generate-srs", "generate-basic-design", "resolve"]);
+/** Custom template packs use `generate-<pack-name>` (same gated steps as generate-srs). */
+export const WorkflowIdEnum = z.union([
+  BuiltinWorkflowIdEnum,
+  z.string().regex(/^generate-[a-z0-9][a-z0-9-]*$/, "Custom pack workflow: generate-<pack-name>"),
+]);
 export const TaskStatusEnum = z.enum([
   "draft",
   "active",
@@ -517,4 +522,77 @@ export const TemplateListSchema = RootSchema;
 
 export const TemplateInspectSchema = RootSchema.extend({
   pack: z.string().describe("Pack name to inspect"),
+});
+
+export const TemplateValidateSchema = RootSchema.extend({
+  pack: z
+    .string()
+    .optional()
+    .describe('Pack name, or "active" for the active SRS pack (default: active)'),
+  sync: z
+    .boolean()
+    .optional()
+    .describe("Update pack-setup.json from auto-detected completion"),
+});
+
+export const TemplateSetupMarkSchema = RootSchema.extend({
+  pack: z.string().describe("Installed pack name"),
+  itemId: z
+    .string()
+    .describe('pack-setup.json item id, e.g. "readiness.reviewed"'),
+});
+
+// ── Readiness assessment ──────────────────────────────────────────────────────
+
+export const ReadinessProfilesListSchema = RootSchema;
+
+export const ReadinessConfigSchema = RootSchema;
+
+export const ReadinessScanSchema = RootSchema.extend({
+  docType: z
+    .string()
+    .optional()
+    .describe("Document type to scan (default: srs)"),
+  profile: z
+    .string()
+    .optional()
+    .describe("Override profile for this scan; default from docflow.config.json readiness"),
+  paths: z
+    .array(z.string())
+    .optional()
+    .describe("Specific document paths; default scans all docs for docType"),
+  updateLastScan: z
+    .boolean()
+    .optional()
+    .describe("Set readiness.lastScan in docflow.config.json after scan (recommended after profile change)"),
+});
+
+export const ReadinessCriteriaSchema = RootSchema.extend({
+  docType: z
+    .string()
+    .optional()
+    .describe('Document type: srs (default), arc42, or custom pack docType'),
+  profile: z
+    .string()
+    .optional()
+    .describe("Tailoring profile override: general, regulated, arc42"),
+});
+
+export const ReadinessAssessSchema = RootSchema.extend({
+  docType: z
+    .string()
+    .optional()
+    .describe('Document type: srs (default), arc42, or custom pack docType'),
+  profile: z
+    .string()
+    .optional()
+    .describe("Tailoring profile: general (default), regulated, arc42 — or docflow.config.json readiness.profile"),
+  targets: z
+    .array(z.string())
+    .optional()
+    .describe('DAG nodes in scope, e.g. ["srs.3-use-cases", "srs.4-system-features"]'),
+  targetAll: z
+    .boolean()
+    .optional()
+    .describe("Assess all targets in criteria file (default true when targets omitted)"),
 });

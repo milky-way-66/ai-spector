@@ -47,7 +47,9 @@ After plan approval: each DAG wave ends with `task_record_wave` + `workspace_che
 
 | Situation | Load |
 |---|---|
+| Readiness assessment (before clarify) | [../ai-spector/references/context-readiness.md](../ai-spector/references/context-readiness.md) |
 | Clarify gaps / stale Q-ids | [../ai-spector/references/clarify.md](../ai-spector/references/clarify.md), [../ai-spector/references/context-store.md](../ai-spector/references/context-store.md) |
+| User adds chapters mid-session | [../ai-spector/references/incremental-continuation.md](../ai-spector/references/incremental-continuation.md) |
 | Briefing + plan gate | [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md) |
 | After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |

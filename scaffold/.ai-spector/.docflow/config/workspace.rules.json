@@ -12,6 +12,9 @@
     { "id": "TASK-001", "severity": "warning" },
     { "id": "TASK-002", "severity": "warning" },
     { "id": "TASK-003", "severity": "warning" },
-    { "id": "GRAPH-001", "severity": "warning" }
+    { "id": "GRAPH-001", "severity": "warning" },
+    { "id": "PACK-001", "severity": "warning" },
+    { "id": "READY-001", "severity": "warning" },
+    { "id": "READY-002", "severity": "warning" }
   ]
 }

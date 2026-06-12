@@ -40,8 +40,15 @@ Then ask all **5 core questions** together in one message, numbered:
 3. **Vocabulary** — What do you call those repeating items in your domain? (e.g. "use case", "feature", "epic", "user story", "module") — or "none" if no repeating files
 4. **Pack name** — What should this template pack be called? (lowercase, hyphens ok — e.g. `kaopiz-srs`, `arc42`, `my-team-template`)
 5. **Output location** — Where should generated docs go? (e.g. `docs/srs/`, `docs/requirements/`, `docs/design/`)
+6. **Standards** — Which standards should readiness criteria align with? (e.g. ISO/IEC/IEEE 29148, arc42, team-internal only)
+7. **Requirements depth** — Does this pack produce atomic verifiable requirements (FR/NFR), or narrative/docs only?
 
-**Wait for the human to answer all 5 before proceeding.**
+**Wait for the human to answer all 7 before proceeding.**
+
+Record Q6–Q7 in the draft manifest as `standards[]`, `purpose`, and `docType` (defaults to pack name — see [readiness-setup.md](./readiness-setup.md)).
+
+8. **Languages** — Single language or multi-language outputs? If multi: confirm `docflow.config.json` `languages[]` and `{lang}` in output paths.
+9. **Graph prerequisites** — Is data-source already analyzed? Which graph node types must exist before generate (useCase, feature, requirement, …)?
 
 ### Follow-up rules
 
@@ -89,6 +96,7 @@ If the file is a **single/non-repeating file**:
   - Example: `introduction.md` in `docs/srs/` → `docs/srs/introduction.md`
 
 After drafting all documents, also set:
+- `purpose`, `standards[]`, `docType` (from Q1, Q6–Q7)
 - `perDomainTemplates`: object mapping each perDomain value → documentId of its repeating file
 - `defaultListedIn`: object mapping each perDomain value → documentId of the most likely "list" document (the non-repeating file whose name or headings suggest it lists the repeating items — use best judgment from filename similarity)
 
@@ -204,9 +212,17 @@ npx ai-spector template install
 
 ### If install succeeds
 
+Read and summarize `.ai-spector/packs/<name>/readiness-criteria.json` and `context-map.json` (TODO count).
+
+Walk the user through [readiness-setup.md](./readiness-setup.md) **post-install review** (standards, blocking criteria, placeholder TODOs).
+
 Show the CLI output and summarize:
 
 > "✓ Pack '<name>' installed and active.
+>
+> Readiness criteria and workflow were generated:
+> - `.ai-spector/packs/<name>/readiness-criteria.json`
+> - `.ai-spector/packs/<name>/workflow-setup.md`
 >
 > A tailored generate skill was written to:
 > - `.cursor/skills/ai-spector-generate-<name>/SKILL.md`
@@ -222,6 +238,55 @@ Show the CLI output and summarize:
 > - 'template use builtin' — switch back to builtin template"
 
 If the install output shows a `⚠  This pack includes ... per-domain breakout template(s)` warning, **explicitly tell the user** which vocabulary they need to generate as a second wave.
+
+## Phase 7 — Validate setup & ask user to fill gaps (mandatory)
+
+**Loop until `template validate` reports `ready: true`. Do not start first generate before that.**
+
+### 7a — Run validation
+
+```bash
+npx ai-spector template verify <pack> --json
+# MCP: template_validate({ pack: "<pack>" })
+```
+
+Read `questionsForUser` and `gaps[]` — present **every blocking question** to the user.
+
+### 7b — Resolve gaps (agent + user)
+
+| Gap category | Who | Action |
+|--------------|-----|--------|
+| `manifest.purpose` / `standards` | User answers → agent updates `manifest.json` |
+| `context-map.*` TODO | User says value → agent updates `context-map.json` |
+| `readiness.reviewed` | User confirms criteria → `template setup-mark <pack> readiness.reviewed` |
+| `graph.domain.*` | User provides entities or run analyze → `index` |
+| `languages.strategy` | User configures `docflow.config.json` languages[] |
+| `skill.gated-flow` | Agent fixes generate skill |
+
+After user answers, store clarifications in context store (`context_record`) when they inform generation.
+
+### 7c — Re-validate
+
+```bash
+npx ai-spector template verify <pack> --json --sync
+```
+
+`--sync` refreshes auto-detected items in `pack-setup.json`.
+
+When user confirms readiness review:
+
+```bash
+npx ai-spector template setup-mark <pack> readiness.reviewed
+# MCP: template_setup_mark({ pack, itemId: "readiness.reviewed" })
+```
+
+### 7d — Gate
+
+- `validation.ready === true`
+- `workspace_check` — no PACK-001 warning
+- Then allow first `generate <pack>`
+
+---
 
 ### If install fails
 

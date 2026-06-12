@@ -1,0 +1,160 @@
+{
+  "id": "arc42",
+  "title": "arc42 architecture documentation",
+  "description": "Standalone readiness criteria for arc42-style architecture documents (ISO/IEC/IEEE 42010 alignment). Replaces SRS baseline when this profile is active.",
+  "replaceBase": true,
+  "docType": "arc42",
+  "version": 1,
+  "standards": [
+    {
+      "id": "arc42",
+      "title": "arc42 template",
+      "scope": "Software architecture documentation — 12 sections"
+    },
+    {
+      "id": "ISO-42010",
+      "title": "ISO/IEC/IEEE 42010:2022",
+      "scope": "Architecture description — stakeholders, concerns, viewpoints"
+    }
+  ],
+  "dimensions": [
+    { "id": "context", "label": "Context & scope", "iso": "arc42 §3" },
+    { "id": "constraints", "label": "Constraints", "iso": "arc42 §2" },
+    { "id": "solution", "label": "Solution strategy", "iso": "arc42 §4" },
+    { "id": "structure", "label": "Building blocks", "iso": "arc42 §5–§6" },
+    { "id": "runtime", "label": "Runtime & deployment", "iso": "arc42 §6, §7" },
+    { "id": "crosscutting", "label": "Cross-cutting", "iso": "arc42 §8" },
+    { "id": "decisions", "label": "Architecture decisions", "iso": "arc42 §9" },
+    { "id": "quality", "label": "Quality goals", "iso": "arc42 §10, ISO 25010" },
+    { "id": "risks", "label": "Risks & technical debt", "iso": "arc42 §11" },
+    { "id": "glossary", "label": "Glossary", "iso": "arc42 §12" }
+  ],
+  "globalCriteria": [
+    {
+      "id": "A42-G-001",
+      "dimension": "context",
+      "severity": "blocking",
+      "question": "What is the system name and one-sentence purpose (business + technical)?",
+      "graphProbe": "system root node name + description"
+    },
+    {
+      "id": "A42-G-002",
+      "dimension": "context",
+      "severity": "blocking",
+      "question": "Who are architecture stakeholders (dev, ops, security, acquirer) and their top concerns?",
+      "graphProbe": "actor nodes + stakeholder tags",
+      "minGraphCount": 1
+    },
+    {
+      "id": "A42-G-003",
+      "dimension": "constraints",
+      "severity": "blocking",
+      "question": "Hard constraints: technology mandates, regulatory, budget, timeline, team skills?",
+      "graphProbe": "NFR nodes tagged constraint, regulatory"
+    },
+    {
+      "id": "A42-G-004",
+      "dimension": "context",
+      "severity": "blocking",
+      "question": "System context: external systems, users, data flows at boundary?",
+      "graphProbe": "system node + relatesTo external systems",
+      "minGraphCount": 1
+    },
+    {
+      "id": "A42-G-005",
+      "dimension": "solution",
+      "severity": "should-ask",
+      "question": "Solution strategy summary: key architectural approaches (monolith, microservices, event-driven, …)?",
+      "graphProbe": "architectureDecision nodes or system.architectureStyle",
+      "acceptAssumption": true
+    },
+    {
+      "id": "A42-G-006",
+      "dimension": "quality",
+      "severity": "blocking",
+      "question": "Top quality goals ranked (performance, security, availability, modifiability, …)?",
+      "graphProbe": "NFR nodes by category",
+      "minGraphCount": 1
+    },
+    {
+      "id": "A42-G-007",
+      "dimension": "decisions",
+      "severity": "should-ask",
+      "question": "Key architecture decisions already made (ADR list or decision log)?",
+      "graphProbe": "architectureDecision nodes",
+      "acceptAssumption": true
+    },
+    {
+      "id": "A42-G-008",
+      "dimension": "risks",
+      "severity": "should-ask",
+      "question": "Known technical risks, trade-offs, or debt to document?",
+      "graphProbe": "risk nodes or NFR tagged risk",
+      "acceptAssumption": true
+    },
+    {
+      "id": "A42-G-009",
+      "dimension": "data-source",
+      "severity": "should-ask",
+      "question": "Upstream inputs for architecture (SRS excerpts, existing diagrams, runbooks)?",
+      "graphProbe": "definedIn edges to docs/data-source/",
+      "dataSourceHints": ["srs", "diagram", "runbook", "adr"]
+    }
+  ],
+  "targets": [
+    {
+      "dagNode": "arc42.architecture",
+      "outputPattern": "architecture.md",
+      "criteria": [
+        {
+          "id": "A42-001",
+          "severity": "blocking",
+          "field": "buildingBlocks",
+          "question": "Major building blocks / containers (names + responsibilities)?",
+          "graphProbe": "component, container, module nodes",
+          "minGraphCount": 1
+        },
+        {
+          "id": "A42-002",
+          "severity": "blocking",
+          "field": "interfaces",
+          "question": "Key interfaces between building blocks (protocols, APIs, events)?",
+          "graphProbe": "interface nodes + relatesTo edges",
+          "minGraphCount": 1
+        },
+        {
+          "id": "A42-003",
+          "severity": "should-ask",
+          "field": "runtimeView",
+          "question": "Primary runtime scenarios to illustrate (request flow, batch, failure)?",
+          "graphProbe": "useCase or operationalScenario nodes",
+          "acceptAssumption": true
+        },
+        {
+          "id": "A42-004",
+          "severity": "should-ask",
+          "field": "deployment",
+          "question": "Deployment topology (environments, nodes, network zones)?",
+          "graphProbe": "deployment, environment nodes",
+          "acceptAssumption": true
+        },
+        {
+          "id": "A42-005",
+          "severity": "should-ask",
+          "field": "crosscutting",
+          "question": "Cross-cutting concepts (auth, logging, error handling, persistence)?",
+          "graphProbe": "NFR nodes tagged crosscutting, security, logging",
+          "acceptAssumption": true
+        },
+        {
+          "id": "A42-006",
+          "severity": "nice-to-have",
+          "field": "glossary",
+          "question": "Domain terms and abbreviations for glossary section?",
+          "graphProbe": "glossary entries",
+          "acceptAssumption": true
+        }
+      ]
+    }
+  ]
+}

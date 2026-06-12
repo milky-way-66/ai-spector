@@ -22,6 +22,8 @@ paths:
 | Phase | Load |
 |-------|------|
 | Phase 5 — Write generate skill | [references/skill-outline.md](references/skill-outline.md) |
+| Readiness + gated workflow (custom packs) | [references/readiness-setup.md](references/readiness-setup.md) |
+| Builtin vs custom gap matrix | [references/pack-gap-matrix.md](references/pack-gap-matrix.md) |
 
 ## Natural language
 

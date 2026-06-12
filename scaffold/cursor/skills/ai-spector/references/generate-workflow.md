@@ -4,7 +4,9 @@ Used by SRS and basic design skills.
 
 **References (load when needed):**
 - Workspace check → [workspace-check.md](./workspace-check.md)
+- Context readiness assessment → [context-readiness.md](./context-readiness.md)
 - Clarify gaps before generating → [clarify.md](./clarify.md)
+- Incremental scope (same task) → [incremental-continuation.md](./incremental-continuation.md)
 - Context store (clarification persistence) → [context-store.md](./context-store.md)
 - Context briefing + plan gate → [plan-and-briefing.md](./plan-and-briefing.md)
 - Extract specs after generating → [extract-specs.md](./extract-specs.md)
@@ -20,12 +22,16 @@ Persist progress in `.ai-spector/.docflow/tasks/` — do not rely on chat memory
 ```
 0. task_list({ status: ["active", "paused"], bootstrap: { kind, workflow, docType, trigger } })
    → activeForSlot: task_resume | bootstrapped: new task id
-1. After each gate: task_update (phase, step status, openContextIds)
+1. After each gate: task_update (phase, step status, openContextIds) — check/clarify/briefing/plan must reach `done`
 3. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
 4. After each DAG wave: task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
    → workspace_check({ paths: artifacts })
-5. After extract offered: task_complete when user is done
+5. After extract offered: task_complete when user is done (or task_pause if user defers)
 ```
+
+**Incremental continuation** (user adds chapters mid-session): see
+[incremental-continuation.md](./incremental-continuation.md) — extend plan →
+`task_approve_plan` before `task_record_wave` for new waves.
 
 Pause anytime: `task_pause`. Resume: `task_resume` (validates drift before continuing).
 Status without opening JSON: `npx ai-spector task status` or MCP `task_status`.
@@ -34,7 +40,7 @@ Status without opening JSON: `npx ai-spector task status` or MCP `task_status`.
 
 ```
 1. CHECK     workspace_check MCP (fallback: npx ai-spector check) — fix errors before continuing
-2. CLARIFY   compute the FULL gap set → ask the user → store every answer (context store)
+2. CLARIFY   readiness report → FULL gap set → ask the user → store every answer (context store)
 3. BRIEFING  state exactly what context/sources will shape each document → user confirms
 4. PLAN      plan table (output × DAG node × sources × key points) → explicit "yes"
 5. GENERATE  DAG waves (engine below — language rules, sub-agents, translation pauses)
@@ -106,7 +112,7 @@ do not skip them.
 ## Plan (once per invocation)
 
 1. Select targets (case 1/2/3).
-2. Run clarify ([clarify.md](./clarify.md)) — resolve the full gap set first.
+2. Run clarify ([clarify.md](./clarify.md)) — readiness report + resolve the full gap set first.
 3. Topological sort + dependency closure.
 4. Map DAG nodes → seeds via `dag.*.graph-seeds.json`.
 5. Classify disk per **primary language** file: `good` | `missing_content` | `missing_file`.

@@ -3,9 +3,21 @@
   "languages": [
     { "code": "en", "label": "English" }
   ],
+  "readiness": {
+    "profile": "general",
+    "standards": ["ISO-29148"],
+    "docTypes": {
+      "srs": { "profile": "general", "enabled": true },
+      "basic-design": { "profile": "general", "enabled": true }
+    }
+  },
   "paths": {
     "graph": ".ai-spector/graph/traceability.graph.json",
     "registry": ".ai-spector/registry/section-registry.json",
     "templates": ".ai-spector/templates"
+  },
+  "packs": {
+    "srs": "builtin",
+    "basicDesign": "builtin"
   }
 }

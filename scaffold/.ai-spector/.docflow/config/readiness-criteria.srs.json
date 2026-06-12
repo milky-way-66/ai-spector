@@ -1,0 +1,1034 @@
+{
+  "version": 2,
+  "docType": "srs",
+  "standards": [
+    {
+      "id": "ISO-29148",
+      "title": "ISO/IEC/IEEE 29148:2018",
+      "scope": "Requirements engineering — processes, SRS content (§9.6), requirement characteristics (§5.2)"
+    },
+    {
+      "id": "ISO-15288",
+      "title": "ISO/IEC/IEEE 15288:2015",
+      "scope": "System life cycle — stakeholder needs, requirements definition (process alignment)"
+    },
+    {
+      "id": "ISO-12207",
+      "title": "ISO/IEC/IEEE 12207:2017",
+      "scope": "Software life cycle — software requirements analysis process"
+    },
+    {
+      "id": "ISO-25010",
+      "title": "ISO/IEC 25010:2011",
+      "scope": "Product quality model — quality attributes for §7 (performance, security, usability, …)"
+    },
+    {
+      "id": "IEEE-830",
+      "title": "IEEE 830-1998 (superseded)",
+      "scope": "Legacy SRS outline — mapped via ISO 29148 §9.6; retained for traceability only"
+    },
+    {
+      "id": "CPRE",
+      "title": "IREB CPRE — Elicitation",
+      "scope": "System context, requirements sources, implicit → explicit needs"
+    }
+  ],
+  "templateToIso29148": {
+    "1-introduction.md": ["9.6.1", "9.6.2", "9.6.3"],
+    "2-overall-description.md": ["9.6.4", "9.6.5", "9.6.6", "9.6.7", "9.6.8", "9.6.9"],
+    "3-use-cases.md": ["9.6.5", "9.6.10", "9.6.12"],
+    "4-system-features.md": ["9.6.5", "9.6.10", "9.6.12"],
+    "features/F-*.md": ["9.6.10", "9.6.12"],
+    "features/UC-*.md": ["9.6.10", "9.6.12"],
+    "5-data-requirements.md": ["9.6.15"],
+    "6-external-interfaces.md": ["9.6.4.1", "9.6.4.2", "9.6.4.3", "9.6.4.4", "9.6.4.5", "9.6.11"],
+    "7-quality-attributes.md": ["9.6.13", "9.6.14", "9.6.18"],
+    "8-internationalization.md": ["9.6.7", "9.6.17"],
+    "9-other-requirements.md": ["9.6.16", "9.6.17", "9.6.19", "9.6.20"]
+  },
+  "requirementQuality": {
+    "iso29148": "§5.2",
+    "individualCharacteristics": [
+      { "id": "RQ-01", "name": "Necessary", "iso": "5.2.5", "check": "Each FR/NFR is needed; no gold-plating" },
+      { "id": "RQ-02", "name": "Unambiguous", "iso": "5.2.5", "check": "One interpretation only; no vague terms (fast, user-friendly)" },
+      { "id": "RQ-03", "name": "Complete", "iso": "5.2.5", "check": "Singular atomic requirement; all conditions stated" },
+      { "id": "RQ-04", "name": "Consistent", "iso": "5.2.5", "check": "No conflict with other requirements in scope" },
+      { "id": "RQ-05", "name": "Correct", "iso": "5.2.5", "check": "Reflects validated stakeholder need" },
+      { "id": "RQ-06", "name": "Feasible", "iso": "5.2.5", "check": "Achievable within constraints" },
+      { "id": "RQ-07", "name": "Verifiable", "iso": "5.2.5", "check": "Test/inspect/analyze/demonstrate pass-fail criteria exist" },
+      { "id": "RQ-08", "name": "Modifiable", "iso": "5.2.5", "check": "Unique ID; isolated from unrelated requirements" },
+      { "id": "RQ-09", "name": "Traceable", "iso": "5.2.5", "check": "Links to source (UC/F/stakeholder) and verification method" }
+    ],
+    "setCharacteristics": [
+      { "id": "RQS-01", "name": "Complete set", "iso": "5.2.6", "check": "All functions, interfaces, data, NFR in scope are covered" },
+      { "id": "RQS-02", "name": "Consistent set", "iso": "5.2.6", "check": "No contradictions across chapters" },
+      { "id": "RQS-03", "name": "Bounded", "iso": "5.2.6", "check": "Scope boundary clear; out-of-scope explicit" },
+      { "id": "RQS-04", "name": "Structured", "iso": "5.2.6", "check": "Organized by function/feature; traceable hierarchy" }
+    ],
+    "requiredAttributes": [
+      { "id": "RQA-01", "name": "Unique identifier", "iso": "5.2.8" },
+      { "id": "RQA-02", "name": "Priority / importance", "iso": "5.2.8" },
+      { "id": "RQA-03", "name": "Source / rationale", "iso": "5.2.8" },
+      { "id": "RQA-04", "name": "Verification method", "iso": "5.2.8", "values": ["test", "analysis", "inspection", "demonstration"] },
+      { "id": "RQA-05", "name": "Owner / stakeholder", "iso": "5.2.8", "severity": "should-ask" }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "scope",
+      "label": "Scope & purpose",
+      "iso": "9.6.2, 9.6.3",
+      "description": "Product identity, boundaries, goals, benefits, out-of-scope"
+    },
+    {
+      "id": "stakeholders",
+      "label": "Stakeholders & user characteristics",
+      "iso": "5.2.2, 9.6.6",
+      "description": "Actors, roles, permissions, education, experience, accessibility"
+    },
+    {
+      "id": "domain",
+      "label": "Domain & business context",
+      "iso": "6.2, 6.3, CPRE",
+      "description": "Business rules, workflows, operational concept, industry context"
+    },
+    {
+      "id": "graph",
+      "label": "Graph & traceability coverage",
+      "iso": "9.6.9, 9.6.10",
+      "description": "UC/F/FR/NFR entities, satisfies/dependsOn links, ID scheme"
+    },
+    {
+      "id": "data-source",
+      "label": "Data-source grounding",
+      "iso": "9.6.2 References",
+      "description": "Human-authored inputs: BRD, PRD, notes, regulations"
+    },
+    {
+      "id": "interfaces",
+      "label": "External interfaces",
+      "iso": "9.6.4, 9.6.11",
+      "description": "User, software, hardware, communication, services"
+    },
+    {
+      "id": "data",
+      "label": "Logical data requirements",
+      "iso": "9.6.15",
+      "description": "Entities, fields, relationships, retention, integrity"
+    },
+    {
+      "id": "nfr",
+      "label": "Quality & NFR",
+      "iso": "9.6.13, 9.6.14, 9.6.18, ISO 25010",
+      "description": "Performance, security, reliability, usability, maintainability"
+    },
+    {
+      "id": "constraints",
+      "label": "Limitations & design constraints",
+      "iso": "9.6.7, 9.6.16",
+      "description": "Regulatory, hardware, technology, parallel operations, safety"
+    },
+    {
+      "id": "compliance",
+      "label": "Standards & regulatory compliance",
+      "iso": "9.6.17, 9.6.19",
+      "description": "Applicable standards, audit, legal, export, packaging"
+    },
+    {
+      "id": "verification",
+      "label": "Verification & V&V",
+      "iso": "9.6.19, 6.5.2",
+      "description": "How requirements will be verified; acceptance criteria"
+    },
+    {
+      "id": "lifecycle",
+      "label": "Lifecycle & apportioning",
+      "iso": "9.6.9, 9.6.20",
+      "description": "Release phasing, deferred requirements, installation, operations"
+    },
+    {
+      "id": "i18n",
+      "label": "Internationalization",
+      "iso": "9.6.7, 8-internationalization template",
+      "description": "Languages, locales, formats, cultural/regional rules"
+    }
+  ],
+  "globalCriteria": [
+    {
+      "id": "G-001",
+      "dimension": "scope",
+      "severity": "blocking",
+      "iso29148": "9.6.2, 9.6.3.a",
+      "question": "What is the software product name and one-sentence purpose?",
+      "graphProbe": "system root node name + description",
+      "dataSourceHints": ["overview", "vision", "brd", "prd"]
+    },
+    {
+      "id": "G-002",
+      "dimension": "scope",
+      "severity": "blocking",
+      "iso29148": "9.6.3.d",
+      "question": "What is explicitly OUT of scope for this product and for this generation run?",
+      "graphProbe": "nodes with outOfScope: true",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-003",
+      "dimension": "scope",
+      "severity": "blocking",
+      "iso29148": "9.6.3.c",
+      "question": "What are the business benefits, objectives, or success criteria for this product?",
+      "graphProbe": "system.description, goal nodes",
+      "dataSourceHints": ["vision", "brd", "okr"]
+    },
+    {
+      "id": "G-004",
+      "dimension": "stakeholders",
+      "severity": "blocking",
+      "iso29148": "5.2.2, 9.6.6",
+      "question": "List all user classes / actors (name, role, primary goals). Who is NOT a user but is a stakeholder (ops, legal, support)?",
+      "graphProbe": "all actor nodes + stakeholder tags",
+      "minGraphCount": 1
+    },
+    {
+      "id": "G-005",
+      "dimension": "stakeholders",
+      "severity": "should-ask",
+      "iso29148": "9.6.6, ISO 25063",
+      "question": "User characteristics affecting usability: technical skill, language, accessibility needs, devices used?",
+      "graphProbe": "actor properties: skillLevel, accessibility, device",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-006",
+      "dimension": "scope",
+      "severity": "should-ask",
+      "iso29148": "9.6.1, 9.6.2",
+      "question": "Terms, acronyms, or domain jargon that need a glossary in §1?",
+      "graphProbe": "glossary nodes or data-source glossary section",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-007",
+      "dimension": "data-source",
+      "severity": "should-ask",
+      "iso29148": "9.6.2 References",
+      "question": "Which upstream documents exist (BRS, StRS, SyRS, PRD, API spec, UI guide)? Provide paths or confirm none.",
+      "graphProbe": "rendersTo / definedIn edges to docs/data-source/",
+      "dataSourceHints": ["brd", "strs", "syrs", "prd", "api", "ui-guide"]
+    },
+    {
+      "id": "G-008",
+      "dimension": "domain",
+      "severity": "blocking",
+      "iso29148": "9.6.7.a, 9.6.17",
+      "question": "Regulatory, legal, or industry standards that constrain the product (GDPR, HIPAA, PCI-DSS, SOX, ISO 27001, …)?",
+      "graphProbe": "NFR nodes tagged constraint, compliance, regulatory",
+      "webSearchWhen": "domain unfamiliar or regulation mentioned without detail"
+    },
+    {
+      "id": "G-009",
+      "dimension": "constraints",
+      "severity": "should-ask",
+      "iso29148": "9.6.7",
+      "question": "Project limitations: mandated technology stack, hardware, parallel operations, audit/control functions?",
+      "graphProbe": "NFR nodes tagged constraint, hardware, technology",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-010",
+      "dimension": "domain",
+      "severity": "should-ask",
+      "iso29148": "9.4.16, 9.4.17",
+      "question": "Operational concept: how will the system be used day-to-day? Key operational scenarios?",
+      "graphProbe": "operationalScenario nodes or UC summaries",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-011",
+      "dimension": "graph",
+      "severity": "blocking",
+      "iso29148": "9.6.10.c, 5.2.8",
+      "question": "Confirm ID scheme for traceability: UC-xx, F-xx, FR-xx, NFR-xx, ENT-xx — any project-specific prefixes?",
+      "graphProbe": "existing node id patterns in graph",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-012",
+      "dimension": "verification",
+      "severity": "should-ask",
+      "iso29148": "9.6.19, 5.2.8",
+      "question": "Default verification method per requirement type (test / analysis / inspection / demonstration)?",
+      "graphProbe": "FR.verificationMethod, NFR.verificationMethod",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-013",
+      "dimension": "graph",
+      "severity": "blocking",
+      "iso29148": "5.2.8, 9.6.9",
+      "question": "Priority scheme for requirements (MoSCoW, P0–P3, must/should/could)? How to mark deferred items?",
+      "graphProbe": "priority on useCase, feature, FR, NFR nodes",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-014",
+      "dimension": "lifecycle",
+      "severity": "should-ask",
+      "iso29148": "9.6.9",
+      "question": "Release phasing: which capabilities are v1 vs later? Any apportioning across modules/teams?",
+      "graphProbe": "nodes tagged release, version, phase",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-015",
+      "dimension": "nfr",
+      "severity": "blocking",
+      "iso29148": "9.6.14, 9.6.18",
+      "question": "Top quality priorities ranked (security, performance, availability, usability, maintainability)?",
+      "graphProbe": "NFR nodes by category",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-016",
+      "dimension": "constraints",
+      "severity": "should-ask",
+      "iso29148": "9.6.7.j, 9.6.7.k",
+      "question": "Safety or security criticality level (e.g. SIL, confidentiality class)? Impact on failure?",
+      "graphProbe": "NFR nodes tagged safety, security, criticality",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-017",
+      "dimension": "data",
+      "severity": "should-ask",
+      "iso29148": "9.6.15.f, 9.6.18.c",
+      "question": "Data privacy, classification, and retention policy (PII, encryption, retention periods)?",
+      "graphProbe": "dataEntity.classification, retention; NFR security",
+      "webSearchWhen": "handles personal data but no policy stated"
+    },
+    {
+      "id": "G-018",
+      "dimension": "scope",
+      "severity": "should-ask",
+      "iso29148": "9.6.8",
+      "question": "Assumptions and external dependencies (other systems, teams, data feeds, SLAs)?",
+      "graphProbe": "nodes/edges tagged assumption, dependency",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-019",
+      "dimension": "constraints",
+      "severity": "should-ask",
+      "iso29148": "9.6.4",
+      "question": "Operating environment: target platforms, browsers, deployment (cloud/on-prem/hybrid/mobile), memory/capacity limits?",
+      "graphProbe": "NFR nodes tagged environment, infrastructure, capacity",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-020",
+      "dimension": "verification",
+      "severity": "nice-to-have",
+      "iso29148": "9.6.19",
+      "question": "Acceptance criteria at product level (definition of done for SRS baseline sign-off)?",
+      "graphProbe": "acceptanceCriteria on system or release nodes"
+    }
+  ],
+  "targets": [
+    {
+      "dagNode": "srs.introduction",
+      "outputPattern": "1-introduction.md",
+      "iso29148": ["9.6.1", "9.6.2", "9.6.3"],
+      "criteria": [
+        {
+          "id": "§1-001",
+          "severity": "blocking",
+          "iso29148": "9.6.2",
+          "field": "documentPurpose",
+          "question": "Who is the intended audience for this SRS (roles: dev, QA, ops, acquirer)?",
+          "graphProbe": "actor nodes → roles; document metadata"
+        },
+        {
+          "id": "§1-002",
+          "severity": "blocking",
+          "iso29148": "9.6.3.b",
+          "field": "productScope",
+          "question": "What will the software product do (capabilities summary for §1.3)?",
+          "graphProbe": "system.description + feature node names"
+        },
+        {
+          "id": "§1-003",
+          "severity": "blocking",
+          "iso29148": "9.6.5",
+          "field": "majorFeatures",
+          "question": "List major features/capabilities for §1.3 (confirm graph feature list is complete).",
+          "graphProbe": "all feature nodes",
+          "minGraphCount": 1
+        },
+        {
+          "id": "§1-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.3.d",
+          "field": "scopeConsistency",
+          "question": "Consistency with higher-level specs (BRS/StRS/SyRS) — any conflicts to resolve?",
+          "graphProbe": "definedIn links to upstream docs",
+          "dataSourceHints": ["brd", "strs", "syrs"]
+        },
+        {
+          "id": "§1-005",
+          "severity": "should-ask",
+          "iso29148": "9.6.2 References",
+          "field": "references",
+          "question": "Which external documents should §1.4 reference (title, version, location)?",
+          "graphProbe": "rendersTo / definedIn edges"
+        },
+        {
+          "id": "§1-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.1",
+          "field": "definitions",
+          "question": "Domain terms and abbreviations for §1 glossary — provide list or confirm none needed.",
+          "graphProbe": "glossary entries in graph or data-source",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.overall-description",
+      "outputPattern": "2-overall-description.md",
+      "iso29148": ["9.6.4", "9.6.5", "9.6.6", "9.6.7", "9.6.8"],
+      "criteria": [
+        {
+          "id": "§2-001",
+          "severity": "blocking",
+          "iso29148": "9.6.4",
+          "field": "productPerspective",
+          "question": "Product context: standalone, module in larger system, or integration hub? Block diagram elements?",
+          "graphProbe": "system node + relatesTo external systems"
+        },
+        {
+          "id": "§2-002",
+          "severity": "blocking",
+          "iso29148": "9.6.4.2",
+          "field": "userInterfacesOverview",
+          "question": "High-level UI channels (web, mobile, API-only, admin console)? Style guide reference?",
+          "graphProbe": "screen nodes; NFR tagged ui",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§2-003",
+          "severity": "blocking",
+          "iso29148": "9.6.6",
+          "field": "userCharacteristics",
+          "question": "Per actor class: experience level, technical skill, frequency of use, accessibility needs?",
+          "graphProbe": "actor node properties",
+          "minGraphCount": 1
+        },
+        {
+          "id": "§2-004",
+          "severity": "blocking",
+          "iso29148": "9.6.4.6, 9.6.19",
+          "field": "operatingEnvironment",
+          "question": "Deployment model, OS/browsers, cloud provider, capacity (users, transactions, data volume)?",
+          "graphProbe": "NFR environment, infrastructure, capacity",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§2-005",
+          "severity": "blocking",
+          "iso29148": "9.6.7",
+          "field": "limitations",
+          "question": "Design limitations: regulatory, hardware, interfaces to other apps, audit, safety, real-time constraints?",
+          "graphProbe": "NFR constraint; limitation-tagged nodes"
+        },
+        {
+          "id": "§2-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.8",
+          "field": "assumptions",
+          "question": "Assumptions that if false would change requirements (OS available, API stable, data quality)?",
+          "graphProbe": "assumption-tagged nodes/edges",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§2-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.8",
+          "field": "dependencies",
+          "question": "External dependencies: third-party services, teams, data sources, SLAs?",
+          "graphProbe": "dependsOn externalSystem; dependency edges"
+        },
+        {
+          "id": "§2-008",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.7",
+          "field": "operations",
+          "question": "Operational modes: interactive vs batch, unattended periods, backup/recovery expectations?",
+          "graphProbe": "operational mode nodes",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§2-009",
+          "severity": "nice-to-have",
+          "iso29148": "9.6.4.8",
+          "field": "siteAdaptation",
+          "question": "Site-specific configuration or mission variants required?",
+          "graphProbe": "configuration nodes",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.use-cases",
+      "outputPattern": "3-use-cases.md",
+      "iso29148": ["9.6.5", "9.6.10", "9.6.12"],
+      "criteria": [
+        {
+          "id": "§3-001",
+          "severity": "blocking",
+          "iso29148": "9.6.5",
+          "field": "useCaseList",
+          "question": "Complete use-case inventory (UC-xx id + title). Anything missing from graph?",
+          "graphProbe": "doc.srs.3-use-cases CONTEXT depth 2 → useCase nodes",
+          "minGraphCount": 1
+        },
+        {
+          "id": "§3-002",
+          "severity": "blocking",
+          "iso29148": "5.2.8",
+          "field": "ucPriority",
+          "question": "Priority per use case (must-have / should / could / won't this release)?",
+          "graphProbe": "useCase.priority"
+        },
+        {
+          "id": "§3-003",
+          "severity": "should-ask",
+          "iso29148": "9.6.5",
+          "field": "ucRelationships",
+          "question": "Use-case relationships: include, extend, generalization — confirm diagram structure?",
+          "graphProbe": "relatesTo, includes, extends between UC nodes",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§3-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.3.d",
+          "field": "ucScope",
+          "question": "Use cases excluded or deferred from this run?",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§3-005",
+          "severity": "should-ask",
+          "iso29148": "9.4.17",
+          "field": "operationalScenarios",
+          "question": "Key scenarios to reflect in use-case model (happy path + critical alternates)?",
+          "graphProbe": "UC with mainFlow populated",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.features-list",
+      "outputPattern": "4-system-features.md",
+      "iso29148": ["9.6.5", "9.6.10"],
+      "criteria": [
+        {
+          "id": "§4-001",
+          "severity": "blocking",
+          "iso29148": "9.6.5",
+          "field": "featureList",
+          "question": "Complete feature inventory (F-xx id + name). Confirm nothing missing?",
+          "graphProbe": "doc.srs.4-system-features-list CONTEXT depth 2 → feature nodes",
+          "minGraphCount": 1
+        },
+        {
+          "id": "§4-002",
+          "severity": "blocking",
+          "iso29148": "9.6.9, 9.6.10",
+          "field": "ucFeatureTrace",
+          "question": "Each feature → which use case(s) does it satisfy? Fix missing satisfies links.",
+          "graphProbe": "feature → satisfies → useCase edges"
+        },
+        {
+          "id": "§4-003",
+          "severity": "blocking",
+          "iso29148": "5.2.8",
+          "field": "featurePriority",
+          "question": "Priority per feature aligned with business value?",
+          "graphProbe": "feature.priority"
+        },
+        {
+          "id": "§4-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.5",
+          "field": "featureGrouping",
+          "question": "How should features be grouped in §4 (by domain, actor, release)?",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.feature-details",
+      "outputPattern": "features/F-*.md",
+      "iso29148": ["9.6.10", "9.6.12"],
+      "criteria": [
+        {
+          "id": "F-001",
+          "severity": "blocking",
+          "iso29148": "9.6.10, 9.6.12",
+          "field": "description",
+          "question": "For {F-id}: name, priority, description, in/out of scope?",
+          "graphProbe": "F.name, priority, description, scope.in/out",
+          "perEntity": "feature"
+        },
+        {
+          "id": "F-002",
+          "severity": "blocking",
+          "iso29148": "9.6.12",
+          "field": "functionalRequirements",
+          "question": "For {F-id}: functional requirements (FR-xx) — what the system must do?",
+          "graphProbe": "F.requirements → FR-xx",
+          "perEntity": "feature"
+        },
+        {
+          "id": "F-003",
+          "severity": "blocking",
+          "iso29148": "5.2.5, 9.6.19",
+          "field": "acceptanceCriteria",
+          "question": "For {F-id}: verifiable acceptance criteria per FR (measurable pass/fail)?",
+          "graphProbe": "FR.acceptanceCriteria, FR.verificationMethod",
+          "perEntity": "feature"
+        },
+        {
+          "id": "F-004",
+          "severity": "blocking",
+          "iso29148": "9.6.12.c",
+          "field": "errorHandling",
+          "question": "For {F-id}: abnormal situations — errors, recovery, validation rules?",
+          "graphProbe": "F.errorHandling; UC.exceptionFlows for linked UCs",
+          "perEntity": "feature",
+          "acceptAssumption": true
+        },
+        {
+          "id": "F-005",
+          "severity": "should-ask",
+          "iso29148": "9.6.12",
+          "field": "inputOutput",
+          "question": "For {F-id}: inputs, outputs, data entities touched?",
+          "graphProbe": "F.inputData, outputData; dataEntity dependsOn",
+          "perEntity": "feature"
+        },
+        {
+          "id": "F-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.2",
+          "field": "uiScreens",
+          "question": "For {F-id}: related screens/UI elements?",
+          "graphProbe": "screen nodes via satisfies",
+          "perEntity": "feature",
+          "acceptAssumption": true
+        },
+        {
+          "id": "F-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.8",
+          "field": "dependencies",
+          "question": "For {F-id}: dependencies on other features or external systems?",
+          "graphProbe": "F dependsOn edges",
+          "perEntity": "feature"
+        },
+        {
+          "id": "F-008",
+          "severity": "should-ask",
+          "iso29148": "9.6.8",
+          "field": "assumptions",
+          "question": "For {F-id}: feature-specific assumptions?",
+          "graphProbe": "F.assumptions",
+          "perEntity": "feature",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.use-case-detail",
+      "outputPattern": "features/UC-*.md",
+      "mode": "perUseCaseDetail",
+      "note": "Logical target for per-UC detail files; not a separate DAG node",
+      "iso29148": ["9.6.10", "9.6.12"],
+      "criteria": [
+        {
+          "id": "UC-001",
+          "severity": "blocking",
+          "iso29148": "9.6.12",
+          "field": "actors",
+          "question": "For {UC-id}: primary and secondary actors?",
+          "graphProbe": "UC → actor links",
+          "perEntity": "useCase"
+        },
+        {
+          "id": "UC-002",
+          "severity": "blocking",
+          "iso29148": "9.6.12.b",
+          "field": "mainFlow",
+          "question": "For {UC-id}: main success scenario — numbered steps (actor action + system response)?",
+          "graphProbe": "UC.mainFlow steps",
+          "perEntity": "useCase"
+        },
+        {
+          "id": "UC-003",
+          "severity": "blocking",
+          "iso29148": "9.6.12",
+          "field": "prePostConditions",
+          "question": "For {UC-id}: preconditions and postconditions?",
+          "graphProbe": "UC.preconditions, postconditions",
+          "perEntity": "useCase"
+        },
+        {
+          "id": "UC-004",
+          "severity": "blocking",
+          "iso29148": "9.6.12",
+          "field": "trigger",
+          "question": "For {UC-id}: what event triggers this use case?",
+          "graphProbe": "UC.trigger",
+          "perEntity": "useCase"
+        },
+        {
+          "id": "UC-005",
+          "severity": "should-ask",
+          "iso29148": "9.6.12.c",
+          "field": "alternativeFlows",
+          "question": "For {UC-id}: alternative flows and branches?",
+          "graphProbe": "UC.alternativeFlows",
+          "perEntity": "useCase",
+          "acceptAssumption": true
+        },
+        {
+          "id": "UC-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.12.c.3",
+          "field": "exceptionFlows",
+          "question": "For {UC-id}: exception/error flows and recovery?",
+          "graphProbe": "UC.exceptionFlows, errorFlows",
+          "perEntity": "useCase",
+          "acceptAssumption": true
+        },
+        {
+          "id": "UC-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.10",
+          "field": "businessRules",
+          "question": "For {UC-id}: business rules (BR-xx) governing this flow?",
+          "graphProbe": "F.businessRules via satisfies",
+          "perEntity": "useCase",
+          "acceptAssumption": true
+        },
+        {
+          "id": "UC-008",
+          "severity": "should-ask",
+          "iso29148": "9.6.10",
+          "field": "relatedUseCases",
+          "question": "For {UC-id}: include/extend/generalization links to other UCs?",
+          "graphProbe": "relatesTo, includes, extends",
+          "perEntity": "useCase"
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.data-requirements",
+      "outputPattern": "5-data-requirements.md",
+      "iso29148": ["9.6.15"],
+      "criteria": [
+        {
+          "id": "§5-001",
+          "severity": "blocking",
+          "iso29148": "9.6.15.d",
+          "field": "entityList",
+          "question": "Complete data entity list (ENT-xx): name, purpose, owning features?",
+          "graphProbe": "all dataEntity nodes",
+          "minGraphCount": 1
+        },
+        {
+          "id": "§5-002",
+          "severity": "blocking",
+          "iso29148": "9.6.15.d",
+          "field": "entityFields",
+          "question": "Per entity: fields (name, type, required, constraints, valid range)?",
+          "graphProbe": "dataEntity.fields",
+          "perEntity": "dataEntity"
+        },
+        {
+          "id": "§5-003",
+          "severity": "blocking",
+          "iso29148": "9.6.15.d",
+          "field": "relationships",
+          "question": "Entity relationships and cardinality?",
+          "graphProbe": "relatesTo/dependsOn between dataEntity nodes"
+        },
+        {
+          "id": "§5-004",
+          "severity": "blocking",
+          "iso29148": "9.6.15.e",
+          "field": "integrity",
+          "question": "Integrity constraints (unique, FK, business rules on data)?",
+          "graphProbe": "entity constraints; businessRule on data"
+        },
+        {
+          "id": "§5-005",
+          "severity": "blocking",
+          "iso29148": "9.6.15.f",
+          "field": "dataSecurity",
+          "question": "Data security: classification, encryption, access control per entity?",
+          "graphProbe": "dataEntity.classification; NFR security on data"
+        },
+        {
+          "id": "§5-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.15.g",
+          "field": "retention",
+          "question": "Retention and archival rules per entity or data class?",
+          "graphProbe": "dataEntity.retention; NFR retention",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§5-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.15.b",
+          "field": "dataFrequency",
+          "question": "Volume and frequency of data (transactions/day, growth)?",
+          "graphProbe": "NFR capacity on data",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.external-interfaces",
+      "outputPattern": "6-external-interfaces.md",
+      "iso29148": ["9.6.4.1", "9.6.4.2", "9.6.4.3", "9.6.4.4", "9.6.4.5", "9.6.11"],
+      "criteria": [
+        {
+          "id": "§6-001",
+          "severity": "blocking",
+          "iso29148": "9.6.4.2, 9.6.11",
+          "field": "userInterfaces",
+          "question": "User interfaces: screens, channels, style guide, accessibility standard?",
+          "graphProbe": "screen nodes; UI-tagged NFR"
+        },
+        {
+          "id": "§6-002",
+          "severity": "blocking",
+          "iso29148": "9.6.4.4, 9.6.11",
+          "field": "softwareInterfaces",
+          "question": "Software interfaces: APIs, external systems — name, protocol, purpose, version?",
+          "graphProbe": "api, externalSystem nodes",
+          "minGraphCount": 0,
+          "acceptAssumption": true
+        },
+        {
+          "id": "§6-003",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.4",
+          "field": "apiContracts",
+          "question": "API message formats — OpenAPI/Swagger path or key endpoints to document?",
+          "graphProbe": "api.endpoints, api.schemaRef",
+          "dataSourceHints": ["openapi", "swagger", "api-spec"]
+        },
+        {
+          "id": "§6-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.3",
+          "field": "hardwareInterfaces",
+          "question": "Hardware interfaces (devices, peripherals, protocols)?",
+          "graphProbe": "NFR tagged hardware",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§6-005",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.5",
+          "field": "communicationInterfaces",
+          "question": "Communication protocols (HTTP, gRPC, MQTT, message queues)?",
+          "graphProbe": "integration nodes; NFR communication"
+        },
+        {
+          "id": "§6-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.4.9",
+          "field": "services",
+          "question": "Cloud/SaaS services (auth, payment, email, storage)?",
+          "graphProbe": "externalSystem tagged saas/cloud",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§6-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.11",
+          "field": "interfaceIoDetail",
+          "question": "Per interface: inputs/outputs, valid range, timing, data formats?",
+          "graphProbe": "api input/output specs",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.quality-attributes",
+      "outputPattern": "7-quality-attributes.md",
+      "iso29148": ["9.6.13", "9.6.14", "9.6.18"],
+      "criteria": [
+        {
+          "id": "§7-001",
+          "severity": "blocking",
+          "iso29148": "9.6.14",
+          "field": "performance",
+          "question": "Performance: measurable thresholds (response time %ile, throughput, concurrent users)?",
+          "graphProbe": "NFR category performance with thresholds",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§7-002",
+          "severity": "blocking",
+          "iso29148": "9.6.18.c",
+          "field": "security",
+          "question": "Security: authn/authz, encryption, audit, threat priorities?",
+          "graphProbe": "NFR category security"
+        },
+        {
+          "id": "§7-003",
+          "severity": "blocking",
+          "iso29148": "9.6.18.a,b",
+          "field": "reliabilityAvailability",
+          "question": "Reliability/availability: uptime SLA, RTO/RPO, failover?",
+          "graphProbe": "NFR reliability, availability",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§7-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.13, ISO 25010",
+          "field": "usability",
+          "question": "Usability: effectiveness, efficiency, satisfaction targets (ISO 25010/25060)?",
+          "graphProbe": "NFR category usability",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§7-005",
+          "severity": "should-ask",
+          "iso29148": "9.6.18.d",
+          "field": "maintainability",
+          "question": "Maintainability: modularity, logging, deployment frequency constraints?",
+          "graphProbe": "NFR maintainability",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§7-006",
+          "severity": "should-ask",
+          "iso29148": "9.6.18.e",
+          "field": "portability",
+          "question": "Portability: supported platforms, containerization, language/runtime constraints?",
+          "graphProbe": "NFR portability",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§7-007",
+          "severity": "should-ask",
+          "iso29148": "9.6.18",
+          "field": "scalability",
+          "question": "Scalability: horizontal/vertical scaling expectations?",
+          "graphProbe": "NFR scalability",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.internationalization",
+      "outputPattern": "8-internationalization.md",
+      "iso29148": ["9.6.7", "9.6.17"],
+      "criteria": [
+        {
+          "id": "§8-001",
+          "severity": "blocking",
+          "iso29148": "8-internationalization template",
+          "field": "languages",
+          "question": "Supported languages and locales (or confirm single-language only)?",
+          "graphProbe": "docflow.config languages; NFR i18n",
+          "dataSourceHints": ["language.json", "docflow.config.json"]
+        },
+        {
+          "id": "§8-002",
+          "severity": "blocking",
+          "iso29148": "8-internationalization template",
+          "field": "formatting",
+          "question": "Locale formatting: currency, date/time, numbers, addresses?",
+          "graphProbe": "NFR i18n formatting",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§8-003",
+          "severity": "should-ask",
+          "iso29148": "9.6.17",
+          "field": "regionalCompliance",
+          "question": "Regional regulatory requirements (EU GDPR, data residency, export control)?",
+          "graphProbe": "NFR compliance by region",
+          "webSearchWhen": "multi-region product without stated rules"
+        },
+        {
+          "id": "§8-004",
+          "severity": "should-ask",
+          "iso29148": "8-internationalization template",
+          "field": "culturalConsiderations",
+          "question": "Cultural/UX considerations (RTL, holidays, local payment methods)?",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "srs.other-requirements",
+      "outputPattern": "9-other-requirements.md",
+      "iso29148": ["9.6.16", "9.6.17", "9.6.19", "9.6.20"],
+      "criteria": [
+        {
+          "id": "§9-001",
+          "severity": "blocking",
+          "iso29148": "9.6.17",
+          "field": "legalRegulatory",
+          "question": "Legal and regulatory compliance requirements not covered in §7?",
+          "graphProbe": "NFR regulatory, legal"
+        },
+        {
+          "id": "§9-002",
+          "severity": "should-ask",
+          "iso29148": "9.6.20",
+          "field": "installation",
+          "question": "Installation, configuration, startup/shutdown requirements?",
+          "graphProbe": "NFR deployment, installation",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§9-003",
+          "severity": "should-ask",
+          "iso29148": "9.6.17, 9.6.19",
+          "field": "loggingMonitoring",
+          "question": "Logging, monitoring, alerting, audit trail requirements?",
+          "graphProbe": "NFR observability, audit"
+        },
+        {
+          "id": "§9-004",
+          "severity": "should-ask",
+          "iso29148": "9.6.16",
+          "field": "designConstraints",
+          "question": "Design constraints from standards or contracts (coding standard, report formats)?",
+          "graphProbe": "NFR design-constraint",
+          "acceptAssumption": true
+        },
+        {
+          "id": "§9-005",
+          "severity": "nice-to-have",
+          "iso29148": "9.6.20",
+          "field": "packaging",
+          "question": "Packaging, export, security labeling for deliverables?",
+          "acceptAssumption": true
+        }
+      ]
+    }
+  ]
+}

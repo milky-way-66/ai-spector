@@ -5,6 +5,10 @@ gates before any file is written. There is no auto-confirm.
 
 ## Stage 3 — Context briefing
 
+Prerequisite: Clarify stage finished with **zero blocking readiness gaps**
+([context-readiness.md](./context-readiness.md)). Include the readiness summary
+(blocking met / assumptions / domain search) at the top.
+
 State **exactly what context and information will shape each document** so the
 user can see and approve the inputs. Per target document, list:
 

@@ -92,10 +92,13 @@ export async function loadDocflowConfig(
     clientLanguage = languageCodes.has(code) ? code : undefined;
   }
 
+  const readinessRaw = raw.readiness as DocflowConfig["readiness"];
+
   const config: DocflowConfig = {
     version: raw.version ?? 1,
     languages,
     ...(clientLanguage ? { clientLanguage } : {}),
+    ...(readinessRaw && Object.keys(readinessRaw).length > 0 ? { readiness: readinessRaw } : {}),
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
       registry: raw.paths?.registry ?? DEFAULT_PATHS.registry,

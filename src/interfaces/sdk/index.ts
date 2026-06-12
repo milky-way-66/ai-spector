@@ -154,6 +154,26 @@ export type {
   ReviewMigrateResult,
 } from "../../core/operations/review.js";
 
+// Readiness assessment
+export {
+  runReadinessAssess,
+  runReadinessConfig,
+  runReadinessScan,
+  runReadinessProfilesList,
+  runReadinessGetCriteria,
+} from "../../core/operations/readiness.js";
+export type {
+  ReadinessAssessOptions,
+  ReadinessAssessResult,
+  ReadinessCriterionResult,
+  ReadinessAssessSummary,
+  ReadinessConfigStatus,
+  ReadinessScanResult,
+  ReadinessScanOptions,
+  ProfileSummary,
+  ResolvedReadinessCriteria,
+} from "../../core/operations/readiness.js";
+
 // Workspace check
 export { runCheck } from "../../core/operations/check.js";
 export type {

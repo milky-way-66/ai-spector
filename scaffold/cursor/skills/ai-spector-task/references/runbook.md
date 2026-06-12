@@ -85,6 +85,16 @@ task_resume({ taskId })
 
 Returns `canContinue`, `drift`, `staleContextIds`. User must confirm when drift or stale context is present.
 
+## Incremental scope (same conversation)
+
+When user asks for more chapters while a generate task is active, read
+`ai-spector/references/incremental-continuation.md`:
+
+1. Offer A (extend plan) / B (complete + new task) / C (pause).
+2. Path A: `task_update(plan)` with new rows/waves → `task_approve_plan` → then generate.
+3. Never `task_record_wave(wave-N)` before plan expands wave steps.
+4. End session with `task_complete` or `task_pause`.
+
 ## Complete / abandon
 
 ```

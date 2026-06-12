@@ -20,6 +20,13 @@ import {
   CommentsResolveSchema,
   TemplateListSchema,
   TemplateInspectSchema,
+  TemplateValidateSchema,
+  TemplateSetupMarkSchema,
+  ReadinessAssessSchema,
+  ReadinessConfigSchema,
+  ReadinessScanSchema,
+  ReadinessProfilesListSchema,
+  ReadinessCriteriaSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -63,7 +70,19 @@ import {
   toolCommentsShow,
   toolCommentsResolve,
 } from "./tools/comments.js";
-import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
+import {
+  toolTemplateList,
+  toolTemplateInspect,
+  toolTemplateValidate,
+  toolTemplateSetupMark,
+} from "./tools/template.js";
+import {
+  toolReadinessAssess,
+  toolReadinessConfig,
+  toolReadinessScan,
+  toolReadinessProfilesList,
+  toolReadinessGetCriteria,
+} from "./tools/readiness.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
@@ -300,11 +319,104 @@ server.registerTool(
 server.registerTool(
   "template_inspect",
   {
-    description: "Inspect a template pack — returns its manifest and available documents",
+    description: "Inspect a template pack — manifest, documents, and setup validation gaps",
     inputSchema: TemplateInspectSchema.shape,
   },
   async (input) => {
     const result = await toolTemplateInspect(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "template_validate",
+  {
+    description:
+      "Validate custom pack setup — detect missing artifacts, manifest fields, graph prerequisites, context-map TODOs. Returns questionsForUser to ask before first generate. Use sync:true to refresh pack-setup.json.",
+    inputSchema: TemplateValidateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTemplateValidate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "template_setup_mark",
+  {
+    description:
+      'Mark a pack-setup.json item done after user confirmation (e.g. itemId "readiness.reviewed")',
+    inputSchema: TemplateSetupMarkSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTemplateSetupMark(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Readiness assessment ──────────────────────────────────────────────────────
+
+server.registerTool(
+  "readiness_config",
+  {
+    description:
+      "Active readiness configuration from docflow.config.json — profiles per doc type, criteria paths, profile drift vs last scan. Call first to see what is active.",
+    inputSchema: ReadinessConfigSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessConfig(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "readiness_profiles_list",
+  {
+    description:
+      "List tailoring profiles (general, regulated, arc42) for readiness assessment before clarify/generate.",
+    inputSchema: ReadinessProfilesListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessProfilesList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "readiness_scan",
+  {
+    description:
+      "Scan existing generated documents against active readiness profile and completeness rules. Use after changing readiness.profile in config. Returns findings and suggestionsForUser. Set updateLastScan:true to record baseline.",
+    inputSchema: ReadinessScanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessScan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "readiness_get_criteria",
+  {
+    description:
+      "Load merged readiness criteria JSON (base + tailoring profile) for a doc type.",
+    inputSchema: ReadinessCriteriaSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessGetCriteria(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "readiness_assess",
+  {
+    description:
+      "Structured readiness report: score criteria against graph, context store, and data-source. Returns blockingGaps, questionsForUser, and ready flag. Run after scope selection, before clarify questions. Prefer this over manual JSON review.",
+    inputSchema: ReadinessAssessSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessAssess(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -722,7 +834,9 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "knowledge_status", "knowledge_validate", "knowledge_schema",
     "lang_queue", "index",
     "comments_list", "comments_inbox", "comments_show", "comments_resolve",
-    "template_list", "template_inspect",
+    "template_list", "template_inspect", "template_validate", "template_setup_mark",
+    "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
+    "readiness_assess", "readiness_scan",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",

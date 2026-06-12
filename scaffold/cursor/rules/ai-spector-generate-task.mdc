@@ -14,7 +14,8 @@ When the user asks to **generate SRS**, **write a chapter**, **generate basic de
    - `task_list({ status: ["active", "paused"], bootstrap: { kind, workflow, docType, trigger } })`
    - `activeForSlot` → `task_resume`; `bootstrapped` → use new task id (single MCP call)
 3. **Read** `.cursor/skills/ai-spector-task/references/runbook.md` and generate-workflow.md.
-4. **Clarify → briefing → plan table** → wait for explicit user **yes**.
+4. **Readiness report → Clarify (all blocking gaps) → briefing → plan table** → wait for explicit user **yes**.
+   Load `context-readiness.md` + `clarify.md`. If user adds chapters mid-session → `incremental-continuation.md`.
 5. **`task_update(plan)` → `task_approve_plan`** — required before stage 5 (GENERATE).
 6. **After each DAG wave:** `task_record_wave` + `index`; then `workspace_check({ paths: [written files] })`.
 
@@ -36,3 +37,7 @@ When the user asks to **generate SRS**, **write a chapter**, **generate basic de
 | "add login with Google", "update auth section" | `ai-spector-resolve-task` |
 
 Quick status: `npx ai-spector task status` or MCP `task_status`.
+
+## Session end
+
+Propose `task_complete({ summary })` after last delivered wave. Use `task_pause` if user may continue later.

@@ -1,0 +1,87 @@
+{
+  "id": "regulated",
+  "title": "Regulated industries",
+  "description": "Extends ISO SRS baseline with safety, risk, V&V, and audit traceability gates for FDA, IEC 62304, DO-178C, and similar domains.",
+  "extends": "srs",
+  "bumpSeverity": {
+    "G-008": "blocking",
+    "G-012": "blocking",
+    "G-016": "blocking",
+    "G-017": "blocking"
+  },
+  "disableAssumptions": ["G-008", "G-016", "G-017"],
+  "addGlobalCriteria": [
+    {
+      "id": "REG-001",
+      "dimension": "compliance",
+      "severity": "blocking",
+      "iso29148": "9.6.17, 9.6.19",
+      "question": "What is the safety / software class (e.g. IEC 62304 Class, DO-178C DAL, SIL level)? List applicable regulations.",
+      "graphProbe": "NFR nodes tagged safety, regulatory, classification",
+      "acceptAssumption": false
+    },
+    {
+      "id": "REG-002",
+      "dimension": "verification",
+      "severity": "blocking",
+      "iso29148": "9.6.19, 5.2.8",
+      "question": "Required verification rigor per requirement type (unit, integration, system, independent review)?",
+      "graphProbe": "FR.verificationMethod, NFR.verificationMethod",
+      "acceptAssumption": false
+    },
+    {
+      "id": "REG-003",
+      "dimension": "graph",
+      "severity": "blocking",
+      "iso29148": "5.2.8, 9.6.10",
+      "question": "Confirm bidirectional traceability: requirement ↔ risk/hazard ↔ test case. Which link types exist in your process?",
+      "graphProbe": "satisfies, verifies, mitigates edges between requirement and risk nodes",
+      "minGraphCount": 1
+    },
+    {
+      "id": "REG-004",
+      "dimension": "verification",
+      "severity": "blocking",
+      "iso29148": "5.2.5, 9.6.19",
+      "question": "Every safety- or security-related FR must have measurable acceptance criteria — confirm or list exceptions.",
+      "graphProbe": "FR nodes with acceptanceCriteria",
+      "minGraphCount": 1
+    },
+    {
+      "id": "REG-005",
+      "dimension": "lifecycle",
+      "severity": "blocking",
+      "iso29148": "9.6.9, 6.5.2",
+      "question": "Configuration management: who approves requirement baseline changes? Impact analysis required before edits?",
+      "graphProbe": "release, baseline, changeControl metadata on system node",
+      "acceptAssumption": false
+    },
+    {
+      "id": "REG-006",
+      "dimension": "data-source",
+      "severity": "blocking",
+      "iso29148": "9.6.2 References",
+      "question": "List authoritative inputs (risk analysis, hazard log, intended use, clinical evaluation, SOUP list) with paths.",
+      "graphProbe": "definedIn edges to docs/data-source/",
+      "dataSourceHints": ["risk", "hazard", "fmea", "intended-use", "soup"]
+    },
+    {
+      "id": "REG-007",
+      "dimension": "nfr",
+      "severity": "blocking",
+      "iso29148": "9.6.14, 9.6.18",
+      "question": "Cybersecurity and privacy controls required (threat model, encryption, access control, audit logging)?",
+      "graphProbe": "NFR nodes tagged security, privacy, cybersecurity",
+      "acceptAssumption": false
+    },
+    {
+      "id": "REG-008",
+      "dimension": "verification",
+      "severity": "should-ask",
+      "iso29148": "9.6.19",
+      "question": "Independence requirements for verification activities (who must NOT be the author)?",
+      "graphProbe": "verification independence metadata",
+      "acceptAssumption": false
+    }
+  ]
+}

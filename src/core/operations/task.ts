@@ -282,7 +282,7 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
 
   const root = await resolveRoot(opts.root);
   const index = await loadIndex(root);
-  const slot = activeSlotFor(opts.kind, opts.workflow);
+  const slot = activeSlotFor(opts.kind, opts.workflow, opts.docType);
 
   let replacedTaskId: string | undefined;
   const existingId = index.active[slot];
@@ -415,7 +415,7 @@ async function maybeBootstrapFromList(
   activeForSlot?: TaskListActiveSlot;
 }> {
   const index = await loadIndex(root);
-  const slot = activeSlotFor(bootstrap.kind, bootstrap.workflow);
+  const slot = activeSlotFor(bootstrap.kind, bootstrap.workflow, bootstrap.docType);
   const activeId = index.active[slot];
 
   if (activeId && !bootstrap.force) {
@@ -925,7 +925,7 @@ export async function runTaskComplete(opts: TaskCompleteOptions): Promise<TaskCo
   const taskPath = await saveTask(root, task);
 
   const index = await loadIndex(root);
-  const slot = activeSlotFor(task.kind, task.workflow);
+  const slot = activeSlotFor(task.kind, task.workflow, task.contextRefs?.docType);
   if (index.active[slot] === task.id) {
     delete index.active[slot];
   }
@@ -1131,7 +1131,7 @@ export async function runTaskAbandon(opts: TaskAbandonOptions): Promise<TaskAban
   const taskPath = await saveTask(root, task);
 
   const index = await loadIndex(root);
-  const slot = activeSlotFor(task.kind, task.workflow);
+  const slot = activeSlotFor(task.kind, task.workflow, task.contextRefs?.docType);
   if (index.active[slot] === task.id) {
     delete index.active[slot];
   }

@@ -132,6 +132,7 @@ import {
   formatReviewMigrate,
 } from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
+import { registerReadinessCommand } from "./core/operations/readiness.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
   formatCocoindexSetup,
@@ -1319,6 +1320,7 @@ graph
   });
 
 registerTemplateCommand(program);
+registerReadinessCommand(program);
 
 // ── CocoIndex ──────────────────────────────────────────────────────────────────
 

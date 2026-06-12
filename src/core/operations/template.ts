@@ -17,6 +17,24 @@ import { bootstrapFromRegistry } from "./bootstrap.js";
 import type { DocflowConfig, PackManifest, DocumentsManifest } from "../config/types.js";
 import { scanTemplateFolder } from "../template/scan.js";
 import { validatePackManifest } from "../template/validate.js";
+import {
+  buildPackCompletenessRules,
+  buildPackReadinessCriteria,
+  buildWorkflowSetupMarkdown,
+  type PackReadinessOptions,
+} from "../template/pack-readiness.js";
+import {
+  buildInstallChecklistMarkdown,
+  buildPackContextGuide,
+  buildPackSetupState,
+  emptyContextStore,
+  emptyGenStatus,
+  markPackSetupItem,
+  summarizePackInspect,
+  type PackSetupState,
+} from "../template/pack-setup.js";
+import { validateCustomPack } from "../template/pack-validate.js";
+import type { ScanResult } from "../template/scan.js";
 import { runTemplateRegen } from "./template-regen.js";
 
 // ---------------------------------------------------------------------------
@@ -293,8 +311,16 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
     "",
     `- Pack manifest: \`.ai-spector/packs/${manifest.packName}/manifest.json\``,
     `- Context map:   \`.ai-spector/packs/${manifest.packName}/context-map.json\``,
+    `- Readiness:     \`.ai-spector/packs/${manifest.packName}/readiness-criteria.json\``,
+    `- Workflow:      \`.ai-spector/packs/${manifest.packName}/workflow-setup.md\``,
     `- Inspect pack:  \`npx ai-spector template inspect ${manifest.packName}\``,
     `- Active graph seeds: see \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+    "",
+    "## Gated workflow (mandatory)",
+    "",
+    "Custom packs use the same gates as builtin SRS — see `workflow-setup.md`:",
+    "CHECK → readiness report → CLARIFY → BRIEFING → PLAN → GENERATE.",
+    "Load `readiness-criteria.json` and resolve `context-map.json` TODOs before writing.",
   );
 
   await writeFile(join(packDir, "generate-hints.md"), lines.join("\n") + "\n", "utf8");
@@ -364,6 +390,84 @@ async function writeContextMap(
   };
 
   await writeFile(join(packDir, "context-map.json"), JSON.stringify(map, null, 2) + "\n", "utf8");
+}
+
+/**
+ * Write readiness criteria, completeness rules, and workflow setup for a custom pack.
+ * Mirrors builtin `readiness-criteria.srs.json` + gated generate workflow.
+ */
+async function writePackReadinessArtifacts(
+  root: string,
+  packDir: string,
+  manifest: PackManifest,
+  scanResult?: ScanResult,
+  readinessOpts?: PackReadinessOptions,
+): Promise<void> {
+  const opts: PackReadinessOptions = {
+    purpose: readinessOpts?.purpose ?? manifest.purpose,
+    standards: readinessOpts?.standards ?? manifest.standards,
+  };
+  const readiness = buildPackReadinessCriteria(manifest, scanResult, opts);
+  const completeness = buildPackCompletenessRules(manifest, scanResult);
+  const workflowMd = buildWorkflowSetupMarkdown(manifest, opts);
+
+  const packReadinessPath = join(packDir, "readiness-criteria.json");
+  const packCompletenessPath = join(packDir, "completeness-rules.json");
+  const workflowPath = join(packDir, "workflow-setup.md");
+
+  await writeJson(packReadinessPath, readiness);
+  await writeJson(packCompletenessPath, completeness);
+  await writeFile(workflowPath, workflowMd, "utf8");
+
+  const configDir = join(root, ".ai-spector", ".docflow", "config");
+  await mkdir(configDir, { recursive: true });
+  await writeJson(join(configDir, `readiness-criteria.${manifest.packName}.json`), readiness);
+  await writeJson(join(configDir, `completeness-rules.${manifest.packName}.json`), completeness);
+}
+
+async function readContextMapFromPack(packDir: string): Promise<{ placeholders?: Record<string, { source: string }> }> {
+  const path = join(packDir, "context-map.json");
+  if (!existsSync(path)) return { placeholders: {} };
+  return readJson(path).catch(() => ({ placeholders: {} }));
+}
+
+/**
+ * Write install checklist, pack-context guides, empty context store, gen-status, pack-setup.json.
+ */
+async function writePackSetupArtifacts(
+  root: string,
+  packDir: string,
+  manifest: PackManifest,
+  scanResult?: ScanResult,
+  opts?: { skillIncludesGatedFlow?: boolean },
+): Promise<void> {
+  const contextMap = await readContextMapFromPack(packDir);
+  const docType = manifest.docType ?? manifest.packName;
+
+  const setup = buildPackSetupState(manifest, scanResult, contextMap, opts);
+  const todoCount = Object.values(contextMap.placeholders ?? {}).filter((e) => e.source === "TODO").length;
+  const checklist = buildInstallChecklistMarkdown(manifest, setup, todoCount);
+
+  await writeJson(join(packDir, "pack-setup.json"), setup);
+  await writeFile(join(packDir, "install-checklist.md"), checklist, "utf8");
+  await writeJson(join(packDir, "gen-status.json"), emptyGenStatus(manifest.packName));
+
+  const contextDir = join(root, ".ai-spector", ".docflow", "context");
+  await mkdir(contextDir, { recursive: true });
+  const contextPath = join(contextDir, `${docType}.json`);
+  if (!(await pathExists(contextPath))) {
+    await writeJson(contextPath, emptyContextStore(docType));
+  }
+
+  const packContextDir = join(packDir, "pack-context");
+  await mkdir(packContextDir, { recursive: true });
+  for (const doc of manifest.documents) {
+    const scanFile = scanResult?.files.find(
+      (f) => f.relativePath === doc.template || f.relativePath.endsWith(`/${doc.template}`),
+    );
+    const slug = doc.template.replace(/\.md$/i, "").replace(/[/\\]/g, "-");
+    await writeFile(join(packContextDir, `${slug}.md`), buildPackContextGuide(doc, scanFile), "utf8");
+  }
 }
 
 /**
@@ -464,6 +568,23 @@ async function writePackGenerateSkill(
     `2. \`.ai-spector/.docflow/config/dag.srs.json\``,
     `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
     `4. [\`generate-workflow.md\`](../ai-spector/references/generate-workflow.md)`,
+    `5. \`.ai-spector/packs/${name}/readiness-criteria.json\``,
+    `6. \`.ai-spector/packs/${name}/workflow-setup.md\``,
+    `7. [\`context-readiness.md\`](../ai-spector/references/context-readiness.md)`,
+    ``,
+    `## Step 0 — Task gate`,
+    ``,
+    `\`\`\``,
+    `task_list({`,
+    `  status: ["active", "paused"],`,
+    `  bootstrap: {`,
+    `    kind: "generate",`,
+    `    workflow: "generate-${slug}",`,
+    `    docType: "${name}",`,
+    `    trigger: "generate ${name}"`,
+    `  }`,
+    `})`,
+    `\`\`\``,
     ``,
     `## Pack`,
     ``,
@@ -474,12 +595,14 @@ async function writePackGenerateSkill(
     ``,
     `## Before you start`,
     ``,
-    `1. Read \`context-map.json\` — check every entry marked \`TODO\` and resolve it or ask the user.`,
-    `2. Run \`npx ai-spector graph validate\` — fix any errors before writing files.`,
+    `1. Read \`readiness-criteria.json\` — run readiness assessment for targets in scope.`,
+    `2. Read \`context-map.json\` — resolve every entry marked \`TODO\` or ask the user.`,
+    `3. Run \`npx ai-spector graph validate\` — fix any errors before writing files.`,
+    `4. **Gated flow:** clarify → briefing → plan → explicit yes — then generate.`,
     ``,
     `## Workflow`,
     ``,
-    `Follow the wave structure from \`generate-hints.md\`.`,
+    `Follow \`workflow-setup.md\` and the wave structure from \`generate-hints.md\`.`,
     ``,
     `**Wave 0 — Primary documents (exact table):**`,
     ``,
@@ -726,6 +849,10 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
       ? await scanTemplateFolder(templatesDir, templatesDir)
       : undefined;
     await writeContextMap(packDir, manifest, scanForContextMap);
+    await writePackReadinessArtifacts(root, packDir, manifest, scanForContextMap);
+    await writePackSetupArtifacts(root, packDir, manifest, scanForContextMap, {
+      skillIncludesGatedFlow: false,
+    });
     await writePackGenerateSkill(root, manifest);
   }
 
@@ -764,7 +891,10 @@ async function runTemplateUse(name: string, opts: { cwd?: string }) {
 // template inspect <name>
 // ---------------------------------------------------------------------------
 
-async function runTemplateInspect(name: string, opts: { cwd?: string }) {
+async function runTemplateInspect(
+  name: string,
+  opts: { cwd?: string; json?: boolean },
+) {
   const { root } = await loadConfigAndRoot(opts.cwd);
 
   let manifests: DocumentsManifest[];
@@ -787,6 +917,18 @@ async function runTemplateInspect(name: string, opts: { cwd?: string }) {
     }
     const manifest = await readJson<PackManifest>(manifestPath);
     manifests = [manifest];
+
+    if (opts.json) {
+      const validation = await validateCustomPack({ root, packName: name });
+      console.log(
+        JSON.stringify(
+          { documents: manifest.documents, validation },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
   }
 
   // Print table header
@@ -975,7 +1117,13 @@ async function runTemplateInstall(opts: {
   await copyTree(stagingTemplatesDir, destTemplatesDir);
 
   // Write manifest to destination (with resolved packName)
-  const finalManifest = { ...manifest, packName };
+  const finalManifest: PackManifest = {
+    ...manifest,
+    packName,
+    docType: manifest.docType ?? packName,
+    purpose: manifest.purpose,
+    standards: manifest.standards,
+  };
   await writeJson(join(destDir, "manifest.json"), finalManifest);
 
   // Patch config FIRST
@@ -999,7 +1147,15 @@ async function runTemplateInstall(opts: {
   await writeDagFiles(root, dag, seeds);
   await writeGenerateHints(destDir, finalManifest);
   await writeContextMap(destDir, finalManifest, scanResult);
+  await writePackReadinessArtifacts(root, destDir, finalManifest, scanResult);
   const stagedSkillPath = join(stagingDir, "generate-skill.md");
+  const skillText =
+    existsSync(stagedSkillPath) ? await readFile(stagedSkillPath, "utf8") : "";
+  const skillIncludesGatedFlow =
+    /task_list|readiness-criteria|workflow-setup|context-readiness/i.test(skillText);
+  await writePackSetupArtifacts(root, destDir, finalManifest, scanResult, {
+    skillIncludesGatedFlow,
+  });
   await writePackGenerateSkill(root, finalManifest, stagedSkillPath);
 
   // skill-hints.md — if the AI wrote one in staging, copy to pack dir
@@ -1023,6 +1179,10 @@ async function runTemplateInstall(opts: {
   console.log(`  DAG       → .ai-spector/.docflow/config/dag.srs.json updated`);
   console.log(`  Skill     → .cursor/skills/ai-spector-generate-${packName}/SKILL.md ${usedAiSkill ? "(AI-written)" : "(auto-generated from manifest)"}`);
   console.log(`           → .claude/skills/ai-spector-generate-${packName}/skill.md`);
+  console.log(`  Readiness → .ai-spector/packs/${packName}/readiness-criteria.json`);
+  console.log(`  Workflow  → .ai-spector/packs/${packName}/workflow-setup.md`);
+  console.log(`  Setup     → .ai-spector/packs/${packName}/install-checklist.md`);
+  console.log(`  Inspect   → npx ai-spector template inspect ${packName} --json`);
 
   const breakoutDocs = finalManifest.documents.filter((d) => d.perDomain);
   if (breakoutDocs.length > 0) {
@@ -1048,18 +1208,22 @@ async function runTemplateInstall(opts: {
 // ---------------------------------------------------------------------------
 
 /**
- * Verify a pack is correctly wired:
- * - All template files referenced in manifest exist on disk
- * - context-map.json has no TODO entries (warns, not error)
- * - generate-hints.md and dag files exist
- * - All output paths / outputPatterns are non-empty
+ * Validate custom pack setup — detect missing artifacts, manifest fields, graph,
+ * context-map TODOs. Returns questions for the user to fill gaps.
  */
-async function runTemplateVerify(name: string, opts: { cwd?: string }) {
+async function runTemplateVerify(
+  name: string,
+  opts: { cwd?: string; json?: boolean; sync?: boolean },
+) {
   const { root, config } = await loadConfigAndRoot(opts.cwd);
   const resolvedName = name === "active" ? config.packs.srs : name;
 
   if (resolvedName === "builtin") {
-    console.log("Builtin pack — no verification needed.");
+    if (opts.json) {
+      console.log(JSON.stringify({ packName: "builtin", ready: true, gaps: [] }, null, 2));
+    } else {
+      console.log("Builtin pack — no custom setup validation needed.");
+    }
     return;
   }
 
@@ -1073,95 +1237,86 @@ async function runTemplateVerify(name: string, opts: { cwd?: string }) {
   }
 
   const manifest = await readJson<PackManifest>(manifestPath);
-  const errors: string[] = [];
-  const warnings: string[] = [];
 
-  // 1. Template files
+  // Template files on disk (structural errors)
+  const templateErrors: string[] = [];
   for (const doc of manifest.documents) {
     const tplPath = join(packDir, "templates", doc.template);
     if (!(await pathExists(tplPath))) {
-      errors.push(`Missing template file: templates/${doc.template}  (documentId: ${doc.documentId})`);
+      templateErrors.push(`Missing template file: templates/${doc.template} (${doc.documentId})`);
     }
   }
 
-  // 2. Output paths defined
-  for (const doc of manifest.documents) {
-    const hasOutput = typeof doc.output === "string" && doc.output.length > 0;
-    const hasPattern = typeof doc.outputPattern === "string" && doc.outputPattern.length > 0;
-    if (!hasOutput && !hasPattern) {
-      errors.push(`Document "${doc.documentId}" has no output or outputPattern`);
-    }
-  }
+  const result = await validateCustomPack({
+    root,
+    packName: resolvedName,
+    syncSetup: Boolean(opts.sync),
+  });
 
-  // 3. generate-hints.md and DAG files
-  for (const f of ["generate-hints.md", "context-map.json"]) {
-    if (!(await pathExists(join(packDir, f)))) {
-      warnings.push(`${f} is missing — run \`template use ${resolvedName}\` to regenerate`);
-    }
-  }
-  const dagDir = join(root, ".ai-spector", ".docflow", "config");
-  if (config.packs.srs === resolvedName) {
-    for (const f of ["dag.srs.json", "dag.srs.graph-seeds.json"]) {
-      if (!(await pathExists(join(dagDir, f)))) {
-        warnings.push(`${f} is missing — run \`template use ${resolvedName}\` to regenerate`);
-      }
-    }
-  }
-
-  // 4. context-map TODO entries
-  const contextMapPath = join(packDir, "context-map.json");
-  if (await pathExists(contextMapPath)) {
-    try {
-      const cm = await readJson<{ placeholders?: Record<string, { source: string }> }>(contextMapPath);
-      const todos = Object.entries(cm.placeholders ?? {})
-        .filter(([, v]) => v.source === "TODO")
-        .map(([k]) => k);
-      if (todos.length > 0) {
-        warnings.push(
-          `context-map.json has ${todos.length} unresolved placeholder(s): ${todos.join(", ")}` +
-          `\n  Edit .ai-spector/packs/${resolvedName}/context-map.json or ask the AI to fill them in.`,
-        );
-      }
-    } catch {
-      warnings.push("context-map.json could not be parsed");
-    }
-  }
-
-  // 5. gen-status.json — show missing breakout items if present
-  const genStatusPath = join(packDir, "gen-status.json");
-  if (await pathExists(genStatusPath)) {
-    try {
-      const gs = await readJson<{ items?: Array<{ itemId: string; status: string; blockedReason?: string }> }>(genStatusPath);
-      const blocked = (gs.items ?? []).filter((i) => i.status === "blocked");
-      const pending = (gs.items ?? []).filter((i) => i.status === "pending");
-      if (blocked.length > 0) {
-        warnings.push(
-          `${blocked.length} breakout item(s) are blocked:\n` +
-          blocked.map((i) => `  ${i.itemId}: ${i.blockedReason ?? "no reason given"}`).join("\n"),
-        );
-      }
-      if (pending.length > 0) {
-        warnings.push(`${pending.length} breakout item(s) still pending: ${pending.map((i) => i.itemId).join(", ")}`);
-      }
-    } catch {
-      warnings.push("gen-status.json could not be parsed");
-    }
-  }
-
-  // Report
-  if (errors.length === 0 && warnings.length === 0) {
-    console.log(`✓ Pack "${resolvedName}" verified — no issues found.`);
+  if (opts.json) {
+    console.log(
+      JSON.stringify(
+        { ...result, templateErrors },
+        null,
+        2,
+      ),
+    );
+    if (!result.ready || templateErrors.length > 0) process.exitCode = 1;
     return;
   }
 
-  if (warnings.length > 0) {
-    console.log(`Warnings for pack "${resolvedName}":`);
-    for (const w of warnings) console.warn(`  ⚠  ${w}`);
+  console.log(`\nPack "${resolvedName}" — setup ${result.ready ? "READY" : "INCOMPLETE"}`);
+  console.log(`  Blocking gaps: ${result.blockingCount}  |  Should-ask: ${result.shouldAskCount}`);
+
+  if (templateErrors.length > 0) {
+    console.log("\nTemplate errors:");
+    for (const e of templateErrors) console.error(`  ✗  ${e}`);
   }
 
-  if (errors.length > 0) {
-    console.log(`\nErrors for pack "${resolvedName}":`);
-    for (const e of errors) console.error(`  ✗  ${e}`);
+  if (result.gaps.length > 0) {
+    console.log("\nGaps (ask the user to resolve blocking items):\n");
+    for (const g of result.gaps) {
+      const icon = g.severity === "blocking" ? "✗" : g.severity === "should-ask" ? "?" : "·";
+      console.log(`  ${icon} [${g.severity}] ${g.id}: ${g.message}`);
+      if (g.questionForUser) console.log(`      → Ask user: ${g.questionForUser}`);
+      if (g.fix) console.log(`      → Fix: ${g.fix}`);
+    }
+  }
+
+  if (result.questionsForUser.length > 0) {
+    console.log("\n--- Questions for the user ---");
+    result.questionsForUser.forEach((q, i) => console.log(`  ${i + 1}. ${q}`));
+  }
+
+  if (result.ready && templateErrors.length === 0) {
+    console.log(`\n✓ Pack "${resolvedName}" is ready for first generate.`);
+    return;
+  }
+
+  if (opts.sync) {
+    console.log(`\n  (pack-setup.json updated with auto-detected items)`);
+  } else {
+    console.log(`\n  Tip: re-run with --sync to refresh pack-setup.json from validation.`);
+  }
+
+  process.exitCode = 1;
+}
+
+/** Mark a user-confirmed item done in pack-setup.json (e.g. readiness.reviewed). */
+async function runTemplateSetupMark(
+  packName: string,
+  itemId: string,
+  opts: { cwd?: string },
+): Promise<void> {
+  const { root } = await loadConfigAndRoot(opts.cwd);
+  try {
+    const result = await markPackSetupItem(root, packName, itemId);
+    console.log(`Marked "${itemId}" done. Pack status: ${result.status}`);
+    if (result.remainingRequired.length > 0) {
+      console.log(`Remaining required: ${result.remainingRequired.join(", ")}`);
+    }
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
     process.exitCode = 1;
   }
 }
@@ -1457,8 +1612,12 @@ export function registerTemplateCommand(program: Command) {
       'Inspect a pack manifest as a table (use "builtin" to inspect the builtin templates).',
     )
     .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--json", "JSON summary (custom packs: setup status, TODOs, artifacts)")
     .action(async (name: string, opts) => {
-      await runTemplateInspect(name, { cwd: resolve(opts.cwd ?? process.cwd()) });
+      await runTemplateInspect(name, {
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        json: Boolean(opts.json),
+      });
     });
 
   template
@@ -1490,11 +1649,27 @@ export function registerTemplateCommand(program: Command) {
   template
     .command("verify [name]")
     .description(
-      'Verify a pack is correctly wired: templates exist, output paths defined, context-map TODOs flagged. Use "active" or omit to check the active pack.',
+      'Validate custom pack setup: detect missing info, list questions for the user. Use "active" for the active pack. Builtin skips validation.',
     )
     .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--json", "JSON report with gaps and questionsForUser")
+    .option("--sync", "Update pack-setup.json from auto-detected completion")
     .action(async (name: string | undefined, opts) => {
-      await runTemplateVerify(name ?? "active", { cwd: resolve(opts.cwd ?? process.cwd()) });
+      await runTemplateVerify(name ?? "active", {
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        json: Boolean(opts.json),
+        sync: Boolean(opts.sync),
+      });
+    });
+
+  template
+    .command("setup-mark <pack> <item-id>")
+    .description(
+      'Mark a pack-setup.json item done after user confirmation (e.g. readiness.reviewed).',
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .action(async (pack: string, itemId: string, opts) => {
+      await runTemplateSetupMark(pack, itemId, { cwd: resolve(opts.cwd ?? process.cwd()) });
     });
 
   template
