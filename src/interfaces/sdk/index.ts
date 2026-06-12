@@ -161,6 +161,7 @@ export {
   runReadinessScan,
   runReadinessProfilesList,
   runReadinessGetCriteria,
+  runReadinessOutputChecklist,
 } from "../../core/operations/readiness.js";
 export type {
   ReadinessAssessOptions,
@@ -170,6 +171,9 @@ export type {
   ReadinessConfigStatus,
   ReadinessScanResult,
   ReadinessScanOptions,
+  ReadinessOutputChecklistResult,
+  OutputChecklistForPath,
+  OutputChecklistItem,
   ProfileSummary,
   ResolvedReadinessCriteria,
 } from "../../core/operations/readiness.js";

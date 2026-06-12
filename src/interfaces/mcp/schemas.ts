@@ -612,3 +612,14 @@ export const ReadinessAssessSchema = RootSchema.extend({
     .optional()
     .describe("Assess all targets in criteria file (default true when targets omitted)"),
 });
+
+export const ReadinessOutputChecklistSchema = RootSchema.extend({
+  docType: z
+    .string()
+    .optional()
+    .describe("Document type (default: srs)"),
+  profile: z.string().optional().describe("Tailoring profile override"),
+  paths: z
+    .array(z.string())
+    .describe("Generated doc paths just written — agent scores checklist items semantically"),
+});

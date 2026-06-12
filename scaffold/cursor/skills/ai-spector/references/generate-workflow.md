@@ -9,6 +9,7 @@ Used by SRS and basic design skills.
 - Incremental scope (same task) → [incremental-continuation.md](./incremental-continuation.md)
 - Context store (clarification persistence) → [context-store.md](./context-store.md)
 - Context briefing + plan gate → [plan-and-briefing.md](./plan-and-briefing.md)
+- Output compliance (agent semantic review) → [output-compliance.md](./output-compliance.md)
 - Extract specs after generating → [extract-specs.md](./extract-specs.md)
 - Graph queries / merge / ingest → [generate-graph.md](./generate-graph.md)
 - Context compaction / sub-agents → [context-management.md](./context-management.md)
@@ -25,7 +26,9 @@ Persist progress in `.ai-spector/.docflow/tasks/` — do not rely on chat memory
 1. After each gate: task_update (phase, step status, openContextIds) — check/clarify/briefing/plan must reach `done`
 3. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
 4. After each DAG wave (before task_record_wave):
-   → readiness_scan({ paths: artifacts, updateLastScan: false }) — report findings
+   → readiness_scan({ paths: artifacts, updateLastScan: false }) — structural findings
+   → readiness_output_checklist({ paths: artifacts }) — rubric for agent semantic review
+   → Agent: read files, score met/partial/missing, show user ([output-compliance.md](./output-compliance.md))
    → workspace_check({ paths: artifacts })
    → task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
 5. After extract offered (snapshot.extractOffered): task_complete when user is done (or task_pause if user defers)
@@ -46,7 +49,7 @@ Status without opening JSON: `npx ai-spector task status` or MCP `task_status`.
              task_update snapshot.readinessReportShown → FULL gap set → context store
 3. BRIEFING  per file: criteria covered + sources + assumptions → user confirms
 4. PLAN      table: output × DAG × criteria × ISO refs × sources × key points → explicit "yes"
-5. GENERATE  DAG waves — after each wave: readiness_scan(paths) → index → workspace_check → task_record_wave
+5. GENERATE  DAG waves — after each wave: readiness_scan → readiness_output_checklist → agent compliance table → index → task_record_wave
 6. EXTRACT   spec_record offer → snapshot.extractOffered → task_complete (or task_pause)
 ```
 
@@ -131,7 +134,8 @@ do not skip them.
 - [ ] Load matching srs-context/ or bd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write primary language file from summary + template
-- [ ] `readiness_scan({ paths: [written paths], updateLastScan: false })` — report errors/warnings to user (headings, placeholders, profile drift)
+- [ ] `readiness_scan({ paths: [written paths], updateLastScan: false })` — structural findings (headings, placeholders)
+- [ ] `readiness_output_checklist({ paths })` → read files → **Output compliance** table for user (met/partial/missing per criterion)
 - [ ] `workspace_check({ paths: ["docs/{docType}/{primaryLang}/{filename}"] })` — STRUCT-004 must pass (move file if misplaced)
 - [ ] [PAUSE — translation prompt] (see below)
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave

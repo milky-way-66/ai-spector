@@ -1,5 +1,9 @@
 import { assessReadiness, type ReadinessAssessOptions } from "../readiness/assess.js";
 import { resolveReadinessConfigStatus } from "../readiness/config.js";
+import {
+  buildReadinessOutputChecklist,
+  type BuildOutputChecklistOptions,
+} from "../readiness/output-checklist.js";
 import { scanDocumentsForReadiness, type ReadinessScanOptions } from "../readiness/scan-docs.js";
 import { loadMergedReadinessCriteria } from "../readiness/resolve.js";
 import { listReadinessProfiles } from "../readiness/profiles.js";
@@ -11,6 +15,11 @@ export type { ProfileSummary } from "../readiness/profiles.js";
 export type { ResolvedReadinessCriteria } from "../readiness/resolve.js";
 export type { ReadinessConfigStatus } from "../readiness/config.js";
 export type { ReadinessScanResult, ReadinessScanOptions } from "../readiness/scan-docs.js";
+export type {
+  ReadinessOutputChecklistResult,
+  OutputChecklistForPath,
+  OutputChecklistItem,
+} from "../readiness/output-checklist.js";
 
 export async function runReadinessConfig(opts: { root?: string }) {
   return resolveReadinessConfigStatus(opts);
@@ -34,6 +43,11 @@ export async function runReadinessGetCriteria(opts: {
   profile?: string;
 }) {
   return loadMergedReadinessCriteria(opts);
+}
+
+/** Lookup rubric for agent-driven output compliance (no automated semantic scoring). */
+export async function runReadinessOutputChecklist(opts: BuildOutputChecklistOptions) {
+  return buildReadinessOutputChecklist(opts);
 }
 
 export function registerReadinessCommand(program: import("commander").Command): void {

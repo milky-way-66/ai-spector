@@ -27,6 +27,7 @@ import {
   ReadinessScanSchema,
   ReadinessProfilesListSchema,
   ReadinessCriteriaSchema,
+  ReadinessOutputChecklistSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -82,6 +83,7 @@ import {
   toolReadinessScan,
   toolReadinessProfilesList,
   toolReadinessGetCriteria,
+  toolReadinessOutputChecklist,
 } from "./tools/readiness.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
@@ -417,6 +419,19 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolReadinessAssess(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "readiness_output_checklist",
+  {
+    description:
+      "Rubric for agent-driven output compliance after GENERATE. Maps each written path to DAG node, criterion IDs, ISO refs, and agentCheck prompts. Does NOT score file content — the agent reads the file and reports met/partial/missing. Use after readiness_scan, before task_record_wave.",
+    inputSchema: ReadinessOutputChecklistSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReadinessOutputChecklist(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -836,7 +851,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "comments_list", "comments_inbox", "comments_show", "comments_resolve",
     "template_list", "template_inspect", "template_validate", "template_setup_mark",
     "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
-    "readiness_assess", "readiness_scan",
+    "readiness_assess", "readiness_scan", "readiness_output_checklist",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",

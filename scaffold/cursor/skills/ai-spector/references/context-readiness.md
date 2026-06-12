@@ -50,7 +50,8 @@ Configure in `.ai-spector/docflow.config.json`:
 |-------|--------|-------------------|------|
 | **Intent** | `docflow.config` → `readiness.standards[]` | Which standards does the project declare? | Reporting / alignment check |
 | **Input assess** | `readiness-criteria.<docType>.json` → `standards[]`, per-criterion `iso29148` | Enough context to write? | CLARIFY (`readiness_assess`) |
-| **Output scan** | `completeness-rules.<docType>.json` | File structure valid (headings, no TODO/TBD)? | After GENERATE (`readiness_scan`) |
+| **Output structure** | `completeness-rules.<docType>.json` | File structure valid (headings, no TODO/TBD)? | After GENERATE (`readiness_scan`) |
+| **Output semantic** | `readiness_output_checklist` + **agent** | Written prose covers ISO criteria? | After GENERATE — [output-compliance.md](./output-compliance.md) |
 
 `readiness.standards` in docflow.config is **metadata** — it does not drive scoring.
 `readiness_assess` always uses the merged criteria file. Call `readiness_config({})` first

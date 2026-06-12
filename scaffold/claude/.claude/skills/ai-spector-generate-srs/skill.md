@@ -40,8 +40,9 @@ Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` fo
 4. PLAN      plan table (output × DAG × criteria IDs × ISO refs × sources × key
              points, wave order from dag.srs.json) → wait for explicit "yes".
              Never write before it.
-5. GENERATE  per DAG wave; after each wave: readiness_scan(paths) → report
-             findings → npx ai-spector index → task_record_wave
+5. GENERATE  per DAG wave; after each wave: readiness_scan →
+             readiness_output_checklist → agent output compliance table →
+             index → task_record_wave (see output-compliance.md)
 6. EXTRACT   pull key specs → offer spec_record → set snapshot.extractOffered
              → user reviews with spec_list / spec_approve / spec_reject.
              Approved specs merge to the graph; NEVER write to docs/data-source/.
@@ -79,7 +80,7 @@ Report impact table to user.
 - [ ] Plan table includes criteria IDs + ISO refs; approved with explicit "yes"
 - [ ] graph validate passes before starting
 - [ ] Generated sections per DAG wave order
-- [ ] readiness_scan after each wave; findings reported to user
+- [ ] readiness_scan + readiness_output_checklist; output compliance table shown to user
 - [ ] Ran npx ai-spector index after each wave
 - [ ] Ran graph impact after finishing
 - [ ] Offered extracted key specs (spec_record); snapshot.extractOffered set

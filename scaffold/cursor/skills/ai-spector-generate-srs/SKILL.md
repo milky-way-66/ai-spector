@@ -55,6 +55,7 @@ Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only
 | Clarify gaps / stale Q-ids | [../ai-spector/references/clarify.md](../ai-spector/references/clarify.md), [../ai-spector/references/context-store.md](../ai-spector/references/context-store.md) |
 | User adds chapters mid-session | [../ai-spector/references/incremental-continuation.md](../ai-spector/references/incremental-continuation.md) |
 | Briefing + plan gate | [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md) |
+| Output compliance (after each wave) | [../ai-spector/references/output-compliance.md](../ai-spector/references/output-compliance.md) |
 | After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
 | Writing §1 Introduction | [references/srs-context/introduction.md](references/srs-context/introduction.md) |

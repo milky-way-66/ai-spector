@@ -3,6 +3,7 @@ import {
   runReadinessAssess,
   runReadinessConfig,
   runReadinessGetCriteria,
+  runReadinessOutputChecklist,
   runReadinessProfilesList,
   runReadinessScan,
 } from "@/core/operations/readiness.js";
@@ -10,6 +11,7 @@ import type {
   ReadinessAssessSchema,
   ReadinessConfigSchema,
   ReadinessCriteriaSchema,
+  ReadinessOutputChecklistSchema,
   ReadinessProfilesListSchema,
   ReadinessScanSchema,
 } from "../schemas.js";
@@ -63,4 +65,15 @@ export async function toolReadinessGetCriteria(input: z.infer<typeof ReadinessCr
     },
     criteria: merged.criteria,
   };
+}
+
+export async function toolReadinessOutputChecklist(
+  input: z.infer<typeof ReadinessOutputChecklistSchema>,
+) {
+  return runReadinessOutputChecklist({
+    root: input.root,
+    docType: input.docType,
+    profile: input.profile,
+    paths: input.paths,
+  });
 }
