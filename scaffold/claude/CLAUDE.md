@@ -90,6 +90,7 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | Translation status | `ai-spector-lang-status` |
 | Resolve translations | `ai-spector-resolve-translation` |
 | Resolve comments | `ai-spector-resolve-comments` |
+| Resume / active tasks / pause task | `ai-spector-task` |
 | Add/update feature or section ("I want to add…") | `ai-spector-resolve-task` (plan-first — no impact/edits before approval) |
 | Generate SRS / basic design (full chapter) | `ai-spector-generate-srs` / `ai-spector-generate-basic-design` |
 
@@ -113,7 +114,9 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | `cocoindex_index({})` | Rebuild semantic embeddings |
 | `docs_search({ query })` | Semantic doc search (CocoIndex) |
 | `graph_query_fuzzy({ query })` | Natural language graph lookup (CocoIndex) |
-| `resolve_task({ intent, goalSpec, plan })` | Execute an approved task plan (index, graph_merge, etc.) |
+| `resolve_task({ taskId })` or inline plan | Execute approved resolve plan (index, graph_merge, etc.) |
+| `task_create` / `task_list` / `task_get` / `task_update` / `task_approve_plan` | Workflow task state (`.ai-spector/.docflow/tasks/`) |
+| `task_pause` / `task_resume` / `task_record_wave` / `task_complete` | Pause, resume with drift check, record generate wave, finish |
 | `workspace_check({ fix? })` | Structural workspace check (dirs, config, languages, stale clarifications). Errors block generate runs and pre-commit |
 | `context_list({ docType?, status? })` | List stored clarifications (open / answered / stale) |
 | `context_record({ docType, question, answer?, sourceRefs? })` | Record a clarification (answer optional — one step if known) |

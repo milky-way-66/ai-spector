@@ -152,3 +152,20 @@ skill loads task state at start.
 | PR2 | Phase 2 — resume + drift validation |
 | PR3 | Phase 3 — resolve-task file-backed |
 | PR4 | Phase 4–5 — generate workflow + skills |
+| PR5 | Phase 6 — verification + Claude scaffold sync |
+
+---
+
+## Phase 6 — Verification and scaffold sync
+
+**Goal:** prove plan §13 success criteria; fill gaps from phases 1–5.
+
+| # | Task | File |
+|---|------|------|
+| 6.1 | E2E tests: generate pause/resume after plan, resolve awaiting approval, task_get introspection | `tests/operations/task-e2e.test.ts` |
+| 6.2 | CLI formatter tests | `tests/commands/task.test.ts` |
+| 6.3 | Claude scaffold: `ai-spector-task`, resolve/generate skill task hooks | `scaffold/claude/.claude/skills/` |
+| 6.4 | Live CLI smoke in temp project | manual / CI script |
+
+**Acceptance:** `npm test` green including e2e; CLI `task create|list|get` works on scaffolded project;
+success criteria in [task-state-plan.md](task-state-plan.md) §13 covered by tests.

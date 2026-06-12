@@ -17,6 +17,7 @@ description: "Generates basic design documents (screen list, API list, DB design
 ## Workflow (gated — stages 1–4 before any write)
 
 ```
+0. TASK      task_list → task_create(generate-basic-design) or task_resume
 1. CHECK     workspace_check({}) — fix errors first (CLI: npx ai-spector check)
 2. CLARIFY   full gap set for docType "basic-design" (completeness rules +
              empty graph seeds + context_list open/stale entries) → ask user,

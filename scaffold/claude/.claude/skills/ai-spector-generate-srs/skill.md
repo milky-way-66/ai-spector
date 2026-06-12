@@ -21,6 +21,7 @@ description: "Generates SRS documents from the knowledge graph using DAG waves. 
 ## Workflow (gated — stages 1–4 before any write)
 
 ```
+0. TASK      task_list → task_create(generate-srs) or task_resume
 1. CHECK     workspace_check({}) — fix errors before continuing (CLI: npx ai-spector check)
 2. CLARIFY   compute the FULL gap set (completeness rules + empty graph seeds +
              context_list({ docType: "srs", status: "open" }) and "stale")

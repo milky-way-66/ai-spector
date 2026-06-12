@@ -18,12 +18,12 @@ description: >-
 ## Workflow
 
 ```
-1. Acknowledge resolve-task workflow
+1. task_list → task_create(resolve) or task_resume
 2. Clarify (≤3 questions) → GoalSpec
 3. Discover scope (read-only, optional)
-4. Show GoalSpec + TaskPlan → wait for yes
-5. Execute approved steps (edits + resolve_task)
-6. Report state update
+4. Show GoalSpec + TaskPlan → task_update + task_approve_plan after yes
+5. resolve_task({ taskId }) + direct edits
+6. task_complete
 ```
 
 ## Routing
