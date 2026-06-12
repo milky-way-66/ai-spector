@@ -99,6 +99,14 @@ export type ExecutorMap = Record<string, StepExecutor>;
 
 // ── Options ──────────────────────────────────────────────────────────────────
 
+export interface ResolveStepProgressEvent {
+  stepId: string;
+  status: TaskStepStatus;
+  artifacts: string[];
+  issue?: string;
+  plan: TaskPlan;
+}
+
 export interface ResolveTaskOptions {
   intent: string;
   goalSpec: GoalSpec;
@@ -108,6 +116,8 @@ export interface ResolveTaskOptions {
   rulesPath: string;
   executors?: ExecutorMap;
   dryRun?: boolean;
+  /** Persist progress after each execution step (e.g. task file update). */
+  onStepComplete?: (event: ResolveStepProgressEvent) => Promise<void>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -154,11 +164,21 @@ export function createPlan(
 export async function runResolveTask(
   opts: ResolveTaskOptions,
 ): Promise<ResolveTaskResult> {
-  const { plan, projectRoot, executors = {}, dryRun = false } = opts;
+  const { plan, projectRoot, executors = {}, dryRun = false, onStepComplete } = opts;
 
   const stepResults: StepResult[] = [];
   const allArtifacts: string[] = [];
   const issues: string[] = [];
+
+  const emitProgress = async (
+    stepId: string,
+    status: TaskStepStatus,
+    artifacts: string[],
+    issue?: string,
+  ) => {
+    if (!onStepComplete) return;
+    await onStepComplete({ stepId, status, artifacts, issue, plan });
+  };
 
   for (const step of plan.steps) {
     step.status = "in-progress";
@@ -166,6 +186,7 @@ export async function runResolveTask(
     if (dryRun) {
       stepResults.push({ stepId: step.id, status: "done", artifacts: [] });
       step.status = "done";
+      await emitProgress(step.id, "done", []);
       continue;
     }
 
@@ -176,6 +197,7 @@ export async function runResolveTask(
       step.blockerReason = msg;
       issues.push(`Step ${step.id} blocked: ${msg}`);
       stepResults.push({ stepId: step.id, status: "blocked", artifacts: [], issue: msg });
+      await emitProgress(step.id, "blocked", [], msg);
       continue;
     }
 
@@ -186,12 +208,14 @@ export async function runResolveTask(
       step.output = out;
       stepResults.push({ stepId: step.id, status: "done", artifacts });
       allArtifacts.push(...artifacts);
+      await emitProgress(step.id, "done", artifacts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       step.status = "blocked";
       step.blockerReason = msg;
       issues.push(`Step ${step.id} blocked: ${msg}`);
       stepResults.push({ stepId: step.id, status: "blocked", artifacts: [], issue: msg });
+      await emitProgress(step.id, "blocked", [], msg);
     }
   }
 

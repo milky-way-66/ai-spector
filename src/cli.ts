@@ -1380,14 +1380,15 @@ cocoindex
 // ── resolve-task ──────────────────────────────────────────────────────────────
 
 program
-  .command("resolve-task <planJson>")
+  .command("resolve-task [planJson]")
   .description(
-    "Execute a resolve-task plan from a JSON file. The file must contain { intent, goalSpec, plan }.",
+    "Execute a resolve-task plan from a JSON file or --task-id (approved task in .ai-spector/.docflow/tasks/).",
   )
   .option("--root <path>", "Project root (default: cwd)")
+  .option("--task-id <id>", "Load approved plan from task file")
   .option("--dry-run", "Validate plan without writing any changes")
   .option("--json", "JSON output")
-  .action(async (planJson: string, opts) => {
+  .action(async (planJson: string | undefined, opts) => {
     const { readJson } = await import("./core/util/fs.js");
     const {
       runResolveTask,
@@ -1401,22 +1402,55 @@ program
     const { runGraphReport } = await import("./core/operations/graph-report.js");
     const { runGraphImpact } = await import("./core/operations/graph-impact.js");
     const { resolveProjectPaths } = await import("./core/util/paths.js");
-
-    const raw = await readJson<{
-      intent: string;
-      goalSpec: {
-        trigger: string;
-        domain: string;
-        scope: string[];
-        criteria: string[];
-        notes?: string;
-      };
-      plan: {
-        steps: Array<{ id: string; description: string; tool: string; args: Record<string, unknown> }>;
-      };
-    }>(resolve(planJson));
+    const {
+      loadResolveExecutionContext,
+      recordResolveStepProgress,
+    } = await import("./core/operations/task.js");
 
     const paths = await resolveProjectPaths(opts.root);
+
+    let intent: string;
+    let goalSpec: ReturnType<typeof createGoalSpec>;
+    let plan: ReturnType<typeof createPlan>;
+    const taskId = opts.taskId as string | undefined;
+
+    if (taskId) {
+      const ctx = await loadResolveExecutionContext({ root: paths.root, taskId });
+      intent = ctx.intent;
+      goalSpec = ctx.goalSpec;
+      plan = ctx.plan;
+    } else {
+      if (!planJson) {
+        throw new Error("Provide planJson path or --task-id");
+      }
+      const raw = await readJson<{
+        intent: string;
+        goalSpec: {
+          trigger: string;
+          domain: string;
+          scope: string[];
+          criteria: string[];
+          notes?: string;
+        };
+        plan: {
+          steps: Array<{ id: string; description: string; tool: string; args: Record<string, unknown> }>;
+        };
+      }>(resolve(planJson));
+      goalSpec = createGoalSpec(
+        raw.goalSpec.trigger,
+        raw.goalSpec.domain as TaskDomain,
+        raw.goalSpec.scope,
+        raw.goalSpec.criteria,
+        raw.goalSpec.notes,
+      );
+      plan = createPlan(
+        goalSpec,
+        raw.plan.steps,
+        goalSpec.scope.map((nodeId) => ({ nodeId, directCallers: 0, riskLevel: "low" as const })),
+      );
+      plan.approvedAt = new Date().toISOString();
+      intent = raw.intent;
+    }
 
     const executors: Record<string, StepExecutor> = {
       index: async (_args: Record<string, unknown>, root: string) => {
@@ -1444,22 +1478,24 @@ program
       },
     };
 
-    const goalSpec = createGoalSpec(
-      raw.goalSpec.trigger,
-      raw.goalSpec.domain as TaskDomain,
-      raw.goalSpec.scope,
-      raw.goalSpec.criteria,
-      raw.goalSpec.notes,
-    );
-    const plan = createPlan(
-      goalSpec,
-      raw.plan.steps,
-      goalSpec.scope.map((nodeId) => ({ nodeId, directCallers: 0, riskLevel: "low" as const })),
-    );
-    plan.approvedAt = new Date().toISOString();
+    const onStepComplete = taskId
+      ? async (
+          event: import("./core/operations/resolve-task.js").ResolveStepProgressEvent,
+        ) => {
+          await recordResolveStepProgress({
+            root: paths.root,
+            taskId,
+            plan: event.plan,
+            stepId: event.stepId,
+            stepStatus: event.status,
+            artifacts: event.artifacts,
+            blocker: event.issue ?? null,
+          });
+        }
+      : undefined;
 
     const result = await runResolveTask({
-      intent: raw.intent,
+      intent,
       goalSpec,
       plan,
       projectRoot: paths.root,
@@ -1467,6 +1503,7 @@ program
       rulesPath: paths.rulesImpact,
       executors,
       dryRun: opts.dryRun,
+      onStepComplete,
     });
 
     if (opts.json) console.log(JSON.stringify(result, null, 2));

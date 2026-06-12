@@ -6,6 +6,10 @@ import {
   type ExecutorMap,
   type ImpactSummary,
 } from "../../../core/operations/resolve-task.js";
+import {
+  loadResolveExecutionContext,
+  recordResolveStepProgress,
+} from "../../../core/operations/task.js";
 import { runIndex } from "../../../core/operations/index.js";
 import { runGraphImpact } from "../../../core/operations/graph-impact.js";
 import { runGraphMerge } from "../../../core/operations/graph-merge.js";
@@ -44,28 +48,56 @@ const MCP_EXECUTORS: ExecutorMap = {
 export async function toolResolveTask(input: z.infer<typeof ResolveTaskSchema>) {
   const paths = await resolveProjectPaths(input.root);
 
-  // Rebuild impactMap from scope items so the core runner can compute riskLevel.
-  // MCP callers can pass pre-computed impactMap via plan; here we provide a
-  // zero-impact default so the runner can proceed without a graph query.
-  const impactMap: ImpactSummary[] = input.plan.goal.scope.map((nodeId) => ({
-    nodeId,
-    directCallers: 0,
-    riskLevel: "low" as const,
-  }));
+  let intent: string;
+  let goalSpec;
+  let plan;
 
-  const goalSpec = createGoalSpec(
-    input.goalSpec.trigger,
-    input.goalSpec.domain,
-    input.goalSpec.scope,
-    input.goalSpec.criteria,
-    input.goalSpec.notes,
-  );
+  if (input.taskId) {
+    const ctx = await loadResolveExecutionContext({
+      root: input.root ?? paths.root,
+      taskId: input.taskId,
+    });
+    intent = ctx.intent;
+    goalSpec = ctx.goalSpec;
+    plan = ctx.plan;
+  } else {
+    if (!input.intent || !input.goalSpec || !input.plan) {
+      throw new Error("Provide taskId or intent+goalSpec+plan");
+    }
+    const impactMap: ImpactSummary[] = input.plan.goal.scope.map((nodeId) => ({
+      nodeId,
+      directCallers: 0,
+      riskLevel: "low" as const,
+    }));
+    goalSpec = createGoalSpec(
+      input.goalSpec.trigger,
+      input.goalSpec.domain,
+      input.goalSpec.scope,
+      input.goalSpec.criteria,
+      input.goalSpec.notes,
+    );
+    plan = createPlan(goalSpec, input.plan.steps, impactMap);
+    plan.approvedAt = new Date().toISOString();
+    intent = input.intent;
+  }
 
-  const plan = createPlan(goalSpec, input.plan.steps, impactMap);
-  plan.approvedAt = new Date().toISOString();
+  const taskId = input.taskId;
+  const onStepComplete = taskId
+    ? async (event: import("../../../core/operations/resolve-task.js").ResolveStepProgressEvent) => {
+        await recordResolveStepProgress({
+          root: input.root ?? paths.root,
+          taskId,
+          plan: event.plan,
+          stepId: event.stepId,
+          stepStatus: event.status,
+          artifacts: event.artifacts,
+          blocker: event.issue ?? null,
+        });
+      }
+    : undefined;
 
   const result = await runResolveTask({
-    intent: input.intent,
+    intent,
     goalSpec,
     plan,
     projectRoot: paths.root,
@@ -73,6 +105,7 @@ export async function toolResolveTask(input: z.infer<typeof ResolveTaskSchema>) 
     rulesPath: paths.rulesImpact,
     executors: MCP_EXECUTORS,
     dryRun: input.dryRun,
+    onStepComplete,
   });
 
   return result;

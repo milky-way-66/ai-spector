@@ -36,13 +36,13 @@ The user described a **change**, not a full generate-from-scratch run. Your job 
 ## Workflow (strict)
 
 ```
-Phase 1  Receive intent          → acknowledge, no tools
+Phase 1  Receive intent          → task_list / task_create (resolve)
 Phase 2  Clarify (≤3 questions) → fill GoalSpec fields
 Phase 3  Discover (optional)    → read-only lookup for scope
 Phase 4  Show plan              → GoalSpec + TaskPlan table
-Phase 5  Wait for approval      → user must say yes / approve / go ahead
-Phase 6  Execute                → edits + resolve_task for index/graph steps
-Phase 7  Report                 → state update summary
+Phase 5  Wait for approval      → task_update + task_approve_plan
+Phase 6  Execute                → edits + resolve_task({ taskId })
+Phase 7  Report                 → task_complete + summary
 ```
 
 **Never skip Phase 2–5.** "Add login with Google" is not specific enough — you still clarify domain, target file/section, and done criteria.

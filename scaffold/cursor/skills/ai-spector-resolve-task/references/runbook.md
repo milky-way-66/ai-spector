@@ -21,7 +21,10 @@ Plan-first workflow for incremental doc/graph changes. The agent **never edits o
 
 User sends a free-form message.
 
-**Actions:** Read the message. Acknowledge you will use the resolve-task workflow.
+**Actions:**
+1. `task_list({ status: ["active", "paused"] })` — if a **resolve** task exists, offer **resume** (`task_resume`) or start new.
+2. Otherwise `task_create({ kind: "resolve", workflow: "resolve", trigger: "<user message>" })`.
+3. Acknowledge you will use the resolve-task workflow.
 
 **Forbidden:** Every tool — no `graph_impact`, no `index`, no file edits, no bulk `docs/**` reads.
 
@@ -112,7 +115,11 @@ End with:
 
 Proceed only on explicit approval: "yes", "approve", "go ahead", "looks good", "execute".
 
-If the user changes the plan → update GoalSpec/TaskPlan → show again → wait again.
+**Persist before execute:**
+1. `task_update` — set `goal` and `plan: { kind: "resolve", plan: <TaskPlan> }`.
+2. `task_approve_plan` — unlocks the execute step (writes audit log).
+
+If the user changes the plan → update GoalSpec/TaskPlan → `task_update` → show again → wait again.
 
 ---
 
@@ -124,7 +131,9 @@ Run **only** approved steps, in order.
 Use Edit / Write. Report each file changed.
 
 ### MCP / CLI steps
-Use `resolve_task` for batched index/graph steps, or call MCP tools individually per the plan:
+Prefer **`resolve_task({ taskId })`** — loads the approved plan from the task file and updates step progress after each executor.
+
+Inline plan (legacy) or one-off runs:
 
 ```json
 {
@@ -151,9 +160,11 @@ Use `resolve_task` for batched index/graph steps, or call MCP tools individually
 }
 ```
 
-CLI fallback: `npx ai-spector resolve-task plan.json`
+CLI fallback:
+- `npx ai-spector resolve-task --task-id task-abc123` (preferred)
+- `npx ai-spector resolve-task plan.json`
 
-**Note:** Edit steps (s1) are done outside `resolve_task` — the tool only runs registered executors (`index`, `graph_merge`, `graph_impact`, `graph_report`).
+**Note:** Edit steps (s1) are done outside `resolve_task` — the tool only runs registered executors (`index`, `graph_merge`, `graph_impact`, `graph_report`). After edits, `task_update` the execute step with artifact paths for drift tracking on resume.
 
 ### If a step is blocked
 Report the blocker. Ask: skip, retry, or stop?
@@ -161,6 +172,8 @@ Report the blocker. Ask: skip, retry, or stop?
 ---
 
 ## Phase 7 — Report state update
+
+`task_complete({ taskId, summary: "..." })` when the user is satisfied.
 
 ```
 ✓ Task task-abc123 — COMPLETE
@@ -195,11 +208,12 @@ Ask if anything else needs adjustment.
 
 | Command | Purpose |
 |---------|---------|
-| `npx ai-spector resolve-task plan.json` | Execute approved plan JSON |
-| `npx ai-spector resolve-task plan.json --dry-run` | Validate without writing |
-| `npx ai-spector resolve-task plan.json --json` | Machine-readable output |
+| `npx ai-spector resolve-task --task-id <id>` | Execute from task file (preferred) |
+| `npx ai-spector resolve-task plan.json` | Execute inline plan JSON |
+| `npx ai-spector resolve-task --task-id <id> --dry-run` | Validate without writing |
+| `npx ai-spector task create/list/get/update/approve` | Task state (see `ai-spector-task`) |
 
-MCP: `resolve_task` (schema: `ResolveTaskSchema`)
+MCP: `resolve_task({ taskId })` or inline plan · `task_*` tools for state
 
 ---
 

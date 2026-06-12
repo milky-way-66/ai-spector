@@ -196,9 +196,15 @@ export const FullTaskPlanSchema = TaskPlanSchema.extend({
 });
 
 export const ResolveTaskSchema = RootSchema.extend({
-  intent: z.string().describe("Free-form user intent (for context)"),
-  goalSpec: GoalSpecSchema,
-  plan: TaskPlanSchema,
+  taskId: z
+    .string()
+    .optional()
+    .describe(
+      "Load approved GoalSpec + TaskPlan from .ai-spector/.docflow/tasks/<id>.json instead of inline plan",
+    ),
+  intent: z.string().optional().describe("Free-form user intent (required when taskId omitted)"),
+  goalSpec: GoalSpecSchema.optional().describe("Required when taskId omitted"),
+  plan: TaskPlanSchema.optional().describe("Required when taskId omitted"),
   dryRun: z.boolean().optional().describe("Validate and plan without writing any changes"),
 });
 

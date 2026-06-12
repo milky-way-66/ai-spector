@@ -219,6 +219,8 @@ export {
   runTaskResume,
   runTaskComplete,
   runTaskAbandon,
+  loadResolveExecutionContext,
+  recordResolveStepProgress,
   buildTaskId,
   taskFilePath,
   taskIndexPath,
@@ -254,6 +256,7 @@ export type {
   TaskCompleteResult,
   TaskAbandonOptions,
   TaskAbandonResult,
+  RecordResolveStepProgressOptions,
 } from "../../core/operations/task.js";
 
 // Comments

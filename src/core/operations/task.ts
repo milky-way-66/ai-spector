@@ -5,7 +5,7 @@ import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson, writeJsonAtomic } from "../util/fs.js";
 import { runCheck } from "./check.js";
 import { runContextList } from "./context.js";
-import type { GoalSpec, TaskPlan } from "./resolve-task.js";
+import type { GoalSpec, TaskPlan, TaskStepStatus } from "./resolve-task.js";
 import {
   activeSlotFor,
   defaultNextAction,
@@ -745,6 +745,96 @@ export interface TaskAbandonOptions {
 export interface TaskAbandonResult {
   task: TaskState;
   taskPath: string;
+}
+
+// ── resolve-task integration ────────────────────────────────────────────────
+
+export async function loadResolveExecutionContext(opts: {
+  root?: string;
+  taskId: string;
+}): Promise<{
+  task: TaskState;
+  intent: string;
+  goalSpec: GoalSpec;
+  plan: TaskPlan;
+}> {
+  const { task } = await runTaskGet({ root: opts.root, taskId: opts.taskId });
+  if (task.workflow !== "resolve") {
+    throw new Error(`Task "${task.id}" uses workflow "${task.workflow}", not resolve`);
+  }
+  if (!task.planApprovedAt) {
+    throw new Error(`Task "${task.id}" plan is not approved — call task_approve_plan first`);
+  }
+  if (!task.plan || task.plan.kind !== "resolve") {
+    throw new Error(`Task "${task.id}" has no stored resolve plan`);
+  }
+  if (!task.goal) {
+    throw new Error(`Task "${task.id}" has no GoalSpec — set goal via task_update first`);
+  }
+  return {
+    task,
+    intent: task.trigger,
+    goalSpec: task.goal,
+    plan: structuredClone(task.plan.plan),
+  };
+}
+
+export interface RecordResolveStepProgressOptions {
+  root?: string;
+  taskId: string;
+  plan: TaskPlan;
+  stepId: string;
+  stepStatus: TaskStepStatus;
+  artifacts?: string[];
+  blocker?: string | null;
+}
+
+export async function recordResolveStepProgress(
+  opts: RecordResolveStepProgressOptions,
+): Promise<TaskUpdateResult> {
+  const now = new Date().toISOString();
+  const planStep = opts.plan.steps.find((s) => s.id === opts.stepId);
+  const patch: TaskUpdatePatch = {
+    plan: { kind: "resolve", plan: opts.plan },
+  };
+
+  if (planStep) {
+    planStep.status = opts.stepStatus;
+    if (opts.blocker) planStep.blockerReason = opts.blocker;
+    else if (opts.stepStatus === "done") delete planStep.blockerReason;
+  }
+
+  const anyBlocked = opts.plan.steps.some((s) => s.status === "blocked");
+  const allDone = opts.plan.steps.every((s) => s.status === "done");
+
+  if (anyBlocked) {
+    patch.status = "blocked";
+    patch.step = {
+      id: "execute",
+      patch: {
+        status: "blocked",
+        blocker: opts.blocker ?? "execution step blocked",
+        artifacts: opts.artifacts,
+      },
+    };
+    patch.blockers = [opts.blocker ?? "execution step blocked"];
+  } else if (allDone) {
+    patch.step = {
+      id: "execute",
+      patch: { status: "done", completedAt: now, artifacts: opts.artifacts ?? [] },
+    };
+    patch.currentStepId = "report";
+    patch.phase = "report";
+    patch.phaseStatus = "in_progress";
+    patch.nextAction = defaultNextAction("resolve", "report");
+  } else {
+    patch.step = {
+      id: "execute",
+      patch: { status: "in-progress", artifacts: opts.artifacts },
+    };
+  }
+
+  return runTaskUpdate({ root: opts.root, taskId: opts.taskId, patch });
 }
 
 export async function runTaskAbandon(opts: TaskAbandonOptions): Promise<TaskAbandonResult> {
