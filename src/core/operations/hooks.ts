@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { loadDocflowConfig } from "../config/load.js";
 import { validateGraph } from "./validate.js";
+import { runCheck } from "./check.js";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { computeImpact, mergeImpactResults } from "../graph/impact.js";
 import { loadImpactRules } from "../graph/impact-loader.js";
@@ -66,6 +67,19 @@ export async function runPreCommitCheck(opts: PreCommitOptions = {}): Promise<Pr
   const relevant = staged.filter(isRelevantStagedPath);
   if (relevant.length === 0) {
     return { skipped: true, skipReason: "no staged doc or graph files", errors, warnings };
+  }
+
+  // Workspace structural check — blocks commit on error-severity findings.
+  try {
+    const check = await runCheck({ root });
+    for (const f of check.findings.filter((x) => x.severity === "error")) {
+      errors.push(`Workspace check [${f.ruleId}]: ${f.message}`);
+      if (f.fix) errors.push(`  Fix: ${f.fix}`);
+    }
+  } catch (err) {
+    warnings.push(
+      `Workspace check failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   const paths = await resolveProjectPaths(root);

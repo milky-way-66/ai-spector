@@ -154,6 +154,15 @@ export type {
   ReviewMigrateResult,
 } from "../../core/operations/review.js";
 
+// Workspace check
+export { runCheck } from "../../core/operations/check.js";
+export type {
+  CheckOptions,
+  CheckResult,
+  CheckFinding,
+  CheckSeverity,
+} from "../../core/operations/check.js";
+
 // Comments
 export {
   runCommentsList,

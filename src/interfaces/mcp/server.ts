@@ -32,6 +32,7 @@ import {
   ReviewCheckSchema,
   ReviewRejectSchema,
   ReviewListSchema,
+  WorkspaceCheckSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -47,6 +48,7 @@ import {
 import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
+import { toolWorkspaceCheck } from "./tools/check.js";
 import {
   toolReviewApprove,
   toolReviewStatus,
@@ -431,6 +433,19 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "workspace_check",
+  {
+    description:
+      "Validate workspace structure and config (required directories, docflow.config.json, language output folders, templates, context store, graph.json parseability). Structure/config only — use graph_validate for graph semantics. Pass fix:true to auto-create missing directories. Runs in pre-commit too.",
+    inputSchema: WorkspaceCheckSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkspaceCheck(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
@@ -448,6 +463,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
+    "workspace_check",
   ];
   process.stderr.write(
     `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,

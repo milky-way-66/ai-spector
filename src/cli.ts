@@ -20,6 +20,8 @@ import {
 import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./core/lang/queue.js";
 import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./core/operations/hooks.js";
 import { runSetup, runSetupCheck } from "./core/operations/setup.js";
+import { runCheck } from "./core/operations/check.js";
+import { formatCheck } from "./interfaces/cli/format/check.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
@@ -181,6 +183,20 @@ program
     });
     if (opts.json) console.log(JSON.stringify(audit, null, 2));
     else { console.log(formatSetupAudit(audit, true)); }
+  });
+
+program
+  .command("check")
+  .description("Validate workspace structure & config (warns on drift; non-zero exit on errors)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--fix", "Auto-create missing directories where possible")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const root = resolve(opts.cwd ?? process.cwd());
+    const result = await runCheck({ root, fix: opts.fix });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCheck(result));
+    if (!result.ok) process.exitCode = 1;
   });
 
 const lang = program.command("lang").description("Manage project languages");

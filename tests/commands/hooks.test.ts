@@ -30,6 +30,8 @@ async function setupProject(root: string): Promise<void> {
   });
   await mkdir(join(root, "docs/srs/en"), { recursive: true });
   await mkdir(join(root, "docs/srs/jp"), { recursive: true });
+  await mkdir(join(root, "docs/data-source"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
   await mkdir(join(root, ".ai-spector/.docflow/translation-queue/changes"), { recursive: true });
 }
 

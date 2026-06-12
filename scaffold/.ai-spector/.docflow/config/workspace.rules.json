@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "Structural rules for `ai-spector check` / MCP workspace_check. Override severity or disable per rule. Structure/config only — graph semantics stay in `graph validate`.",
+  "rules": [
+    { "id": "STRUCT-001", "severity": "error" },
+    { "id": "STRUCT-002", "severity": "error" },
+    { "id": "STRUCT-003", "severity": "warning" },
+    { "id": "CFG-001", "severity": "error" },
+    { "id": "TMPL-001", "severity": "warning" },
+    { "id": "CTX-001", "severity": "warning" },
+    { "id": "GRAPH-001", "severity": "warning" }
+  ]
+}

@@ -216,6 +216,15 @@ export const ReviewCheckSchema = RootSchema;
 
 export const ReviewMigrateSchema = RootSchema;
 
+// ── Workspace check ─────────────────────────────────────────────────────────
+
+export const WorkspaceCheckSchema = RootSchema.extend({
+  fix: z
+    .boolean()
+    .optional()
+    .describe("Attempt to repair auto-fixable findings (create missing dirs)"),
+});
+
 export const ReviewRejectSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path to dismiss from internal queue"),
   reason: z.string().optional().describe("Why the change does not require re-approval"),
