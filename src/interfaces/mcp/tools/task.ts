@@ -12,6 +12,7 @@ import type {
   TaskStatusSchema,
   TaskUpdateSchema,
 } from "../schemas.js";
+import type { WorkflowId } from "@/core/operations/task-templates.js";
 import {
   runTaskAbandon,
   runTaskApprovePlan,
@@ -30,7 +31,7 @@ export async function toolTaskCreate(input: z.infer<typeof TaskCreateSchema>) {
   return runTaskCreate({
     root: input.root,
     kind: input.kind,
-    workflow: input.workflow,
+    workflow: input.workflow as WorkflowId,
     trigger: input.trigger,
     docType: input.docType,
     force: input.force,
@@ -42,9 +43,11 @@ export async function toolTaskList(input: z.infer<typeof TaskListSchema>) {
     root: input.root,
     status: input.status,
     kind: input.kind,
-    workflow: input.workflow,
+    workflow: input.workflow as WorkflowId | undefined,
     recentOnly: input.recentOnly,
-    bootstrap: input.bootstrap,
+    bootstrap: input.bootstrap
+      ? { ...input.bootstrap, workflow: input.bootstrap.workflow as WorkflowId }
+      : undefined,
   });
 }
 

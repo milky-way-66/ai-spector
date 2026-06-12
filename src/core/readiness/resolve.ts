@@ -1,4 +1,4 @@
-import type { PackManifest } from "../config/types.js";
+import type { DocflowConfig, PackManifest } from "../config/types.js";
 import { loadDocflowConfig, resolveActivePackManifest } from "../config/load.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { resolveProfileForDocType } from "./config.js";

@@ -75,9 +75,9 @@ function inferNodeTypeFromProbe(probe: string, criterion: ReadinessCriterion): s
 function findSystemNode(graph: InMemoryGraph | null): { description?: string } | null {
   if (!graph) return null;
   for (const node of graph.nodesById.values()) {
-    if (node.type === "system") {
-      const props = node as { description?: string };
-      return { description: props.description };
+    if (node.id === "system" || /(^|\.)system($|\.)/i.test(node.id)) {
+      const props = node as { description?: string; name?: string };
+      if (props.description || props.name) return props;
     }
   }
   for (const node of graph.nodesById.values()) {

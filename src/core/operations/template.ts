@@ -428,7 +428,9 @@ async function writePackReadinessArtifacts(
 async function readContextMapFromPack(packDir: string): Promise<{ placeholders?: Record<string, { source: string }> }> {
   const path = join(packDir, "context-map.json");
   if (!existsSync(path)) return { placeholders: {} };
-  return readJson(path).catch(() => ({ placeholders: {} }));
+  return readJson<{ placeholders?: Record<string, { source: string }> }>(path).catch(() => ({
+    placeholders: {},
+  }));
 }
 
 /**

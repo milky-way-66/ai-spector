@@ -227,7 +227,9 @@ export async function validateCustomPack(
     : { placeholders: {} };
 
   const contextMapTodos: Array<{ placeholder: string; note?: string }> = [];
-  for (const [placeholder, entry] of Object.entries(contextMap.placeholders ?? {})) {
+  const placeholders: Record<string, { source: string; note?: string }> =
+    contextMap.placeholders ?? {};
+  for (const [placeholder, entry] of Object.entries(placeholders)) {
     if (entry.source === "TODO") {
       contextMapTodos.push({ placeholder, note: entry.note });
       gaps.push(
