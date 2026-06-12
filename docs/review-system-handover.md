@@ -1,197 +1,279 @@
 # Document Review System — Web Integration Handover
 
-> **Audience:** Web team implementing the client-side review UI.
-> **Source of truth:** `src/core/reviews/` in this repository.
+> **Audience:** Web team implementing the review UI on the **release branch**.
+> **Source of truth (schemas):** `src/core/reviews/` and `src/core/operations/review.ts` in this repository.
+> **Package version:** ai-spector ≥ 0.8.x
 
 ---
 
 ## 1. Overview
 
-The system enforces a sequential two-track review flow:
+### Two environments
+
+| Environment | Who | Purpose |
+|-------------|-----|---------|
+| **Authoring** (main / feature branches) | ai-spector CLI, MCP, internal devs | Edit docs, run `review check`, compute hashes, build snapshots/diffs, populate queue |
+| **Release** (release branch, read-only) | Web app — internal team + client | Display final documents, **toggle review status only** |
+
+```
+Authoring branch                         Release branch (web)
+─────────────────                        ────────────────────
+edit docs → review check → approve  →    publish final docs + review-queue
+(ai-spector owns hashes, diffs, queue)     (web owns status clicks only)
+```
+
+### Review flow
 
 ```
 Internal Review  →  Client Review  →  Fully Approved
 ```
 
-- **Internal track** — company employees using ai-spector CLI / MCP tools
-- **Client track** — client users using the web app
+On the **web app**, both tracks are handled by button clicks:
 
-The web app **reads** data written by ai-spector and **writes back only the client review decision**. All internal queue management, hash computation, and change detection is handled by ai-spector.
+- **Internal team** — approve documents waiting for internal sign-off
+- **Client** — approve or unapprove (reject) documents waiting for client sign-off
 
-**Key rule:** when a document's content changes after approval, both tracks are automatically invalidated and the document re-enters the internal queue. Internal must approve again before the client sees it.
-
----
-
-## 2. State Machine
-
-Each document has an `overallStatus` field:
-
-| `overallStatus`    | Meaning                                       | Notes |
-|--------------------|-----------------------------------------------|-------|
-| `pending_internal` | Waiting for internal review                   | Starting state; also set after content changes |
-| `pending_client`   | Internal approved, waiting for client review  | **Web app should surface this to the client** |
-| `approved`         | Both tracks approved the same content hash    | Fully signed off |
-| `rejected`         | Client rejected                               | Web app sets this; loops back to internal |
-
-### Transitions
-
-```
-document created / content changes
-        ↓
-  pending_internal
-        ↓  internal approves (ai-spector)
-  pending_client        ← entry appears in client_queue/pending.json
-        ↓  client approves (web app)
-     approved
-
-  client rejects (web app)
-        ↓
-     rejected           ← ai-spector's next reconcile moves it back to internal_queue
-```
+The release branch documents are **read-only**. Content does not change during web review, so there is no need for hash re-validation on the web side.
 
 ---
 
-## 3. Directory Structure
+## 2. Web Scope — What You Implement
 
-All review data lives under `.ai-spector/.docflow/review-queue/`:
+The web app is a **thin status layer**. Implement only:
+
+| Feature | Action |
+|---------|--------|
+| List documents + review status | Read `registry.json`, `pending.json` |
+| Show document content | Read markdown from `docPath` on release branch (read-only) |
+| Internal approve | Update `registry.json` + `pending.json` + `history.jsonl` |
+| Client approve | Update `registry.json` + `pending.json` + `history.jsonl` + archive |
+| Client unapprove / reject | Update `registry.json` + `pending.json` + `history.jsonl` + archive |
+
+Use role-based access: internal users see internal queue actions; client users see client queue actions.
+
+---
+
+## 3. Web Scope — What You Do NOT Implement
+
+Do **not** build any of the following on the web backend:
+
+| Out of scope | Owner |
+|--------------|-------|
+| Creating `registry.json` entries for new documents | ai-spector / release pipeline |
+| `review check`, hash computation, content fingerprinting | ai-spector |
+| `fingerprints.json` | ai-spector |
+| Snapshots (`snapshots/`) | ai-spector |
+| Diffs (`changes/`) | ai-spector |
+| Detecting content changes / staleness checks | ai-spector (not needed on release branch) |
+| Indexing or search over review data | Not required for v1 |
+| Editing document markdown | Release branch is read-only |
+
+If a document is missing from `registry.json` on the release branch, that is a **pipeline bug** — the web app should show an error, not try to initialise review state.
+
+---
+
+## 4. State Machine
+
+Each document has an `overallStatus` in `registry.json`:
+
+| `overallStatus`    | Meaning                                      | Who acts next |
+|--------------------|----------------------------------------------|---------------|
+| `pending_internal` | Waiting for internal review                  | Internal (web) |
+| `pending_client`   | Internal approved, waiting for client        | Client (web) |
+| `approved`         | Both tracks approved                         | — |
+| `rejected`         | Client unapproved / rejected                 | Internal (authoring) fixes, then new release |
+
+### Transitions (web actions only)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_internal: pipeline publishes release
+    pending_internal --> pending_client: internal approves (web)
+    pending_client --> approved: client approves (web)
+    pending_client --> rejected: client unapproves (web)
+    approved --> pending_client: client unapproves (web)
+    rejected --> pending_internal: new release after fixes (pipeline)
+```
+
+**Internal approve (web):** `pending_internal` → `pending_client`, move job from internal to client track in `pending.json`.
+
+**Client approve (web):** `pending_client` → `approved`, remove client job, archive to `client-resolved.json`.
+
+**Client unapprove / reject (web):** `pending_client` or `approved` → `rejected`, remove client job (if any), archive to `client-rejected.json`. Requires a comment/reason.
+
+> Content invalidation (hash change) happens only on the **authoring branch** via ai-spector `review check`. The release branch does not need this logic.
+
+---
+
+## 5. Directory Structure (read from release branch)
+
+All review state lives under `.ai-spector/.docflow/review-queue/`:
 
 ```
 .ai-spector/.docflow/review-queue/
-  registry.json                       logicalPath → approval state (replaces per-doc approval.json)
-  fingerprints.json                   logicalPath → { hash, docPath, scannedAt }
-  pending.json                        unified pending jobs (internal + client tracks)
-  history.jsonl                       global append-only audit log
-  internal-resolved.json              archived internal queue entries
-  internal-rejected.json
-  internal-failed.json
-  client-resolved.json
-  client-rejected.json
-  snapshots/
-    srs__01-overview.md               approved content snapshot (read-only for web)
-  changes/
-    srs__01-overview.json             diff since last approval (load on demand)
+  registry.json          ← web reads + updates status fields
+  pending.json           ← web reads + moves jobs between tracks
+  history.jsonl          ← web appends events
+  client-resolved.json   ← web appends on client approve
+  client-rejected.json   ← web appends on client unapprove
+  internal-resolved.json ← web appends on internal approve
+  fingerprints.json      ← read-only (ignore on web)
+  snapshots/             ← read-only (optional display)
+  changes/               ← read-only (optional diff display)
 ```
 
-> **Filename convention:** logical paths use `/` in keys (`srs/01-overview`) but `__` in snapshot/diff filenames (`srs__01-overview`).
-
-Legacy projects may still have `reviews/` at the project root — run `npx ai-spector review migrate` once to move to the layout above.
+The pipeline must ship a complete `registry.json` and `pending.json` before the web app goes live. Web never creates these files from scratch.
 
 ---
 
-## 4. File Schemas
+## 6. File Schemas
 
-### `approval.json`
+### `registry.json`
 
 ```json
 {
-  "version": 1,
-  "logicalPath": "srs/01-overview",
-  "contentHash": "abc123def456ef78",
-  "overallStatus": "pending_client",
+  "version": 2,
+  "documents": {
+    "srs/01-overview": {
+      "version": 2,
+      "logicalPath": "srs/01-overview",
+      "docPath": "docs/srs/vi/01-overview.md",
+      "contentHash": "abc123def456ef78",
+      "overallStatus": "pending_client",
+      "internal": {
+        "status": "approved",
+        "approvedAt": "2026-06-11T10:00:00.000Z",
+        "approvedBy": "alice",
+        "invalidatedAt": null
+      },
+      "client": {
+        "status": "pending",
+        "approvedAt": null,
+        "comment": null
+      },
+      "snapshotRef": ".ai-spector/.docflow/review-queue/snapshots/srs__01-overview.md",
+      "lastEventAt": "2026-06-11T10:00:00.000Z"
+    }
+  }
+}
+```
+
+| Field | Web reads | Web writes |
+|-------|-----------|------------|
+| `overallStatus` | ✓ | ✓ (derived from track updates) |
+| `internal.*` | ✓ | ✓ (internal approve only) |
+| `client.*` | ✓ | ✓ (client approve / unapprove) |
+| `lastEventAt` | ✓ | ✓ |
+| `contentHash`, `docPath`, `snapshotRef` | ✓ | ✗ never |
+
+Enum values:
+
+| Field | Values |
+|-------|--------|
+| `overallStatus` | `pending_internal` \| `pending_client` \| `approved` \| `rejected` |
+| `internal.status` | `pending` \| `approved` \| `needs_review` |
+| `client.status` | `pending` \| `approved` \| `rejected` |
+
+### `pending.json`
+
+Filter jobs by `track` to build each queue view.
+
+```json
+{
+  "version": 2,
+  "jobs": [
+    {
+      "id": "srs/01-overview:internal",
+      "logicalPath": "srs/01-overview",
+      "track": "internal",
+      "reason": "first_review",
+      "queuedAt": "2026-06-11T09:00:00.000Z",
+      "baselineHash": null,
+      "currentHash": "abc123def456ef78"
+    },
+    {
+      "id": "srs/02-scope:client",
+      "logicalPath": "srs/02-scope",
+      "track": "client",
+      "reason": "awaiting_client_signoff",
+      "queuedAt": "2026-06-11T10:00:00.000Z",
+      "baselineHash": "def456abc7890123",
+      "currentHash": "def456abc7890123"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id` | `{logicalPath}:{track}` — use this to add/remove jobs |
+| `track` | `"internal"` or `"client"` |
+| `reason` | Informational — show in UI, do not compute |
+
+Common `reason` values: `first_review`, `awaiting_client_signoff`, `content_changed`, `client_rejected`.
+
+### `history.jsonl`
+
+Append one JSON line per action. Filter by `logicalPath` for per-document audit.
+
+```jsonl
+{"event":"approved","logicalPath":"srs/01-overview","track":"internal","at":"2026-06-11T10:00:00.000Z","by":"alice@company.com"}
+{"event":"client_approved","logicalPath":"srs/01-overview","at":"2026-06-11T11:00:00.000Z","by":"client-user@client.com","hash":"abc123def456ef78"}
+{"event":"client_rejected","logicalPath":"srs/02-scope","at":"2026-06-12T09:00:00.000Z","by":"client-user@client.com","reason":"Section 3 needs more detail"}
+```
+
+---
+
+## 7. Web Actions
+
+All actions: **read-modify-write** the full `registry.json` and `pending.json`. Preserve all fields you do not own. No hash checks required.
+
+### 7.1 Internal Approve
+
+**Precondition:** `overallStatus === "pending_internal"` (or internal job exists in `pending.json`).
+
+**Update `registry.json`:**
+
+```json
+{
   "internal": {
     "status": "approved",
-    "approvedAt": "2026-06-11T10:00:00.000Z",
-    "approvedBy": "alice",
+    "approvedAt": "<ISO-8601>",
+    "approvedBy": "<userId>",
     "invalidatedAt": null
   },
   "client": {
     "status": "pending",
     "approvedAt": null,
     "comment": null
-  }
+  },
+  "overallStatus": "pending_client",
+  "lastEventAt": "<ISO-8601>"
 }
 ```
 
-Enum values:
-- `overallStatus`: `pending_internal | pending_client | approved | rejected`
-- `internal.status`: `pending | approved | needs_review`
-- `client.status`: `pending | approved | rejected`
+Do NOT change `contentHash`, `docPath`, `snapshotRef`.
 
-### `client_queue/pending.json`
+**Update `pending.json`:**
 
-Lightweight index — no diff content inline. Poll this file.
+1. Remove job `{logicalPath}:internal`
+2. Add job `{logicalPath}:client` with `reason: "awaiting_client_signoff"`, copy `currentHash` to both `baselineHash` and `currentHash`
 
-```json
-{
-  "version": 1,
-  "entries": [
-    {
-      "logicalPath": "srs/01-overview",
-      "queuedAt": "2026-06-11T10:00:00.000Z",
-      "reason": "content_changed",
-      "approvedHash": "prevhash12345678",
-      "currentHash": "newhash123456ab"
-    }
-  ]
-}
-```
-
-`reason` values: `content_changed | client_rejected` (the latter means internal re-submitted after a prior rejection — surface this clearly in the UI).
-
-### `client_queue/diffs/<safe-name>.json`
-
-Load on demand when the user opens a document for review.
-
-```json
-{
-  "logicalPath": "srs/01-overview",
-  "approvedHash": "prevhash12345678",
-  "currentHash": "newhash123456ab",
-  "diff": "42 - ## Old Title\n42 + ## New Title\n",
-  "linesAdded": 1,
-  "linesRemoved": 1,
-  "computedAt": "2026-06-11T10:00:00.000Z"
-}
-```
-
-Diff format: `"{lineNo} - removed line"` / `"{lineNo} + added line"`. Render `-` lines in red, `+` lines in green.
-
-### `approval_history.jsonl`
-
-Append-only. One JSON object per line. Read-only for the web app (except appending client events — see §6).
+**Append `history.jsonl`:**
 
 ```jsonl
-{"event":"approved","track":"internal","at":"2026-06-11T10:00:00.000Z","by":"alice","hash":"abc123"}
-{"event":"approved","track":"client","at":"2026-06-11T11:00:00.000Z","by":"client-user","hash":"abc123"}
-{"event":"invalidated","at":"2026-06-12T08:00:00.000Z","reason":"content_changed","previousHash":"abc123","newHash":"def456"}
+{"event":"approved","logicalPath":"srs/01-overview","track":"internal","at":"<ISO>","by":"<userId>","hash":"<contentHash from registry>"}
 ```
 
----
-
-## 5. Write Boundary
-
-| File / Field | ai-spector | Web app |
-|---|---|---|
-| `approval.json` → `internal.*` | **Write** | Read only |
-| `approval.json` → `client.*` | Read only | **Write** |
-| `approval.json` → `overallStatus` | Write (internal actions) | **Write** (on client decision) |
-| `approval.json` → `contentHash` | **Write** | Read only |
-| `internal_queue/*` | **Write** | Read only |
-| `client_queue/pending.json` | Write (adds entries) | **Write** (removes entries) |
-| `client_queue/resolved.json` | Read only | **Write** (archive on approve) |
-| `client_queue/rejected.json` | Read only | **Write** (archive on reject) |
-| `client_queue/diffs/*` | **Write** | Read only |
-| `approval_snapshot.md` | **Write** | Read only |
-| `approval_history.jsonl` | Write (internal events) | **Write** (client events only) |
+**Archive (optional):** append removed internal job entry to `internal-resolved.json`.
 
 ---
 
-## 6. What the Web App Must Implement
+### 7.2 Client Approve
 
-### 6.1 Display: Client Review Queue
+**Precondition:** `overallStatus === "pending_client"`.
 
-Poll (or watch) `reviews/client_queue/pending.json`. For each entry show:
-
-- Document name / path from `logicalPath`
-- `queuedAt` timestamp
-- `reason` — if `client_rejected`, indicate this is a re-submission after prior rejection
-- Hash change summary (`approvedHash` → `currentHash`)
-
-To show the diff, load `reviews/client_queue/diffs/<safe-name>.json` (replace `/` with `--` in `logicalPath`).
-
-### 6.2 Action: Client Approves
-
-**Step 1 — Update `approval.json`** (read first, change only `client.*` and `overallStatus`):
+**Update `registry.json`:**
 
 ```json
 {
@@ -200,31 +282,38 @@ To show the diff, load `reviews/client_queue/diffs/<safe-name>.json` (replace `/
     "approvedAt": "<ISO-8601>",
     "comment": "<optional note or null>"
   },
-  "overallStatus": "approved"
+  "overallStatus": "approved",
+  "lastEventAt": "<ISO-8601>"
 }
 ```
 
-Do NOT change: `version`, `logicalPath`, `contentHash`, `internal.*`.
+**Update `pending.json`:** remove job `{logicalPath}:client`.
 
-**Step 2 — Remove from `client_queue/pending.json`:** load, filter out the entry, write back.
-
-**Step 3 — Archive to `client_queue/resolved.json`:** load (create `{ "version": 1, "entries": [] }` if missing), append the entry, write back.
-
-**Step 4 — Append to `approval_history.jsonl`:**
+**Append `history.jsonl`:**
 
 ```jsonl
-{"event":"approved","track":"client","at":"<ISO>","by":"<userId>","hash":"<contentHash>"}
+{"event":"client_approved","logicalPath":"srs/01-overview","at":"<ISO>","by":"<userId>","hash":"<contentHash>"}
 ```
 
-**Step 5 — Delete diff file** (optional but keeps storage clean):
+**Archive:** append to `client-resolved.json`:
 
+```json
+{
+  "logicalPath": "srs/01-overview",
+  "queuedAt": "<from removed job>",
+  "reason": "awaiting_client_signoff",
+  "approvedHash": "<contentHash>",
+  "currentHash": "<contentHash>"
+}
 ```
-reviews/client_queue/diffs/<safe-name>.json
-```
 
-### 6.3 Action: Client Rejects
+---
 
-**Step 1 — Update `approval.json`:**
+### 7.3 Client Unapprove / Reject
+
+**Precondition:** `overallStatus === "pending_client"` or `overallStatus === "approved"` (client revokes prior approval).
+
+**Update `registry.json`:**
 
 ```json
 {
@@ -233,104 +322,140 @@ reviews/client_queue/diffs/<safe-name>.json
     "approvedAt": null,
     "comment": "<reason — required>"
   },
-  "overallStatus": "rejected"
+  "overallStatus": "rejected",
+  "lastEventAt": "<ISO-8601>"
 }
 ```
 
-**Step 2 — Remove from `client_queue/pending.json`** (same as approve step 2).
+**Update `pending.json`:** remove job `{logicalPath}:client` if present.
 
-**Step 3 — Archive to `client_queue/rejected.json`** (same pattern as resolved).
-
-**Step 4 — Append to `approval_history.jsonl`:**
+**Append `history.jsonl`:**
 
 ```jsonl
-{"event":"rejected","track":"client","at":"<ISO>","by":"<userId>","reason":"<comment>"}
+{"event":"client_rejected","logicalPath":"srs/01-overview","at":"<ISO>","by":"<userId>","reason":"<comment>"}
 ```
 
-> ai-spector's next `review check` run will detect the rejection and move the document back to `internal_queue` automatically. The web app does **not** touch `internal_queue`.
+**Archive:** append to `client-rejected.json` (same entry shape as §7.2 archive).
 
-### 6.4 Status Badge
-
-Read `reviews/<logicalPath>/approval.json` and show a badge:
-
-| `overallStatus`    | Label                    | Color  |
-|--------------------|--------------------------|--------|
-| `pending_internal` | ⏳ Pending internal review | Grey   |
-| `pending_client`   | 👁 Awaiting your review   | Yellow |
-| `approved`         | ✅ Approved               | Green  |
-| `rejected`         | ❌ Rejected               | Red    |
-| (file missing)     | — Not submitted           | None   |
+After client rejection, the **authoring team** fixes documents and publishes a **new release**. Web does not re-queue internal jobs.
 
 ---
 
-## 7. How Change Detection Works
+## 8. UI Guidelines
 
-1. When internal approves, ai-spector computes SHA-256 (first 16 hex chars) of the document and stores it as `contentHash`.
-2. The full content is saved as `approval_snapshot.md`.
-3. Periodically (`review check` CLI / MCP), ai-spector re-hashes all approved documents.
-4. If the hash changed: approval is invalidated, a diff is computed from `approval_snapshot.md` to current content, and the document enters `internal_queue`.
-5. If the document was `pending_client` when the change is detected, it is **removed from `client_queue/pending.json` automatically**.
+### Queues
 
-The web app does not need to implement change detection.
+| View | Data source |
+|------|-------------|
+| Internal queue | `pending.json` jobs where `track === "internal"` |
+| Client queue | `pending.json` jobs where `track === "client"` |
+| All documents + status | `registry.json` → `documents` |
 
----
+### Status badges
 
-## 8. Edge Cases
+| `overallStatus`    | Internal UI label       | Client UI label        |
+|--------------------|-------------------------|------------------------|
+| `pending_internal` | Awaiting internal       | Not yet available      |
+| `pending_client`   | Sent to client          | Awaiting your review   |
+| `approved`         | Approved                | Approved               |
+| `rejected`         | Client rejected         | Rejected               |
 
-### Concurrent writes
+### Document display
 
-- Always **read before write**. Never overwrite fields you do not own.
-- The web app owns only `client.*` and `overallStatus`. Read the full JSON, update those fields, write the whole object back.
-- If you read `overallStatus: "pending_internal"` on a document you were about to approve, the document was re-invalidated while the user was reviewing. **Discard the decision and show an "outdated — please wait for re-review" message.**
+- Read markdown from `docPath` on the release branch
+- Render read-only — no edit controls
+- Optional: show pre-computed diff from `changes/<safe-name>.json` if the pipeline included one (display only, do not recompute)
+- Optional: show `client.comment` from a prior rejection when `reason === "client_rejected"`
 
-### Missing files
+### Buttons by role
 
-| Situation | Handle as |
-|---|---|
-| `approval.json` missing | Document not submitted — show "Not submitted" |
-| `client_queue/pending.json` missing | No pending items — treat as empty array |
-| Diff file missing | Show hash summary only (`approvedHash → currentHash`); do not error |
-| `approval_history.jsonl` missing | Create it on first append |
-
-### Re-rejection flow
-
-When a previously rejected document is re-approved by internal and re-submitted, the queue entry has `reason: "client_rejected"`. Show this in the UI so the client knows context.
-
-### `version` field
-
-`approval.json` has `version: 1` for schema versioning (not a write counter). Always include it unchanged when writing back.
+| Role | Available actions |
+|------|-------------------|
+| Internal | Approve (when `pending_internal`) |
+| Client | Approve, Unapprove/Reject (when `pending_client` or `approved`) |
 
 ---
 
-## 9. Quick Reference
+## 9. Write Boundary Summary
 
-### Files to read
+| File | Web reads | Web writes |
+|------|-----------|------------|
+| `registry.json` → status fields | ✓ | ✓ |
+| `registry.json` → `contentHash`, `docPath`, `snapshotRef` | ✓ | ✗ |
+| `pending.json` | ✓ | ✓ (move jobs between tracks) |
+| `history.jsonl` | ✓ | ✓ (append only) |
+| `client-resolved.json`, `client-rejected.json` | ✓ | ✓ (append) |
+| `internal-resolved.json` | ✓ | ✓ (append, optional) |
+| `fingerprints.json`, `snapshots/`, `changes/` | optional | ✗ |
+| Document markdown (`docPath`) | ✓ | ✗ |
 
-| File | Purpose |
-|---|---|
-| `reviews/client_queue/pending.json` | Docs waiting for client review |
-| `reviews/<path>/approval.json` | Status of a specific document |
-| `reviews/client_queue/diffs/<safe>.json` | Line diff for review UI |
-| `reviews/<path>/approval_history.jsonl` | Audit log |
-| `reviews/client_queue/resolved.json` | History of client-approved docs |
-| `reviews/client_queue/rejected.json` | History of client-rejected docs |
+---
 
-### Files to write
+## 10. Release Pipeline Responsibilities
 
-| File | When |
-|---|---|
-| `reviews/<path>/approval.json` (`client.*` only) | On approve or reject decision |
-| `reviews/client_queue/pending.json` | Remove entry after decision |
-| `reviews/client_queue/resolved.json` | Append on approve |
-| `reviews/client_queue/rejected.json` | Append on reject |
-| `reviews/<path>/approval_history.jsonl` | Append client event line |
+Before deploying the web app for a release, the pipeline must:
 
-### Files never to touch
+1. Merge final document content into the **release branch**
+2. Run ai-spector review workflow on authoring (or CI) to produce a consistent `review-queue/`
+3. Copy/commit `registry.json`, `pending.json`, and related files to the release branch
+4. Ensure every published document has a `registry.json` entry and correct `docPath`
+5. Set initial `overallStatus` (typically `pending_internal` or `pending_client` depending on whether internal already approved during authoring)
 
-| File | Owner |
-|---|---|
-| `reviews/internal_queue/*` | ai-spector only |
-| `reviews/<path>/approval_snapshot.md` | ai-spector only |
-| `reviews/<path>/approval.json` → `internal.*` | ai-spector only |
-| `reviews/<path>/approval.json` → `contentHash` | ai-spector only |
-| `reviews/client_queue/diffs/*` | ai-spector only |
+Web team consumes the output; web team does not run `review check` or `review migrate`.
+
+---
+
+## 11. Edge Cases
+
+### Concurrent clicks
+
+Use optimistic locking or file-level locking on `registry.json` / `pending.json`. If `overallStatus` changed between page load and submit, show "Status changed — please refresh."
+
+### Missing data
+
+| Situation | Web response |
+|-----------|--------------|
+| Document not in `registry.json` | Error — contact ops / pipeline |
+| `pending.json` missing | Treat as empty queue; status still readable from registry |
+| `docPath` file missing | Error — broken release |
+| `history.jsonl` missing | Create on first append |
+
+### New release after client rejection
+
+Old release branch keeps `rejected` state. New release ships updated docs and a fresh `review-queue/` from the pipeline. Web shows the new release independently.
+
+---
+
+## 12. Quick Reference
+
+### Paths (relative to release branch root)
+
+| Path | Web use |
+|------|---------|
+| `.ai-spector/.docflow/review-queue/registry.json` | Status of all documents |
+| `.ai-spector/.docflow/review-queue/pending.json` | Internal + client queues |
+| `.ai-spector/.docflow/review-queue/history.jsonl` | Audit log |
+| `documents[*].docPath` | Read-only markdown content |
+
+### ai-spector reference (authoring only — not web)
+
+| Command | Purpose |
+|---------|---------|
+| `review check` | Detect content changes, invalidate approvals |
+| `review approve` | Internal approve during authoring (CLI/MCP) |
+| `review queue` | List pending jobs |
+| `review migrate` | Migrate legacy `reviews/` layout |
+
+Schema definitions: `src/core/reviews/types.ts`.
+
+---
+
+## 13. Example: Internal → Client → Approved
+
+**Release ships** with `srs/01-overview` at `pending_internal`, internal job in `pending.json`.
+
+1. **Internal clicks Approve** → `overallStatus: pending_client`, client job added
+2. **Client clicks Approve** → `overallStatus: approved`, client job removed, archived
+3. Document shows ✅ Approved for both sides
+
+No hash computation on any web step — `contentHash` was set by ai-spector before release and stays unchanged on the release branch.
