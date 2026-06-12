@@ -1,0 +1,49 @@
+# Context briefing + plan gate (stages 3–4, always mandatory)
+
+Every generate run — full, explicit paths, or described scope — passes both
+gates before any file is written. There is no auto-confirm.
+
+## Stage 3 — Context briefing
+
+State **exactly what context and information will shape each document** so the
+user can see and approve the inputs. Per target document, list:
+
+| What | Example |
+|------|---------|
+| **Graph context** | Nodes/queries pulled (actors, `UC-xx`, `F-xx`, seeds) — and which resolved to empty |
+| **Data-source files** | Exact `docs/data-source/` files informing this doc |
+| **Context-store answers** | Which answered `Q-xxx` clarifications apply |
+| **Open assumptions** | User-accepted assumptions in effect, flagged for correction |
+| **Template** | Which template pack/section structure governs the output |
+| **NOT using** | Notable available context deliberately excluded, and why |
+
+The user confirms or corrects the briefing **first**. If they correct an input,
+re-run clarify/plan — never silently swap context after confirmation.
+
+## Stage 4 — Plan table
+
+After the briefing is confirmed, show the plan and wait for an explicit yes:
+
+```
+Plan — generate SRS (en)
+
+| Output                      | DAG node          | Sources used                   | Key points to cover                     |
+|-----------------------------|-------------------|--------------------------------|-----------------------------------------|
+| docs/srs/en/03-use-cases.md | srs.use-cases     | auth-notes.md, Q-001(answered) | Google+email login; guest checkout; …   |
+| docs/srs/en/04-features.md  | srs.features-list | feature-backlog.md             | F-01 cart, F-02 wishlist, …             |
+
+Clarifications resolved this run: Q-001, Q-003
+Accepted assumptions in effect: Q-007 — payment retry = 3 attempts
+
+Proceed? (yes / edit scope / revisit clarifications)
+```
+
+Rules:
+- **No file written before an explicit `yes`.**
+- "Sources used" makes the source→document mapping explicit.
+- "Key points" is the per-document content outline from graph + context store.
+- Include wave assignments (and secondary-language status columns when
+  multi-language).
+- "edit scope" → rebuild plan; "revisit clarifications" → back to clarify.
+- Log the confirmed plan to `.ai-spector/.docflow/logs/plan-<docType>-<ts>.json`
+  for audit and future check-back.

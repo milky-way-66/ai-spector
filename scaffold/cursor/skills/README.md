@@ -12,6 +12,7 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings â†’ Rules â†
 | You want toâ€¦ | Skill |
 |--------------|-------|
 | **Setup / bootstrap project** | `ai-spector-setup` |
+| Check workspace structure / stale clarifications | `ai-spector-check` |
 | Analyze, index, validate graph, impact, visualize | `ai-spector-graph` |
 | SRS / requirements | `ai-spector-generate-srs` |
 | Screens, APIs, DB basic design | `ai-spector-generate-basic-design` |
@@ -28,7 +29,11 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings â†’ Rules â†
 |-----|------|
 | CLI failures (fix / workaround / pause) | `ai-spector/references/cli-failures.md` |
 | Graph CLI | `ai-spector/references/graph.md` |
-| Generation workflow | `ai-spector/references/generate-workflow.md` |
+| Generation workflow (gated flow) | `ai-spector/references/generate-workflow.md` |
+| Workspace check | `ai-spector/references/workspace-check.md` |
+| Clarify + context store | `ai-spector/references/clarify.md`, `ai-spector/references/context-store.md` |
+| Briefing + plan gate | `ai-spector/references/plan-and-briefing.md` |
+| Spec extraction queue | `ai-spector/references/extract-specs.md` |
 | Graph query / merge | `ai-spector/references/generate-graph.md` |
 | Prerequisites | `ai-spector/references/prerequisites.md` |
 

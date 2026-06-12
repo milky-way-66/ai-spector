@@ -147,6 +147,9 @@ no text formatting.
 | `comments_resolve` | `resolveThread()` | `ResolveThreadResult` |
 | `template_list` | directory scan | pack list |
 | `template_inspect` | `manifest.json` read | `PackManifest` |
+| `workspace_check` | `runCheck()` | `CheckResult` |
+| `context_list` / `context_record` / `context_resolve` | `runContextList()` / `runContextRecord()` / `runContextResolve()` | context store results |
+| `spec_list` / `spec_record` / `spec_approve` / `spec_reject` | `runSpecList()` / `runSpecRecord()` / `runSpecApprove()` / `runSpecReject()` | extracted-spec queue results |
 
 ### SDK (`import from 'ai-spector'`)
 
@@ -173,6 +176,9 @@ export type { GraphQueryResult, ImpactResult, LayerAuditReport, ResolvedOrigin }
 // Operations
 export { validateGraph, runGraphMerge, runGraphImpact, runGraphQuery }
 export { runIndex }
+export { runCheck }
+export { runContextList, runContextRecord, runContextResolve, runContextStaleScan }
+export { runSpecList, runSpecRecord, runSpecApprove, runSpecReject }
 export { runCommentsList, runCommentsInbox, runCommentsPlan, runCommentsShow, runCommentsResolve }
 ```
 

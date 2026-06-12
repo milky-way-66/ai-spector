@@ -14,12 +14,16 @@ paths:
 
 ## Load at start
 1. [references/runbook.md](references/runbook.md)
-2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md)
+2. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — the gated flow (check → clarify → briefing → plan → generate → extract) is mandatory
+3. Run `workspace_check` and `context_list({ docType: "basic-design" })` before planning
 
 ## Load when needed
 
 | Situation | Load |
 |---|---|
+| Clarify gaps / stale Q-ids | [../ai-spector/references/clarify.md](../ai-spector/references/clarify.md), [../ai-spector/references/context-store.md](../ai-spector/references/context-store.md) |
+| Briefing + plan gate | [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md) |
+| After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
 | Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
 | Writing DB design | [references/bd-context/db-design.md](references/bd-context/db-design.md) |
 | Writing API list | [references/bd-context/api-list.md](references/bd-context/api-list.md) |

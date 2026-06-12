@@ -3,9 +3,30 @@
 Used by SRS and basic design skills.
 
 **References (load when needed):**
+- Workspace check → [workspace-check.md](./workspace-check.md)
+- Clarify gaps before generating → [clarify.md](./clarify.md)
+- Context store (clarification persistence) → [context-store.md](./context-store.md)
+- Context briefing + plan gate → [plan-and-briefing.md](./plan-and-briefing.md)
+- Extract specs after generating → [extract-specs.md](./extract-specs.md)
 - Graph queries / merge / ingest → [generate-graph.md](./generate-graph.md)
 - Context compaction / sub-agents → [context-management.md](./context-management.md)
 - CLI failures → [cli-failures.md](./cli-failures.md)
+
+## Gated flow (every generate run, mandatory)
+
+```
+1. CHECK     workspace_check MCP (fallback: npx ai-spector check) — fix errors before continuing
+2. CLARIFY   compute the FULL gap set → ask the user → store every answer (context store)
+3. BRIEFING  state exactly what context/sources will shape each document → user confirms
+4. PLAN      plan table (output × DAG node × sources × key points) → explicit "yes"
+5. GENERATE  DAG waves (engine below — language rules, sub-agents, translation pauses)
+6. EXTRACT   pull key specs from output → spec review queue → graph merge only on approval
+```
+
+Stages 1–4 are **gates**: no file is written until the plan is confirmed. There is
+no auto-confirm and no question cap — every gap is answered or explicitly accepted
+as an assumption by the user before stage 5 (details: [clarify.md](./clarify.md),
+[plan-and-briefing.md](./plan-and-briefing.md)).
 
 ## Language check (before first write)
 
@@ -58,18 +79,22 @@ Never call the graph or templates again for secondary languages — the primary 
 |---|---|---|
 | **1 — All** | "generate all SRS" | Every DAG node. Skip `good` files unless user asked to regenerate. |
 | **2 — Explicit** | file paths in chat | Map → DAG nodes → dependency closure. Same wave only. |
-| **3 — Words** | "API list and screens" | Scope table → user confirms → generate. No write before yes. |
+| **3 — Words** | "API list and screens" | Scope table → user confirms scope → continue gates. |
 
-Case 3: build scope table (DAG id, output path, seed, reason, deps) → ask → stop until confirmed.
+Scope only narrows *what* gets generated. Regardless of case, the clarify gate,
+context briefing, and plan confirmation are **always mandatory** — case 1 and 2
+do not skip them.
 
 ## Plan (once per invocation)
 
 1. Select targets (case 1/2/3).
-2. Topological sort + dependency closure.
-3. Map DAG nodes → seeds via `dag.*.graph-seeds.json`.
-4. Classify disk per **primary language** file: `good` | `missing_content` | `missing_file`.
-5. For secondary languages: classify as `stale` if the primary file is newer than the translation, `missing` if the translation file does not exist, `good` if translation is up to date. **Do not skip stale translations** — they must be regenerated.
-6. Assign waves; present wave table (include secondary language status columns if multi-language).
+2. Run clarify ([clarify.md](./clarify.md)) — resolve the full gap set first.
+3. Topological sort + dependency closure.
+4. Map DAG nodes → seeds via `dag.*.graph-seeds.json`.
+5. Classify disk per **primary language** file: `good` | `missing_content` | `missing_file`.
+6. For secondary languages: classify as `stale` if the primary file is newer than the translation, `missing` if the translation file does not exist, `good` if translation is up to date. **Do not skip stale translations** — they must be regenerated.
+7. Present the **context briefing**, then the **plan table** with wave assignments
+   ([plan-and-briefing.md](./plan-and-briefing.md)) and stop until the user says yes.
 
 ## Wave checklist
 
@@ -130,7 +155,8 @@ After any language file write, `npx ai-spector index` reconciles the translation
 - Sub-agent per target — never reuse a previous target's summary.
 - No raw graph JSON in main context.
 - No speculative reads — projectionPaths only.
-- Case 3 requires explicit yes before any write.
+- **Every** run requires briefing + plan confirmation before any write — no exceptions.
+- Never silently swap context after the briefing was confirmed — re-run clarify/plan instead.
 - On CLI failure → load [cli-failures.md](./cli-failures.md).
 
 ## After manual doc edits
@@ -144,4 +170,7 @@ When any doc under `docs/` is edited outside generate skills, follow `.cursor/ru
 
 1. `npx ai-spector graph validate`
 2. `npx ai-spector index` if not already run after last wave
-3. Suggest summary command when runbook lists one
+3. **Extract key specs** from the generated documents and offer to queue them for
+   review — [extract-specs.md](./extract-specs.md). Approved specs merge to the
+   graph; nothing is ever written to `docs/data-source/`.
+4. Suggest summary command when runbook lists one

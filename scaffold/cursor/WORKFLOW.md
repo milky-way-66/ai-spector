@@ -26,11 +26,14 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | You want to… | Say (examples) | Skill | Agent runs (MCP preferred) |
 |--------------|----------------|-------|---------------------------|
 | **Setup project** | “setup ai-spector”, “initialize project”, “get started” | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
+| **Check workspace** | “check my workspace”, “why did pre-commit block me”, “stale clarifications” | `ai-spector-check` | `workspace_check({})` → findings table → optional `fix: true` |
 | Ingest sources | “analyze my data source”, “build the knowledge graph” | `ai-spector-graph` | `index({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |
 | Check graph health | “validate the graph”, “graph errors”, “graph report” | `ai-spector-graph` | `graph_validate({})` · `graph_report({})` |
 | Refresh after edits | “re-index”, “sync the graph” | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
-| Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | DAG waves → docs/srs → `graph_merge` → `index({ cocoindexSync: true })` |
-| Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | docs/basic-design → `graph_merge` → `index({ cocoindexSync: true })` each wave |
+| Write SRS | “generate SRS”, “write use cases” | `ai-spector-generate-srs` | **gated**: `workspace_check` → clarify (`context_*`) → briefing + plan (your **yes**) → DAG waves → docs/srs → `graph_merge` → `index` → `spec_record` (review queue) |
+| Basic design | “screen list”, “API design”, “wireframes” | `ai-spector-generate-basic-design` | same gates → docs/basic-design → `graph_merge` → `index({ cocoindexSync: true })` each wave |
+| Review extracted specs | “pending specs”, “approve SPEC-001” | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |
+| Answer clarifications | “open questions”, “what did I answer about auth” | `ai-spector-check` | `context_list` → `context_resolve` |
 | Detail design | “detail design for checkout” | `ai-spector-generate-detail-design` | docs/detail-design |
 | HTML prototype | “HTML mockup”, “prototype with stripe theme” | `ai-spector-generate-prototype` | auth picker (if needed) → theme picker → setup → HTML → validate |
 | Pick / preview UI theme | “help me pick a theme”, “show me themes” | `ai-spector-generate-prototype` | read project context → recommend 3 → `prototype preview` ×3 |
@@ -60,11 +63,20 @@ docs/data-source/     ← your inputs
 ## Pipeline order
 
 ```text
-analyze → validate graph → generate SRS → index
-  → generate basic design → index
+analyze → validate graph
+  → generate SRS         (gated: check → clarify → briefing → plan → waves → extract)
+  → index → spec review  (approve → graph merge)
+  → generate basic design (same gates) → index
   → generate detail design
   → prototype setup + generate HTML screens
 ```
+
+**Every generate run is human-in-the-loop:** the agent checks the workspace,
+asks about *all* missing information (answers are stored and re-used across
+sessions), shows you exactly which sources and key points will shape each
+document, and waits for your explicit yes before writing anything. Afterwards it
+offers extracted key specs for review — only approved specs reach the graph, and
+`docs/data-source/` always stays purely yours.
 
 ## If something fails
 

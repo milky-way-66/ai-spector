@@ -24,6 +24,9 @@ When in doubt: if the user names a document and asks about approval/status → `
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
 | setup, init, bootstrap, get started | `ai-spector-setup` | `references/runbook.md` |
+| check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `SKILL.md` |
+| clarifications, open questions, context store, "what did I answer" | `ai-spector-check` → context tools | `ai-spector/references/context-store.md` |
+| extracted specs, spec queue, approve/reject spec | (generate skills, stage 6) | `ai-spector/references/extract-specs.md` |
 | analyze, ingest, data source, knowledge graph | `ai-spector-graph` | `references/analyze.md` |
 | index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
 | validate graph | `ai-spector-graph` | `references/validate-graph.md` |
@@ -52,9 +55,16 @@ Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-fail
 ## Pipeline
 
 ```text
-analyze → validate graph → generate SRS → index
-  → generate basic design → index
+analyze → validate graph
+  → generate SRS        (gated: check → clarify → briefing → plan → waves → extract specs)
+  → index → spec review queue (approve → graph merge)
+  → generate basic design (same gates) → index
   → prototype setup → generate HTML screens
 ```
+
+Every `generate` run is gated — workspace check, full clarification of gaps,
+context briefing, and plan confirmation come **before any write**; key-spec
+extraction with human review comes after. See
+[generate-workflow.md](./ai-spector/references/generate-workflow.md).
 
 See [../WORKFLOW.md](../WORKFLOW.md).

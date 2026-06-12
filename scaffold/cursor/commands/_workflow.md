@@ -21,7 +21,8 @@ Skills auto-route for natural language; **slash commands stay the source of trut
 |------|---------|------------------|
 | 1 | **`/index`** | `npx ai-spector index` → the report's **Source detection** + **Next** line decide what happens (see decision tree below) |
 | 2 | **`/validate-graph`** | `npx ai-spector graph validate` |
-| 3 | **`/generate-srs`** [paths or request] — all, listed files, or described scope (**confirm** if described) → waves → merge (see `generate-srs.md`) |
+| 2b | **`/check`** (also auto before generate) | `npx ai-spector check` — workspace structure/config; errors block, `--fix` repairs dirs |
+| 3 | **`/generate-srs`** [paths or request] — **gated**: check → clarify all gaps (answers stored in context store) → context briefing → plan table → your **yes** → waves → merge → spec extraction offer (see `generate-srs.md`, `../skills/ai-spector/references/generate-workflow.md`) |
 | 4 | **`/summary srs`** (optional) | Doc summaries under `.ai-spector/index/` (fallback browse; graph is primary) |
 
 ### `/index` decision tree
