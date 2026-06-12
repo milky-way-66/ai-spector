@@ -2,10 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson } from "../../src/core/util/fs.js";
-import { saveApproval, makeApproval, writeSnapshot } from "../../src/core/reviews/storage.js";
-import { contentHash, computeLiveStaleness } from "../../src/core/reviews/staleness.js";
-import { runReviewStatus, runReviewList } from "../../src/core/operations/review.js";
+import { writeJson } from "@/core/util/fs.js";
+import { saveApproval, makeApproval, writeSnapshot } from "@/core/reviews/storage.js";
+import { contentHash, computeLiveStaleness } from "@/core/reviews/staleness.js";
+import { runReviewStatus, runReviewList } from "@/core/operations/review.js";
 
 async function setupReviewProject(root: string): Promise<void> {
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {

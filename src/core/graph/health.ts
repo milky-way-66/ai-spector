@@ -1,6 +1,6 @@
 import type { LayerAuditReport } from "./layer-audit.js";
 import type { InMemoryGraph } from "./InMemoryGraph.js";
-import type { ValidationIssue } from "../../types.js";
+import type { ValidationIssue } from "@/types.js";
 
 export interface GraphHealthSummary {
   structureErrors: number;

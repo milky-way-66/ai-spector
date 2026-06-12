@@ -186,4 +186,4 @@ export type {
   GraphEdge,
   TraceabilityGraph,
   ValidationIssue,
-} from "../../types.js";
+} from "@/types.js";

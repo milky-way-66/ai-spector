@@ -4,7 +4,7 @@ import type {
   SpecListResult,
   SpecRecordResult,
   SpecRejectResult,
-} from "../../../core/operations/extracted.js";
+} from "@/core/operations/extracted.js";
 
 function statusIcon(status: ExtractedSpec["status"]): string {
   if (status === "approved") return "✓";

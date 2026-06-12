@@ -1,9 +1,9 @@
 import { join } from "node:path";
-import { resolveProjectPaths } from "../../../core/util/paths.js";
-import { loadDocflowConfig } from "../../../core/config/load.js";
-import { pathExists, readJson } from "../../../core/util/fs.js";
-import { packageBundleRoot } from "../../../core/config/load.js";
-import { DEFAULT_LISTED_IN } from "../../../core/graph/defaults.js";
+import { resolveProjectPaths } from "@/core/util/paths.js";
+import { loadDocflowConfig } from "@/core/config/load.js";
+import { pathExists, readJson } from "@/core/util/fs.js";
+import { packageBundleRoot } from "@/core/config/load.js";
+import { DEFAULT_LISTED_IN } from "@/core/graph/defaults.js";
 import type { KnowledgeStatusSchema, KnowledgeValidateSchema, KnowledgeSchemaSchema } from "../schemas.js";
 import type { z } from "zod";
 

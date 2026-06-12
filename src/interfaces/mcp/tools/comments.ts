@@ -1,12 +1,12 @@
-import { resolveProjectPaths } from "../../../core/util/paths.js";
+import { resolveProjectPaths } from "@/core/util/paths.js";
 import {
   listThreads,
   getThread,
   findThreadById,
   resolveThread,
-} from "../../../core/comments/storage.js";
-import { buildCommentInboxPayload } from "../../../core/comments/plan.js";
-import { normalizeLogicalPath } from "../../../core/comments/paths.js";
+} from "@/core/comments/storage.js";
+import { buildCommentInboxPayload } from "@/core/comments/plan.js";
+import { normalizeLogicalPath } from "@/core/comments/paths.js";
 import type {
   CommentsListSchema,
   CommentsInboxSchema,

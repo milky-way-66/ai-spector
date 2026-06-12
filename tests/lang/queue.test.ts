@@ -2,7 +2,7 @@ import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { loadDocflowConfig, primaryLanguage } from "../../src/core/config/load.js";
+import { loadDocflowConfig, primaryLanguage } from "@/core/config/load.js";
 import {
   loadChangeHistory,
   loadFailedQueue,
@@ -11,9 +11,9 @@ import {
   loadPendingQueue,
   loadResolvedQueue,
   queuePaths,
-} from "../../src/core/lang/queue-store.js";
-import { pathExists, readJson, writeJson } from "../../src/core/util/fs.js";
-import { reconcileTranslationQueue } from "../../src/core/lang/queue.js";
+} from "@/core/lang/queue-store.js";
+import { pathExists, readJson, writeJson } from "@/core/util/fs.js";
+import { reconcileTranslationQueue } from "@/core/lang/queue.js";
 
 async function setupMultiLangProject(
   root: string,

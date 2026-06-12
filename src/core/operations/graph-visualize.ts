@@ -4,7 +4,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { pathExists, readJson } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
-import type { TraceabilityGraph } from "../../types.js";
+import type { TraceabilityGraph } from "@/types.js";
 import {
   isKnowledgePayload,
   type AnalysisKnowledge,

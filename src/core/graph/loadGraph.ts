@@ -1,5 +1,5 @@
 import { readJson } from "../util/fs.js";
-import type { TraceabilityGraph } from "../../types.js";
+import type { TraceabilityGraph } from "@/types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 
 export async function loadInMemoryGraph(

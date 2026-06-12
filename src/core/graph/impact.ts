@@ -1,4 +1,4 @@
-import type { NodeType } from "../../types.js";
+import type { NodeType } from "@/types.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";
 import { projectionPathForNode } from "./query.js";
 

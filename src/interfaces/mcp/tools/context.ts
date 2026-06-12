@@ -8,7 +8,7 @@ import {
   runContextList,
   runContextRecord,
   runContextResolve,
-} from "../../../core/operations/context.js";
+} from "@/core/operations/context.js";
 
 export async function toolContextList(input: z.infer<typeof ContextListSchema>) {
   return runContextList({ root: input.root, docType: input.docType, status: input.status });

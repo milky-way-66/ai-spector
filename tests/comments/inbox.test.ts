@@ -1,13 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readDocAnchorContext } from "../../src/core/comments/anchor.js";
-import { buildCommentInbox, formatInboxForChat } from "../../src/core/comments/inbox.js";
+import { readDocAnchorContext } from "@/core/comments/anchor.js";
+import { buildCommentInbox, formatInboxForChat } from "@/core/comments/inbox.js";
 import {
   buildCommentInboxPayload,
   resolvePickId,
-} from "../../src/core/comments/plan.js";
-import { writeJson } from "../../src/core/util/fs.js";
+} from "@/core/comments/plan.js";
+import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
 
 const SAMPLE_META = {

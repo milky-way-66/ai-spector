@@ -6,11 +6,11 @@ import {
   runSpecRecord,
   runSpecApprove,
   runSpecReject,
-} from "../../src/core/operations/extracted.js";
-import { pathExists, readJson } from "../../src/core/util/fs.js";
+} from "@/core/operations/extracted.js";
+import { pathExists, readJson } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
-import type { TraceabilityGraph } from "../../src/types.js";
-import type { ExtractPatch } from "../../src/core/graph/knowledge.js";
+import type { TraceabilityGraph } from "@/types.js";
+import type { ExtractPatch } from "@/core/graph/knowledge.js";
 
 const GRAPH_PATH = ".ai-spector/graph/traceability.graph.json";
 

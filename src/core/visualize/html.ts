@@ -1,4 +1,4 @@
-import type { TraceabilityGraph } from "../../types.js";
+import type { TraceabilityGraph } from "@/types.js";
 import type { AnalysisKnowledge } from "../graph/knowledge.js";
 import type { GraphStats, KnowledgeStats } from "./stats.js";
 

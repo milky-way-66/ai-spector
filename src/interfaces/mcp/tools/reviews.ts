@@ -14,7 +14,7 @@ import {
   runReviewCheck,
   runReviewReject,
   runReviewList,
-} from "../../../core/operations/review.js";
+} from "@/core/operations/review.js";
 
 export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchema>) {
   return runApprove({ root: input.root, logicalPath: input.logicalPath, by: input.by });

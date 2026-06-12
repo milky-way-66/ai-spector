@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
+import { InMemoryGraph } from "@/core/graph/InMemoryGraph.js";
 import {
   buildTranslationDocNode,
   applyPrimaryLanguageOutputs,
   primaryDocumentNodes,
   translationOutputForLang,
   wireTranslationDocNode,
-} from "../../src/core/graph/translation.js";
-import type { GraphNode } from "../../src/types.js";
+} from "@/core/graph/translation.js";
+import type { GraphNode } from "@/types.js";
 
 function docNode(id: string, extra: Record<string, unknown> = {}): GraphNode {
   return { id, type: "document", ...extra };

@@ -1,5 +1,5 @@
 import type { InMemoryGraph } from "./InMemoryGraph.js";
-import type { GraphEdge, GraphNode, NodeType } from "../../types.js";
+import type { GraphEdge, GraphNode, NodeType } from "@/types.js";
 
 export const BUNDLE_SOURCE_ID = "bundle.source";
 export const BUNDLE_BUSINESS_ID = "bundle.business";

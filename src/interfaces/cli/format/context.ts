@@ -3,7 +3,7 @@ import type {
   ContextListResult,
   ContextRecordResult,
   ContextResolveResult,
-} from "../../../core/operations/context.js";
+} from "@/core/operations/context.js";
 
 function statusIcon(status: ContextEntry["status"]): string {
   if (status === "answered") return "✓";

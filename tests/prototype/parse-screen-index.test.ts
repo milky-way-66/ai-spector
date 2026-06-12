@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   extractScreenIndexSection,
   parseScreenIndexFromList,
-} from "../../src/core/prototype/parse-screen-index.js";
-import type { PrototypeConfig } from "../../src/core/prototype/types.js";
+} from "@/core/prototype/parse-screen-index.js";
+import type { PrototypeConfig } from "@/core/prototype/types.js";
 
 const config: PrototypeConfig = {
   version: 1,

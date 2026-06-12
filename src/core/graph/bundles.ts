@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { ExtractPatch } from "./knowledge.js";
 import { mergePatch, type MergeResult } from "./merge.js";
 import type { InMemoryGraph } from "./InMemoryGraph.js";
-import type { GraphEdge, GraphNode, NodeType } from "../../types.js";
+import type { GraphEdge, GraphNode, NodeType } from "@/types.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 
 export const BUNDLE_SOURCE_ID = "bundle.source";

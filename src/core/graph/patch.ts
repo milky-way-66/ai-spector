@@ -1,6 +1,6 @@
 import type { InMemoryGraph } from "./InMemoryGraph.js";
 import { isPathTargetEdge } from "./path-target-edges.js";
-import type { GraphEdge, GraphNode } from "../../types.js";
+import type { GraphEdge, GraphNode } from "@/types.js";
 
 export interface ExtractPatch {
   version: 1;

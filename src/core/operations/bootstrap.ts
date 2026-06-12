@@ -1,5 +1,5 @@
-import type { GraphEdge, GraphNode } from "../../types.js";
-import type { SectionRegistry } from "../../types.js";
+import type { GraphEdge, GraphNode } from "@/types.js";
+import type { SectionRegistry } from "@/types.js";
 import { InMemoryGraph } from "../graph/InMemoryGraph.js";
 import { emptyGraph } from "../graph/load.js";
 

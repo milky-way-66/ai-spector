@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toDeployBasePath, toSpaScreenPrototypePath } from "../../src/core/prototype/deploy-path.js";
+import { toDeployBasePath, toSpaScreenPrototypePath } from "@/core/prototype/deploy-path.js";
 
 describe("deploy path helpers", () => {
   it("strips prototype dir prefix from repo buildDest", () => {

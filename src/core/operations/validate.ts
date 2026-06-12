@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
-import type { TraceabilityGraph, ValidationIssue } from "../../types.js";
+import type { TraceabilityGraph, ValidationIssue } from "@/types.js";
 
 const require = createRequire(import.meta.url);
 const Ajv = require("ajv/dist/2020.js") as typeof import("ajv/dist/2020.js").default;
 const addFormats = require("ajv-formats") as typeof import("ajv-formats").default;
-import type { SectionRegistry } from "../../types.js";
+import type { SectionRegistry } from "@/types.js";
 import { InMemoryGraph } from "../graph/InMemoryGraph.js";
 import { readJson } from "../util/fs.js";
 

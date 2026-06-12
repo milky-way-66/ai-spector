@@ -1,5 +1,5 @@
-import type { GraphNode } from "../../types.js";
-import type { RegistryDocument } from "../../types.js";
+import type { GraphNode } from "@/types.js";
+import type { RegistryDocument } from "@/types.js";
 import { detailSectionsToPatch } from "../graph/detail-sections.js";
 import type { ExtractPatch } from "../graph/knowledge.js";
 

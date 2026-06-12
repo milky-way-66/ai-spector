@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LISTED_IN } from "../../src/core/graph/defaults.js";
+import { DEFAULT_LISTED_IN } from "@/core/graph/defaults.js";
 import {
   computeKnowledgeStats,
   isKnowledgePayload,
   knowledgeGraphCoverage,
   knowledgeHasDomainEntries,
   knowledgeToPatch,
-} from "../../src/core/graph/knowledge.js";
+} from "@/core/graph/knowledge.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("knowledgeToPatch", () => {

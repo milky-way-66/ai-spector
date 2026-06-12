@@ -5,14 +5,14 @@ import {
   logicalPathToDocPath,
   normalizeLogicalPath,
   threadMetaRel,
-} from "../../src/core/comments/paths.js";
+} from "@/core/comments/paths.js";
 import {
   findThreadById,
   getThread,
   listThreads,
   resolveThread,
-} from "../../src/core/comments/storage.js";
-import { writeJson } from "../../src/core/util/fs.js";
+} from "@/core/comments/storage.js";
+import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
 
 const SAMPLE_META = {
@@ -108,7 +108,7 @@ describe("comment storage", () => {
       expect(openAfter).toHaveLength(0);
 
       const metaPath = join(root, threadMetaRel("srs/01-overview", SAMPLE_META.threadId));
-      const raw = await import("../../src/core/util/fs.js").then((m) =>
+      const raw = await import("@/core/util/fs.js").then((m) =>
         m.readJson<{ version: number }>(metaPath),
       );
       expect(raw.version).toBe(2);

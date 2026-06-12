@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergePatch } from "../../src/core/graph/merge.js";
+import { mergePatch } from "@/core/graph/merge.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("mergePatch semanticOnly", () => {

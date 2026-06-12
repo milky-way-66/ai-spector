@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { simulatePatch } from "../../src/core/graph/patch.js";
+import { simulatePatch } from "@/core/graph/patch.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("simulatePatch", () => {

@@ -4,7 +4,7 @@ import {
   findRegistrySection,
   parseSectionRegistry,
   sectionLabel,
-} from "../../src/core/graph/registry.js";
+} from "@/core/graph/registry.js";
 
 const registryJson = {
   version: 1,

@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, writeFile, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathExists } from "../../src/core/util/fs.js";
-import { readJson } from "../../src/core/util/fs.js";
-import type { PackManifest } from "../../src/core/config/types.js";
+import { pathExists } from "@/core/util/fs.js";
+import { readJson } from "@/core/util/fs.js";
+import type { PackManifest } from "@/core/config/types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +61,7 @@ async function setupMinimalProject(
 // dispatching commands programmatically.
 
 import { Command } from "commander";
-import { registerTemplateCommand } from "../../src/core/operations/template.js";
+import { registerTemplateCommand } from "@/core/operations/template.js";
 
 async function runExport(
   root: string,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPreviewUri,
   routePatternHasUnresolvedParams,
-} from "../../src/core/prototype/preview-uri.js";
+} from "@/core/prototype/preview-uri.js";
 
 describe("buildPreviewUri", () => {
   it("substitutes path params and appends query", () => {

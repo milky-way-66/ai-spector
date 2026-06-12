@@ -6,7 +6,7 @@ import {
   jobIdMatchesFileName,
   resolvedJobFileName,
   safeTimestamp,
-} from "../../src/core/lang/queue-layout.js";
+} from "@/core/lang/queue-layout.js";
 
 describe("queue-layout", () => {
   it("partitions timestamps by date folder", () => {

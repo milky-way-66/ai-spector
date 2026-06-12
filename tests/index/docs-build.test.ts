@@ -5,9 +5,9 @@ import {
   findDocumentNodeIdForPath,
   globToRegExp,
   indexHasPlaceholderContent,
-} from "../../src/core/index/docs-build.js";
-import type { IndexDocsConfig } from "../../src/core/index/docs-config.js";
-import type { TraceabilityGraph } from "../../src/types.js";
+} from "@/core/index/docs-build.js";
+import type { IndexDocsConfig } from "@/core/index/docs-config.js";
+import type { TraceabilityGraph } from "@/types.js";
 
 const config: IndexDocsConfig = {
   version: 1,

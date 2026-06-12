@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
-import { mergePatch } from "../../src/core/graph/merge.js";
-import { normalizeDataSourcePath } from "../../src/core/graph/provenance.js";
+import { InMemoryGraph } from "@/core/graph/InMemoryGraph.js";
+import { mergePatch } from "@/core/graph/merge.js";
+import { normalizeDataSourcePath } from "@/core/graph/provenance.js";
 import { node } from "../helpers/graph.js";
 
 describe("normalizeDataSourcePath", () => {

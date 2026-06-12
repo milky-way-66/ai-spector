@@ -3,7 +3,7 @@ import type {
   CocoindexSearchResult,
   CocoindexStatsResult,
   FuzzyQueryResult,
-} from "../../../core/operations/cocoindex.js";
+} from "@/core/operations/cocoindex.js";
 
 export function formatCocoindexStats(r: CocoindexStatsResult): string {
   if (!r.cocoindexConfigured) {

@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode, NodeType } from "../../types.js";
+import type { GraphEdge, GraphNode, NodeType } from "@/types.js";
 import { isPathTargetEdge } from "./path-target-edges.js";
 import { allowsSectionUpsertParent } from "./detail-sections.js";
 import { InMemoryGraph } from "./InMemoryGraph.js";

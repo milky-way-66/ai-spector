@@ -3,7 +3,7 @@ import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { querySubgraph, type QueryOptions } from "../graph/query.js";
 import type { GraphQueryResult } from "../graph/query.js";
 import { localizeProjectionPaths } from "../paths/localized-output.js";
-import type { EdgeType } from "../../types.js";
+import type { EdgeType } from "@/types.js";
 
 export interface GraphQueryCliOptions {
   graphPath: string;

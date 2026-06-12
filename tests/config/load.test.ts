@@ -1,14 +1,14 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson } from "../../src/core/util/fs.js";
+import { writeJson } from "@/core/util/fs.js";
 import {
   clientLanguage,
   loadDocflowConfig,
   preferredLanguageCode,
   primaryLanguage,
-} from "../../src/core/config/load.js";
-import { runLangSetClient } from "../../src/core/operations/lang.js";
+} from "@/core/config/load.js";
+import { runLangSetClient } from "@/core/operations/lang.js";
 
 async function writeConfig(
   root: string,

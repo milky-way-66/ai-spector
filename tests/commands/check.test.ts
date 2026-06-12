@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runCheck } from "../../src/core/operations/check.js";
-import { pathExists } from "../../src/core/util/fs.js";
+import { runCheck } from "@/core/operations/check.js";
+import { pathExists } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 const MIN_CONFIG = {

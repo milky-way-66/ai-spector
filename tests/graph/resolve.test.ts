@@ -7,7 +7,7 @@ import {
   prioritizeGitDiffRegions,
   resolveFromGitDiff,
   resolveImpactOrigins,
-} from "../../src/core/graph/resolve.js";
+} from "@/core/graph/resolve.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("findDocumentNodeIdForPath", () => {

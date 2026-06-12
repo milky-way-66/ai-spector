@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
-import type { GraphNode, TraceabilityGraph } from "../../src/types.js";
+import { InMemoryGraph } from "@/core/graph/InMemoryGraph.js";
+import type { GraphNode, TraceabilityGraph } from "@/types.js";
 import { node } from "../helpers/graph.js";
 
 function graph(

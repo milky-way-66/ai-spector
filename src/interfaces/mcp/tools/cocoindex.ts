@@ -8,8 +8,8 @@ import {
   cocoindexDir,
   cocoindexPipelinePath,
   findPython,
-} from "../../../core/operations/cocoindex.js";
-import { loadDocflowConfig } from "../../../core/config/load.js";
+} from "@/core/operations/cocoindex.js";
+import { loadDocflowConfig } from "@/core/config/load.js";
 import type {
   DocsSearchSchema,
   GraphQueryFuzzySchema,

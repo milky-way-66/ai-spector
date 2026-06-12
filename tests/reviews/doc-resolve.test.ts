@@ -2,8 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson } from "../../src/core/util/fs.js";
-import { resolveReviewDocPath } from "../../src/core/reviews/doc-resolve.js";
+import { writeJson } from "@/core/util/fs.js";
+import { resolveReviewDocPath } from "@/core/reviews/doc-resolve.js";
 
 async function setupMultiLangProject(
   root: string,

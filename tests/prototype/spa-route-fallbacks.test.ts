@@ -7,7 +7,7 @@ import {
   injectSpaFallbackBaseHref,
   spaFallbackDeployPaths,
   writeSpaRouteFallbacks,
-} from "../../src/core/prototype/spa-route-fallbacks.js";
+} from "@/core/prototype/spa-route-fallbacks.js";
 
 describe("spa route fallbacks", () => {
   it("computes base href depth for nested routes", () => {

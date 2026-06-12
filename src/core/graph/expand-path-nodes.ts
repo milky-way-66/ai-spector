@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode } from "../../types.js";
+import type { GraphEdge, GraphNode } from "@/types.js";
 import type { InMemoryGraph } from "./InMemoryGraph.js";
 
 export type SyntheticNodeType = "file" | "source";

@@ -6,7 +6,7 @@ import {
   parsePendingQueue,
   parseTranslationQueueBundle,
   type TranslationJob,
-} from "../../src/core/graph/translation-queue.js";
+} from "@/core/graph/translation-queue.js";
 
 const sampleJob: TranslationJob = {
   id: "job-1",

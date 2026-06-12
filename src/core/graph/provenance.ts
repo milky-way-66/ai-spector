@@ -5,7 +5,7 @@ import { isKnowledgePayload, knowledgeHasDomainEntries } from "./knowledge.js";
 import { mergePatch } from "./merge.js";
 import { loadInMemoryGraph } from "./loadGraph.js";
 import type { ExtractPatch } from "./knowledge.js";
-import type { GraphEdge } from "../../types.js";
+import type { GraphEdge } from "@/types.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 import { indexDocsConfigPath, type IndexDocsConfig } from "../index/docs-config.js";

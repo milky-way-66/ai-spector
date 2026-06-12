@@ -3,7 +3,7 @@ import {
   runLangQueuePending,
   runLangQueueFailed,
   runLangQueueResolved,
-} from "../../../core/operations/lang-queue.js";
+} from "@/core/operations/lang-queue.js";
 import type { LangQueueSchema } from "../schemas.js";
 import type { z } from "zod";
 

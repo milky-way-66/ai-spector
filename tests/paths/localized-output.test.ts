@@ -6,7 +6,7 @@ import {
   localizedOutputForPrimary,
   localizeProjectionPaths,
   suggestLocalizedPath,
-} from "../../src/core/paths/localized-output.js";
+} from "@/core/paths/localized-output.js";
 
 describe("localizedOutputForPrimary", () => {
   it("inserts primary language folder for builtin SRS and BD paths", () => {

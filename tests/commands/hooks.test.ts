@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { runPreCommitCheck, installGitHooks } from "../../src/core/operations/hooks.js";
-import { writeJson } from "../../src/core/util/fs.js";
+import { runPreCommitCheck, installGitHooks } from "@/core/operations/hooks.js";
+import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
 
 const exec = promisify(execFile);

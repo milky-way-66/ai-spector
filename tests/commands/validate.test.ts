@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { formatIssues } from "../../src/core/operations/validate.js";
-import type { ValidationIssue } from "../../src/types.js";
+import { formatIssues } from "@/core/operations/validate.js";
+import type { ValidationIssue } from "@/types.js";
 
 describe("formatIssues", () => {
   it("returns OK message when there are no issues", () => {

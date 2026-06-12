@@ -1,4 +1,4 @@
-import type { CheckResult, CheckFinding } from "../../../core/operations/check.js";
+import type { CheckResult, CheckFinding } from "@/core/operations/check.js";
 
 function formatFinding(f: CheckFinding): string {
   const icon = f.fixed ? "✓ fixed" : f.severity === "error" ? "✗ error" : "! warn";

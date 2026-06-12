@@ -1,5 +1,5 @@
-import { InMemoryGraph } from "../../src/core/graph/InMemoryGraph.js";
-import type { GraphEdge, GraphNode, TraceabilityGraph } from "../../src/types.js";
+import { InMemoryGraph } from "@/core/graph/InMemoryGraph.js";
+import type { GraphEdge, GraphNode, TraceabilityGraph } from "@/types.js";
 
 export function node(
   id: string,

@@ -1,7 +1,7 @@
 import { join, resolve, relative } from "node:path";
 import { mkdir, cp, copyFile } from "node:fs/promises";
 import { pathExists, readJson } from "../util/fs.js";
-import type { TraceabilityGraph } from "../../types.js";
+import type { TraceabilityGraph } from "@/types.js";
 import type { GraphQueryResult } from "../graph/query.js";
 
 // ── Python detection ──────────────────────────────────────────────────────────

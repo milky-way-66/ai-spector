@@ -6,7 +6,7 @@ import {
   DEFAULT_IMPACT_RULES,
   GraphSession,
   type TraceabilityGraph,
-} from "../../src/core/graph/index.js";
+} from "@/core/graph/index.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 

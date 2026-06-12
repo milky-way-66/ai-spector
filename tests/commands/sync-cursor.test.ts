@@ -2,9 +2,9 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { runInit } from "../../src/core/operations/init.js";
-import { runSyncCursor } from "../../src/core/operations/sync-cursor.js";
-import { pathExists } from "../../src/core/util/fs.js";
+import { runInit } from "@/core/operations/init.js";
+import { runSyncCursor } from "@/core/operations/sync-cursor.js";
+import { pathExists } from "@/core/util/fs.js";
 
 describe("sync-cursor", () => {
   it("refreshes skills and WORKFLOW without full re-init", async () => {

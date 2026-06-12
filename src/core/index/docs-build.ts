@@ -6,7 +6,7 @@ import {
   findDocumentNodeIdForPath as findDocumentNodeIdInGraph,
   globToRegExp,
 } from "../graph/resolve.js";
-import type { TraceabilityGraph } from "../../types.js";
+import type { TraceabilityGraph } from "@/types.js";
 import type { IndexDocsConfig } from "./docs-config.js";
 import { INDEX_PLACEHOLDER_MARKERS } from "./docs-config.js";
 

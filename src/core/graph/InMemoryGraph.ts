@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode, TraceabilityGraph, ValidationIssue } from "../../types.js";
+import type { GraphEdge, GraphNode, TraceabilityGraph, ValidationIssue } from "@/types.js";
 import { isPathTargetEdge } from "./path-target-edges.js";
 
 export class InMemoryGraph {

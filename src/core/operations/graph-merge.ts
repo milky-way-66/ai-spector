@@ -12,8 +12,8 @@ import { resolveProjectPaths } from "../util/paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { validateGraph } from "./validate.js";
 import type { InMemoryGraph } from "../graph/InMemoryGraph.js";
-import type { GraphEdge } from "../../types.js";
-import type { ValidationIssue } from "../../types.js";
+import type { GraphEdge } from "@/types.js";
+import type { ValidationIssue } from "@/types.js";
 
 export interface GraphMergeOptions {
   root?: string;

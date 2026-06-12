@@ -6,9 +6,9 @@ import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 
 const exec = promisify(execFile);
-import { loadDocflowConfig, resolveProjectTemplatesDir } from "../../src/core/config/load.js";
-import { runInit } from "../../src/core/operations/init.js";
-import { pathExists } from "../../src/core/util/fs.js";
+import { loadDocflowConfig, resolveProjectTemplatesDir } from "@/core/config/load.js";
+import { runInit } from "@/core/operations/init.js";
+import { pathExists } from "@/core/util/fs.js";
 
 describe("runInit", () => {
   it("copies templates into .ai-spector/templates", async () => {

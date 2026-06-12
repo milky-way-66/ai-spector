@@ -10,8 +10,8 @@ import {
   runSpecRecord,
   runSpecApprove,
   runSpecReject,
-} from "../../../core/operations/extracted.js";
-import type { ExtractPatch } from "../../../core/graph/knowledge.js";
+} from "@/core/operations/extracted.js";
+import type { ExtractPatch } from "@/core/graph/knowledge.js";
 
 export async function toolSpecList(input: z.infer<typeof SpecListSchema>) {
   return runSpecList({ root: input.root, docType: input.docType, status: input.status });

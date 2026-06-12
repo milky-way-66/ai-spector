@@ -1,4 +1,4 @@
-import type { IndexReport } from "../../../core/operations/index.js";
+import type { IndexReport } from "@/core/operations/index.js";
 
 export function formatIndexReport(report: IndexReport): string {
   const lines: string[] = ["", "Index refresh summary", "─────────────────────"];

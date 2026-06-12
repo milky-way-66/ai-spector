@@ -3,7 +3,7 @@ import {
   findAbsoluteLocalRefs,
   htmlHasAbsoluteLocalRefs,
   rewriteAbsoluteLocalRefs,
-} from "../../src/core/prototype/relative-assets.js";
+} from "@/core/prototype/relative-assets.js";
 
 describe("relative-assets", () => {
   it("finds root-absolute script and stylesheet refs", () => {

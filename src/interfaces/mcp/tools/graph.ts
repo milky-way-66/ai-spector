@@ -1,24 +1,24 @@
-import { loadDocflowConfig, primaryLanguage } from "../../../core/config/load.js";
-import { resolveProjectPaths } from "../../../core/util/paths.js";
-import { loadInMemoryGraph } from "../../../core/graph/loadGraph.js";
-import { querySubgraph } from "../../../core/graph/query.js";
-import { localizeProjectionPaths } from "../../../core/paths/localized-output.js";
+import { loadDocflowConfig, primaryLanguage } from "@/core/config/load.js";
+import { resolveProjectPaths } from "@/core/util/paths.js";
+import { loadInMemoryGraph } from "@/core/graph/loadGraph.js";
+import { querySubgraph } from "@/core/graph/query.js";
+import { localizeProjectionPaths } from "@/core/paths/localized-output.js";
 import {
   computeImpact,
   mergeImpactResults,
-} from "../../../core/graph/impact.js";
-import { loadImpactRules } from "../../../core/graph/impact-loader.js";
+} from "@/core/graph/impact.js";
+import { loadImpactRules } from "@/core/graph/impact-loader.js";
 import {
   resolveImpactOrigins,
   pickPrimaryImpactOrigin,
   resolveFromGitDiff,
   parseGitDiffRegions,
-} from "../../../core/graph/resolve.js";
-import { collectGitDiff } from "../../../core/util/git-diff.js";
-import { validateGraph } from "../../../core/operations/validate.js";
-import { runGraphMerge } from "../../../core/operations/graph-merge.js";
-import { runGraphReport } from "../../../core/operations/graph-report.js";
-import type { EdgeType } from "../../../types.js";
+} from "@/core/graph/resolve.js";
+import { collectGitDiff } from "@/core/util/git-diff.js";
+import { validateGraph } from "@/core/operations/validate.js";
+import { runGraphMerge } from "@/core/operations/graph-merge.js";
+import { runGraphReport } from "@/core/operations/graph-report.js";
+import type { EdgeType } from "@/types.js";
 import type {
   GraphQuerySchema,
   GraphImpactSchema,

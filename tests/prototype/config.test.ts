@@ -5,8 +5,8 @@ import { withTempProject } from "../helpers/temp-project.js";
 import {
   persistPrototypeDefaultTheme,
   readPrototypeThemeName,
-} from "../../src/core/prototype/config.js";
-import type { PrototypeConfig } from "../../src/core/prototype/types.js";
+} from "@/core/prototype/config.js";
+import type { PrototypeConfig } from "@/core/prototype/types.js";
 
 const config: PrototypeConfig = {
   version: 1,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { auditGraphLayers } from "../../src/core/graph/layer-audit.js";
-import { mergePatch } from "../../src/core/graph/merge.js";
-import { buildSourceBundlePatch } from "../../src/core/graph/bundles.js";
+import { auditGraphLayers } from "@/core/graph/layer-audit.js";
+import { mergePatch } from "@/core/graph/merge.js";
+import { buildSourceBundlePatch } from "@/core/graph/bundles.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("auditGraphLayers", () => {

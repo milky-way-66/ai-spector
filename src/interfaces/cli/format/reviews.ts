@@ -6,8 +6,8 @@ import type {
   ReviewRejectResult,
   ReviewListResult,
   ReviewMigrateResult,
-} from "../../../core/operations/review.js";
-import type { DiffFile, QueueEntry } from "../../../core/reviews/types.js";
+} from "@/core/operations/review.js";
+import type { DiffFile, QueueEntry } from "@/core/reviews/types.js";
 
 function formatDiff(diff: DiffFile): string {
   const lines: string[] = [];

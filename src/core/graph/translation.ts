@@ -1,4 +1,4 @@
-import type { GraphNode } from "../../types.js";
+import type { GraphNode } from "@/types.js";
 import {
   localizedOutputForLang,
   localizedOutputForPrimary,

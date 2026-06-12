@@ -1,6 +1,6 @@
-import type { GraphEdge, GraphNode } from "../../types.js";
+import type { GraphEdge, GraphNode } from "@/types.js";
 import type { InMemoryGraph } from "./InMemoryGraph.js";
-import type { NodeType } from "../../types.js";
+import type { NodeType } from "@/types.js";
 import { DEFAULT_LISTED_IN } from "./defaults.js";
 
 export interface AnalysisKnowledge {

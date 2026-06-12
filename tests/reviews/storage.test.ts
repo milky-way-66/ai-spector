@@ -2,8 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson, pathExists } from "../../src/core/util/fs.js";
-import { reviewQueuePaths } from "../../src/core/reviews/paths.js";
+import { writeJson, pathExists } from "@/core/util/fs.js";
+import { reviewQueuePaths } from "@/core/reviews/paths.js";
 import {
   getApproval,
   saveApproval,
@@ -14,12 +14,12 @@ import {
   readHistory,
   writeSnapshot,
   readSnapshot,
-} from "../../src/core/reviews/storage.js";
+} from "@/core/reviews/storage.js";
 import {
   runApprove,
   runReviewStatus,
   runReviewList,
-} from "../../src/core/operations/review.js";
+} from "@/core/operations/review.js";
 
 async function setupProject(root: string): Promise<void> {
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {

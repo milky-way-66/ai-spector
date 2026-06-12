@@ -2,10 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson, pathExists } from "../../src/core/util/fs.js";
-import { reviewQueuePaths } from "../../src/core/reviews/paths.js";
-import { migrateLegacyReviews } from "../../src/core/reviews/migrate.js";
-import { getApproval, loadQueueIndex, readHistory } from "../../src/core/reviews/storage.js";
+import { writeJson, pathExists } from "@/core/util/fs.js";
+import { reviewQueuePaths } from "@/core/reviews/paths.js";
+import { migrateLegacyReviews } from "@/core/reviews/migrate.js";
+import { getApproval, loadQueueIndex, readHistory } from "@/core/reviews/storage.js";
 
 const SAMPLE_APPROVAL = {
   version: 1,

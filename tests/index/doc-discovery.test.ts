@@ -5,8 +5,8 @@ import { join } from "node:path";
 import {
   discoverDocSourceFiles,
   computeIndexSourceHash,
-} from "../../src/core/index/docs-build.js";
-import { runDocSemanticMerge } from "../../src/core/index/doc-semantics.js";
+} from "@/core/index/docs-build.js";
+import { runDocSemanticMerge } from "@/core/index/doc-semantics.js";
 
 // Regression for the discovery split between docs-index (per-language loop)
 // and docs-semantic-merge (bare root walk): both must see the identical file

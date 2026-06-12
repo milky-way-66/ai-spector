@@ -1,4 +1,4 @@
-import type { EdgeType, GraphEdge, GraphNode, NodeType } from "../../types.js";
+import type { EdgeType, GraphEdge, GraphNode, NodeType } from "@/types.js";
 import type { InMemoryGraph } from "./InMemoryGraph.js";
 
 export interface QueryOptions {

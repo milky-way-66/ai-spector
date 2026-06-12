@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildDocExtractPatch } from "../../src/core/graph/doc-extract.js";
-import { mergePatch, normalizePatch } from "../../src/core/graph/merge.js";
-import type { GraphNode } from "../../src/types.js";
+import { buildDocExtractPatch } from "@/core/graph/doc-extract.js";
+import { mergePatch, normalizePatch } from "@/core/graph/merge.js";
+import type { GraphNode } from "@/types.js";
 import { loadGraph, node } from "../helpers/graph.js";
 
 describe("normalizePatch", () => {

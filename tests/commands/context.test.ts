@@ -5,10 +5,10 @@ import {
   runContextList,
   runContextRecord,
   runContextResolve,
-} from "../../src/core/operations/context.js";
-import { readJson } from "../../src/core/util/fs.js";
+} from "@/core/operations/context.js";
+import { readJson } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
-import type { ContextStore } from "../../src/core/operations/context.js";
+import type { ContextStore } from "@/core/operations/context.js";
 
 async function scaffold(root: string): Promise<void> {
   await mkdir(join(root, ".ai-spector"), { recursive: true });

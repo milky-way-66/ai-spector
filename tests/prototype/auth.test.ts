@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runPrototypeAuth } from "../../src/core/operations/prototype.js";
-import { loadPrototypeConfig } from "../../src/core/prototype/config.js";
+import { runPrototypeAuth } from "@/core/operations/prototype.js";
+import { loadPrototypeConfig } from "@/core/prototype/config.js";
 import { withTempProject } from "../helpers/temp-project.js";
 
 describe("runPrototypeAuth", () => {

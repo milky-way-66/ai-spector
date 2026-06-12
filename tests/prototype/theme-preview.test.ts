@@ -1,12 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { packageBundleRoot } from "../../src/core/config/load.js";
+import { packageBundleRoot } from "@/core/config/load.js";
 import {
   installThemePreviews,
   resolveThemePreviewPath,
-} from "../../src/core/prototype/theme-preview.js";
-import { pathExists } from "../../src/core/util/fs.js";
+} from "@/core/prototype/theme-preview.js";
+import { pathExists } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 describe("theme preview", () => {
