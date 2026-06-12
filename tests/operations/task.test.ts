@@ -10,6 +10,7 @@ import {
   runTaskGet,
   runTaskList,
   runTaskPause,
+  runTaskStatus,
   runTaskUpdate,
   taskFilePath,
   taskIndexPath,
@@ -201,6 +202,68 @@ describe("task state store", () => {
 
       const index2 = await readJson<TaskIndex>(taskIndexPath(root));
       expect(index2.active["generate:basic-design"]).toBeUndefined();
+    });
+  });
+
+  it("task_list bootstrap creates a task when the slot is empty", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const result = await runTaskList({
+        root,
+        bootstrap: {
+          kind: "generate",
+          workflow: "generate-srs",
+          trigger: "generate introduction",
+          docType: "srs",
+        },
+      });
+      expect(result.bootstrapped?.task.id).toMatch(/^task-/);
+      expect(result.activeForSlot).toBeUndefined();
+      expect(result.index.active["generate:srs"]).toBe(result.bootstrapped?.task.id);
+      expect(result.tasks.some((t) => t.id === result.bootstrapped?.task.id)).toBe(true);
+    });
+  });
+
+  it("task_list bootstrap returns activeForSlot when a resumable task exists", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const created = await runTaskCreate({
+        root,
+        kind: "generate",
+        workflow: "generate-srs",
+        trigger: "first session",
+        docType: "srs",
+      });
+      await runTaskPause({ root, taskId: created.task.id });
+
+      const result = await runTaskList({
+        root,
+        bootstrap: {
+          kind: "generate",
+          workflow: "generate-srs",
+          trigger: "second session",
+          docType: "srs",
+        },
+      });
+      expect(result.bootstrapped).toBeUndefined();
+      expect(result.activeForSlot?.taskId).toBe(created.task.id);
+      expect(result.activeForSlot?.action).toBe("resume");
+    });
+  });
+
+  it("runTaskStatus lists active slots", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const created = await runTaskCreate({
+        root,
+        kind: "resolve",
+        workflow: "resolve",
+        trigger: "add login",
+      });
+      const status = await runTaskStatus({ root });
+      expect(status.slots).toHaveLength(1);
+      expect(status.slots[0]?.taskId).toBe(created.task.id);
+      expect(status.slots[0]?.task?.trigger).toBe("add login");
     });
   });
 });

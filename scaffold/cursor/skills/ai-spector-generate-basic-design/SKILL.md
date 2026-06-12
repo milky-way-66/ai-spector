@@ -12,8 +12,33 @@ paths:
 
 # Generate Basic Design
 
+## Step 0 — HARD GATE (before anything else)
+
+**Do not** run `workspace_check`, read templates, or write under `docs/basic-design/` until task state exists.
+
+```
+task_list({
+  status: ["active", "paused"],
+  bootstrap: {
+    kind: "generate",
+    workflow: "generate-basic-design",
+    docType: "basic-design",
+    trigger: "<user request>"
+  }
+})
+  → activeForSlot → task_resume(taskId)
+  → bootstrapped   → continue with new task id
+```
+
+### Forbidden before `task_approve_plan`
+
+- Edit / Write under `docs/basic-design/`
+- `index`, `graph_merge`, spec extraction
+
+After plan approval: each DAG wave ends with `task_record_wave` + `workspace_check({ paths: [written files] })`.
+
 ## Load at start
-1. `task_list` → resume or `task_create({ kind: "generate", workflow: "generate-basic-design", docType: "basic-design", trigger })`
+1. Step 0 above (task_list → create or resume)
 2. [references/runbook.md](references/runbook.md)
 3. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — gated flow + task state
 4. Run `workspace_check` and `context_list({ docType: "basic-design" })` before planning

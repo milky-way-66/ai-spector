@@ -360,6 +360,28 @@ export async function runTaskGet(opts: TaskGetOptions): Promise<TaskGetResult> {
   return { task, taskPath: taskFilePath(root, opts.taskId) };
 }
 
+export interface TaskListBootstrap {
+  kind: TaskKind;
+  workflow: WorkflowId;
+  trigger: string;
+  docType?: string;
+  force?: boolean;
+}
+
+export interface TaskListActiveSlot {
+  slot: string;
+  taskId: string;
+  action: "resume";
+  task: TaskState;
+}
+
+export interface TaskListBootstrapped {
+  created: true;
+  task: TaskState;
+  taskPath: string;
+  replacedTaskId?: string;
+}
+
 export interface TaskListOptions {
   root?: string;
   status?: TaskStatus | TaskStatus[];
@@ -367,17 +389,81 @@ export interface TaskListOptions {
   workflow?: WorkflowId;
   /** Include only tasks listed in index.recent (default: scan all task files). */
   recentOnly?: boolean;
+  /**
+   * When set, creates a task if the workflow slot has no in-flight task; otherwise
+   * returns `activeForSlot` so the agent can call task_resume in one list call.
+   */
+  bootstrap?: TaskListBootstrap;
 }
 
 export interface TaskListResult {
   tasks: TaskState[];
   total: number;
   index: TaskIndex;
+  /** New task created because the slot was empty or only had a finished task. */
+  bootstrapped?: TaskListBootstrapped;
+  /** Existing in-flight task for the bootstrap slot — prefer task_resume. */
+  activeForSlot?: TaskListActiveSlot;
+}
+
+async function maybeBootstrapFromList(
+  root: string,
+  bootstrap: TaskListBootstrap,
+): Promise<{
+  index: TaskIndex;
+  bootstrapped?: TaskListBootstrapped;
+  activeForSlot?: TaskListActiveSlot;
+}> {
+  const index = await loadIndex(root);
+  const slot = activeSlotFor(bootstrap.kind, bootstrap.workflow);
+  const activeId = index.active[slot];
+
+  if (activeId && !bootstrap.force) {
+    try {
+      const task = parseTask(await loadTask(root, activeId));
+      if (task.status !== "complete" && task.status !== "abandoned") {
+        return {
+          index,
+          activeForSlot: { slot, taskId: activeId, action: "resume", task },
+        };
+      }
+    } catch {
+      // stale index entry — create below
+    }
+  }
+
+  const created = await runTaskCreate({
+    root,
+    kind: bootstrap.kind,
+    workflow: bootstrap.workflow,
+    trigger: bootstrap.trigger,
+    docType: bootstrap.docType,
+    force: bootstrap.force,
+  });
+  return {
+    index: await loadIndex(root),
+    bootstrapped: {
+      created: true,
+      task: created.task,
+      taskPath: created.taskPath,
+      replacedTaskId: created.replacedTaskId,
+    },
+  };
 }
 
 export async function runTaskList(opts: TaskListOptions = {}): Promise<TaskListResult> {
   const root = await resolveRoot(opts.root);
-  const index = await loadIndex(root);
+  let bootstrapped: TaskListBootstrapped | undefined;
+  let activeForSlot: TaskListActiveSlot | undefined;
+  let index = await loadIndex(root);
+
+  if (opts.bootstrap) {
+    const boot = await maybeBootstrapFromList(root, opts.bootstrap);
+    index = boot.index;
+    bootstrapped = boot.bootstrapped;
+    activeForSlot = boot.activeForSlot;
+  }
+
   const dir = tasksDir(root);
 
   let ids: string[] = [];
@@ -411,7 +497,49 @@ export async function runTaskList(opts: TaskListOptions = {}): Promise<TaskListR
   }
 
   tasks.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return { tasks, total: tasks.length, index };
+
+  if (bootstrapped && !tasks.some((t) => t.id === bootstrapped.task.id)) {
+    tasks.unshift(bootstrapped.task);
+  }
+  if (activeForSlot && !tasks.some((t) => t.id === activeForSlot.taskId)) {
+    tasks.unshift(activeForSlot.task);
+  }
+
+  return {
+    tasks,
+    total: tasks.length,
+    index,
+    bootstrapped,
+    activeForSlot,
+  };
+}
+
+export interface TaskStatusSlot {
+  slot: string;
+  taskId: string;
+  task?: TaskState;
+  missing?: boolean;
+}
+
+export interface TaskStatusResult {
+  index: TaskIndex;
+  slots: TaskStatusSlot[];
+}
+
+/** Active workflow slots only — quick view for `task status` / resume prompts. */
+export async function runTaskStatus(opts: { root?: string } = {}): Promise<TaskStatusResult> {
+  const root = await resolveRoot(opts.root);
+  const index = await loadIndex(root);
+  const slots: TaskStatusSlot[] = [];
+  for (const [slot, taskId] of Object.entries(index.active ?? {})) {
+    try {
+      const task = parseTask(await loadTask(root, taskId));
+      slots.push({ slot, taskId, task });
+    } catch {
+      slots.push({ slot, taskId, missing: true });
+    }
+  }
+  return { index, slots };
 }
 
 // ── update ────────────────────────────────────────────────────────────────────

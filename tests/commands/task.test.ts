@@ -5,11 +5,13 @@ import {
   formatTaskCreate,
   formatTaskGet,
   formatTaskList,
+  formatTaskStatus,
 } from "@/interfaces/cli/format/task.js";
 import {
   runTaskCreate,
   runTaskGet,
   runTaskList,
+  runTaskStatus,
 } from "@/core/operations/task.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
@@ -53,6 +55,19 @@ describe("task CLI formatters", () => {
       const getText = formatTaskGet(got);
       expect(getText).toContain(got.taskPath);
       expect(getText).toContain("clarify");
+
+      const status = await runTaskStatus({ root });
+      const statusText = formatTaskStatus(status);
+      expect(statusText).toContain("resolve");
+      expect(statusText).toContain(created.task.id);
+    });
+  });
+
+  it("formatTaskStatus reports empty active slots", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const status = await runTaskStatus({ root });
+      expect(formatTaskStatus(status)).toContain("No active workflow tasks");
     });
   });
 });

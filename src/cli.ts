@@ -54,6 +54,7 @@ import {
   runTaskCreate,
   runTaskGet,
   runTaskList,
+  runTaskStatus,
   runTaskPause,
   runTaskResume,
   runTaskUpdate,
@@ -67,6 +68,7 @@ import {
   formatTaskCreate,
   formatTaskGet,
   formatTaskList,
+  formatTaskStatus,
   formatTaskSimple,
   formatTaskUpdate,
 } from "./interfaces/cli/format/task.js";
@@ -414,20 +416,52 @@ task
   .option("-k, --kind <kind>", "generate | resolve")
   .option("-w, --workflow <workflow>", "Workflow id filter")
   .option("--recent", "Only tasks in index.recent")
+  .option(
+    "--bootstrap-trigger <text>",
+    "Create task if workflow slot is empty (requires -k and -w)",
+  )
+  .option("--doc-type <type>", "Doc type when bootstrapping a generate task")
+  .option("--force", "Replace existing active task when bootstrapping")
   .option("--json", "JSON output")
   .action(async (opts) => {
     const status = opts.status
       ? (opts.status as string).split(",").map((s: string) => s.trim()) as TaskStatus[]
       : undefined;
+    const bootstrapTrigger = opts.bootstrapTrigger as string | undefined;
+    if (bootstrapTrigger && (!opts.kind || !opts.workflow)) {
+      throw new Error("--bootstrap-trigger requires -k/--kind and -w/--workflow");
+    }
     const result = await runTaskList({
       root: resolve(opts.cwd ?? process.cwd()),
       status: status?.length === 1 ? status[0] : status,
       kind: opts.kind as TaskKind | undefined,
       workflow: opts.workflow as WorkflowId | undefined,
       recentOnly: opts.recent,
+      bootstrap: bootstrapTrigger
+        ? {
+            kind: opts.kind as TaskKind,
+            workflow: opts.workflow as WorkflowId,
+            trigger: bootstrapTrigger,
+            docType: opts.docType as string | undefined,
+            force: Boolean(opts.force),
+          }
+        : undefined,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatTaskList(result));
+  });
+
+task
+  .command("status")
+  .description("Show active workflow task slots (generate / resolve)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runTaskStatus({
+      root: resolve(opts.cwd ?? process.cwd()),
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskStatus(result));
   });
 
 task

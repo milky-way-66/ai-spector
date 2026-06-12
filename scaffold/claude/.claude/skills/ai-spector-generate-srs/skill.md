@@ -18,6 +18,13 @@ description: "Generates SRS documents from the knowledge graph using DAG waves. 
 > use `ai-spector-generate-<packname>` instead (installed when the pack was activated).
 > Check `CLAUDE.md` skill table if unsure which skill to use.
 
+## Step 0 — HARD GATE
+
+Do **not** run `workspace_check` or write under `docs/srs/` until `task_create` or `task_resume` is done.
+Empty `tasks/index.json` (`active: {}`) still requires `task_create`.
+`workspace_check({ paths })` reports **TASK-003** (warning) without an approved generate task.
+Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` for active slots.
+
 ## Workflow (gated — stages 1–4 before any write)
 
 ```

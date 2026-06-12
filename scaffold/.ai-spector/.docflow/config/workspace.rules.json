@@ -10,6 +10,8 @@
     { "id": "TMPL-001", "severity": "warning" },
     { "id": "CTX-001", "severity": "warning" },
     { "id": "TASK-001", "severity": "warning" },
+    { "id": "TASK-002", "severity": "warning" },
+    { "id": "TASK-003", "severity": "warning" },
     { "id": "GRAPH-001", "severity": "warning" }
   ]
 }

@@ -6,6 +6,13 @@ import {
   isMisplacedBuiltinDocPath,
   suggestLocalizedPath,
 } from "../paths/localized-output.js";
+import {
+  activeSlotForDocType,
+  generateSlotFromDocPath,
+  GENERATE_DOC_TYPES,
+  workflowForDocType,
+  type GenerateDocType,
+} from "./task-templates.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
 
@@ -62,8 +69,123 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "TMPL-001", severity: "warning" },
   { id: "CTX-001", severity: "warning" },
   { id: "TASK-001", severity: "warning" },
+  { id: "TASK-002", severity: "warning" },
+  { id: "TASK-003", severity: "warning" },
   { id: "GRAPH-001", severity: "warning" },
 ];
+
+interface TaskIndexForCheck {
+  active?: Record<string, string>;
+}
+
+interface TaskForCheck {
+  planApprovedAt?: string | null;
+  status?: string;
+}
+
+async function loadTaskIndexForCheck(root: string): Promise<TaskIndexForCheck> {
+  const indexPath = join(root, ".ai-spector/.docflow/tasks/index.json");
+  if (!(await pathExists(indexPath))) return { active: {} };
+  return readJson<TaskIndexForCheck>(indexPath).catch(() => ({ active: {} }));
+}
+
+async function loadTaskForCheck(root: string, taskId: string): Promise<TaskForCheck | null> {
+  const taskPath = join(root, ".ai-spector/.docflow/tasks", `${taskId}.json`);
+  if (!(await pathExists(taskPath))) return null;
+  return readJson<TaskForCheck>(taskPath).catch(() => null);
+}
+
+async function listLocalizedGenerateDocs(
+  root: string,
+  docType: GenerateDocType,
+): Promise<string[]> {
+  const sourceRoot = `docs/${docType}`;
+  if (!(await pathExists(join(root, sourceRoot)))) return [];
+  const files = await discoverMarkdownFiles(root, sourceRoot);
+  return files
+    .map((f) => f.relativePath)
+    .filter((p) => {
+      const parts = p.split("/");
+      if (parts.length < 4) return false;
+      const name = parts[parts.length - 1] ?? "";
+      return name.toLowerCase() !== "readme.md";
+    });
+}
+
+function slotToDocType(slot: string): GenerateDocType | null {
+  if (slot === "generate:srs") return "srs";
+  if (slot === "generate:basic-design") return "basic-design";
+  return null;
+}
+
+function addGenerateTaskFinding(
+  add: (f: CheckFinding) => void,
+  rules: RuleConfig[],
+  ruleId: "TASK-002" | "TASK-003",
+  defaultSeverity: CheckSeverity,
+  slot: string,
+  docType: GenerateDocType,
+  path: string,
+  reason: "missing" | "no-plan",
+  taskId?: string,
+): void {
+  const workflow = workflowForDocType(docType);
+  const fix =
+    reason === "missing"
+      ? `task_create({ kind: "generate", workflow: "${workflow}", docType: "${docType}", trigger: "…" }) or npx ai-spector task create -k generate -w ${workflow} -t "…" --doc-type ${docType}`
+      : `task_approve_plan({ taskId: "${taskId}" }) or npx ai-spector task approve ${taskId}`;
+  const message =
+    reason === "missing"
+      ? `Generated ${docType} docs exist but no active task tracks slot "${slot}" — workflow state is missing.`
+      : `Active ${slot} task ${taskId} has no approved plan — generate writes require task_approve_plan first.`;
+  add({
+    ruleId,
+    severity: severityOf(rules, ruleId, defaultSeverity),
+    message,
+    path,
+    fix,
+  });
+}
+
+async function checkGenerateTaskGate(
+  add: (f: CheckFinding) => void,
+  rules: RuleConfig[],
+  ruleId: "TASK-002" | "TASK-003",
+  defaultSeverity: CheckSeverity,
+  index: TaskIndexForCheck,
+  root: string,
+  slot: string,
+  docType: GenerateDocType,
+  path: string,
+): Promise<void> {
+  const activeId = index.active?.[slot];
+  if (!activeId) {
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    return;
+  }
+  const task = await loadTaskForCheck(root, activeId);
+  if (!task) {
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    return;
+  }
+  if (task.status === "complete" || task.status === "abandoned") {
+    addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing");
+    return;
+  }
+  if (!task.planApprovedAt) {
+    addGenerateTaskFinding(
+      add,
+      rules,
+      ruleId,
+      defaultSeverity,
+      slot,
+      docType,
+      path,
+      "no-plan",
+      activeId,
+    );
+  }
+}
 
 async function loadRules(root: string): Promise<RuleConfig[]> {
   const cfgPath = join(root, ".ai-spector/.docflow/config/workspace.rules.json");
@@ -282,6 +404,52 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
           });
         }
       }
+    }
+  }
+
+  // TASK-002 — generated SRS/BD docs without active tracked task (workspace scan).
+  if (enabled(rules, "TASK-002")) {
+    const index = await loadTaskIndexForCheck(root);
+    for (const docType of GENERATE_DOC_TYPES) {
+      const docs = await listLocalizedGenerateDocs(root, docType);
+      if (docs.length === 0) continue;
+      const slot = activeSlotForDocType(docType);
+      await checkGenerateTaskGate(
+        add,
+        rules,
+        "TASK-002",
+        "warning",
+        index,
+        root,
+        slot,
+        docType,
+        docs[0]!,
+      );
+    }
+  }
+
+  // TASK-003 — explicit doc path writes require approved active generate task.
+  if (enabled(rules, "TASK-003") && (opts.paths?.length ?? 0) > 0) {
+    const index = await loadTaskIndexForCheck(root);
+    const explicitPaths = [...new Set((opts.paths ?? []).map((p) => p.replace(/\\/g, "/")))];
+    const checkedSlots = new Set<string>();
+    for (const rel of explicitPaths) {
+      const slot = generateSlotFromDocPath(rel);
+      if (!slot || checkedSlots.has(slot)) continue;
+      checkedSlots.add(slot);
+      const docType = slotToDocType(slot);
+      if (!docType) continue;
+      await checkGenerateTaskGate(
+        add,
+        rules,
+        "TASK-003",
+        "warning",
+        index,
+        root,
+        slot,
+        docType,
+        rel,
+      );
     }
   }
 

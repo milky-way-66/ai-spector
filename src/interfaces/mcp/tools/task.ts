@@ -9,6 +9,7 @@ import type {
   TaskListSchema,
   TaskPauseSchema,
   TaskResumeSchema,
+  TaskStatusSchema,
   TaskUpdateSchema,
 } from "../schemas.js";
 import {
@@ -20,6 +21,7 @@ import {
   runTaskList,
   runTaskPause,
   runTaskResume,
+  runTaskStatus,
   runTaskUpdate,
   recordGenerateWaveProgress,
 } from "../../../core/operations/task.js";
@@ -42,7 +44,12 @@ export async function toolTaskList(input: z.infer<typeof TaskListSchema>) {
     kind: input.kind,
     workflow: input.workflow,
     recentOnly: input.recentOnly,
+    bootstrap: input.bootstrap,
   });
+}
+
+export async function toolTaskStatus(input: z.infer<typeof TaskStatusSchema>) {
+  return runTaskStatus({ root: input.root });
 }
 
 export async function toolTaskGet(input: z.infer<typeof TaskGetSchema>) {

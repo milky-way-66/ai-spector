@@ -4,20 +4,37 @@ File-backed workflow progress lives in `.ai-spector/.docflow/tasks/`.
 
 ## Session start (any generate or resolve skill)
 
-```
-1. task_list({ status: ["active", "paused", "blocked"] })
-2. If match → show summary → offer task_resume OR start new (task_create with force:true)
-3. task_get(taskId) → read currentStepId, nextAction, planApprovedAt, blockers
-4. Never skip gates already marked done in steps[]
-```
-
-## Create
+**Preferred — single MCP call** (`bootstrap` creates or returns `activeForSlot`):
 
 ```json
 // Generate SRS
-{ "kind": "generate", "workflow": "generate-srs", "trigger": "generate SRS", "docType": "srs" }
+task_list({
+  "status": ["active", "paused", "blocked"],
+  "bootstrap": {
+    "kind": "generate",
+    "workflow": "generate-srs",
+    "trigger": "generate SRS introduction",
+    "docType": "srs"
+  }
+})
+```
 
-// Incremental change
+- `bootstrapped` → new task created; continue from `currentStepId`
+- `activeForSlot` → offer `task_resume(taskId)`; do **not** create again
+
+CLI equivalent:
+
+```bash
+npx ai-spector task list -k generate -w generate-srs --doc-type srs \
+  --bootstrap-trigger "generate SRS introduction"
+```
+
+Quick slot view: `task_status({})` or `npx ai-spector task status`.
+
+## Create (manual fallback)
+
+```json
+{ "kind": "generate", "workflow": "generate-srs", "trigger": "generate SRS", "docType": "srs" }
 { "kind": "resolve", "workflow": "resolve", "trigger": "add login with Google" }
 ```
 

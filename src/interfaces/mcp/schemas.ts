@@ -445,6 +445,17 @@ export const TaskCreateSchema = RootSchema.extend({
     .describe("Replace existing active task in the same slot (abandons the previous task)"),
 });
 
+const TaskListBootstrapSchema = z.object({
+  kind: TaskKindEnum.describe("generate or resolve"),
+  workflow: WorkflowIdEnum.describe("Workflow template for the new task"),
+  trigger: z.string().describe("User intent that started this workflow"),
+  docType: z.string().optional().describe("Doc type for generate workflows (e.g. srs)"),
+  force: z
+    .boolean()
+    .optional()
+    .describe("Replace existing active task in the slot (abandons the previous task)"),
+});
+
 export const TaskListSchema = RootSchema.extend({
   status: z
     .union([TaskStatusEnum, z.array(TaskStatusEnum)])
@@ -453,7 +464,12 @@ export const TaskListSchema = RootSchema.extend({
   kind: TaskKindEnum.optional(),
   workflow: WorkflowIdEnum.optional(),
   recentOnly: z.boolean().optional().describe("List only tasks in index.recent"),
+  bootstrap: TaskListBootstrapSchema.optional().describe(
+    "Single-call session start: create a task when the workflow slot is empty, or return activeForSlot when a resumable task already exists",
+  ),
 });
+
+export const TaskStatusSchema = RootSchema;
 
 export const TaskGetSchema = RootSchema.extend({
   taskId: z.string().describe("Task id, e.g. task-m1abc2"),

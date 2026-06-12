@@ -12,20 +12,23 @@ Used by SRS and basic design skills.
 - Context compaction / sub-agents → [context-management.md](./context-management.md)
 - CLI failures → [cli-failures.md](./cli-failures.md)
 
-## Task state (every generate run)
+## Task state (every generate run) — HARD GATE
 
 Persist progress in `.ai-spector/.docflow/tasks/` — do not rely on chat memory.
+**Step 0 runs before CHECK.** `workspace_check` TASK-002/TASK-003 surface missing task state.
 
 ```
-1. task_list({ status: ["active", "paused"] }) — offer resume (task_resume) or new task
-2. task_create({ kind: "generate", workflow: "generate-srs"|"generate-basic-design", trigger, docType })
-3. After each gate: task_update (phase, step status, openContextIds)
-4. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
-5. After each DAG wave: task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
-6. After extract offered: task_complete when user is done
+0. task_list({ status: ["active", "paused"], bootstrap: { kind, workflow, docType, trigger } })
+   → activeForSlot: task_resume | bootstrapped: new task id
+1. After each gate: task_update (phase, step status, openContextIds)
+3. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
+4. After each DAG wave: task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
+   → workspace_check({ paths: artifacts })
+5. After extract offered: task_complete when user is done
 ```
 
 Pause anytime: `task_pause`. Resume: `task_resume` (validates drift before continuing).
+Status without opening JSON: `npx ai-spector task status` or MCP `task_status`.
 
 ## Gated flow (every generate run, mandatory)
 

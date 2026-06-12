@@ -24,6 +24,9 @@ everything else is reported with a remediation hint.
 | CFG-001 | error | `languages[]` non-empty in the raw config |
 | TMPL-001 | warning | `.ai-spector/templates/` exists |
 | CTX-001 | warning | Context store dir exists; **stale clarifications** are surfaced (Q-ids listed) |
+| TASK-001 | warning | In-flight workflow tasks in `tasks/index.json` active slots |
+| TASK-002 | warning | SRS/BD chapter files exist but no active generate task tracks the slot |
+| TASK-003 | warning | Explicit `paths` under `docs/srs/` or `docs/basic-design/` without approved active generate task |
 | GRAPH-001 | warning | `graph.json` parses (deep validation stays with `graph validate`) |
 
 Severities are configurable per project in
@@ -39,7 +42,8 @@ Severities are configurable per project in
    ([clarify.md](./clarify.md)).
 4. After **each primary file write** during generation, run
    `workspace_check({ paths: ["docs/srs/{lang}/{filename}"] })` (or CLI
-   `check --path …`). STRUCT-004 errors mean the file landed outside the
+   `check --path …`). **TASK-003** warns when no approved `task_approve_plan`
+   for the matching generate slot. STRUCT-004 errors mean the file landed outside the
    language folder — move it to the suggested path before merge/index.
 5. After **manual doc edits**, re-run `workspace_check({ paths: [editedPath] })`
    when the path is under `docs/srs/` or `docs/basic-design/`.

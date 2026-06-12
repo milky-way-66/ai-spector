@@ -10,6 +10,16 @@ When following **ai-spector-resolve-task**, run impact and index only **after pl
 
 When you **finish editing** any file under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`:
 
+## 0. Workspace check (generate runs)
+
+After each write during **generate** workflows:
+
+```bash
+npx ai-spector check --path <repo-relative-path>
+```
+
+TASK-003 warnings mean no approved active generate task — run `task_list` bootstrap / `task_approve_plan` first.
+
 ## 1. Check traceability impact
 
 Before closing the task, run impact for what changed:

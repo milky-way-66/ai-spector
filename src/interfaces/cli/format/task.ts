@@ -3,6 +3,7 @@ import type {
   TaskGetResult,
   TaskListResult,
   TaskState,
+  TaskStatusResult,
   TaskUpdateResult,
 } from "@/core/operations/task.js";
 
@@ -46,9 +47,26 @@ export function formatTaskGet(result: TaskGetResult): string {
 }
 
 export function formatTaskList(result: TaskListResult): string {
-  if (result.total === 0) return "No tasks found.";
-  const activeSlots = Object.entries(result.index.active);
   const lines: string[] = [];
+  if (result.bootstrapped) {
+    lines.push(`Bootstrapped new task ${result.bootstrapped.task.id} (${result.bootstrapped.task.workflow}).`);
+    if (result.bootstrapped.replacedTaskId) {
+      lines.push(`Replaced ${result.bootstrapped.replacedTaskId}.`);
+    }
+    lines.push("");
+  }
+  if (result.activeForSlot) {
+    lines.push(
+      `Resumable task for ${result.activeForSlot.slot}: ${result.activeForSlot.taskId} — use task resume.`,
+    );
+    lines.push("");
+  }
+  if (result.total === 0) {
+    return lines.length > 0
+      ? lines.join("\n")
+      : "No tasks found.";
+  }
+  const activeSlots = Object.entries(result.index.active);
   if (activeSlots.length > 0) {
     lines.push("Active slots:");
     for (const [slot, id] of activeSlots) {
@@ -70,4 +88,23 @@ export function formatTaskUpdate(result: TaskUpdateResult): string {
 
 export function formatTaskSimple(action: string, result: { task: TaskState }): string {
   return [`${action} ${result.task.id}`, formatTaskSummary(result.task)].join("\n");
+}
+
+export function formatTaskStatus(result: TaskStatusResult): string {
+  const active = result.slots;
+  if (active.length === 0) {
+    return "No active workflow tasks. Run task_list or task_create before generate/resolve.";
+  }
+  const lines = ["Active workflow slots:"];
+  for (const entry of active) {
+    if (entry.missing) {
+      lines.push(`  ${entry.slot} → ${entry.taskId} (task file missing)`);
+      continue;
+    }
+    if (!entry.task) continue;
+    lines.push(`  ${entry.slot} → ${entry.taskId}`);
+    lines.push(formatTaskSummary(entry.task).replace(/^/gm, "    "));
+    lines.push("");
+  }
+  return lines.join("\n").trimEnd();
 }

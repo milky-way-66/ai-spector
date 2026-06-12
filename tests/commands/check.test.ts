@@ -2,7 +2,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runCheck } from "@/core/operations/check.js";
-import { pathExists } from "@/core/util/fs.js";
+import {
+  buildGeneratePlan,
+  runTaskApprovePlan,
+  runTaskCreate,
+  runTaskUpdate,
+} from "@/core/operations/task.js";
+import { pathExists, writeJson } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 const MIN_CONFIG = {
@@ -22,6 +28,12 @@ async function scaffoldMinimal(root: string): Promise<void> {
   await mkdir(join(root, ".ai-spector/templates"), { recursive: true });
   await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
   await mkdir(join(root, "docs/srs/en"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
+  await writeJson(join(root, ".ai-spector/.docflow/tasks/index.json"), {
+    version: 1,
+    active: {},
+    recent: [],
+  });
 }
 
 describe("runCheck", () => {
@@ -97,6 +109,74 @@ describe("runCheck", () => {
       const badPath = await runCheck({ root, paths: ["docs/srs/3-use-cases.md"] });
       expect(badPath.findings.some((f) => f.ruleId === "STRUCT-004")).toBe(true);
       expect(badPath.ok).toBe(false);
+    });
+  });
+
+  it("warns TASK-002 when SRS docs exist without active generate task", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      await writeFile(
+        join(root, "docs/srs/en/1-introduction.md"),
+        "# Introduction\n",
+        "utf8",
+      );
+      const result = await runCheck({ root });
+      const task002 = result.findings.find((f) => f.ruleId === "TASK-002");
+      expect(task002?.severity).toBe("warning");
+      expect(task002?.message).toContain("generate:srs");
+      expect(task002?.fix).toContain("task_create");
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  it("warns TASK-003 on explicit SRS path without approved generate task", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      const rel = "docs/srs/en/1-introduction.md";
+      await writeFile(join(root, rel), "# Introduction\n", "utf8");
+      const result = await runCheck({ root, paths: [rel] });
+      const task003 = result.findings.find((f) => f.ruleId === "TASK-003");
+      expect(task003?.severity).toBe("warning");
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  it("passes TASK-003 when active generate task has approved plan", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      const rel = "docs/srs/en/1-introduction.md";
+      const created = await runTaskCreate({
+        root,
+        kind: "generate",
+        workflow: "generate-srs",
+        trigger: "generate introduction",
+        docType: "srs",
+      });
+      const plan = buildGeneratePlan({
+        docType: "srs",
+        language: "en",
+        scope: "explicit",
+        briefing: [{ target: rel }],
+        rows: [
+          {
+            output: rel,
+            dagNode: "srs.introduction",
+            sources: [],
+            keyPoints: ["intro"],
+          },
+        ],
+        waves: [{ wave: 1, nodeIds: ["srs.introduction"] }],
+      });
+      await runTaskUpdate({
+        root,
+        taskId: created.task.id,
+        patch: { plan: { kind: "generate", plan } },
+      });
+      await runTaskApprovePlan({ root, taskId: created.task.id });
+      await writeFile(join(root, rel), "# Introduction\n", "utf8");
+      const result = await runCheck({ root, paths: [rel] });
+      expect(result.findings.some((f) => f.ruleId === "TASK-003")).toBe(false);
+      expect(result.ok).toBe(true);
     });
   });
 

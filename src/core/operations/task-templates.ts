@@ -60,3 +60,23 @@ export function activeSlotFor(kind: TaskKind, workflow: WorkflowId): string {
   if (workflow === "generate-basic-design") return "generate:basic-design";
   return `generate:${workflow}`;
 }
+
+export type GenerateDocType = "srs" | "basic-design";
+
+export const GENERATE_DOC_TYPES: GenerateDocType[] = ["srs", "basic-design"];
+
+export function workflowForDocType(docType: GenerateDocType): WorkflowId {
+  return docType === "srs" ? "generate-srs" : "generate-basic-design";
+}
+
+export function activeSlotForDocType(docType: GenerateDocType): string {
+  return activeSlotFor("generate", workflowForDocType(docType));
+}
+
+/** Builtin SRS/BD chapter path under `docs/{type}/{lang}/…`. */
+export function generateSlotFromDocPath(relPath: string): string | null {
+  const n = relPath.replace(/\\/g, "/");
+  if (/^docs\/srs\/[^/]+\/.+\.md$/i.test(n)) return "generate:srs";
+  if (/^docs\/basic-design\/[^/]+\/.+\.md$/i.test(n)) return "generate:basic-design";
+  return null;
+}

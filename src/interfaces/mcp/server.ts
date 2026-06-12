@@ -42,6 +42,7 @@ import {
   SpecRejectSchema,
   TaskCreateSchema,
   TaskListSchema,
+  TaskStatusSchema,
   TaskGetSchema,
   TaskUpdateSchema,
   TaskApprovePlanSchema,
@@ -75,6 +76,7 @@ import {
   toolTaskCreate,
   toolTaskGet,
   toolTaskList,
+  toolTaskStatus,
   toolTaskPause,
   toolTaskResume,
   toolTaskUpdate,
@@ -584,11 +586,24 @@ server.registerTool(
   "task_list",
   {
     description:
-      "List workflow tasks (active, paused, complete). Filter by status, kind, or workflow. Call at session start to find work in flight instead of relying on chat history.",
+      "List workflow tasks (active, paused, complete). Filter by status, kind, or workflow. Pass bootstrap to create a task when the slot is empty (single-call session start) or get activeForSlot when resumable work exists.",
     inputSchema: TaskListSchema.shape,
   },
   async (input) => {
     const result = await toolTaskList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_status",
+  {
+    description:
+      "Show active workflow task slots (generate:srs, generate:basic-design, resolve) with phase, step, and plan approval — without opening JSON files.",
+    inputSchema: TaskStatusSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskStatus(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -714,7 +729,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "workspace_check",
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",
-    "task_create", "task_list", "task_get", "task_update", "task_approve_plan",
+    "task_create", "task_list", "task_status", "task_get", "task_update", "task_approve_plan",
     "task_pause", "task_resume", "task_complete", "task_abandon", "task_record_wave",
   ];
   process.stderr.write(
