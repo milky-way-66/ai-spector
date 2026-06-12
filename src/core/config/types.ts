@@ -41,7 +41,12 @@ export interface ReadinessDocTypeSetting {
 export interface ReadinessConfig {
   /** Default profile when docTypes.<type>.profile is unset: general | regulated | arc42 */
   profile?: string;
-  /** Standards tags for reporting (ISO-29148, IEC-62304, arc42, …) */
+  /**
+   * Declared standards intent for the project (ISO-29148, IEC-62304, …).
+   * Does not drive readiness_assess directly — scoring uses `readiness-criteria.<docType>.json`
+   * `standards[]` and per-criterion `iso29148` refs. Query alignment via readiness_config /
+   * readiness_assess `standardsAlignment`.
+   */
   standards?: string[];
   /** Per doc-type profile and enablement */
   docTypes?: Record<string, ReadinessDocTypeSetting>;

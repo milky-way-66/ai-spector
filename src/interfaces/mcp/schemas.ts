@@ -375,6 +375,14 @@ export const GeneratePlanRowSchema = z.object({
   dagNode: z.string(),
   sources: z.array(z.string()),
   keyPoints: z.array(z.string()),
+  criteriaIds: z
+    .array(z.string())
+    .optional()
+    .describe("Readiness criterion ids this output covers, e.g. §1-001, G-003"),
+  isoRefs: z
+    .array(z.string())
+    .optional()
+    .describe("ISO/IEC/IEEE 29148 section refs for this output, e.g. 9.6.2"),
 });
 
 export const GeneratePlanBriefingSchema = z.object({
@@ -434,6 +442,14 @@ export const TaskUpdatePatchSchema = z.object({
       workspaceCheckAt: z.string().optional(),
       artifactHashes: z.record(z.string(), z.string()).optional(),
       graphMergedAt: z.string().optional(),
+      readinessReportShown: z
+        .boolean()
+        .optional()
+        .describe("Required before clarify step can be marked done on generate tasks"),
+      extractOffered: z
+        .boolean()
+        .optional()
+        .describe("Set after offering spec_record — required before task_complete"),
     })
     .optional(),
   step: z.object({ id: z.string(), patch: TaskStepPatchSchema }).optional(),

@@ -4,6 +4,7 @@ import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { runContextList } from "../operations/context.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { loadMergedReadinessCriteria } from "./resolve.js";
+import { checkStandardsAlignment } from "./standards-align.js";
 import { countNodesByType, evaluateCriterion, type ProbeInventory } from "./probes.js";
 import type {
   ReadinessAssessResult,
@@ -186,6 +187,11 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
     }
   }
 
+  const standardsAlignment = checkStandardsAlignment(
+    config.readiness?.standards,
+    criteria.standards,
+  );
+
   return {
     ready: summary.blockingMissing === 0,
     docType,
@@ -193,6 +199,7 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
     profile: profileId,
     appliedProfiles: resolved.appliedProfiles,
     criteriaPath,
+    standardsAlignment,
     scope: { dagNodes: targetAll ? dagNodes : (opts.targets ?? dagNodes), targetAll },
     summary,
     requirementQuality: buildRequirementQualitySummary(criteria, inventory),

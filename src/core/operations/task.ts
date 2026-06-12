@@ -50,6 +50,10 @@ export interface GeneratePlanRow {
   dagNode: string;
   sources: string[];
   keyPoints: string[];
+  /** Readiness criterion ids this output will address (from readiness_assess), e.g. §1-001, G-003 */
+  criteriaIds?: string[];
+  /** ISO/IEC/IEEE 29148 section refs for this output, e.g. 9.6.2, 9.6.4 */
+  isoRefs?: string[];
 }
 
 export interface GeneratePlanBriefing {
@@ -139,6 +143,10 @@ export interface TaskSnapshot {
   workspaceCheckAt?: string;
   artifactHashes?: Record<string, string>;
   graphMergedAt?: string;
+  /** Set when the full readiness criteria table was shown to the user (clarify gate). */
+  readinessReportShown?: boolean;
+  /** Set when extract stage offered spec_record to the user (extract gate before task_complete). */
+  extractOffered?: boolean;
 }
 
 export interface TaskState {
@@ -609,6 +617,16 @@ export async function runTaskUpdate(opts: TaskUpdateOptions): Promise<TaskUpdate
     task.snapshot = { ...task.snapshot, ...patch.snapshot };
   }
   if (patch.step) {
+    if (
+      patch.step.id === "clarify" &&
+      patch.step.patch.status === "done" &&
+      task.kind === "generate" &&
+      !task.snapshot.readinessReportShown
+    ) {
+      throw new Error(
+        'Cannot mark clarify "done" until readiness report was shown — set snapshot.readinessReportShown via task_update after presenting the full criteria table (ID, ISO, status).',
+      );
+    }
     applyStepPatch(task, patch.step.id, patch.step.patch);
     if (patch.step.patch.status === "done" && patch.step.patch.artifacts?.length) {
       const hashes = { ...(task.snapshot.artifactHashes ?? {}) };
@@ -906,7 +924,24 @@ export interface TaskCompleteResult {
 export async function runTaskComplete(opts: TaskCompleteOptions): Promise<TaskCompleteResult> {
   const root = await resolveRoot(opts.root);
   const task = parseTask(await loadTask(root, opts.taskId));
-  const now = new Date().toISOString();
+
+  if (task.kind === "generate") {
+    const extractStep = task.steps.find((s) => s.id === "extract");
+    if (extractStep && extractStep.status === "pending") {
+      throw new Error(
+        'Cannot complete generate task — extract stage not started. Offer spec extraction (spec_record) per extract-specs.md, then task_update extract step done or set snapshot.extractOffered.',
+      );
+    }
+    if (
+      extractStep &&
+      extractStep.status === "in-progress" &&
+      !task.snapshot.extractOffered
+    ) {
+      throw new Error(
+        'Cannot complete generate task — extract stage in progress. Offer spec_record to the user first, then set snapshot.extractOffered via task_update.',
+      );
+    }
+  }
 
   task.status = "complete";
   task.phaseStatus = "done";

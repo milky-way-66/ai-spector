@@ -24,9 +24,11 @@ Persist progress in `.ai-spector/.docflow/tasks/` — do not rely on chat memory
    → activeForSlot: task_resume | bootstrapped: new task id
 1. After each gate: task_update (phase, step status, openContextIds) — check/clarify/briefing/plan must reach `done`
 3. After plan table approved: task_update(plan) → task_approve_plan (expands wave-1…wave-N steps)
-4. After each DAG wave: task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
+4. After each DAG wave (before task_record_wave):
+   → readiness_scan({ paths: artifacts, updateLastScan: false }) — report findings
    → workspace_check({ paths: artifacts })
-5. After extract offered: task_complete when user is done (or task_pause if user defers)
+   → task_record_wave({ taskId, waveId, status: "done", artifacts: [paths] })
+5. After extract offered (snapshot.extractOffered): task_complete when user is done (or task_pause if user defers)
 ```
 
 **Incremental continuation** (user adds chapters mid-session): see
@@ -39,12 +41,13 @@ Status without opening JSON: `npx ai-spector task status` or MCP `task_status`.
 ## Gated flow (every generate run, mandatory)
 
 ```
-1. CHECK     workspace_check MCP (fallback: npx ai-spector check) — fix errors before continuing
-2. CLARIFY   readiness report → FULL gap set → ask the user → store every answer (context store)
-3. BRIEFING  state exactly what context/sources will shape each document → user confirms
-4. PLAN      plan table (output × DAG node × sources × key points) → explicit "yes"
-5. GENERATE  DAG waves (engine below — language rules, sub-agents, translation pauses)
-6. EXTRACT   pull key specs from output → spec review queue → graph merge only on approval
+1. CHECK     readiness_config + workspace_check — fix errors before continuing
+2. CLARIFY   readiness_assess → present FULL criteria table (ID, ISO, status) →
+             task_update snapshot.readinessReportShown → FULL gap set → context store
+3. BRIEFING  per file: criteria covered + sources + assumptions → user confirms
+4. PLAN      table: output × DAG × criteria × ISO refs × sources × key points → explicit "yes"
+5. GENERATE  DAG waves — after each wave: readiness_scan(paths) → index → workspace_check → task_record_wave
+6. EXTRACT   spec_record offer → snapshot.extractOffered → task_complete (or task_pause)
 ```
 
 Stages 1–4 are **gates**: no file is written until the plan is confirmed. There is
@@ -128,11 +131,13 @@ do not skip them.
 - [ ] Load matching srs-context/ or bd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write primary language file from summary + template
+- [ ] `readiness_scan({ paths: [written paths], updateLastScan: false })` — report errors/warnings to user (headings, placeholders, profile drift)
 - [ ] `workspace_check({ paths: ["docs/{docType}/{primaryLang}/{filename}"] })` — STRUCT-004 must pass (move file if misplaced)
 - [ ] [PAUSE — translation prompt] (see below)
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave
 - [ ] npx ai-spector graph validate
 - [ ] npx ai-spector index (basic design: every wave; SRS: see runbook)
+- [ ] `task_record_wave` with artifact paths for this wave
 - [ ] /compact with plan summary before next wave
 ```
 
@@ -198,4 +203,7 @@ When any doc under `docs/` is edited outside generate skills, follow `.cursor/ru
 3. **Extract key specs** from the generated documents and offer to queue them for
    review — [extract-specs.md](./extract-specs.md). Approved specs merge to the
    graph; nothing is ever written to `docs/data-source/`.
-4. Suggest summary command when runbook lists one
+4. `task_update({ patch: { snapshot: { extractOffered: true }, step: { id: "extract", patch: { status: "done" } } } })`
+   — **required** before `task_complete` (MCP enforces extract gate).
+5. `task_complete` or `task_pause` if user defers review
+6. Suggest summary command when runbook lists one

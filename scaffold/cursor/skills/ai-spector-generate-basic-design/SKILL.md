@@ -35,7 +35,8 @@ task_list({
 - Edit / Write under `docs/basic-design/`
 - `index`, `graph_merge`, spec extraction
 
-After plan approval: each DAG wave ends with `task_record_wave` + `workspace_check({ paths: [written files] })`.
+After plan approval: each DAG wave ends with `readiness_scan` → `workspace_check` → `task_record_wave`.
+Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only after `snapshot.extractOffered`.
 
 ## Load at start
 1. Step 0 above (task_list → create or resume)

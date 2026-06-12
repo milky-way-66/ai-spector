@@ -4,6 +4,8 @@ import { loadDocflowConfig, resolveActivePackManifest } from "../config/load.js"
 import { pathExists } from "../util/fs.js";
 import { listReadinessProfiles } from "./profiles.js";
 import { resolveCriteriaFilePath } from "./criteria-path.js";
+import { checkStandardsAlignment } from "./standards-align.js";
+import { loadMergedReadinessCriteria } from "./resolve.js";
 
 export type ProfileSource =
   | "config.docTypes"
@@ -19,12 +21,17 @@ export interface ResolvedDocTypeReadiness {
   packName: string | null;
   criteriaPath: string | null;
   completenessRulesPath: string | null;
+  /** How config readiness.standards relates to the active criteria file for this doc type. */
+  standardsAlignment?: ReturnType<typeof checkStandardsAlignment>;
 }
 
 export interface ReadinessConfigStatus {
   configured: boolean;
   configPath: string;
   readiness: ReadinessConfig;
+  /** Project-level standards intent from docflow.config (metadata; assess uses criteria file). */
+  standardsIntent?: string[];
+  standardsNote: string;
   packs: { srs: string; basicDesign: string };
   docTypes: ResolvedDocTypeReadiness[];
   availableProfiles: Awaited<ReturnType<typeof listReadinessProfiles>>;
@@ -127,6 +134,24 @@ export async function resolveReadinessConfigStatus(opts: {
             : config.packs.basicDesign
           : criteriaResolved.packName;
 
+    let standardsAlignment: ReturnType<typeof checkStandardsAlignment> | undefined;
+    if (await pathExists(criteriaResolved.path)) {
+      try {
+        const merged = await loadMergedReadinessCriteria({ root, docType, profile });
+        standardsAlignment = checkStandardsAlignment(
+          readiness.standards,
+          merged.criteria.standards,
+        );
+      } catch {
+        standardsAlignment = {
+          configDeclared: (readiness.standards ?? []).map((s) => s.toUpperCase()),
+          criteriaFile: [],
+          unmatchedInCriteria: readiness.standards ?? [],
+          note: "Could not load criteria file for standards alignment.",
+        };
+      }
+    }
+
     docTypes.push({
       docType,
       enabled,
@@ -137,6 +162,7 @@ export async function resolveReadinessConfigStatus(opts: {
         ? criteriaResolved.path.replace(root + "/", "")
         : null,
       completenessRulesPath: await completenessRulesPath(root, docType, packName),
+      standardsAlignment,
     });
   }
 
@@ -158,10 +184,17 @@ export async function resolveReadinessConfigStatus(opts: {
     suggestions.push("Run readiness_scan after configuring profile to validate existing documents.");
   }
 
+  const standardsNote =
+    "readiness.standards in docflow.config.json declares project intent. " +
+    "readiness_assess scores against readiness-criteria.<docType>.json (per-criterion iso29148 refs). " +
+    "readiness_scan checks output structure via completeness-rules.<docType>.json.";
+
   return {
     configured: isReadinessExplicitlyConfigured(config),
     configPath: configFile.replace(root + "/", ""),
     readiness,
+    standardsIntent: readiness.standards,
+    standardsNote,
     packs: { srs: config.packs.srs, basicDesign: config.packs.basicDesign },
     docTypes,
     availableProfiles: await listReadinessProfiles(),

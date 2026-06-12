@@ -192,6 +192,14 @@ describe("task state store", () => {
         trigger: "retry screen list",
         docType: "basic-design",
       });
+      await runTaskUpdate({
+        root,
+        taskId: created2.task.id,
+        patch: {
+          snapshot: { extractOffered: true },
+          step: { id: "extract", patch: { status: "done" } },
+        },
+      });
       const completed = await runTaskComplete({
         root,
         taskId: created2.task.id,
@@ -264,6 +272,63 @@ describe("task state store", () => {
       expect(status.slots).toHaveLength(1);
       expect(status.slots[0]?.taskId).toBe(created.task.id);
       expect(status.slots[0]?.task?.trigger).toBe("add login");
+    });
+  });
+
+  it("rejects clarify done until readiness report was shown", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "generate",
+        workflow: "generate-srs",
+        trigger: "generate SRS",
+        docType: "srs",
+      });
+
+      await expect(
+        runTaskUpdate({
+          root,
+          taskId: task.id,
+          patch: { step: { id: "clarify", patch: { status: "done" } } },
+        }),
+      ).rejects.toThrow(/readinessReportShown/);
+
+      const ok = await runTaskUpdate({
+        root,
+        taskId: task.id,
+        patch: {
+          snapshot: { readinessReportShown: true },
+          step: { id: "clarify", patch: { status: "done" } },
+        },
+      });
+      expect(ok.task.steps.find((s) => s.id === "clarify")?.status).toBe("done");
+    });
+  });
+
+  it("rejects task_complete until extract was offered", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "generate",
+        workflow: "generate-srs",
+        trigger: "generate SRS",
+        docType: "srs",
+      });
+
+      await expect(runTaskComplete({ root, taskId: task.id })).rejects.toThrow(/extract/);
+
+      await runTaskUpdate({
+        root,
+        taskId: task.id,
+        patch: {
+          snapshot: { extractOffered: true },
+          step: { id: "extract", patch: { status: "done" } },
+        },
+      });
+      const completed = await runTaskComplete({ root, taskId: task.id });
+      expect(completed.task.status).toBe("complete");
     });
   });
 });

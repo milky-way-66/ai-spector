@@ -30,23 +30,19 @@ Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` fo
 ```
 0. TASK      task_list → task_create(generate-srs) or task_resume
 1. CHECK     workspace_check({}) — fix errors before continuing (CLI: npx ai-spector check)
-2. CLARIFY   readiness assessment first (readiness-criteria.srs.json + graph +
-             gaps.json + data-source) → present readiness report table → optional
-             web search for domain baselines → compute FULL gap set (readiness +
-             completeness + empty graph seeds + context_list open/stale)
-             → ask the user about every blocking gap, store each answer via
-             context_record / context_resolve. No question cap; no single "anything
-             else?" — generation blocked until blocking gaps resolved.
-             Incremental scope: incremental-continuation.md before generating.
-             task_update: clarify step in-progress → done.
+2. CLARIFY   readiness_config + readiness_assess → present FULL criteria table
+             (ID, ISO ref, status) → snapshot.readinessReportShown → optional
+             web search → FULL gap set → context_record every blocking gap.
+             task_update: clarify in-progress → done (blocked until report shown).
 3. BRIEFING  state per document: graph nodes pulled (and which are empty),
              data-source files used, applied Q-xxx answers, open assumptions,
              template, and notable context NOT used → user confirms
-4. PLAN      plan table (output × DAG node × sources × key points, wave order
-             from dag.srs.json) → wait for explicit "yes". Never write before it.
-5. GENERATE  per DAG wave; after each wave: npx ai-spector index
-6. EXTRACT   pull key specs (decisions, constraints, NFR thresholds) from the
-             generated docs → offer to queue: spec_record({ docType: "srs", specs })
+4. PLAN      plan table (output × DAG × criteria IDs × ISO refs × sources × key
+             points, wave order from dag.srs.json) → wait for explicit "yes".
+             Never write before it.
+5. GENERATE  per DAG wave; after each wave: readiness_scan(paths) → report
+             findings → npx ai-spector index → task_record_wave
+6. EXTRACT   pull key specs → offer spec_record → set snapshot.extractOffered
              → user reviews with spec_list / spec_approve / spec_reject.
              Approved specs merge to the graph; NEVER write to docs/data-source/.
 ```
@@ -76,15 +72,17 @@ Report impact table to user.
 
 ```
 - [ ] workspace_check passed (no errors)
-- [ ] Readiness report shown; all blocking gaps answered or accepted (context store)
+- [ ] readiness_config called; FULL readiness table shown (ID + ISO + status); snapshot.readinessReportShown
+- [ ] All blocking gaps answered or accepted (context store)
 - [ ] task_update: check, clarify, briefing, plan steps marked done
-- [ ] task_complete or task_pause offered at session end
 - [ ] Context briefing confirmed by user
-- [ ] Plan table approved with explicit "yes" before first write
+- [ ] Plan table includes criteria IDs + ISO refs; approved with explicit "yes"
 - [ ] graph validate passes before starting
 - [ ] Generated sections per DAG wave order
+- [ ] readiness_scan after each wave; findings reported to user
 - [ ] Ran npx ai-spector index after each wave
 - [ ] Ran graph impact after finishing
-- [ ] Offered extracted key specs for review (spec_record)
+- [ ] Offered extracted key specs (spec_record); snapshot.extractOffered set
+- [ ] task_complete or task_pause offered at session end
 - [ ] Ran npx ai-spector index to refresh translation queue
 ```

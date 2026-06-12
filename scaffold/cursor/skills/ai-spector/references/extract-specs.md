@@ -37,3 +37,20 @@ On approval the patch is also written beside the store
 - Never write extracted content into `docs/data-source/`.
 - After approvals, run `npx ai-spector index` so the graph and doc indexes pick
   up the merged nodes.
+
+## Task gate (mandatory before task_complete)
+
+After offering extraction (even if the user declines or there is nothing to queue):
+
+```
+task_update({
+  patch: {
+    snapshot: { extractOffered: true },
+    step: { id: "extract", patch: { status: "done" } }
+  }
+})
+```
+
+`task_complete` is rejected while extract is `pending` or `in-progress` without
+`snapshot.extractOffered`. This ensures every generate session surfaces the review
+queue — users can approve later via `spec_list` / `spec_approve`.

@@ -44,6 +44,19 @@ Configure in `.ai-spector/docflow.config.json`:
 }
 ```
 
+### Three layers — do not confuse them
+
+| Layer | Source | Question answered | When |
+|-------|--------|-------------------|------|
+| **Intent** | `docflow.config` → `readiness.standards[]` | Which standards does the project declare? | Reporting / alignment check |
+| **Input assess** | `readiness-criteria.<docType>.json` → `standards[]`, per-criterion `iso29148` | Enough context to write? | CLARIFY (`readiness_assess`) |
+| **Output scan** | `completeness-rules.<docType>.json` | File structure valid (headings, no TODO/TBD)? | After GENERATE (`readiness_scan`) |
+
+`readiness.standards` in docflow.config is **metadata** — it does not drive scoring.
+`readiness_assess` always uses the merged criteria file. Call `readiness_config({})` first
+to see active files, profile, and `standardsAlignment` per doc type.
+`readiness_assess` also returns `standardsAlignment` when config tags do not match the criteria file.
+
 After changing `profile`, run `readiness_scan({ updateLastScan: true })` — `workspace_check` reports **READY-002** until scan baseline is updated.
 
 `readiness_assess` returns structured JSON: `ready`, `summary`, `criteria[]`, `blockingGaps`, `questionsForUser`, `inventory`.
@@ -84,9 +97,14 @@ Mark task progress when starting and finishing:
 
 ```
 task_update({ patch: { phase: "clarify", step: { id: "clarify", patch: { status: "in-progress" } } } })
-// … assessment + gap resolution …
+// … readiness_assess → present FULL table (Step 4) …
+task_update({ patch: { snapshot: { readinessReportShown: true } } })
+// … gap resolution via context_record …
 task_update({ patch: { step: { id: "clarify", patch: { status: "done" } } } })
 ```
+
+**Hard gate:** `task_update` rejects `clarify: done` until `snapshot.readinessReportShown`
+is true. Do not mark clarify done with a shortened summary — show ID, ISO ref, status, evidence.
 
 ## Step 1 — Derive targets from user request
 
@@ -163,17 +181,19 @@ Missing for generation: RQ-07 Verifiable (no acceptanceCriteria on FR-xx)
 
 ## Step 4 — Present readiness report (mandatory)
 
-Show the user a table **before** the question batch. Example:
+Show the user a table **before** the question batch. Include **ISO ref** column from
+`criteria[].iso29148`. Then set `snapshot.readinessReportShown`. Example:
 
 ```
 Readiness — generate SRS §3 + §4 (en)
+Standards intent: ISO-29148 (config) — assess source: readiness-criteria.srs.json
 
-| ID | Dimension | Criterion | Status | Evidence | Gap |
-|----|-----------|-----------|--------|----------|-----|
-| G-001 | scope | Product purpose | met | system.description + overview.md | — |
-| G-003 | stakeholders | Actors | partial | 2 actors in graph, roles vague | permissions |
-| §3-001 | graph | Use case list | missing | 0 useCase nodes | need UC list |
-| §4-001 | graph | Feature list | missing | 0 feature nodes | need F list |
+| ID | ISO | Dimension | Criterion | Status | Evidence | Gap |
+|----|-----|-----------|-----------|--------|----------|-----|
+| G-001 | 9.6.2 | scope | Product purpose | met | system.description + overview.md | — |
+| G-003 | 5.2.2 | stakeholders | Actors | partial | 2 actors in graph, roles vague | permissions |
+| §3-001 | 9.6.10 | graph | Use case list | missing | 0 useCase nodes | need UC list |
+| §4-001 | 9.6.12 | graph | Feature list | missing | 0 feature nodes | need F list |
 
 Blocking gaps: 3 | Should-ask: 2 | Met: 4
 

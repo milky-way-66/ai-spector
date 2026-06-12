@@ -103,6 +103,13 @@ export interface ReadinessInventory {
   analysisGaps: number;
 }
 
+export interface StandardsAlignment {
+  configDeclared: string[];
+  criteriaFile: string[];
+  unmatchedInCriteria: string[];
+  note: string;
+}
+
 export interface ReadinessAssessResult {
   ready: boolean;
   docType: string;
@@ -110,6 +117,8 @@ export interface ReadinessAssessResult {
   profile: string;
   appliedProfiles: string[];
   criteriaPath: string;
+  /** How docflow.config readiness.standards relates to criteria file standards[]. */
+  standardsAlignment?: StandardsAlignment;
   scope: { dagNodes: string[]; targetAll: boolean };
   summary: ReadinessAssessSummary;
   requirementQuality?: {
