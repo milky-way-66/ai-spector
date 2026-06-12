@@ -35,6 +35,8 @@ export interface ReadinessCriteriaFile {
   purpose?: string;
   standards?: unknown[];
   dimensions?: unknown[];
+  /** Template filename → ISO/IEC/IEEE 29148 §9.6 section refs (builtin SRS). */
+  templateToIso29148?: Record<string, string[]>;
   globalCriteria: ReadinessCriterion[];
   targets: ReadinessTarget[];
   requirementQuality?: unknown;

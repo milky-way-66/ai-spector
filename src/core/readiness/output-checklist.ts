@@ -119,7 +119,7 @@ function isoSectionsForTemplate(
   template: string | undefined,
   fileName: string,
 ): string[] {
-  const map = criteria.templateToIso29148 as Record<string, string[]> | undefined;
+  const map = criteria.templateToIso29148;
   if (!map) return [];
 
   const templateBase = template ? basename(template) : fileName;
