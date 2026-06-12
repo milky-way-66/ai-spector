@@ -216,6 +216,36 @@ export const ReviewCheckSchema = RootSchema;
 
 export const ReviewMigrateSchema = RootSchema;
 
+// ── Context store ───────────────────────────────────────────────────────────
+
+const ContextStatusEnum = z.enum(["open", "answered", "stale"]);
+const ContextSourceEnum = z.enum(["user", "inferred", "data-source"]);
+
+export const ContextListSchema = RootSchema.extend({
+  docType: z.string().optional().describe("Doc type store to list (e.g. 'srs'); omit for all"),
+  status: ContextStatusEnum.optional().describe("Filter by entry status"),
+});
+
+export const ContextRecordSchema = RootSchema.extend({
+  docType: z.string().describe("Doc type this clarification informs (e.g. 'srs')"),
+  question: z.string().describe("The clarifying question"),
+  answer: z.string().optional().describe("Answer, when recording an already-answered clarification"),
+  scope: z.string().optional().describe("DAG node / section this informs (e.g. 'srs.use-cases')"),
+  source: ContextSourceEnum.optional().describe("Origin of the entry (default: user)"),
+  sourceRefs: z
+    .array(z.string())
+    .optional()
+    .describe("Files whose change makes this entry stale (relative to root)"),
+  answeredBy: z.string().optional().describe("Who answered"),
+});
+
+export const ContextResolveSchema = RootSchema.extend({
+  docType: z.string().describe("Doc type store containing the entry"),
+  id: z.string().describe("Entry id, e.g. 'Q-001'"),
+  answer: z.string().describe("The user's answer"),
+  answeredBy: z.string().optional().describe("Who answered"),
+});
+
 // ── Workspace check ─────────────────────────────────────────────────────────
 
 export const WorkspaceCheckSchema = RootSchema.extend({

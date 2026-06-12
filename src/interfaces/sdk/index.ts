@@ -163,6 +163,26 @@ export type {
   CheckSeverity,
 } from "../../core/operations/check.js";
 
+// Context store (clarifications before generation)
+export {
+  runContextList,
+  runContextRecord,
+  runContextResolve,
+  contextStorePath,
+} from "../../core/operations/context.js";
+export type {
+  ContextEntry,
+  ContextStore,
+  ContextEntryStatus,
+  ContextEntrySource,
+  ContextListOptions,
+  ContextListResult,
+  ContextRecordOptions,
+  ContextRecordResult,
+  ContextResolveOptions,
+  ContextResolveResult,
+} from "../../core/operations/context.js";
+
 // Comments
 export {
   runCommentsList,

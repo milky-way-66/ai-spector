@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-spector.dev/schemas/context-store.schema.json",
+  "title": "ai-spector clarification context store",
+  "type": "object",
+  "required": ["version", "docType", "entries"],
+  "properties": {
+    "version": { "const": 1 },
+    "docType": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "status", "source", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^Q-\\d{3,}$" },
+          "question": { "type": "string", "minLength": 1 },
+          "answer": { "type": "string" },
+          "status": { "enum": ["open", "answered", "stale"] },
+          "scope": { "type": "string" },
+          "source": { "enum": ["user", "inferred", "data-source"] },
+          "sourceRefs": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "answeredAt": { "type": "string", "format": "date-time" },
+          "answeredBy": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

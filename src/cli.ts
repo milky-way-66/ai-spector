@@ -22,6 +22,18 @@ import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./cor
 import { runSetup, runSetupCheck } from "./core/operations/setup.js";
 import { runCheck } from "./core/operations/check.js";
 import { formatCheck } from "./interfaces/cli/format/check.js";
+import {
+  runContextList,
+  runContextRecord,
+  runContextResolve,
+  type ContextEntrySource,
+  type ContextEntryStatus,
+} from "./core/operations/context.js";
+import {
+  formatContextList,
+  formatContextRecord,
+  formatContextResolve,
+} from "./interfaces/cli/format/context.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
@@ -197,6 +209,72 @@ program
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCheck(result));
     if (!result.ok) process.exitCode = 1;
+  });
+
+const context = program
+  .command("context")
+  .description("Clarification context store (questions answered before generation)");
+
+context
+  .command("list")
+  .description("List context entries, optionally filtered by doc type / status")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("-t, --doc-type <type>", "Doc type store (e.g. srs)")
+  .option("-s, --status <status>", "Filter: open | answered | stale")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runContextList({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType: opts.docType,
+      status: opts.status as ContextEntryStatus | undefined,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatContextList(result));
+  });
+
+context
+  .command("record <docType> <question>")
+  .description("Record a clarifying question (pass --answer to record it answered)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("-a, --answer <answer>", "Answer (records entry as answered)")
+  .option("--scope <scope>", "DAG node / section this informs (e.g. srs.use-cases)")
+  .option("--source <source>", "user | inferred | data-source", "user")
+  .option("--refs <paths>", "Comma-separated source files that make this stale on change")
+  .option("--by <name>", "Who answered")
+  .option("--json", "JSON output")
+  .action(async (docType, question, opts) => {
+    const result = await runContextRecord({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType,
+      question,
+      answer: opts.answer,
+      scope: opts.scope,
+      source: opts.source as ContextEntrySource,
+      sourceRefs: opts.refs
+        ? (opts.refs as string).split(",").map((s: string) => s.trim()).filter(Boolean)
+        : undefined,
+      answeredBy: opts.by,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatContextRecord(result));
+  });
+
+context
+  .command("resolve <docType> <id> <answer>")
+  .description("Answer an open/stale entry by id (e.g. Q-001)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--by <name>", "Who answered")
+  .option("--json", "JSON output")
+  .action(async (docType, id, answer, opts) => {
+    const result = await runContextResolve({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType,
+      id,
+      answer,
+      answeredBy: opts.by,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatContextResolve(result));
   });
 
 const lang = program.command("lang").description("Manage project languages");

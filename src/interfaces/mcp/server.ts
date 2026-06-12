@@ -33,6 +33,9 @@ import {
   ReviewRejectSchema,
   ReviewListSchema,
   WorkspaceCheckSchema,
+  ContextListSchema,
+  ContextRecordSchema,
+  ContextResolveSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -49,6 +52,7 @@ import { toolTemplateList, toolTemplateInspect } from "./tools/template.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
+import { toolContextList, toolContextRecord, toolContextResolve } from "./tools/context.js";
 import {
   toolReviewApprove,
   toolReviewStatus,
@@ -446,6 +450,45 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "context_list",
+  {
+    description:
+      "List clarification context entries (questions asked before document generation, with answers and status open/answered/stale). Filter by docType and/or status. Use before generating documents to find unanswered or stale clarifications.",
+    inputSchema: ContextListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolContextList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "context_record",
+  {
+    description:
+      "Record a clarifying question in the context store (.ai-spector/.docflow/context/<docType>.json). Pass answer to record an already-answered clarification in one step; omit it to record an open question. Use during the Clarify stage before document generation.",
+    inputSchema: ContextRecordSchema.shape,
+  },
+  async (input) => {
+    const result = await toolContextRecord(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "context_resolve",
+  {
+    description:
+      "Answer an open or stale clarification entry by id (e.g. Q-001), marking it answered with timestamp.",
+    inputSchema: ContextResolveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolContextResolve(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
@@ -464,6 +507,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
     "workspace_check",
+    "context_list", "context_record", "context_resolve",
   ];
   process.stderr.write(
     `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,
