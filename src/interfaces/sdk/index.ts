@@ -208,6 +208,54 @@ export type {
   SpecRejectResult,
 } from "../../core/operations/extracted.js";
 
+// Workflow task state
+export {
+  runTaskCreate,
+  runTaskGet,
+  runTaskList,
+  runTaskUpdate,
+  runTaskApprovePlan,
+  runTaskPause,
+  runTaskResume,
+  runTaskComplete,
+  runTaskAbandon,
+  buildTaskId,
+  taskFilePath,
+  taskIndexPath,
+} from "../../core/operations/task.js";
+export type {
+  TaskState,
+  TaskStep,
+  TaskIndex,
+  TaskKind,
+  WorkflowId,
+  TaskStatus,
+  PhaseStatus,
+  StoredPlan,
+  GeneratePlan,
+  GeneratePlanRow,
+  TaskCreateOptions,
+  TaskCreateResult,
+  TaskGetOptions,
+  TaskGetResult,
+  TaskListOptions,
+  TaskListResult,
+  TaskUpdatePatch,
+  TaskUpdateOptions,
+  TaskUpdateResult,
+  TaskApprovePlanOptions,
+  TaskApprovePlanResult,
+  TaskPauseOptions,
+  TaskPauseResult,
+  TaskResumeOptions,
+  TaskResumeResult,
+  ArtifactDrift,
+  TaskCompleteOptions,
+  TaskCompleteResult,
+  TaskAbandonOptions,
+  TaskAbandonResult,
+} from "../../core/operations/task.js";
+
 // Comments
 export {
   runCommentsList,

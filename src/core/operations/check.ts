@@ -61,6 +61,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "CFG-001", severity: "error" },
   { id: "TMPL-001", severity: "warning" },
   { id: "CTX-001", severity: "warning" },
+  { id: "TASK-001", severity: "warning" },
   { id: "GRAPH-001", severity: "warning" },
 ];
 
@@ -280,6 +281,39 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
             fix: `Re-confirm with the user, then: npx ai-spector context resolve ${docType} <id> --answer "..."`,
           });
         }
+      }
+    }
+  }
+
+  // TASK-001 — in-flight workflow tasks (active / paused / blocked).
+  if (enabled(rules, "TASK-001")) {
+    const indexPath = join(root, ".ai-spector/.docflow/tasks/index.json");
+    if (await pathExists(indexPath)) {
+      const index = await readJson<{ active?: Record<string, string> }>(indexPath).catch(
+        () => ({ active: {} }),
+      );
+      for (const [slot, taskId] of Object.entries(index.active ?? {})) {
+        const taskPath = join(root, ".ai-spector/.docflow/tasks", `${taskId}.json`);
+        if (!(await pathExists(taskPath))) continue;
+        const task = await readJson<{
+          status?: string;
+          blockers?: string[];
+          trigger?: string;
+        }>(taskPath).catch(() => null);
+        if (!task) continue;
+        const status = task.status ?? "unknown";
+        if (status === "complete" || status === "abandoned") continue;
+        const blockerNote =
+          task.blockers && task.blockers.length > 0
+            ? ` Blockers: ${task.blockers.join("; ")}`
+            : "";
+        add({
+          ruleId: "TASK-001",
+          severity: severityOf(rules, "TASK-001", "warning"),
+          message: `Workflow task in progress (${slot}): ${taskId} [${status}] — ${task.trigger ?? "no trigger"}.${blockerNote}`,
+          path: `.ai-spector/.docflow/tasks/${taskId}.json`,
+          fix: `npx ai-spector task get ${taskId} or task resume ${taskId}`,
+        });
       }
     }
   }

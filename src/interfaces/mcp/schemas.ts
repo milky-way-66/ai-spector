@@ -182,6 +182,19 @@ export const TaskPlanSchema = z.object({
   steps: z.array(TaskStepSchema),
 });
 
+export const FullTaskPlanSchema = TaskPlanSchema.extend({
+  id: z.string(),
+  impactMap: z.array(
+    z.object({
+      nodeId: z.string(),
+      directCallers: z.number(),
+      riskLevel: z.enum(["low", "medium", "high", "critical"]),
+    }),
+  ),
+  riskLevel: z.enum(["low", "medium", "high", "critical"]),
+  approvedAt: z.string().optional(),
+});
+
 export const ResolveTaskSchema = RootSchema.extend({
   intent: z.string().describe("Free-form user intent (for context)"),
   goalSpec: GoalSpecSchema,
@@ -323,6 +336,148 @@ export const ReviewListSchema = RootSchema.extend({
     .string()
     .optional()
     .describe("Filter to documents whose logical path starts with this prefix (e.g. 'srs', 'bd')"),
+});
+
+// ── Task state (workflow persistence) ─────────────────────────────────────────
+
+export const TaskKindEnum = z.enum(["generate", "resolve"]);
+export const WorkflowIdEnum = z.enum(["generate-srs", "generate-basic-design", "resolve"]);
+export const TaskStatusEnum = z.enum([
+  "draft",
+  "active",
+  "paused",
+  "blocked",
+  "complete",
+  "abandoned",
+]);
+export const TaskStepStatusEnum = z.enum([
+  "pending",
+  "in-progress",
+  "done",
+  "blocked",
+  "skipped",
+]);
+export const PhaseStatusEnum = z.enum(["in_progress", "awaiting_user", "done"]);
+
+export const GeneratePlanRowSchema = z.object({
+  output: z.string(),
+  dagNode: z.string(),
+  sources: z.array(z.string()),
+  keyPoints: z.array(z.string()),
+});
+
+export const GeneratePlanBriefingSchema = z.object({
+  target: z.string(),
+  graphContext: z.string().optional(),
+  dataSourceFiles: z.array(z.string()).optional(),
+  contextAnswers: z.array(z.string()).optional(),
+  assumptions: z.array(z.string()).optional(),
+  template: z.string().optional(),
+  excluded: z.string().optional(),
+});
+
+export const GeneratePlanSchema = z.object({
+  docType: z.string(),
+  language: z.string().optional(),
+  scope: z.enum(["all", "explicit", "described"]),
+  scopeDetail: z.string().optional(),
+  briefing: z.array(GeneratePlanBriefingSchema),
+  rows: z.array(GeneratePlanRowSchema),
+  waves: z
+    .array(z.object({ wave: z.number().int(), nodeIds: z.array(z.string()) }))
+    .optional(),
+});
+
+export const StoredPlanSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("resolve"), plan: FullTaskPlanSchema }),
+  z.object({ kind: z.literal("generate"), plan: GeneratePlanSchema }),
+]);
+
+export const TaskStepPatchSchema = z.object({
+  status: TaskStepStatusEnum.optional(),
+  completedAt: z.string().optional(),
+  blocker: z.string().nullable().optional(),
+  artifacts: z.array(z.string()).optional(),
+  openContextIds: z.array(z.string()).optional(),
+});
+
+export const TaskUpdatePatchSchema = z.object({
+  status: TaskStatusEnum.optional(),
+  phase: z.string().optional(),
+  phaseStatus: PhaseStatusEnum.optional(),
+  currentStepId: z.string().optional(),
+  nextAction: z.string().optional(),
+  goal: GoalSpecSchema.nullable().optional(),
+  plan: StoredPlanSchema.nullable().optional(),
+  blockers: z.array(z.string()).optional(),
+  contextRefs: z
+    .object({
+      docType: z.string().optional(),
+      contextFile: z.string().optional(),
+      planLog: z.string().nullable().optional(),
+    })
+    .optional(),
+  snapshot: z
+    .object({
+      workspaceCheckAt: z.string().optional(),
+      artifactHashes: z.record(z.string(), z.string()).optional(),
+      graphMergedAt: z.string().optional(),
+    })
+    .optional(),
+  step: z.object({ id: z.string(), patch: TaskStepPatchSchema }).optional(),
+});
+
+export const TaskCreateSchema = RootSchema.extend({
+  kind: TaskKindEnum.describe("generate (SRS/basic-design) or resolve (incremental change)"),
+  workflow: WorkflowIdEnum.describe("Workflow template to initialize steps from"),
+  trigger: z.string().describe("Original user intent that started this task"),
+  docType: z.string().optional().describe("Doc type for generate workflows (e.g. srs)"),
+  force: z
+    .boolean()
+    .optional()
+    .describe("Replace existing active task in the same slot (abandons the previous task)"),
+});
+
+export const TaskListSchema = RootSchema.extend({
+  status: z
+    .union([TaskStatusEnum, z.array(TaskStatusEnum)])
+    .optional()
+    .describe("Filter by task status"),
+  kind: TaskKindEnum.optional(),
+  workflow: WorkflowIdEnum.optional(),
+  recentOnly: z.boolean().optional().describe("List only tasks in index.recent"),
+});
+
+export const TaskGetSchema = RootSchema.extend({
+  taskId: z.string().describe("Task id, e.g. task-m1abc2"),
+});
+
+export const TaskUpdateSchema = RootSchema.extend({
+  taskId: z.string(),
+  patch: TaskUpdatePatchSchema,
+});
+
+export const TaskApprovePlanSchema = RootSchema.extend({
+  taskId: z.string(),
+  plan: StoredPlanSchema.optional().describe("Plan to approve; omit if already set via task_update"),
+});
+
+export const TaskResumeSchema = RootSchema.extend({
+  taskId: z.string(),
+});
+
+export const TaskPauseSchema = RootSchema.extend({
+  taskId: z.string(),
+});
+
+export const TaskCompleteSchema = RootSchema.extend({
+  taskId: z.string(),
+  summary: z.string().optional(),
+});
+
+export const TaskAbandonSchema = RootSchema.extend({
+  taskId: z.string(),
+  reason: z.string().optional(),
 });
 
 // ── Template ──────────────────────────────────────────────────────────────────

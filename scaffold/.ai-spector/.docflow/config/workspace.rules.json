@@ -9,6 +9,7 @@
     { "id": "CFG-001", "severity": "error" },
     { "id": "TMPL-001", "severity": "warning" },
     { "id": "CTX-001", "severity": "warning" },
+    { "id": "TASK-001", "severity": "warning" },
     { "id": "GRAPH-001", "severity": "warning" }
   ]
 }

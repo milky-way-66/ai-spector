@@ -40,6 +40,15 @@ import {
   SpecRecordSchema,
   SpecApproveSchema,
   SpecRejectSchema,
+  TaskCreateSchema,
+  TaskListSchema,
+  TaskGetSchema,
+  TaskUpdateSchema,
+  TaskApprovePlanSchema,
+  TaskPauseSchema,
+  TaskResumeSchema,
+  TaskCompleteSchema,
+  TaskAbandonSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -58,6 +67,17 @@ import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
 import { toolContextList, toolContextRecord, toolContextResolve } from "./tools/context.js";
 import { toolSpecList, toolSpecRecord, toolSpecApprove, toolSpecReject } from "./tools/extracted.js";
+import {
+  toolTaskAbandon,
+  toolTaskApprovePlan,
+  toolTaskComplete,
+  toolTaskCreate,
+  toolTaskGet,
+  toolTaskList,
+  toolTaskPause,
+  toolTaskResume,
+  toolTaskUpdate,
+} from "./tools/task.js";
 import {
   toolReviewApprove,
   toolReviewStatus,
@@ -545,6 +565,120 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "task_create",
+  {
+    description:
+      "Create a new workflow task persisted to .ai-spector/.docflow/tasks/<id>.json. Initializes steps from a workflow template (generate-srs, generate-basic-design, resolve). One active task per slot unless force:true replaces the previous task.",
+    inputSchema: TaskCreateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskCreate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_list",
+  {
+    description:
+      "List workflow tasks (active, paused, complete). Filter by status, kind, or workflow. Call at session start to find work in flight instead of relying on chat history.",
+    inputSchema: TaskListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_get",
+  {
+    description:
+      "Load full task state: current phase/step, plan approval, blockers, next action. Source of truth for resuming a paused workflow.",
+    inputSchema: TaskGetSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskGet(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_update",
+  {
+    description:
+      "Patch task state: advance phase, update a step, set goal/plan, record blockers or artifact snapshot. Keep file state in sync after each workflow gate.",
+    inputSchema: TaskUpdateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskUpdate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_approve_plan",
+  {
+    description:
+      "Mark the task plan as approved (sets planApprovedAt and advances to the next step). Required before execute/generate steps run.",
+    inputSchema: TaskApprovePlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskApprovePlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_pause",
+  {
+    description: "Pause an active task so the user can stop and resume later.",
+    inputSchema: TaskPauseSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskPause(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_resume",
+  {
+    description:
+      "Resume a paused task: run workspace check, detect artifact drift since last snapshot, and list stale clarifications. Returns canContinue — user must confirm when drift or stale context is present.",
+    inputSchema: TaskResumeSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskResume(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_complete",
+  {
+    description: "Mark a task complete and clear its active slot.",
+    inputSchema: TaskCompleteSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskComplete(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_abandon",
+  {
+    description: "Abandon a task and clear its active slot.",
+    inputSchema: TaskAbandonSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskAbandon(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
@@ -565,6 +699,8 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "workspace_check",
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",
+    "task_create", "task_list", "task_get", "task_update", "task_approve_plan",
+    "task_pause", "task_resume", "task_complete", "task_abandon",
   ];
   process.stderr.write(
     `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,

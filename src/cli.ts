@@ -47,6 +47,28 @@ import {
   formatSpecApprove,
   formatSpecReject,
 } from "./interfaces/cli/format/extracted.js";
+import {
+  runTaskAbandon,
+  runTaskApprovePlan,
+  runTaskComplete,
+  runTaskCreate,
+  runTaskGet,
+  runTaskList,
+  runTaskPause,
+  runTaskResume,
+  runTaskUpdate,
+  type TaskKind,
+  type TaskStatus,
+  type TaskUpdatePatch,
+  type WorkflowId,
+} from "./core/operations/task.js";
+import {
+  formatTaskCreate,
+  formatTaskGet,
+  formatTaskList,
+  formatTaskSimple,
+  formatTaskUpdate,
+} from "./interfaces/cli/format/task.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
@@ -354,6 +376,181 @@ spec
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatSpecReject(result));
+  });
+
+const task = program
+  .command("task")
+  .description("Workflow task state (persist plan/progress across sessions)");
+
+task
+  .command("create")
+  .description("Create a new workflow task")
+  .requiredOption("-k, --kind <kind>", "generate | resolve")
+  .requiredOption("-w, --workflow <workflow>", "generate-srs | generate-basic-design | resolve")
+  .requiredOption("-t, --trigger <text>", "User intent that started this task")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--doc-type <type>", "Doc type for generate workflows (e.g. srs)")
+  .option("--force", "Replace existing active task in the same slot")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runTaskCreate({
+      root: resolve(opts.cwd ?? process.cwd()),
+      kind: opts.kind as TaskKind,
+      workflow: opts.workflow as WorkflowId,
+      trigger: opts.trigger,
+      docType: opts.docType,
+      force: opts.force,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskCreate(result));
+  });
+
+task
+  .command("list")
+  .description("List tasks")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("-s, --status <status>", "Filter by status (comma-separated)")
+  .option("-k, --kind <kind>", "generate | resolve")
+  .option("-w, --workflow <workflow>", "Workflow id filter")
+  .option("--recent", "Only tasks in index.recent")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const status = opts.status
+      ? (opts.status as string).split(",").map((s: string) => s.trim()) as TaskStatus[]
+      : undefined;
+    const result = await runTaskList({
+      root: resolve(opts.cwd ?? process.cwd()),
+      status: status?.length === 1 ? status[0] : status,
+      kind: opts.kind as TaskKind | undefined,
+      workflow: opts.workflow as WorkflowId | undefined,
+      recentOnly: opts.recent,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskList(result));
+  });
+
+task
+  .command("get <taskId>")
+  .description("Get full task state")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskGet({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskGet(result));
+  });
+
+task
+  .command("update <taskId>")
+  .description("Patch task state (pass --patch as JSON)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--patch <json>", "JSON patch object (TaskUpdatePatch)")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    if (!opts.patch) {
+      throw new Error("--patch is required (JSON object)");
+    }
+    const patch = JSON.parse(opts.patch as string) as TaskUpdatePatch;
+    const result = await runTaskUpdate({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      patch,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskUpdate(result));
+  });
+
+task
+  .command("approve <taskId>")
+  .description("Approve the task plan and advance to the next step")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--plan <json>", "Plan JSON (StoredPlan) if not already set on task")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskApprovePlan({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      plan: opts.plan ? JSON.parse(opts.plan as string) : undefined,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Approved plan for", result));
+  });
+
+task
+  .command("pause <taskId>")
+  .description("Pause a task")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskPause({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Paused", result));
+  });
+
+task
+  .command("resume <taskId>")
+  .description("Resume a paused task (validates workspace and drift)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskResume({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else {
+      const lines = [
+        `Resume ${result.task.id} — canContinue: ${result.canContinue}`,
+        `  workspace: ${result.workspaceOk ? "ok" : "errors"}`,
+        `  drift:     ${result.drift.length} file(s)`,
+        `  stale:     ${result.staleContextIds.join(", ") || "none"}`,
+        `  next:      ${result.suggestedNext}`,
+      ];
+      if (result.drift.length > 0) {
+        for (const d of result.drift) {
+          lines.push(`    ${d.kind}: ${d.path}`);
+        }
+      }
+      console.log(lines.join("\n"));
+    }
+  });
+
+task
+  .command("complete <taskId>")
+  .description("Mark a task complete")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--summary <text>", "Completion summary")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskComplete({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      summary: opts.summary,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Completed", result));
+  });
+
+task
+  .command("abandon <taskId>")
+  .description("Abandon a task")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--reason <text>", "Why the task was abandoned")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskAbandon({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      reason: opts.reason,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Abandoned", result));
   });
 
 const lang = program.command("lang").description("Manage project languages");

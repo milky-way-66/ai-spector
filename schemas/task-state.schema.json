@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-spector.dev/schemas/task-state.schema.json",
+  "title": "ai-spector workflow task state",
+  "type": "object",
+  "required": [
+    "version",
+    "id",
+    "kind",
+    "workflow",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "trigger",
+    "phase",
+    "phaseStatus",
+    "steps",
+    "currentStepId",
+    "nextAction",
+    "blockers",
+    "contextRefs",
+    "snapshot"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^task-[a-z0-9]+$" },
+    "kind": { "enum": ["generate", "resolve"] },
+    "workflow": { "enum": ["generate-srs", "generate-basic-design", "resolve"] },
+    "status": {
+      "enum": ["draft", "active", "paused", "blocked", "complete", "abandoned"]
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "trigger": { "type": "string", "minLength": 1 },
+    "phase": { "type": "string" },
+    "phaseStatus": { "enum": ["in_progress", "awaiting_user", "done"] },
+    "goal": { "type": ["object", "null"] },
+    "plan": { "type": ["object", "null"] },
+    "planApprovedAt": { "type": ["string", "null"], "format": "date-time" },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "phase", "description", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "phase": { "type": "string" },
+          "description": { "type": "string" },
+          "status": {
+            "enum": ["pending", "in-progress", "done", "blocked", "skipped"]
+          },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "blocker": { "type": ["string", "null"] },
+          "artifacts": { "type": "array", "items": { "type": "string" } },
+          "openContextIds": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "currentStepId": { "type": "string" },
+    "nextAction": { "type": "string" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "contextRefs": { "type": "object" },
+    "snapshot": { "type": "object" }
+  },
+  "additionalProperties": false
+}
