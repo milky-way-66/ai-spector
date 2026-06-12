@@ -34,6 +34,17 @@ import {
   formatContextRecord,
   formatContextResolve,
 } from "./interfaces/cli/format/context.js";
+import {
+  runSpecList,
+  runSpecApprove,
+  runSpecReject,
+  type SpecStatus,
+} from "./core/operations/extracted.js";
+import {
+  formatSpecList,
+  formatSpecApprove,
+  formatSpecReject,
+} from "./interfaces/cli/format/extracted.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
@@ -275,6 +286,67 @@ context
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatContextResolve(result));
+  });
+
+const spec = program
+  .command("spec")
+  .description("Extracted-spec review queue (specs pulled from generated docs, approved before graph merge)");
+
+spec
+  .command("list")
+  .description("List extracted specs, optionally filtered by doc type / status")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("-t, --doc-type <type>", "Doc type queue (e.g. srs)")
+  .option("-s, --status <status>", "Filter: pending | approved | rejected")
+  .option("--json", "JSON output")
+  .action(async (opts) => {
+    const result = await runSpecList({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType: opts.docType,
+      status: opts.status as SpecStatus | undefined,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatSpecList(result));
+  });
+
+spec
+  .command("approve <docType> <id>")
+  .description("Approve a pending spec; merges its graph patch (if any) into the graph")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--by <name>", "Reviewer name")
+  .option("--note <note>", "Review note")
+  .option("--skip-merge", "Approve without merging the graph patch")
+  .option("--json", "JSON output")
+  .action(async (docType, id, opts) => {
+    const result = await runSpecApprove({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType,
+      id,
+      by: opts.by,
+      note: opts.note,
+      skipMerge: opts.skipMerge,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatSpecApprove(result));
+  });
+
+spec
+  .command("reject <docType> <id>")
+  .description("Reject a pending spec (kept for audit, never merged)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--by <name>", "Reviewer name")
+  .option("--note <note>", "Why the spec was rejected")
+  .option("--json", "JSON output")
+  .action(async (docType, id, opts) => {
+    const result = await runSpecReject({
+      root: resolve(opts.cwd ?? process.cwd()),
+      docType,
+      id,
+      by: opts.by,
+      note: opts.note,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatSpecReject(result));
   });
 
 const lang = program.command("lang").description("Manage project languages");

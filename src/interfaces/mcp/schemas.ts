@@ -246,6 +246,54 @@ export const ContextResolveSchema = RootSchema.extend({
   answeredBy: z.string().optional().describe("Who answered"),
 });
 
+// ── Extracted-spec review queue ─────────────────────────────────────────────
+
+const SpecStatusEnum = z.enum(["pending", "approved", "rejected"]);
+
+const SpecPatchSchema = z
+  .object({
+    version: z.literal(1),
+    nodes: z.array(z.record(z.string(), z.unknown())),
+    edges: z.array(z.record(z.string(), z.unknown())),
+  })
+  .describe("Graph patch (ExtractPatch) merged on approval");
+
+export const SpecListSchema = RootSchema.extend({
+  docType: z.string().optional().describe("Doc type queue to list (e.g. 'srs'); omit for all"),
+  status: SpecStatusEnum.optional().describe("Filter by spec status"),
+});
+
+export const SpecRecordSchema = RootSchema.extend({
+  docType: z.string().describe("Doc type the specs were extracted from (e.g. 'srs')"),
+  specs: z
+    .array(
+      z.object({
+        statement: z.string().describe("Short statement of the extracted spec"),
+        extractedFrom: z
+          .array(z.string())
+          .describe("Generated document(s) the spec came from (relative paths)"),
+        patch: SpecPatchSchema.optional(),
+      }),
+    )
+    .min(1)
+    .describe("Specs to queue as pending"),
+});
+
+export const SpecApproveSchema = RootSchema.extend({
+  docType: z.string().describe("Doc type queue containing the spec"),
+  id: z.string().describe("Spec id, e.g. 'SPEC-001'"),
+  by: z.string().optional().describe("Reviewer name"),
+  note: z.string().optional().describe("Review note"),
+  skipMerge: z.boolean().optional().describe("Approve without merging the graph patch"),
+});
+
+export const SpecRejectSchema = RootSchema.extend({
+  docType: z.string().describe("Doc type queue containing the spec"),
+  id: z.string().describe("Spec id, e.g. 'SPEC-001'"),
+  by: z.string().optional().describe("Reviewer name"),
+  note: z.string().optional().describe("Why the spec was rejected"),
+});
+
 // ── Workspace check ─────────────────────────────────────────────────────────
 
 export const WorkspaceCheckSchema = RootSchema.extend({

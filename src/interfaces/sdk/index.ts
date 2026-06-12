@@ -183,6 +183,28 @@ export type {
   ContextResolveResult,
 } from "../../core/operations/context.js";
 
+// Extracted-spec review queue
+export {
+  runSpecList,
+  runSpecRecord,
+  runSpecApprove,
+  runSpecReject,
+  specStorePath,
+} from "../../core/operations/extracted.js";
+export type {
+  ExtractedSpec,
+  SpecStore,
+  SpecStatus,
+  SpecListOptions,
+  SpecListResult,
+  SpecRecordOptions,
+  SpecRecordResult,
+  SpecApproveOptions,
+  SpecApproveResult,
+  SpecRejectOptions,
+  SpecRejectResult,
+} from "../../core/operations/extracted.js";
+
 // Comments
 export {
   runCommentsList,

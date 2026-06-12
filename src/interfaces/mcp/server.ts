@@ -36,6 +36,10 @@ import {
   ContextListSchema,
   ContextRecordSchema,
   ContextResolveSchema,
+  SpecListSchema,
+  SpecRecordSchema,
+  SpecApproveSchema,
+  SpecRejectSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -53,6 +57,7 @@ import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindex
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
 import { toolContextList, toolContextRecord, toolContextResolve } from "./tools/context.js";
+import { toolSpecList, toolSpecRecord, toolSpecApprove, toolSpecReject } from "./tools/extracted.js";
 import {
   toolReviewApprove,
   toolReviewStatus,
@@ -489,6 +494,57 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "spec_list",
+  {
+    description:
+      "List extracted specs in the review queue (key decisions/constraints extracted from generated documents, status pending/approved/rejected). Filter by docType and/or status. Use after document generation to show the user what is awaiting spec approval.",
+    inputSchema: SpecListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSpecList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "spec_record",
+  {
+    description:
+      "Queue extracted specs as pending review (.ai-spector/.docflow/extracted/<docType>.json). Each spec is a statement plus the generated document(s) it came from, optionally with a graph patch to merge on approval. Specs are NEVER written to docs/data-source/.",
+    inputSchema: SpecRecordSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSpecRecord(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "spec_approve",
+  {
+    description:
+      "Approve a pending extracted spec by id (e.g. SPEC-001). If the spec carries a graph patch, it is merged into the traceability graph (with validation) as part of approval.",
+    inputSchema: SpecApproveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSpecApprove(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "spec_reject",
+  {
+    description: "Reject a pending extracted spec by id — it is kept for audit but never merged.",
+    inputSchema: SpecRejectSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSpecReject(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();
@@ -508,6 +564,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
     "workspace_check",
     "context_list", "context_record", "context_resolve",
+    "spec_list", "spec_record", "spec_approve", "spec_reject",
   ];
   process.stderr.write(
     `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,
