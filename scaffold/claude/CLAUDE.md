@@ -114,6 +114,14 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 | `docs_search({ query })` | Semantic doc search (CocoIndex) |
 | `graph_query_fuzzy({ query })` | Natural language graph lookup (CocoIndex) |
 | `resolve_task({ intent, goalSpec, plan })` | Execute an approved task plan (index, graph_merge, etc.) |
+| `workspace_check({ fix? })` | Structural workspace check (dirs, config, languages, stale clarifications). Errors block generate runs and pre-commit |
+| `context_list({ docType?, status? })` | List stored clarifications (open / answered / stale) |
+| `context_record({ docType, question, answer?, sourceRefs? })` | Record a clarification (answer optional — one step if known) |
+| `context_resolve({ docType, id, answer })` | Answer an open/stale clarification |
+| `spec_list({ docType?, status? })` | Extracted-spec review queue |
+| `spec_record({ docType, specs })` | Queue extracted key specs (pending) after a generate run |
+| `spec_approve({ docType, id })` | Approve a spec — merges its graph patch (validated) |
+| `spec_reject({ docType, id, note? })` | Reject a spec (kept for audit, never merged) |
 
 ### CLI (fallback / MCP-unavailable or no tool equivalent)
 
@@ -148,8 +156,23 @@ index
   → basic design exists? indexed by the same run
   → no SRS yet?          STOP — report analysis done; wait for user to ask "generate SRS"
 
-generate SRS → index → validate graph
-  → generate basic design → index
+generate SRS (gated) → index → validate graph → spec review (spec_approve → graph merge)
+  → generate basic design (gated) → index
   → generate detail design
   → prototype setup → generate HTML screens
 ```
+
+### Gated generation (mandatory for every generate run)
+
+```
+1. CHECK     workspace_check({}) — stop on errors
+2. CLARIFY   resolve ALL missing info (context_list open/stale → ask → context_record/resolve)
+3. BRIEFING  state exactly which sources, graph nodes, Q-xxx answers, and assumptions
+             will shape each document → user confirms
+4. PLAN      plan table (output × sources × key points) → explicit "yes" before any write
+5. GENERATE  DAG waves
+6. EXTRACT   key specs → spec_record → human review queue (never docs/data-source/)
+```
+
+No auto-confirm and no question cap: generation never starts while a clarification
+gap is unanswered and unaccepted, and never before the user approves the plan.
