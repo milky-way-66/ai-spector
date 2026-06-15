@@ -47,6 +47,8 @@ export interface TailoringProfile {
   id: string;
   title: string;
   description?: string;
+  /** When true, used as fallback when docflow.config readiness.profile is unset. */
+  default?: boolean;
   extends?: string;
   replaceBase?: boolean;
   docType?: string;

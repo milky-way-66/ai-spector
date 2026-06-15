@@ -2,6 +2,8 @@ import { mkdir, readdir, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
+import { resolveAuditActor } from "../util/audit-actor.js";
+import type { AuditActorRole } from "../util/audit-actor.js";
 
 export type ContextEntryStatus = "open" | "answered" | "stale";
 export type ContextEntrySource = "user" | "inferred" | "data-source";
@@ -18,7 +20,10 @@ export interface ContextEntry {
   sourceRefs?: string[];
   createdAt: string;
   answeredAt?: string;
+  /** Answerer email. */
   answeredBy?: string;
+  answeredByUsername?: string;
+  answeredByRole?: AuditActorRole;
 }
 
 export interface ContextStore {
@@ -53,6 +58,8 @@ export interface ContextRecordOptions {
   source?: ContextEntrySource;
   sourceRefs?: string[];
   answeredBy?: string;
+  answeredByUsername?: string;
+  role?: AuditActorRole;
 }
 
 export interface ContextRecordResult {
@@ -69,6 +76,8 @@ export interface ContextResolveOptions {
   id: string;
   answer: string;
   answeredBy?: string;
+  answeredByUsername?: string;
+  role?: AuditActorRole;
 }
 
 export interface ContextResolveResult {
@@ -183,8 +192,18 @@ export async function runContextRecord(
     ...(answered ? { answer: opts.answer!.trim(), answeredAt: now } : {}),
     ...(opts.scope ? { scope: opts.scope } : {}),
     ...(opts.sourceRefs?.length ? { sourceRefs: opts.sourceRefs } : {}),
-    ...(answered && opts.answeredBy ? { answeredBy: opts.answeredBy } : {}),
   };
+
+  if (answered) {
+    const actor = await resolveAuditActor(root, {
+      by: opts.answeredBy,
+      username: opts.answeredByUsername,
+      role: opts.role,
+    });
+    entry.answeredBy = actor.by;
+    entry.answeredByUsername = actor.username;
+    entry.answeredByRole = actor.role;
+  }
 
   store.entries.push(entry);
   const storePath = await saveStore(root, store);
@@ -270,7 +289,14 @@ export async function runContextResolve(
   entry.answer = opts.answer.trim();
   entry.status = "answered";
   entry.answeredAt = new Date().toISOString();
-  if (opts.answeredBy) entry.answeredBy = opts.answeredBy;
+  const actor = await resolveAuditActor(root, {
+    by: opts.answeredBy,
+    username: opts.answeredByUsername,
+    role: opts.role,
+  });
+  entry.answeredBy = actor.by;
+  entry.answeredByUsername = actor.username;
+  entry.answeredByRole = actor.role;
 
   const storePath = await saveStore(root, store);
   return { docType: opts.docType, entry, storePath };

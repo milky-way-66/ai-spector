@@ -18,39 +18,52 @@ export interface ProfileSummary {
   id: string;
   title: string;
   description?: string;
+  default?: boolean;
   extends?: string;
   replaceBase?: boolean;
 }
 
-const BUILTIN_PROFILES: ProfileSummary[] = [
-  {
-    id: "general",
-    title: "General (default)",
-    description: "ISO SRS baseline with no tailoring overlay.",
-  },
-];
+function profileSummaryFromFile(profile: TailoringProfile): ProfileSummary {
+  return {
+    id: profile.id,
+    title: profile.title,
+    description: profile.description,
+    default: profile.default,
+    extends: profile.extends,
+    replaceBase: profile.replaceBase,
+  };
+}
+
+function sortProfileSummaries(profiles: ProfileSummary[]): ProfileSummary[] {
+  return [...profiles].sort((a, b) => {
+    if (a.default && !b.default) return -1;
+    if (!a.default && b.default) return 1;
+    return a.id.localeCompare(b.id);
+  });
+}
 
 export async function listReadinessProfiles(): Promise<ProfileSummary[]> {
-  const profiles = [...BUILTIN_PROFILES];
   const dir = bundledReadinessProfilesDir();
-  if (!(await pathExists(dir))) return profiles;
+  if (!(await pathExists(dir))) {
+    return [{ id: "general", title: "General (default)", default: true }];
+  }
+  const profiles: ProfileSummary[] = [];
   const files = await readdir(dir);
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     const profile = await readJson<TailoringProfile>(join(dir, file));
-    profiles.push({
-      id: profile.id,
-      title: profile.title,
-      description: profile.description,
-      extends: profile.extends,
-      replaceBase: profile.replaceBase,
-    });
+    profiles.push(profileSummaryFromFile(profile));
   }
-  return profiles;
+  return sortProfileSummaries(profiles);
+}
+
+/** Profile id marked `default: true`, else `"general"`. */
+export async function resolveDefaultReadinessProfileId(): Promise<string> {
+  const profiles = await listReadinessProfiles();
+  return profiles.find((p) => p.default)?.id ?? "general";
 }
 
 export async function loadTailoringProfile(profileId: string): Promise<TailoringProfile | null> {
-  if (profileId === "general") return null;
   const path = join(bundledReadinessProfilesDir(), `${profileId}.json`);
   if (!(await pathExists(path))) {
     throw new Error(

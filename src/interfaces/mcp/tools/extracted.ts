@@ -35,6 +35,8 @@ export async function toolSpecApprove(input: z.infer<typeof SpecApproveSchema>) 
     docType: input.docType,
     id: input.id,
     by: input.by,
+    username: input.username,
+    role: input.role,
     note: input.note,
     skipMerge: input.skipMerge,
   });
@@ -46,6 +48,8 @@ export async function toolSpecReject(input: z.infer<typeof SpecRejectSchema>) {
     docType: input.docType,
     id: input.id,
     by: input.by,
+    username: input.username,
+    role: input.role,
     note: input.note,
   });
 }

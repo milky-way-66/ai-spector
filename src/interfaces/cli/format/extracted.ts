@@ -19,7 +19,11 @@ function formatSpec(s: ExtractedSpec): string {
     lines.push(`      patch: ${s.patch.nodes.length} node(s), ${s.patch.edges.length} edge(s)`);
   }
   if (s.reviewedAt) {
-    lines.push(`      reviewed by ${s.reviewedBy ?? "unknown"} at ${s.reviewedAt.slice(0, 10)}`);
+    const who =
+      s.reviewedByUsername && s.reviewedBy
+        ? `${s.reviewedByUsername} <${s.reviewedBy}>`
+        : (s.reviewedBy ?? "unknown");
+    lines.push(`      reviewed by ${who} at ${s.reviewedAt.slice(0, 10)}`);
   }
   if (s.note) lines.push(`      note:  ${s.note}`);
   return lines.join("\n");

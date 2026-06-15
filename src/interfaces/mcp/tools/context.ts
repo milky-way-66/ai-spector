@@ -23,7 +23,9 @@ export async function toolContextRecord(input: z.infer<typeof ContextRecordSchem
     scope: input.scope,
     source: input.source,
     sourceRefs: input.sourceRefs,
-    answeredBy: input.answeredBy,
+    answeredBy: input.by ?? input.answeredBy,
+    answeredByUsername: input.username,
+    role: input.role,
   });
 }
 
@@ -33,6 +35,8 @@ export async function toolContextResolve(input: z.infer<typeof ContextResolveSch
     docType: input.docType,
     id: input.id,
     answer: input.answer,
-    answeredBy: input.answeredBy,
+    answeredBy: input.by ?? input.answeredBy,
+    answeredByUsername: input.username,
+    role: input.role,
   });
 }

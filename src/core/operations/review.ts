@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { resolveReviewActor } from "../util/git-user.js";
+import { resolveAuditActor } from "../util/audit-actor.js";
 import { pathExists } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { normalizeLogicalPath } from "../comments/paths.js";
@@ -219,7 +219,7 @@ async function prepareReviewRoot(root?: string): Promise<string> {
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
-  const actor = await resolveReviewActor(projectRoot, {
+  const actor = await resolveAuditActor(projectRoot, {
     by: opts.by,
     username: opts.username,
     role: opts.role ?? "user",
@@ -495,7 +495,7 @@ export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCh
 export async function runReviewReject(opts: ReviewRejectOptions): Promise<ReviewRejectResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
-  const actor = await resolveReviewActor(projectRoot, {
+  const actor = await resolveAuditActor(projectRoot, {
     by: opts.by,
     username: opts.username,
     role: opts.role ?? "user",

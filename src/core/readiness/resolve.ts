@@ -66,7 +66,7 @@ export async function loadMergedReadinessCriteria(opts: {
   }
   base = await readJson<ReadinessCriteriaFile>(resolved.path);
 
-  const profile = profileId === "general" ? null : await loadTailoringProfile(profileId);
+  const profile = await loadTailoringProfile(profileId);
   const criteria = mergeTailoringProfile(base, profile);
 
   return {

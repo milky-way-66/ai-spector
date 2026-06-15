@@ -23,7 +23,10 @@ export interface ThreadMeta {
   updatedAt: string;
   createdBy: number | string;
   resolvedAt: string | null;
+  /** Resolver email (audit). */
   resolvedBy: number | string | null;
+  resolvedByUsername?: string | null;
+  resolvedByRole?: "user" | "client" | null;
   resolvedInCommitSha: string | null;
   anchor: CommentAnchor;
 }
@@ -50,7 +53,10 @@ export type CommentEventType =
 export interface CommentEvent {
   at: string;
   type: CommentEventType;
+  /** Actor email. */
   by?: number | string;
+  username?: string;
+  role?: "user" | "client";
   commentId?: string;
   resolvedInCommitSha?: string;
 }

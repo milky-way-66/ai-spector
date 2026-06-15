@@ -288,7 +288,9 @@ context
   .option("--scope <scope>", "DAG node / section this informs (e.g. srs.use-cases)")
   .option("--source <source>", "user | inferred | data-source", "user")
   .option("--refs <paths>", "Comma-separated source files that make this stale on change")
-  .option("--by <name>", "Who answered")
+  .option("--by <email>", "Answerer email override (default: git user.email)")
+  .option("--username <name>", "Answerer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--json", "JSON output")
   .action(async (docType, question, opts) => {
     const result = await runContextRecord({
@@ -302,6 +304,8 @@ context
         ? (opts.refs as string).split(",").map((s: string) => s.trim()).filter(Boolean)
         : undefined,
       answeredBy: opts.by,
+      answeredByUsername: opts.username,
+      role: opts.role,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatContextRecord(result));
@@ -311,7 +315,9 @@ context
   .command("resolve <docType> <id> <answer>")
   .description("Answer an open/stale entry by id (e.g. Q-001)")
   .option("-C, --cwd <path>", "Project root", process.cwd())
-  .option("--by <name>", "Who answered")
+  .option("--by <email>", "Answerer email override (default: git user.email)")
+  .option("--username <name>", "Answerer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--json", "JSON output")
   .action(async (docType, id, answer, opts) => {
     const result = await runContextResolve({
@@ -320,6 +326,8 @@ context
       id,
       answer,
       answeredBy: opts.by,
+      answeredByUsername: opts.username,
+      role: opts.role,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatContextResolve(result));
@@ -350,7 +358,9 @@ spec
   .command("approve <docType> <id>")
   .description("Approve a pending spec; merges its graph patch (if any) into the graph")
   .option("-C, --cwd <path>", "Project root", process.cwd())
-  .option("--by <name>", "Reviewer name")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--note <note>", "Review note")
   .option("--skip-merge", "Approve without merging the graph patch")
   .option("--json", "JSON output")
@@ -360,6 +370,8 @@ spec
       docType,
       id,
       by: opts.by,
+      username: opts.username,
+      role: opts.role,
       note: opts.note,
       skipMerge: opts.skipMerge,
     });
@@ -371,7 +383,9 @@ spec
   .command("reject <docType> <id>")
   .description("Reject a pending spec (kept for audit, never merged)")
   .option("-C, --cwd <path>", "Project root", process.cwd())
-  .option("--by <name>", "Reviewer name")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--note <note>", "Why the spec was rejected")
   .option("--json", "JSON output")
   .action(async (docType, id, opts) => {
@@ -380,6 +394,8 @@ spec
       docType,
       id,
       by: opts.by,
+      username: opts.username,
+      role: opts.role,
       note: opts.note,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
@@ -507,6 +523,9 @@ task
   .command("approve <taskId>")
   .description("Approve the task plan and advance to the next step")
   .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--by <email>", "Approver email override (default: git user.email)")
+  .option("--username <name>", "Approver name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--plan <json>", "Plan JSON (StoredPlan) if not already set on task")
   .option("--json", "JSON output")
   .action(async (taskId, opts) => {
@@ -514,6 +533,9 @@ task
       root: resolve(opts.cwd ?? process.cwd()),
       taskId,
       plan: opts.plan ? JSON.parse(opts.plan as string) : undefined,
+      by: opts.by,
+      username: opts.username,
+      role: opts.role,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatTaskSimple("Approved plan for", result));
@@ -1044,7 +1066,9 @@ comments
   .command("resolve <threadId>")
   .description("Mark thread resolved in meta_data.json and append events.jsonl")
   .requiredOption("--file <path>", "Logical file path (e.g. srs/04-features/auth)")
-  .option("--by <author>", "resolvedBy value recorded in meta_data.json", "local")
+  .option("--by <email>", "Resolver email override (default: git user.email)")
+  .option("--username <name>", "Resolver name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--commit-sha <sha>", "resolvedInCommitSha (defaults to git HEAD)")
   .option("--expected-version <n>", "Optimistic lock on meta_data.json version")
   .option("--dry-run", "Preview resolve without writing files")
@@ -1055,6 +1079,8 @@ comments
       threadId,
       filePath: opts.file,
       resolvedBy: opts.by,
+      resolvedByUsername: opts.username,
+      role: opts.role,
       commitSha: opts.commitSha,
       expectedVersion: opts.expectedVersion != null ? Number(opts.expectedVersion) : undefined,
       dryRun: opts.dryRun,

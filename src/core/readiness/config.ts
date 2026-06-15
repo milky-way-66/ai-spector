@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { DocflowConfig, PackManifest, ReadinessConfig } from "../config/types.js";
 import { loadDocflowConfig, resolveActivePackManifest } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
-import { listReadinessProfiles } from "./profiles.js";
+import { listReadinessProfiles, resolveDefaultReadinessProfileId } from "./profiles.js";
 import { resolveCriteriaFilePath } from "./criteria-path.js";
 import { checkStandardsAlignment } from "./standards-align.js";
 import { loadMergedReadinessCriteria } from "./resolve.js";
@@ -60,6 +60,7 @@ export function resolveProfileForDocType(
   config: DocflowConfig,
   manifest: PackManifest | null,
   docType: string,
+  defaultProfileId = "general",
 ): { profile: string; profileSource: ProfileSource } {
   const perDoc = config.readiness?.docTypes?.[docType];
   if (perDoc?.profile) {
@@ -72,7 +73,7 @@ export function resolveProfileForDocType(
   if (docType === "arc42" || purpose.includes("arc42") || purpose.includes("architecture")) {
     return { profile: "arc42", profileSource: "inferred.arc42" };
   }
-  return { profile: "general", profileSource: "inferred.general" };
+  return { profile: defaultProfileId, profileSource: "inferred.general" };
 }
 
 export function isDocTypeEnabled(config: DocflowConfig, docType: string): boolean {
@@ -118,9 +119,15 @@ export async function resolveReadinessConfigStatus(opts: {
     for (const k of Object.keys(readiness.docTypes)) docTypeKeys.add(k);
   }
 
+  const defaultProfileId = await resolveDefaultReadinessProfileId();
   const docTypes: ResolvedDocTypeReadiness[] = [];
   for (const docType of docTypeKeys) {
-    const { profile, profileSource } = resolveProfileForDocType(config, manifest, docType);
+    const { profile, profileSource } = resolveProfileForDocType(
+      config,
+      manifest,
+      docType,
+      defaultProfileId,
+    );
     const enabled = isDocTypeEnabled(config, docType);
     const criteriaResolved = await resolveCriteriaFilePath(root, config, docType);
     const packName =

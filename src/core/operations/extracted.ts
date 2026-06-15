@@ -5,6 +5,8 @@ import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { runGraphMerge, type GraphMergeResult } from "./graph-merge.js";
 import type { ExtractPatch } from "../graph/knowledge.js";
 import type { WorkflowToolGuidance } from "../workflow/guidance.js";
+import { resolveAuditActor } from "../util/audit-actor.js";
+import type { AuditActorRole } from "../util/audit-actor.js";
 import { buildSpecListWorkflowGuidance, buildSpecActionWorkflowGuidance } from "../workflow/guidance.js";
 
 export type SpecStatus = "pending" | "approved" | "rejected";
@@ -20,7 +22,10 @@ export interface ExtractedSpec {
   patch?: ExtractPatch;
   createdAt: string;
   reviewedAt?: string;
+  /** Reviewer email. */
   reviewedBy?: string;
+  reviewedByUsername?: string;
+  reviewedByRole?: AuditActorRole;
   /** Reviewer note on approve/reject. */
   note?: string;
 }
@@ -66,6 +71,8 @@ export interface SpecApproveOptions {
   docType: string;
   id: string;
   by?: string;
+  username?: string;
+  role?: AuditActorRole;
   note?: string;
   /** Skip graph merge even when the spec has a patch (record-only approval). */
   skipMerge?: boolean;
@@ -85,6 +92,8 @@ export interface SpecRejectOptions {
   docType: string;
   id: string;
   by?: string;
+  username?: string;
+  role?: AuditActorRole;
   note?: string;
 }
 
@@ -220,7 +229,14 @@ export async function runSpecApprove(opts: SpecApproveOptions): Promise<SpecAppr
 
   spec.status = "approved";
   spec.reviewedAt = new Date().toISOString();
-  if (opts.by) spec.reviewedBy = opts.by;
+  const actor = await resolveAuditActor(root, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role,
+  });
+  spec.reviewedBy = actor.by;
+  spec.reviewedByUsername = actor.username;
+  spec.reviewedByRole = actor.role;
   if (opts.note) spec.note = opts.note;
 
   const storePath = await saveStore(root, store);
@@ -240,7 +256,14 @@ export async function runSpecReject(opts: SpecRejectOptions): Promise<SpecReject
 
   spec.status = "rejected";
   spec.reviewedAt = new Date().toISOString();
-  if (opts.by) spec.reviewedBy = opts.by;
+  const actor = await resolveAuditActor(root, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role,
+  });
+  spec.reviewedBy = actor.by;
+  spec.reviewedByUsername = actor.username;
+  spec.reviewedByRole = actor.role;
   if (opts.note) spec.note = opts.note;
 
   const storePath = await saveStore(root, store);

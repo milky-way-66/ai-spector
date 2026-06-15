@@ -52,7 +52,9 @@ export async function toolCommentsResolve(input: z.infer<typeof CommentsResolveS
     projectRoot: paths.root,
     logicalPath: normalizeLogicalPath(input.filePath),
     threadId: input.threadId,
-    resolvedBy: input.resolvedBy,
+    resolvedBy: input.by ?? input.resolvedBy,
+    resolvedByUsername: input.username,
+    role: input.role,
     dryRun: input.dryRun,
   });
   return result;

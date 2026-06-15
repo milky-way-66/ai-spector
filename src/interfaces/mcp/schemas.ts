@@ -6,6 +6,21 @@ export const RootSchema = z.object({
   root: z.string().optional().describe("Project root directory (auto-detected if omitted)"),
 });
 
+export const AuditActorRoleEnum = z.enum(["user", "client"]);
+
+/** Optional actor overrides; generic values resolve to git user.email / user.name. */
+export const AuditActorOverrideSchema = {
+  by: z
+    .string()
+    .optional()
+    .describe("Actor email override; generic values like 'user' resolve to git user.email"),
+  username: z
+    .string()
+    .optional()
+    .describe("Actor name override; generic values resolve to git user.name"),
+  role: AuditActorRoleEnum.optional().describe("Actor role (default: user)"),
+};
+
 // ── Graph ─────────────────────────────────────────────────────────────────────
 
 export const GraphQuerySchema = RootSchema.extend({
@@ -86,7 +101,11 @@ export const CommentsShowSchema = RootSchema.extend({
 export const CommentsResolveSchema = RootSchema.extend({
   threadId: z.string().describe("Comment thread id to resolve"),
   filePath: z.string().describe("File path the comment is anchored to"),
-  resolvedBy: z.string().optional().describe("Who resolved it (name or agent id)"),
+  ...AuditActorOverrideSchema,
+  resolvedBy: z
+    .string()
+    .optional()
+    .describe("Deprecated alias for by (resolver email override)"),
   dryRun: z.boolean().optional().describe("Preview resolution without writing"),
 });
 
@@ -212,22 +231,7 @@ export const ResolveTaskSchema = RootSchema.extend({
 
 export const ReviewApproveSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
-  by: z
-    .string()
-    .optional()
-    .describe(
-      "Optional reviewer email override. Generic values like 'user' resolve to git user.email.",
-    ),
-  username: z
-    .string()
-    .optional()
-    .describe(
-      "Optional reviewer name override. Generic values resolve to git user.name.",
-    ),
-  role: z
-    .enum(["user", "client"])
-    .optional()
-    .describe("Actor role (default: user for internal sign-off via MCP/CLI)"),
+  ...AuditActorOverrideSchema,
 });
 
 export const ReviewStatusSchema = RootSchema.extend({
@@ -276,14 +280,22 @@ export const ContextRecordSchema = RootSchema.extend({
     .array(z.string())
     .optional()
     .describe("Files whose change makes this entry stale (relative to root)"),
-  answeredBy: z.string().optional().describe("Who answered"),
+  ...AuditActorOverrideSchema,
+  answeredBy: z
+    .string()
+    .optional()
+    .describe("Deprecated alias for by (answerer email override)"),
 });
 
 export const ContextResolveSchema = RootSchema.extend({
   docType: z.string().describe("Doc type store containing the entry"),
   id: z.string().describe("Entry id, e.g. 'Q-001'"),
   answer: z.string().describe("The user's answer"),
-  answeredBy: z.string().optional().describe("Who answered"),
+  ...AuditActorOverrideSchema,
+  answeredBy: z
+    .string()
+    .optional()
+    .describe("Deprecated alias for by (answerer email override)"),
 });
 
 // ── Extracted-spec review queue ─────────────────────────────────────────────
@@ -322,7 +334,7 @@ export const SpecRecordSchema = RootSchema.extend({
 export const SpecApproveSchema = RootSchema.extend({
   docType: z.string().describe("Doc type queue containing the spec"),
   id: z.string().describe("Spec id, e.g. 'SPEC-001'"),
-  by: z.string().optional().describe("Reviewer name"),
+  ...AuditActorOverrideSchema,
   note: z.string().optional().describe("Review note"),
   skipMerge: z.boolean().optional().describe("Approve without merging the graph patch"),
 });
@@ -330,7 +342,7 @@ export const SpecApproveSchema = RootSchema.extend({
 export const SpecRejectSchema = RootSchema.extend({
   docType: z.string().describe("Doc type queue containing the spec"),
   id: z.string().describe("Spec id, e.g. 'SPEC-001'"),
-  by: z.string().optional().describe("Reviewer name"),
+  ...AuditActorOverrideSchema,
   note: z.string().optional().describe("Why the spec was rejected"),
 });
 
@@ -352,15 +364,7 @@ export const WorkspaceCheckSchema = RootSchema.extend({
 export const ReviewRejectSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path to dismiss from internal queue"),
   reason: z.string().optional().describe("Why the change does not require re-approval"),
-  by: z
-    .string()
-    .optional()
-    .describe("Optional actor email override; generic values resolve to git user.email"),
-  username: z
-    .string()
-    .optional()
-    .describe("Optional actor name override; generic values resolve to git user.name"),
-  role: z.enum(["user", "client"]).optional().describe("Actor role (default: user)"),
+  ...AuditActorOverrideSchema,
 });
 
 export const ReviewListSchema = RootSchema.extend({
@@ -534,6 +538,7 @@ export const TaskUpdateSchema = RootSchema.extend({
 export const TaskApprovePlanSchema = RootSchema.extend({
   taskId: z.string(),
   plan: StoredPlanSchema.optional().describe("Plan to approve; omit if already set via task_update"),
+  ...AuditActorOverrideSchema,
 });
 
 export const TaskResumeSchema = RootSchema.extend({

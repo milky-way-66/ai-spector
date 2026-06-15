@@ -59,6 +59,8 @@ export interface CommentsResolveOptions {
   threadId: string;
   filePath: string;
   resolvedBy?: string;
+  resolvedByUsername?: string;
+  role?: "user" | "client";
   commitSha?: string;
   expectedVersion?: number;
   dryRun?: boolean;
@@ -149,6 +151,8 @@ export async function runCommentsResolve(opts: CommentsResolveOptions): Promise<
     logicalPath: normalizeLogicalPath(opts.filePath),
     threadId: opts.threadId,
     resolvedBy: opts.resolvedBy,
+    resolvedByUsername: opts.resolvedByUsername,
+    role: opts.role,
     resolvedInCommitSha: opts.commitSha,
     expectedVersion: opts.expectedVersion,
     dryRun: opts.dryRun,

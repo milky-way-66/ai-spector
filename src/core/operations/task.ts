@@ -20,6 +20,7 @@ import {
   type WorkflowToolGuidance,
 } from "../workflow/guidance.js";
 import { recordWorkflowFromTask } from "../workflow/active-worker.js";
+import { resolveAuditActor } from "../util/audit-actor.js";
 
 export type { TaskKind, WorkflowId };
 export type { GoalSpec, TaskPlan } from "./resolve-task.js";
@@ -672,6 +673,9 @@ export interface TaskApprovePlanOptions {
   root?: string;
   taskId: string;
   plan?: StoredPlan;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
 }
 
 export interface TaskApprovePlanResult {
@@ -740,7 +744,11 @@ export async function runTaskApprovePlan(
     }
   }
 
-  const logPath = await writePlanAuditLog(root, task, now);
+  const logPath = await writePlanAuditLog(root, task, now, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role,
+  });
   if (logPath) {
     task.contextRefs = { ...task.contextRefs, planLog: logPath };
   }
@@ -759,8 +767,10 @@ async function writePlanAuditLog(
   root: string,
   task: TaskState,
   approvedAt: string,
+  actorInput?: { by?: string; username?: string; role?: "user" | "client" },
 ): Promise<string | undefined> {
   if (!task.plan) return undefined;
+  const actor = await resolveAuditActor(root, actorInput);
   const docType =
     task.plan.kind === "generate"
       ? task.plan.plan.docType
@@ -772,6 +782,9 @@ async function writePlanAuditLog(
     taskId: task.id,
     workflow: task.workflow,
     approvedAt,
+    approvedBy: actor.by,
+    approvedByUsername: actor.username,
+    approvedByRole: actor.role,
     plan: task.plan,
     goal: task.goal,
   });

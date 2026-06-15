@@ -18,6 +18,7 @@ import type {
   ThreadStatus,
   ThreadSummary,
 } from "./types.js";
+import { resolveAuditActor } from "../util/audit-actor.js";
 
 const exec = promisify(execFile);
 
@@ -31,7 +32,10 @@ export interface ResolveThreadOptions {
   projectRoot: string;
   logicalPath: string;
   threadId: string;
+  /** Resolver email override. */
   resolvedBy?: number | string;
+  resolvedByUsername?: string;
+  role?: "user" | "client";
   resolvedInCommitSha?: string;
   dryRun?: boolean;
   /** Expected meta_data.json version for optimistic locking */
@@ -265,14 +269,20 @@ export async function resolveThread(
   const commitSha =
     opts.resolvedInCommitSha?.trim() || (await getGitHeadSha(opts.projectRoot));
   const now = new Date().toISOString();
-  const resolvedBy = opts.resolvedBy ?? "local";
+  const actor = await resolveAuditActor(opts.projectRoot, {
+    by: opts.resolvedBy != null ? String(opts.resolvedBy) : undefined,
+    username: opts.resolvedByUsername,
+    role: opts.role,
+  });
   const nextVersion = meta.version + 1;
 
   const updated: ThreadMeta = {
     ...meta,
     status: "resolved",
     resolvedAt: now,
-    resolvedBy,
+    resolvedBy: actor.by,
+    resolvedByUsername: actor.username,
+    resolvedByRole: actor.role,
     resolvedInCommitSha: commitSha,
     updatedAt: now,
     version: nextVersion,
@@ -282,7 +292,9 @@ export async function resolveThread(
     at: now,
     type: "resolved",
     resolvedInCommitSha: commitSha ?? undefined,
-    by: resolvedBy,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
   };
 
   const threadDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId));

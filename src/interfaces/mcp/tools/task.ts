@@ -72,6 +72,9 @@ export async function toolTaskApprovePlan(input: z.infer<typeof TaskApprovePlanS
     root: input.root,
     taskId: input.taskId,
     plan: input.plan as import("@/core/operations/task.js").StoredPlan | undefined,
+    by: input.by,
+    username: input.username,
+    role: input.role,
   });
 }
 

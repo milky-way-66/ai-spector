@@ -17,7 +17,11 @@ function formatEntry(e: ContextEntry): string {
   if (e.scope) lines.push(`      scope:  ${e.scope}`);
   if (e.sourceRefs?.length) lines.push(`      refs:   ${e.sourceRefs.join(", ")}`);
   if (e.answeredAt) {
-    lines.push(`      by ${e.answeredBy ?? "unknown"} at ${e.answeredAt.slice(0, 10)}`);
+    const who =
+      e.answeredByUsername && e.answeredBy
+        ? `${e.answeredByUsername} <${e.answeredBy}>`
+        : (e.answeredBy ?? "unknown");
+    lines.push(`      by ${who} at ${e.answeredAt.slice(0, 10)}`);
   }
   return lines.join("\n");
 }

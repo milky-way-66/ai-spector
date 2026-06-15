@@ -25,7 +25,7 @@ export function formatCommentsShow(thread: NonNullable<unknown>): string {
     version: number;
     anchor: { startLine: number; endLine: number; language: string; branchName: string; baseCommitSha: string; lineExcerpt?: string };
     comments: Array<{ createdAt: string; authorId: string; body: string }>;
-    events: Array<{ at: string; type: string; by?: string }>;
+    events: Array<{ at: string; type: string; by?: string; username?: string; role?: string }>;
   };
   const lines: string[] = [];
   lines.push(`Thread: ${t.threadId}`);
@@ -38,7 +38,11 @@ export function formatCommentsShow(thread: NonNullable<unknown>): string {
   for (const c of t.comments) lines.push(`  [${c.createdAt}] ${c.authorId}: ${c.body}`);
   if (t.events.length > 0) {
     lines.push("", "Events:");
-    for (const e of t.events) lines.push(`  ${e.at} ${e.type}${e.by != null ? ` by ${e.by}` : ""}`);
+    for (const e of t.events) {
+      const who =
+        e.username && e.by ? `${e.username} <${e.by}>` : e.by != null ? String(e.by) : null;
+      lines.push(`  ${e.at} ${e.type}${who != null ? ` by ${who}` : ""}${e.role ? ` (${e.role})` : ""}`);
+    }
   }
   return lines.join("\n");
 }
