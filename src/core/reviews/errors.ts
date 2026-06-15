@@ -94,7 +94,33 @@ export class ReviewPreconditionError extends Error {
 
 export function canInternalApprove(approval: ApprovalRecord): boolean {
   return (
-    approval.overallStatus === "pending_internal" || approval.internal.status === "needs_review"
+    approval.internal.status === "pending" ||
+    approval.internal.status === "needs_review"
+  );
+}
+
+export function canInternalClose(approval: ApprovalRecord): boolean {
+  return canInternalApprove(approval);
+}
+
+export function assertCanInternalClose(
+  approval: ApprovalRecord,
+  logicalPath: string,
+): void {
+  if (canInternalClose(approval)) {
+    return;
+  }
+
+  const { overallStatus } = approval;
+  const notThese = ["spec_approve", "task_approve_plan", "comments_resolve"];
+
+  throw new ReviewPreconditionError(
+    "invalid_state",
+    `Cannot close internal review for ${logicalPath}: track is "${approval.internal.status}".`,
+    "Close review is only available while internal review is pending or needs re-review.",
+    ["review_status", "review_queue", ...notThese],
+    logicalPath,
+    overallStatus,
   );
 }
 

@@ -13,6 +13,7 @@ import {
   deriveOverallStatus,
   updateFingerprint,
 } from "./storage.js";
+import { emptyClientTrack } from "./votes.js";
 import { ensureReviewQueueMigrated } from "./migrate.js";
 
 export interface ReconcileReviewsResult {
@@ -77,14 +78,22 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
         computedAt: new Date().toISOString(),
       });
 
-      // Invalidate approval
+      // Invalidate approval — reset votes, re-queue internal review
       const now = new Date().toISOString();
       const prevHash = approval.contentHash;
       approval.contentHash = currentHash;
       approval.docPath = docPath;
-      approval.internal.status = "needs_review";
-      approval.internal.invalidatedAt = now;
-      approval.client.status = "pending";
+      approval.internal = {
+        ...approval.internal,
+        status: "needs_review",
+        votes: [],
+        quorumMetAt: null,
+        closedAt: null,
+        closedBy: null,
+        closeReason: null,
+        invalidatedAt: now,
+      };
+      approval.client = emptyClientTrack();
       approval.overallStatus = deriveOverallStatus(approval);
       await saveApproval(projectRoot, approval);
 

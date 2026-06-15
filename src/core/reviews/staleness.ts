@@ -5,6 +5,7 @@ import { pathExists } from "../util/fs.js";
 import { resolveReviewDocPath } from "./doc-resolve.js";
 import { computeLineDiff } from "../util/diff.js";
 import { deriveOverallStatus, readSnapshot } from "./storage.js";
+import { emptyClientTrack } from "./votes.js";
 import type { ApprovalRecord, DiffFile } from "./types.js";
 
 export function contentHash(content: string): string {
@@ -70,7 +71,7 @@ export async function computeLiveStaleness(
       status: "needs_review",
       invalidatedAt: approval.internal.invalidatedAt ?? new Date().toISOString(),
     },
-    client: { ...approval.client, status: "pending" },
+    client: emptyClientTrack(),
     overallStatus: "pending_internal",
   };
   effectiveApproval.overallStatus = deriveOverallStatus(effectiveApproval);

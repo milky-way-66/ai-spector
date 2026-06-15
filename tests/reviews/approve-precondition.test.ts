@@ -5,6 +5,7 @@ import { withTempProject } from "../helpers/temp-project.js";
 import { writeJson } from "@/core/util/fs.js";
 import { saveApproval, makeApproval, writeSnapshot } from "@/core/reviews/storage.js";
 import { contentHash } from "@/core/reviews/staleness.js";
+import { internalApprovedTrack, clientApprovedTrack } from "./helpers.js";
 import { ReviewPreconditionError } from "@/core/reviews/errors.js";
 import { runApprove, runReviewStatus, runReviewSessionAckReview } from "@/core/operations/review.js";
 
@@ -32,12 +33,7 @@ describe("runApprove preconditions", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/01-overview", hash, docRel);
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "alice",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("alice", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       approval.client.status = "pending";
       await writeSnapshot(root, "srs/01-overview", content);
@@ -72,17 +68,8 @@ describe("runApprove preconditions", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/02-scope", hash, docRel);
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "alice",
-        invalidatedAt: null,
-      };
-      approval.client = {
-        status: "approved",
-        approvedAt: "2026-06-11T01:00:00.000Z",
-        comment: null,
-      };
+      approval.internal = internalApprovedTrack("alice", "2026-06-11T00:00:00.000Z");
+      approval.client = clientApprovedTrack("client@example.com", "2026-06-11T01:00:00.000Z");
       approval.overallStatus = "approved";
       await writeSnapshot(root, "srs/02-scope", content);
       await saveApproval(root, approval);
@@ -117,6 +104,7 @@ describe("runApprove preconditions", () => {
       expect(result.approvedBy).toBe("reviewer@example.com");
       expect(result.approvedByUsername).toBe("unknown");
       expect(result.approvedByRole).toBe("user");
+      expect(result.quorumMet).toBe(true);
       expect(result.movedToClientQueue).toBe(true);
     });
   });
@@ -132,12 +120,7 @@ describe("runReviewStatus workflowGuidance", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/04-client", hash, docRel);
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "alice",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("alice", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       approval.client.status = "pending";
       await writeSnapshot(root, "srs/04-client", content);

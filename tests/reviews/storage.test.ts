@@ -137,8 +137,9 @@ describe.sequential("review operations", () => {
         includeHistory: true,
       });
       expect(status.approval.overallStatus).toBe("pending_client");
-      expect(status.history).toHaveLength(1);
-      expect(status.history?.[0]?.event).toBe("approved");
+      expect(status.history).toHaveLength(2);
+      expect(status.history?.some((h) => h.event === "internal_vote")).toBe(true);
+      expect(status.history?.some((h) => h.event === "internal_quorum_met")).toBe(true);
     });
   });
 
@@ -159,10 +160,10 @@ describe.sequential("review operations", () => {
       expect(approved.note).toBe("Minor wording fixes only");
 
       const approval = await getApproval(root, "srs/1-introduction");
-      expect(approval?.internal.note).toBe("Minor wording fixes only");
+      expect(approval?.internal.votes[0]?.note).toBe("Minor wording fixes only");
 
       const history = await readHistory(root, "srs/1-introduction");
-      expect(history[0]?.note).toBe("Minor wording fixes only");
+      expect(history.find((h) => h.event === "internal_vote")?.note).toBe("Minor wording fixes only");
     });
   });
 

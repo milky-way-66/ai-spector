@@ -7,6 +7,7 @@ import { withTempDir } from "../helpers/temp-project.js";
 import { writeJson } from "@/core/util/fs.js";
 import { saveApproval, makeApproval, writeSnapshot, readHistory } from "@/core/reviews/storage.js";
 import { contentHash } from "@/core/reviews/staleness.js";
+import { internalApprovedTrack } from "./helpers.js";
 import {
   runApprove,
   runReviewStatus,
@@ -56,8 +57,8 @@ describe("review approve actor", () => {
       expect(result.approvedByRole).toBe("user");
 
       const history = await readHistory(root, "srs/03-draft");
-      expect(history[0]).toMatchObject({
-        event: "approved",
+      expect(history.find((h) => h.event === "internal_vote")).toMatchObject({
+        decision: "approve",
         by: "reviewer@example.com",
         username: "Reviewer",
         role: "user",

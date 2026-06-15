@@ -24,7 +24,9 @@ import type {
 } from "./types.js";
 import { jobToQueueEntry, reviewJobId } from "./types.js";
 
-const EMPTY_REGISTRY: RegistryFile = { version: 2, documents: {} };
+import { emptyClientTrack, emptyInternalTrack } from "./votes.js";
+
+const EMPTY_REGISTRY: RegistryFile = { version: 3, documents: {} };
 const EMPTY_FINGERPRINTS: FingerprintsFile = { version: 1, files: {} };
 const EMPTY_PENDING: PendingQueueFile = { version: 2, jobs: [] };
 const EMPTY_INDEX: QueueIndex = { version: 1, entries: [] };
@@ -49,7 +51,7 @@ export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
   const paths = reviewQueuePaths(projectRoot);
   if (!(await pathExists(paths.registry))) return { ...EMPTY_REGISTRY };
   const raw = await readJson<Partial<RegistryFile>>(paths.registry).catch(() => EMPTY_REGISTRY);
-  return { version: 2, documents: raw.documents ?? {} };
+  return { version: 3, documents: raw.documents ?? {} };
 }
 
 export async function saveRegistry(projectRoot: string, registry: RegistryFile): Promise<void> {
@@ -105,7 +107,7 @@ export async function getApproval(
   const legacyPath = join(projectRoot, legacyApprovalJsonPath(logicalPath));
   if (await pathExists(legacyPath)) {
     const record = await readJson<ApprovalRecord>(legacyPath).catch(() => null);
-    if (record) return { ...record, version: 2 };
+    if (record) return { ...record, version: 3 };
   }
   return null;
 }
@@ -115,24 +117,24 @@ export async function saveApproval(
   record: ApprovalRecord,
 ): Promise<void> {
   const registry = await loadRegistry(projectRoot);
-  registry.documents[record.logicalPath] = { ...record, version: 2 };
+  registry.documents[record.logicalPath] = { ...record, version: 3 };
   await saveRegistry(projectRoot, registry);
 }
 
 export function makeApproval(logicalPath: string, contentHash: string, docPath?: string): ApprovalRecord {
   return {
-    version: 2,
+    version: 3,
     logicalPath,
     docPath,
     contentHash,
     overallStatus: "pending_internal",
-    internal: { status: "pending", approvedAt: null, approvedBy: null, invalidatedAt: null },
-    client: { status: "pending", approvedAt: null, comment: null },
+    internal: emptyInternalTrack(),
+    client: emptyClientTrack(),
   };
 }
 
 export function deriveOverallStatus(record: ApprovalRecord): OverallStatus {
-  if (record.client.status === "rejected") return "rejected";
+  if (record.internal.status === "rejected" || record.client.status === "rejected") return "rejected";
   if (record.internal.status !== "approved") return "pending_internal";
   if (record.client.status !== "approved") return "pending_client";
   return "approved";

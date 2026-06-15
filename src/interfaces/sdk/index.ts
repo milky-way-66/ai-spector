@@ -129,6 +129,8 @@ export type {
 // Reviews
 export {
   runApprove,
+  runDecline,
+  runClose,
   runReviewStatus,
   runReviewQueue,
   runReviewCheck,

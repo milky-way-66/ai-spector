@@ -229,6 +229,18 @@ export const ResolveTaskSchema = RootSchema.extend({
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
+export const ReviewDeclineSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
+  ...AuditActorOverrideSchema,
+  note: z.string().optional().describe("Decline reason"),
+});
+
+export const ReviewCloseSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
+  reason: z.string().describe("Why the review is being closed without quorum"),
+  ...AuditActorOverrideSchema,
+});
+
 export const ReviewApproveSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
   ...AuditActorOverrideSchema,

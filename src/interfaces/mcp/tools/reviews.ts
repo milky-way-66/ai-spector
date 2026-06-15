@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import type {
   ReviewApproveSchema,
+  ReviewDeclineSchema,
+  ReviewCloseSchema,
   ReviewStatusSchema,
   ReviewQueueSchema,
   ReviewCheckSchema,
@@ -12,6 +14,8 @@ import type {
 } from "../schemas.js";
 import {
   runApprove,
+  runDecline,
+  runClose,
   runReviewStatus,
   runReviewQueue,
   runReviewCheck,
@@ -21,6 +25,28 @@ import {
   runReviewSessionStart,
   runReviewSessionAckReview,
 } from "@/core/operations/review.js";
+
+export async function toolReviewDecline(input: z.infer<typeof ReviewDeclineSchema>) {
+  return runDecline({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+    note: input.note,
+  });
+}
+
+export async function toolReviewClose(input: z.infer<typeof ReviewCloseSchema>) {
+  return runClose({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    reason: input.reason,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+  });
+}
 
 export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchema>) {
   return runApprove({

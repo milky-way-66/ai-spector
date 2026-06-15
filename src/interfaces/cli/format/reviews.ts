@@ -35,13 +35,39 @@ function formatQueueEntry(entry: QueueEntry, diff: DiffFile | null | undefined):
 
 export function formatApproveResult(result: ReviewApproveResult): string {
   const lines: string[] = [];
-  lines.push(`Approved: ${result.logicalPath}`);
+  lines.push(`Vote recorded (approve): ${result.logicalPath}`);
   lines.push(`  by: ${result.approvedByUsername} <${result.approvedBy}> (${result.approvedByRole})`);
   lines.push(`  hash: ${result.contentHash}`);
+  lines.push(
+    `  quorum: ${result.quorum.approveCount}/${result.quorum.required} approvals (${result.quorum.voterCount} voter(s))`,
+  );
   if (result.note) lines.push(`  note: ${result.note}`);
-  if (result.movedToClientQueue) lines.push("  moved to client review queue");
+  if (result.quorumMet && result.movedToClientQueue) lines.push("  internal quorum met — moved to client review queue");
+  else if (!result.quorumMet) lines.push("  awaiting more internal approvals");
   if (result.openThreadWarning) lines.push(`  warning: ${result.openThreadWarning}`);
   return lines.join("\n");
+}
+
+export function formatDeclineResult(result: import("@/core/operations/review.js").ReviewDeclineResult): string {
+  const lines: string[] = [];
+  lines.push(`Vote recorded (decline): ${result.logicalPath}`);
+  lines.push(`  by: ${result.declinedByUsername} <${result.declinedBy}> (${result.declinedByRole})`);
+  lines.push(
+    `  quorum: ${result.quorum.approveCount}/${result.quorum.required} approvals (${result.quorum.voterCount} voter(s))`,
+  );
+  if (result.note) lines.push(`  note: ${result.note}`);
+  if (result.quorumMet) lines.push("  internal quorum met — moved to client review queue");
+  else lines.push("  track still pending");
+  return lines.join("\n");
+}
+
+export function formatCloseResult(result: import("@/core/operations/review.js").ReviewCloseResult): string {
+  return (
+    `Closed internal review: ${result.logicalPath}\n` +
+    `  by: ${result.closedByUsername} <${result.closedBy}>\n` +
+    `  reason: ${result.reason}\n` +
+    `  quorum at close: ${result.quorum.approveCount}/${result.quorum.required} (${result.quorum.voterCount} voter(s))`
+  );
 }
 
 export function formatReviewStatus(result: ReviewStatusResult): string {
@@ -52,16 +78,24 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
     lines.push(`  ⚠ content changed since last approval (hash ${approvedContentHash} → ${approval.contentHash})`);
   }
   lines.push(`  overall:  ${approval.overallStatus}`);
+  const iQuorum = result.internalQuorum;
   lines.push(
     approval.internal.status === "approved"
-      ? `  internal: approved by ${approval.internal.approvedBy} on ${approval.internal.approvedAt?.slice(0, 10)}${approval.internal.note ? ` — ${approval.internal.note}` : ""}`
-      : `  internal: ${approval.internal.status}${approval.internal.invalidatedAt ? ` (invalidated ${approval.internal.invalidatedAt.slice(0, 10)})` : ""}`,
+      ? `  internal: approved (quorum ${iQuorum.approveCount}/${iQuorum.required}, ${iQuorum.voterCount} voter(s))`
+      : `  internal: ${approval.internal.status}${approval.internal.invalidatedAt ? ` (invalidated ${approval.internal.invalidatedAt.slice(0, 10)})` : ""} — quorum ${iQuorum.approveCount}/${iQuorum.required} (${iQuorum.voterCount} voter(s))`,
   );
+  const cQuorum = result.clientQuorum;
   lines.push(
     approval.client.status === "approved"
-      ? `  client:   approved on ${approval.client.approvedAt?.slice(0, 10)}`
-      : `  client:   ${approval.client.status}${approval.client.comment ? ` — ${approval.client.comment}` : ""}`,
+      ? `  client:   approved (quorum ${cQuorum.approveCount}/${cQuorum.required})`
+      : `  client:   ${approval.client.status} — quorum ${cQuorum.approveCount}/${cQuorum.required} (${cQuorum.voterCount} voter(s))`,
   );
+  if (approval.internal.votes.length > 0) {
+    lines.push("  internal votes:");
+    for (const v of approval.internal.votes) {
+      lines.push(`    ${v.decision} — ${v.username ?? v.by} <${v.by}>`);
+    }
+  }
   if (diff) {
     lines.push("");
     lines.push(formatDiff(diff));

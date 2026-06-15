@@ -39,7 +39,9 @@ import { ensureApprovalForReview, runReviewDiscovery } from "../reviews/register
 import { deriveReviewKind, reviewTemplateForKind, type ReviewKind, type ReviewTemplate } from "../reviews/review-kind.js";
 import { computeLiveStaleness } from "../reviews/staleness.js";
 import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
-import { assertCanInternalApprove } from "../reviews/errors.js";
+import { assertCanInternalApprove, assertCanInternalClose } from "../reviews/errors.js";
+import { computeQuorum } from "../reviews/quorum.js";
+import { emptyClientTrack, upsertVote, trackQuorum } from "../reviews/votes.js";
 import {
   assertReviewSessionAllowsApprove,
   clearReviewSession,
@@ -65,6 +67,8 @@ import type {
   DiffFile,
   HistoryLine,
   ReviewSessionFile,
+  QuorumSummary,
+  ReviewVote,
 } from "../reviews/types.js";
 
 // ── Options / Results ─────────────────────────────────────────────────────────
@@ -87,9 +91,51 @@ export interface ReviewApproveResult {
   approvedByUsername: string;
   approvedByRole: "user" | "client";
   contentHash: string;
+  decision: "approve";
+  quorum: QuorumSummary;
+  quorumMet: boolean;
   movedToClientQueue: boolean;
   openThreadWarning: string | null;
   note?: string;
+}
+
+export interface ReviewDeclineOptions {
+  root?: string;
+  logicalPath: string;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
+  note?: string;
+}
+
+export interface ReviewDeclineResult {
+  logicalPath: string;
+  declinedBy: string;
+  declinedByUsername: string;
+  declinedByRole: "user" | "client";
+  contentHash: string;
+  decision: "decline";
+  quorum: QuorumSummary;
+  quorumMet: boolean;
+  note?: string;
+}
+
+export interface ReviewCloseOptions {
+  root?: string;
+  logicalPath: string;
+  reason: string;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
+}
+
+export interface ReviewCloseResult {
+  logicalPath: string;
+  closedBy: string;
+  closedByUsername: string;
+  closedByRole: "user" | "client";
+  reason: string;
+  quorum: QuorumSummary;
 }
 
 export interface ReviewStatusOptions {
@@ -113,6 +159,8 @@ export interface ReviewReadinessContext {
 export interface ReviewStatusResult {
   approval: ApprovalRecord;
   diff: DiffFile | null;
+  internalQuorum: QuorumSummary;
+  clientQuorum: QuorumSummary;
   /** True when live content hash differs from last approved hash (computed, not yet reconciled). */
   stale?: boolean;
   /** Hash of the approved snapshot when stale is true. */
@@ -223,8 +271,8 @@ export interface ReviewListEntry {
   logicalPath: string;
   overallStatus: string;
   contentHash: string;
-  internal: { status: string; approvedBy: string | null; approvedAt: string | null };
-  client: { status: string };
+  internal: { status: string; quorum: QuorumSummary };
+  client: { status: string; quorum: QuorumSummary };
   /** True when live content differs from last approved hash. */
   stale?: boolean;
   /** Hash at last approval when stale is true. */
@@ -276,6 +324,88 @@ async function prepareReviewRoot(root?: string): Promise<string> {
   return paths.root;
 }
 
+async function loadDocContentHash(
+  projectRoot: string,
+  lp: string,
+): Promise<{ absPath: string; docPath: string; contentHash: string; content: string }> {
+  const { absPath, docPath } = await resolveReviewDocPath(projectRoot, lp);
+  const content = await readFile(absPath, "utf8");
+  const contentHash = createHash("sha256").update(content).digest("hex").slice(0, 16);
+  return { absPath, docPath, contentHash, content };
+}
+
+async function finalizeInternalQuorum(
+  projectRoot: string,
+  lp: string,
+  approval: ApprovalRecord,
+  content: string,
+  contentHash: string,
+  docPath: string,
+  now: string,
+  actor: { by: string; username: string; role: "user" | "client" },
+  quorum: QuorumSummary,
+): Promise<void> {
+  const snapshotRef = await writeSnapshot(projectRoot, lp, content);
+  approval.snapshotRef = snapshotRef;
+
+  await updateFingerprint(projectRoot, lp, {
+    hash: contentHash,
+    docPath,
+    scannedAt: now,
+  });
+
+  const entry = await removeFromQueue(projectRoot, "internal", lp);
+  if (entry) {
+    await archiveQueueEntry(projectRoot, "internal", "resolved", { ...entry, queuedAt: entry.queuedAt });
+    await deleteDiff(projectRoot, "internal", lp);
+  }
+
+  await addToQueue(projectRoot, "client", {
+    logicalPath: lp,
+    queuedAt: now,
+    reason: "awaiting_client_signoff",
+    approvedHash: contentHash,
+    currentHash: contentHash,
+  });
+
+  await appendHistory(projectRoot, lp, {
+    event: "internal_quorum_met",
+    track: "internal",
+    at: now,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+    hash: contentHash,
+    meta: {
+      voterCount: quorum.voterCount,
+      approveCount: quorum.approveCount,
+      required: quorum.required,
+    },
+  });
+
+  await clearReviewSession(projectRoot);
+  await clearWorkflowActive(projectRoot, "doc-review");
+}
+
+async function appendInternalVoteHistory(
+  projectRoot: string,
+  lp: string,
+  vote: ReviewVote,
+  contentHash: string,
+): Promise<void> {
+  await appendHistory(projectRoot, lp, {
+    event: "internal_vote",
+    track: "internal",
+    decision: vote.decision,
+    at: vote.at,
+    by: vote.by,
+    username: vote.username,
+    role: vote.role,
+    hash: contentHash,
+    ...(vote.note ? { note: vote.note } : {}),
+  });
+}
+
 // ── Operations ────────────────────────────────────────────────────────────────
 
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
@@ -287,12 +417,8 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     role: opts.role ?? "user",
   });
 
-  const { absPath: absDocPath, docPath } = await resolveReviewDocPath(projectRoot, lp);
+  const { docPath, contentHash, content } = await loadDocContentHash(projectRoot, lp);
 
-  const content = await readFile(absDocPath, "utf8");
-  const contentHash = createHash("sha256").update(content).digest("hex").slice(0, 16);
-
-  // Warn about open threads but don't block
   let openThreadWarning: string | null = null;
   const openThreads = await listThreads({ projectRoot, filePath: lp, status: "open" });
   if (openThreads.length > 0) {
@@ -306,62 +432,36 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     approval = makeApproval(lp, contentHash, docPath);
   }
 
-  // Only internal can approve via this tool
   assertCanInternalApprove(approval, lp);
   const session = await loadReviewSession(projectRoot);
   assertReviewSessionAllowsApprove(session, lp, contentHash);
 
-  approval.docPath = docPath;
-  approval.contentHash = contentHash;
-  approval.internal = {
-    status: "approved",
-    approvedAt: now,
-    approvedBy: actor.by,
-    invalidatedAt: null,
-    note: opts.note ?? null,
-  };
-  approval.lastEventAt = now;
-  approval.overallStatus = deriveOverallStatus(approval);
-
-  const snapshotRef = await writeSnapshot(projectRoot, lp, content);
-  approval.snapshotRef = snapshotRef;
-  await saveApproval(projectRoot, approval);
-
-  await updateFingerprint(projectRoot, lp, {
-    hash: contentHash,
-    docPath,
-    scannedAt: now,
-  });
-
-  // Move from internal pending → internal resolved
-  const entry = await removeFromQueue(projectRoot, "internal", lp);
-  if (entry) {
-    await archiveQueueEntry(projectRoot, "internal", "resolved", { ...entry, queuedAt: entry.queuedAt });
-    await deleteDiff(projectRoot, "internal", lp);
-  }
-
-  // Add to client queue
-  await addToQueue(projectRoot, "client", {
-    logicalPath: lp,
-    queuedAt: now,
-    reason: "awaiting_client_signoff",
-    approvedHash: contentHash,
-    currentHash: contentHash,
-  });
-
-  await appendHistory(projectRoot, lp, {
-    event: "approved",
-    track: "internal",
-    at: now,
+  const vote: ReviewVote = {
     by: actor.by,
     username: actor.username,
     role: actor.role,
-    hash: contentHash,
-    ...(opts.note ? { note: opts.note } : {}),
-  });
+    decision: "approve",
+    at: now,
+    note: opts.note ?? null,
+  };
 
-  await clearReviewSession(projectRoot);
-  await clearWorkflowActive(projectRoot, "doc-review");
+  approval.docPath = docPath;
+  approval.contentHash = contentHash;
+  approval.internal.votes = upsertVote(approval.internal.votes, vote);
+  const quorum = computeQuorum(approval.internal.votes);
+
+  let movedToClientQueue = false;
+  if (quorum.met) {
+    approval.internal.status = "approved";
+    approval.internal.quorumMetAt = now;
+    await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
+    movedToClientQueue = true;
+  }
+
+  approval.lastEventAt = now;
+  approval.overallStatus = deriveOverallStatus(approval);
+  await saveApproval(projectRoot, approval);
+  await appendInternalVoteHistory(projectRoot, lp, vote, contentHash);
 
   return {
     logicalPath: lp,
@@ -369,9 +469,137 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     approvedByUsername: actor.username,
     approvedByRole: actor.role,
     contentHash,
-    movedToClientQueue: true,
+    decision: "approve",
+    quorum,
+    quorumMet: quorum.met,
+    movedToClientQueue,
     openThreadWarning,
     ...(opts.note ? { note: opts.note } : {}),
+  };
+}
+
+export async function runDecline(opts: ReviewDeclineOptions): Promise<ReviewDeclineResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const lp = normalizeLogicalPath(opts.logicalPath);
+  const actor = await resolveAuditActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? "user",
+  });
+
+  const { docPath, contentHash } = await loadDocContentHash(projectRoot, lp);
+  const now = new Date().toISOString();
+
+  let approval = await getApproval(projectRoot, lp);
+  if (!approval) {
+    approval = makeApproval(lp, contentHash, docPath);
+  }
+
+  assertCanInternalApprove(approval, lp);
+
+  const vote: ReviewVote = {
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+    decision: "decline",
+    at: now,
+    note: opts.note ?? null,
+  };
+
+  approval.docPath = docPath;
+  approval.contentHash = contentHash;
+  approval.internal.votes = upsertVote(approval.internal.votes, vote);
+  const quorum = computeQuorum(approval.internal.votes);
+
+  if (quorum.met) {
+    approval.internal.status = "approved";
+    approval.internal.quorumMetAt = now;
+    const { content } = await loadDocContentHash(projectRoot, lp);
+    await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
+  }
+
+  approval.lastEventAt = now;
+  approval.overallStatus = deriveOverallStatus(approval);
+  await saveApproval(projectRoot, approval);
+  await appendInternalVoteHistory(projectRoot, lp, vote, contentHash);
+
+  return {
+    logicalPath: lp,
+    declinedBy: actor.by,
+    declinedByUsername: actor.username,
+    declinedByRole: actor.role,
+    contentHash,
+    decision: "decline",
+    quorum,
+    quorumMet: quorum.met,
+    ...(opts.note ? { note: opts.note } : {}),
+  };
+}
+
+export async function runClose(opts: ReviewCloseOptions): Promise<ReviewCloseResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const lp = normalizeLogicalPath(opts.logicalPath);
+  const actor = await resolveAuditActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? "user",
+  });
+
+  if (!opts.reason?.trim()) {
+    throw new Error("close reason is required");
+  }
+
+  const { docPath, contentHash } = await loadDocContentHash(projectRoot, lp);
+
+  const approval = await getApproval(projectRoot, lp);
+  if (!approval) {
+    throw new Error(`No approval record for ${lp}`);
+  }
+
+  assertCanInternalClose(approval, lp);
+  const quorum = trackQuorum(approval.internal);
+  if (quorum.met) {
+    throw new Error(`Cannot close ${lp}: internal quorum already met`);
+  }
+
+  const now = new Date().toISOString();
+  approval.internal.status = "rejected";
+  approval.internal.closedAt = now;
+  approval.internal.closedBy = actor.by;
+  approval.internal.closeReason = opts.reason.trim();
+  approval.docPath = docPath;
+  approval.contentHash = contentHash;
+  approval.lastEventAt = now;
+  approval.overallStatus = deriveOverallStatus(approval);
+  await saveApproval(projectRoot, approval);
+
+  const entry = await removeFromQueue(projectRoot, "internal", lp);
+  if (entry) {
+    await archiveQueueEntry(projectRoot, "internal", "rejected", entry);
+    await deleteDiff(projectRoot, "internal", lp);
+  }
+
+  await appendHistory(projectRoot, lp, {
+    event: "internal_closed",
+    track: "internal",
+    at: now,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+    reason: opts.reason.trim(),
+    hash: contentHash,
+  });
+
+  await clearReviewSession(projectRoot);
+  await clearWorkflowActive(projectRoot, "doc-review");
+
+  return {
+    logicalPath: lp,
+    closedBy: actor.by,
+    closedByUsername: actor.username,
+    closedByRole: actor.role,
+    reason: opts.reason.trim(),
+    quorum,
   };
 }
 
@@ -433,6 +661,8 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
   const result: ReviewStatusResult = {
     approval,
     diff,
+    internalQuorum: trackQuorum(approval.internal),
+    clientQuorum: trackQuorum(approval.client),
     session,
     reviewKind: kind,
     reviewTemplate: reviewTemplateForKind(kind),
@@ -559,10 +789,12 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
         contentHash: approval.contentHash,
         internal: {
           status: approval.internal.status,
-          approvedBy: approval.internal.approvedBy,
-          approvedAt: approval.internal.approvedAt,
+          quorum: trackQuorum(approval.internal),
         },
-        client: { status: approval.client.status },
+        client: {
+          status: approval.client.status,
+          quorum: trackQuorum(approval.client),
+        },
         ...(live.stale
           ? { stale: true, approvedContentHash: persisted.contentHash }
           : {}),
@@ -671,7 +903,7 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
   await archiveQueueEntry(projectRoot, "internal", "rejected", entry);
   await deleteDiff(projectRoot, "internal", lp);
 
-  // Reset approval back to approved (dismiss the change)
+  // Reset approval back to approved (dismiss the change) — preserve quorum votes
   const approval = await getApproval(projectRoot, lp);
   if (approval) {
     approval.internal.status = "approved";

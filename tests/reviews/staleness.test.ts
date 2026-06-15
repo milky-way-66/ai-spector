@@ -5,6 +5,7 @@ import { withTempProject } from "../helpers/temp-project.js";
 import { writeJson } from "@/core/util/fs.js";
 import { saveApproval, makeApproval, writeSnapshot } from "@/core/reviews/storage.js";
 import { contentHash, computeLiveStaleness } from "@/core/reviews/staleness.js";
+import { internalApprovedTrack } from "./helpers.js";
 import { runReviewStatus, runReviewList } from "@/core/operations/review.js";
 
 async function setupReviewProject(root: string): Promise<void> {
@@ -30,12 +31,7 @@ describe("computeLiveStaleness", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/3-use-cases", hash, "docs/srs/3-use-cases.md");
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "tester",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("tester", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       approval.client.status = "pending";
       await writeSnapshot(root, "srs/3-use-cases", content);
@@ -80,12 +76,7 @@ describe("computeLiveStaleness", () => {
 
       const hash = contentHash(viContent);
       const approval = makeApproval("srs/3-use-cases", hash, "docs/srs/vi/3-use-cases.md");
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "tester",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("tester", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       await writeSnapshot(root, "srs/3-use-cases", viContent);
       await saveApproval(root, approval);
@@ -104,7 +95,7 @@ describe("computeLiveStaleness", () => {
       await writeFile(join(root, "docs/srs/1-intro.md"), content, "utf8");
       const hash = contentHash(content);
       const approval = makeApproval("srs/1-intro", hash, "docs/srs/1-intro.md");
-      approval.internal.status = "approved";
+      approval.internal = internalApprovedTrack("tester", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
 
       const live = await computeLiveStaleness(root, approval);
@@ -123,12 +114,7 @@ describe("runReviewStatus live staleness", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/3-use-cases", hash, "docs/srs/3-use-cases.md");
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "tester",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("tester", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       await writeSnapshot(root, "srs/3-use-cases", content);
       await saveApproval(root, approval);
@@ -153,12 +139,7 @@ describe("runReviewList live staleness", () => {
       const hash = contentHash(content);
 
       const approval = makeApproval("srs/a", hash, "docs/srs/a.md");
-      approval.internal = {
-        status: "approved",
-        approvedAt: "2026-06-11T00:00:00.000Z",
-        approvedBy: "tester",
-        invalidatedAt: null,
-      };
+      approval.internal = internalApprovedTrack("tester", "2026-06-11T00:00:00.000Z");
       approval.overallStatus = "pending_client";
       await saveApproval(root, approval);
 

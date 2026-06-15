@@ -1,4 +1,5 @@
 import { canInternalApprove } from "./errors.js";
+import { trackQuorum } from "./votes.js";
 import { reviewTemplateForKind, type ReviewKind } from "./review-kind.js";
 import type { ApprovalRecord, ReviewSessionFile } from "./types.js";
 
@@ -100,13 +101,18 @@ export function buildReviewWorkflowGuidance(
   }
 
   if (approval.overallStatus === "pending_internal" || canInternalApprove(approval)) {
+    const quorum = trackQuorum(approval.internal);
+    const quorumNote =
+      quorum.voterCount > 0 && !quorum.met
+        ? ` Internal quorum: ${quorum.approveCount}/${quorum.required} approvals (${quorum.voterCount} voter(s)).`
+        : "";
     return applySessionGate({
       workflowId: "doc-review",
       phase: "awaiting_internal_review",
       canReviewApprove: canApprove,
       message:
-        "Internal sign-off: review_begin → read full doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve.",
-      nextTools: ["review_begin", ...INTERNAL_REVIEW_TOOLS],
+        `Internal sign-off: review_begin → read full doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve (cast vote; 2/3 quorum).${quorumNote}`,
+      nextTools: ["review_begin", ...INTERNAL_REVIEW_TOOLS, "review_decline", "review_close"],
       notTheseTools: [...NOT_APPROVE_SIBLINGS],
     });
   }

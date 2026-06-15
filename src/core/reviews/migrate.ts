@@ -84,7 +84,7 @@ export async function migrateLegacyReviews(projectRoot: string): Promise<Migrate
   for (const logicalPath of logicalPaths) {
     const legacyApproval = join(projectRoot, legacyApprovalJsonPath(logicalPath));
     const record = await readJson<ApprovalRecord>(legacyApproval);
-    record.version = 2;
+    record.version = 3;
 
     // Migrate snapshot
     const legacySnap = join(projectRoot, legacyApprovalSnapshotPath(logicalPath));
@@ -101,7 +101,7 @@ export async function migrateLegacyReviews(projectRoot: string): Promise<Migrate
     fingerprints.files[logicalPath] = {
       hash: record.contentHash,
       docPath: record.docPath ?? "",
-      scannedAt: record.lastEventAt ?? record.internal.approvedAt ?? new Date().toISOString(),
+      scannedAt: record.lastEventAt ?? record.internal.quorumMetAt ?? new Date().toISOString(),
     };
 
     // Migrate per-doc history to global history.jsonl

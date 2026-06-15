@@ -115,6 +115,8 @@ import {
 import { runProvenanceLink } from "./core/graph/provenance.js";
 import {
   runApprove,
+  runDecline,
+  runClose,
   runReviewStatus,
   runReviewQueue,
   runReviewCheck,
@@ -127,6 +129,8 @@ import {
 } from "./core/operations/review.js";
 import {
   formatApproveResult,
+  formatDeclineResult,
+  formatCloseResult,
   formatReviewStatus,
   formatReviewQueue,
   formatReviewCheck,
@@ -1103,7 +1107,7 @@ const review = program
 
 review
   .command("approve <logicalPath>")
-  .description("Mark document as internally approved and move to client review queue")
+  .description("Cast internal approve vote (2/3 quorum); moves to client queue when quorum met")
   .option("--by <email>", "Reviewer email override (default: git user.email)")
   .option("--username <name>", "Reviewer name override (default: git user.name)")
   .option("--role <role>", "Actor role: user | client (default: user)")
@@ -1120,6 +1124,44 @@ review
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatApproveResult(result));
+  });
+
+review
+  .command("decline <logicalPath>")
+  .description("Cast internal decline vote on a document pending review")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--note <note>", "Decline reason")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runDecline({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      by: opts.by,
+      username: opts.username,
+      note: opts.note,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatDeclineResult(result));
+  });
+
+review
+  .command("close <logicalPath>")
+  .description("Manually close internal review when quorum cannot be reached")
+  .requiredOption("--reason <text>", "Why the review is closed")
+  .option("--by <email>", "Actor email override")
+  .option("--username <name>", "Actor name override")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runClose({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      reason: opts.reason,
+      by: opts.by,
+      username: opts.username,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCloseResult(result));
   });
 
 review

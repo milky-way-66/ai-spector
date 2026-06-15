@@ -1,6 +1,7 @@
 export type OverallStatus = "pending_internal" | "pending_client" | "approved" | "rejected";
-export type TrackStatus = "pending" | "approved" | "needs_review";
-export type ClientStatus = "pending" | "approved" | "rejected";
+export type TrackStatus = "pending" | "approved" | "rejected" | "needs_review";
+export type ClientTrackStatus = "pending" | "approved" | "rejected";
+export type ReviewDecision = "approve" | "decline";
 export type QueueReason =
   | "content_changed"
   | "client_rejected"
@@ -13,29 +14,56 @@ export type HistoryEvent =
   | "invalidated"
   | "rejected"
   | "client_approved"
-  | "client_rejected";
+  | "client_rejected"
+  | "internal_vote"
+  | "client_vote"
+  | "internal_quorum_met"
+  | "client_quorum_met"
+  | "internal_closed"
+  | "client_closed";
 export type ReviewTrack = "internal" | "client";
 import type { AuditActorRole } from "../util/audit-actor.js";
 export type ReviewActorRole = AuditActorRole;
 
-export interface InternalTrack {
-  status: TrackStatus;
-  approvedAt: string | null;
-  approvedBy: string | null;
-  invalidatedAt: string | null;
-  /** Reviewer note on internal approve (optional). */
+export interface ReviewVote {
+  by: string;
+  username?: string;
+  role: ReviewActorRole;
+  decision: ReviewDecision;
+  at: string;
   note?: string | null;
 }
 
+export interface QuorumSummary {
+  voterCount: number;
+  approveCount: number;
+  declineCount: number;
+  required: number;
+  met: boolean;
+}
+
+export interface InternalTrack {
+  status: TrackStatus;
+  votes: ReviewVote[];
+  quorumMetAt: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  closeReason?: string | null;
+  invalidatedAt: string | null;
+}
+
 export interface ClientTrack {
-  status: ClientStatus;
-  approvedAt: string | null;
-  comment: string | null;
+  status: ClientTrackStatus;
+  votes: ReviewVote[];
+  quorumMetAt: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  closeReason?: string | null;
 }
 
 /** Per-document approval state stored in registry.json. */
 export interface ApprovalRecord {
-  version: 1 | 2;
+  version: 3;
   logicalPath: string;
   /** Repo-relative path to the resolved document file. */
   docPath?: string;
@@ -59,7 +87,7 @@ export interface FingerprintsFile {
 }
 
 export interface RegistryFile {
-  version: 2;
+  version: 3;
   documents: Record<string, ApprovalRecord>;
 }
 
@@ -107,6 +135,7 @@ export interface HistoryLine {
   event: HistoryEvent;
   logicalPath?: string;
   track?: ReviewTrack;
+  decision?: ReviewDecision;
   at: string;
   /** Actor email (typically from git user.email). */
   by?: string;

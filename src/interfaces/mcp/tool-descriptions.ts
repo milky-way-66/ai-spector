@@ -10,13 +10,13 @@ const SIBLING_COMMENTS = "comments_resolve";
 
 export const APPROVE_TOOL_DESCRIPTIONS = {
   review_approve: [
-    "Formally sign off a document (internal track) — records approval and moves it to the client queue.",
+    "Cast an internal approve vote on a document (2/3 quorum of voters). Moves to client queue when quorum is met.",
     "",
     "WHEN: User wants document sign-off by logical path (e.g. srs/01-overview), after completing the ai-spector-review runbook (review_status + written review + user yes).",
     `NOT WHEN: SPEC-NNN or extracted spec queue (use ${SIBLING_SPEC}); user approved a TaskPlan table (use ${SIBLING_TASK}); comment thread C-NNN addressed (use ${SIBLING_COMMENTS}).`,
     `REQUIRES: review_status for the same logicalPath, review_session_ack_review after writing the review summary, then user yes.`,
-    "OPTIONAL: note — reviewer comment stored on approval record and history.",
-    `SIBLING TOOLS: ${SIBLING_SPEC}, ${SIBLING_TASK}, ${SIBLING_COMMENTS}.`,
+    "OPTIONAL: note — reviewer comment stored on vote and history.",
+    `SIBLING TOOLS: review_decline, review_close, ${SIBLING_SPEC}, ${SIBLING_TASK}, ${SIBLING_COMMENTS}.`,
   ].join("\n"),
 
   spec_approve: [
@@ -86,7 +86,22 @@ export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
     "Dismiss a document from the formal sign-off queue without approving (e.g. trivial formatting).",
     "",
     "WHEN: User chooses Dismiss in the document review decision menu.",
-    `NOT WHEN: Rejecting extracted specs (spec_reject); resolving comments (${SIBLING_COMMENTS}).`,
+    `NOT WHEN: Manual close without quorum (review_close); rejecting extracted specs (spec_reject); resolving comments (${SIBLING_COMMENTS}).`,
+  ].join("\n"),
+
+  review_decline: [
+    "Cast an internal decline vote on a document pending review (2/3 quorum).",
+    "",
+    "WHEN: Reviewer disagrees with sign-off but quorum is not yet decided.",
+    "NOT WHEN: Dismissing trivial re-review (review_reject); closing review without quorum (review_close).",
+  ].join("\n"),
+
+  review_close: [
+    "Manually close internal review when 2/3 quorum cannot be reached.",
+    "",
+    "WHEN: Review is stuck with insufficient approvals and a lead ends the review.",
+    "REQUIRES: reason — stored on the track and in history.",
+    "NOT WHEN: Dismissing trivial content change (review_reject); casting a vote (review_approve / review_decline).",
   ].join("\n"),
 
   review_list: [
