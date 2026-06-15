@@ -56,7 +56,6 @@ const config: Config = {
           path: 'docs',
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/milky-way-66/ai-spector/tree/main/website/docs/',
           exclude: courseExclude,
         },
         blog: false,
@@ -88,11 +87,6 @@ const config: Config = {
           type: 'localeDropdown',
           position: 'right',
         },
-        {
-          href: 'https://github.com/milky-way-66/ai-spector',
-          label: 'GitHub',
-          position: 'right',
-        },
       ],
     },
     footer: {
@@ -101,21 +95,11 @@ const config: Config = {
         {
           title: 'Course',
           items: [
-            {label: 'Overview', to: '/docs/overview'},
-            {label: 'Get started', to: '/docs/get-started/'},
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/milky-way-66/ai-spector',
-            },
+            {label: 'Get started', to: 'get-started'},
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} AI Spector. MIT License.`,
+      copyright: `Copyright © ${new Date().getFullYear()} AI Spector.`,
     },
     prism: {
       theme: prismThemes.github,

@@ -1,9 +1,9 @@
-# Phần: Review & thay đổi
+# Phần: Review
 
-Sign-off, feedback và chỉnh sửa có mục tiêu.
+Approve docs, comments, chỉnh sửa từng phần.
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Review, comments & thay đổi](01-review-comments-changes.md) | 15 phút | Document sign-off, comments, chỉnh sửa tăng dần |
+| Bài | Thời gian | Mục tiêu |
+|-----|-----------|----------|
+| [Review & changes](01-review-comments-changes.md) | 15 phút | Approve, comments, incremental edits |
 
-**Phần tiếp theo:** [Nâng cao](../07-advanced/README.md) *(tùy chọn)*
+**Tiếp:** [Nâng cao](../07-advanced/README.md) *(opt)*

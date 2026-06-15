@@ -85,7 +85,9 @@
     "themes:preview": "node dist/cli.js prototype preview",
     "deploy": "bash scripts/deploy.sh",
     "deploy:npm": "bash scripts/deploy.sh --npm",
-    "docs:dev": "npm --prefix website start",
+    "docs:dev": "npm --prefix website run preview",
+    "docs:dev:en": "npm --prefix website start",
+    "docs:dev:vi": "npm --prefix website run start:vi",
     "docs:build": "npm --prefix website run build",
     "docs:serve": "npm --prefix website run serve"
   },

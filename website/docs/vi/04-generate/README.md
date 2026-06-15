@@ -1,12 +1,12 @@
-# Phần: Tạo tài liệu
+# Phần: Generate
 
-SRS và basic design với các gate có người tham gia.
+SRS và basic design — có checkpoint từ bạn.
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Tạo SRS](01-generate-srs.md) | 15 phút | Clarify → plan → waves → specs |
+| Bài | Thời gian | Mục tiêu |
+|-----|-----------|----------|
+| [Generate SRS](01-generate-srs.md) | 15 phút | Clarify → plan → waves → specs |
 | [Basic design](02-basic-design.md) | 10 phút | Kiến trúc từ SRS |
 
-**Trước phần này:** Graph đã validate, không còn lỗi.
+**Trước:** Graph validate, không còn errors.
 
-**Phần tiếp theo:** [Thiết kế & prototype](../05-prototype/README.md)
+**Tiếp:** [Prototype](../05-prototype/README.md)

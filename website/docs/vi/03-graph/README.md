@@ -1,10 +1,10 @@
-# Phần: Graph & nguồn dữ liệu
+# Phần: Graph & sources
 
-Biến yêu cầu thành traceability graph.
+Yêu cầu → traceability graph.
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Thêm nguồn & analyze](01-sources-and-analyze.md) | 10 phút | Nạp yêu cầu |
-| [Validate, index & explore](02-validate-index-explore.md) | 10 phút | Sửa graph, làm mới index, visualize |
+| Bài | Thời gian | Mục tiêu |
+|-----|-----------|----------|
+| [Sources & analyze](01-sources-and-analyze.md) | 10 phút | Thêm nguồn, analyze |
+| [Validate & explore](02-validate-index-explore.md) | 10 phút | Fix graph, refresh index |
 
-**Phần tiếp theo:** [Tạo tài liệu](../04-generate/README.md)
+**Tiếp:** [Generate](../04-generate/README.md)

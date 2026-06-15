@@ -181,7 +181,7 @@ button { font: inherit; cursor: pointer; }
 .nav-group a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .nav-group li.hidden { display: none; }
 
-.main-wrap { padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem; }
+.main-wrap { padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem; max-width: 56rem; }
 .content-panel {
   max-width: 48rem;
   background: var(--panel);
@@ -211,12 +211,15 @@ button { font: inherit; cursor: pointer; }
 
 .with-toc {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
 }
+.with-toc.has-toc {
+  grid-template-columns: minmax(0, 1fr) 200px;
+}
 @media (max-width: 1100px) {
-  .with-toc { grid-template-columns: 1fr; }
+  .with-toc.has-toc { grid-template-columns: 1fr; }
   .toc { display: none; }
 }
 .toc {
@@ -367,9 +370,6 @@ const SCRIPTS = (copyLabel: string, copiedLabel: string) => `
       li.appendChild(a);
       tocList.appendChild(li);
     });
-    if (!headings.length) {
-      document.querySelector('.toc').style.display = 'none';
-    }
   }
 })();
 `;
@@ -452,7 +452,7 @@ function navGroups(
 
 function breadcrumbHtml(page: CoursePage | undefined, locale: CourseLocale, ui: ReturnType<typeof courseUi>): string {
   const home = coursePageUrl(locale, "index");
-  if (!page || page.slug === "index" || page.slug === "00-overview") {
+  if (!page || page.slug === "index") {
     return `<p class="breadcrumb"><a href="${home}">${escapeHtml(ui.course)}</a></p>`;
   }
   const parts = [`<a href="${home}">${escapeHtml(ui.course)}</a>`];
@@ -499,13 +499,16 @@ function chatHintHtml(page: CoursePage | undefined, locale: CourseLocale, ui: Re
   return `<div class="chat-hint"><strong>${escapeHtml(ui.inEditor)}</strong> ${hint}</div>`;
 }
 
+function hasTocHeadings(bodyHtml: string): boolean {
+  return /<h[23][\s>]/i.test(bodyHtml);
+}
+
 export function buildCoursePageHtml(opts: CourseShellOptions): string {
   const locale = opts.locale ?? "en";
   const ui = courseUi(locale);
   const progress = lessonProgress(opts.pages, opts.activeSlug);
   const topLinks = [
     opts.pages.find((p) => p.slug === "index"),
-    opts.pages.find((p) => p.slug === "00-overview"),
   ].filter(Boolean) as CoursePage[];
 
   const topNav = topLinks
@@ -544,6 +547,15 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
     ? ui.lessonOf(progress.index, progress.total)
     : ui.browse;
 
+  const showToc = hasTocHeadings(opts.bodyHtml);
+  const tocBlock = showToc
+    ? `<nav class="toc" aria-label="${escapeHtml(ui.onThisPage)}">
+            <h4>${escapeHtml(ui.onThisPage)}</h4>
+            <ul></ul>
+          </nav>`
+    : "";
+  const withTocClass = showToc ? "with-toc has-toc" : "with-toc";
+
   return `<!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -576,12 +588,9 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
       <div class="content-panel">
         ${breadcrumbHtml(opts.activePage, locale, ui)}
         ${metaBadges(opts.activePage, progress, ui)}
-        <div class="with-toc">
+        <div class="${withTocClass}">
           <article class="content">${opts.bodyHtml}</article>
-          <nav class="toc" aria-label="${escapeHtml(ui.onThisPage)}">
-            <h4>${escapeHtml(ui.onThisPage)}</h4>
-            <ul></ul>
-          </nav>
+          ${tocBlock}
         </div>
         <nav class="pager">${prevLink}${nextLink}</nav>
         <div id="chat-hint">${chatHintHtml(opts.activePage, locale, ui)}</div>

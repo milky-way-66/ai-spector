@@ -21,7 +21,7 @@ template list
 generate my-team-srs
 ```
 
-Enable skill `ai-spector-template-import` for import. Deep reference: [Multi-template pack structure](../../plan/multi-template-structure.md).
+Enable skill `ai-spector-template-import` for import.
 
 ---
 

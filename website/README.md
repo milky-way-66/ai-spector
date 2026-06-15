@@ -19,11 +19,21 @@ website/i18n/.../current/  → rsync mirror of docs/vi/ (generated, gitignored)
 
 ```bash
 cd website && npm install
-npm start              # http://localhost:3000/docs/
+npm run preview          # build + serve — English & Tiếng Việt (recommended)
+npm start                # dev server, English only (fast HMR)
+npm run start:vi         # dev server, Tiếng Việt only
 npm run build
 ```
 
-From repo root: `npm run docs:dev`
+From repo root:
+
+```bash
+npm run docs:dev         # preview — both locales work
+npm run docs:dev:en      # fast English-only dev
+npm run docs:dev:vi      # Vietnamese-only dev
+```
+
+**Note:** `npm start` loads one locale at a time. Use `npm run preview` or `npm run start:vi` to browse `/vi/docs/` without 404.
 
 ## Languages
 

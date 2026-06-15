@@ -84,10 +84,10 @@ export const SECTION_LABELS: Record<CourseLocale, Record<string, string>> = {
   vi: {
     "01-get-started": "Bắt đầu",
     "02-chat-basics": "Chat cơ bản",
-    "03-graph": "Đồ thị & nguồn",
-    "04-generate": "Tạo tài liệu",
-    "05-prototype": "Thiết kế & prototype",
-    "06-review": "Review & thay đổi",
+    "03-graph": "Graph & sources",
+    "04-generate": "Generate",
+    "05-prototype": "Prototype",
+    "06-review": "Review",
     "07-advanced": "Nâng cao",
   },
 };

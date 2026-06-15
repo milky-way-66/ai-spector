@@ -28,3 +28,32 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/* Course docs: hide empty right TOC column, widen content */
+@media (min-width: 997px) {
+  [class*='docMainContainer'] .col--3:not(:has(.table-of-contents__link)) {
+    display: none !important;
+  }
+
+  [class*='docMainContainer'] .row:not(:has(.table-of-contents__link)) > [class*='docItemCol'] {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+
+  [class*='docMainContainer'] .row:has(.table-of-contents__link) > [class*='docItemCol'] {
+    flex: 0 0 75% !important;
+    max-width: 75% !important;
+  }
+
+  [class*='theme-doc-footer'] [class*='lastUpdated']:empty {
+    display: none !important;
+  }
+
+  .theme-doc-markdown {
+    max-width: 52rem;
+  }
+
+  .theme-edit-this-page {
+    display: none !important;
+  }
+}

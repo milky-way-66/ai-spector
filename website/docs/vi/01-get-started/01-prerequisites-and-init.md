@@ -1,82 +1,72 @@
-# Điều kiện tiên quyết & khởi tạo
+# Prerequisites & init
 
 **Phần:** [Bắt đầu](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Xác nhận môi trường, cài AI Spector và scaffold dự án.
+**Mục tiêu:** Kiểm tra môi trường, cài package, init dự án.
 
 ---
 
-## Điều kiện tiên quyết
+## Prerequisites
 
-| Yêu cầu | Lệnh | Cần thiết |
-|---------|------|-----------|
+| Cần | Kiểm tra | |
+|-----|----------|---|
 | Node.js ≥ 20 | `node --version` | Bắt buộc |
 | Git | `git --version` | Bắt buộc |
 | Cursor hoặc Claude Code | mở editor | Bắt buộc |
-| Python ≥ 3.11 | `python3 --version` | Tùy chọn (semantic search sau này) |
+| Python ≥ 3.11 | `python3 --version` | Tùy chọn *(semantic search)* |
 
-AI Spector phải chạy trong repo Git:
+Phải có Git repo:
 
 ```bash
 cd /path/to/your/project
 git status   # hoặc: git init && git commit -m "initial commit"
 ```
 
-Nếu chưa có `package.json`: `npm init -y`
+Chưa có `package.json`: `npm init -y`
 
 ---
 
-## Cài đặt & init
-
-**Hai bước** — cài package trước, rồi chạy wizard.
-
-**Registry nội bộ** (không cần `npm login`):
+## Install & init
 
 ```bash
+# Registry nội bộ
 npm install ai-spector --registry http://10.101.0.239:4873
 npx ai-spector init
-```
 
-**npm công khai:**
-
-```bash
+# Hoặc npm công khai
 npm install ai-spector
 npx ai-spector init
 ```
 
-Wizard: **editor** (Cursor / Claude / cả hai), **languages**, **git hook** (yes), **CocoIndex** (no tạm thời).
+Wizard hỏi: **editor**, **languages**, **git hook** (yes), **CocoIndex** (no tạm thời).
 
-| Được tạo | Mục đích |
-|----------|----------|
+| Tạo ra | Mục đích |
+|--------|----------|
 | `.ai-spector/` | Config, graph, templates |
-| `docs/data-source/` | Yêu cầu đầu vào |
-| `docs/srs/`, `docs/basic-design/` | Output được tạo |
-| `.cursor/` hoặc `.claude/skills/` | Agent skills + MCP |
+| `docs/data-source/` | Input requirements |
+| `docs/srs/`, `docs/basic-design/` | Output |
+| `.cursor/` hoặc `.claude/skills/` | Skills + MCP |
 
 ---
 
-## Kiểm tra
+## Check
 
 ```bash
 ls .ai-spector/ docs/data-source/
-ls node_modules/ai-spector   # package đã cài cục bộ
+ls node_modules/ai-spector
 ```
 
 ---
 
-## Xử lý sự cố
+## Troubleshooting
 
-**`npx ai-spector init` not found**
+**`npx ai-spector init` not found** — chạy `npm install ai-spector` trước.
 
-Chạy `npm install ai-spector` trước (kèm `--registry` trên mạng nội bộ).
-
-**Lỗi registry khi cài**
-
-Kiểm tra VPN / mạng công ty, rồi thử lại lệnh `npm install`.
+**Lỗi registry** — kiểm tra VPN/mạng công ty, thử lại.
 
 ---
 
 ## Tiếp theo
 
-[Setup trong chat & bật skills](02-setup-and-skills.md)
+[Setup & skills](02-setup-and-skills.md)

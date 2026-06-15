@@ -1,45 +1,44 @@
 # Cách chat hoạt động
 
-**Phần:** [Cơ bản về chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~10 phút
+**Phần:** [Chat cơ bản](README.md) · **Thời gian:** ~10 phút
 
-**Mục tiêu:** Hiểu routing và ý nghĩa của “approve”.
+**Mục tiêu:** Hiểu routing và các loại "approve".
 
 ---
 
 ## Orchestrator & workers
 
-| Tầng | Vai trò |
-|------|---------|
-| **Orchestrator** | Phân loại intent, hỏi câu routing, spawn workers |
+| Thành phần | Vai trò |
+|------------|---------|
+| **Orchestrator** | Hiểu intent, hỏi thêm, gọi worker |
 | **Worker** | Một job theo runbook (analyze, generate, review…) |
 
-Mô tả nhu cầu trong chat — skills định tuyến đến worker phù hợp. Cùng cụm từ dùng được trong **Cursor** và **Claude Code**.
+Mô tả trong chat — skills route đến worker đúng. Dùng được cả **Cursor** và **Claude Code**.
 
 ---
 
-## Cụm từ thường dùng
+## Câu lệnh thường dùng
 
-| Bạn muốn… | Nói (ví dụ) |
-|-----------|-------------|
-| Tạo SRS | *"generate the SRS"*, *"write use cases"* |
-| Sign-off tài liệu | *"review documents"*, *"approve srs/01-overview"* |
-| Xử lý feedback | *"resolve comments"*, *"show open comments"* |
-| Analyze nguồn | *"analyze my data source"* |
-| Kiểm tra workspace | *"check my workspace"* |
+| Muốn… | Gõ |
+|-------|-----|
+| Generate SRS | *"generate the SRS"* |
+| Review/approve doc | *"review documents"*, *"approve srs/01-overview"* |
+| Xử lý comments | *"resolve comments"* |
+| Analyze sources | *"analyze my data source"* |
+| Check workspace | *"check my workspace"* |
 
-Không chắc? Nói *"help me approve"* — agent hỏi một câu làm rõ.
+Không chắc? Gõ *"help me approve"*.
 
 ---
 
-## Bốn loại “approve”
+## Bốn loại "approve"
 
-| Ý bạn | Nói | Không phải |
+| Ý bạn | Gõ | Không phải |
 |-------|-----|------------|
-| Sign-off tài liệu | *"review srs/01-overview"*, *"approve the SRS"* | spec / plan / comment |
-| Phê duyệt spec đã trích xuất | *"approve SPEC-001"* | document sign-off |
-| Thực thi plan | *"yes, go ahead"* sau bảng plan | document sign-off |
-| Đóng comment thread | *"resolve C-012"* | document sign-off |
+| Approve document | *"approve the SRS"* | spec / plan / comment |
+| Approve spec | *"approve SPEC-001"* | document approve |
+| Chạy plan | *"yes, go ahead"* | document approve |
+| Đóng comment | *"resolve C-012"* | document approve |
 
 ---
 

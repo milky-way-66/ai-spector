@@ -43,7 +43,7 @@ async function collectMarkdownFiles(
       }
       continue;
     }
-    if (ent.name === "README.md" || ent.name === "00-overview.md") {
+    if (ent.name === "README.md") {
       files.push(relative(base, abs));
     }
   }
@@ -54,9 +54,6 @@ function slugFromRelPath(relPath: string): string {
   if (relPath === "README.md") {
     return "index";
   }
-  if (relPath === "00-overview.md") {
-    return "00-overview";
-  }
   if (relPath.endsWith("/README.md")) {
     return relPath.replace(/\/README\.md$/, "");
   }
@@ -66,9 +63,6 @@ function slugFromRelPath(relPath: string): string {
 function orderFromRelPath(relPath: string): number {
   if (relPath === "README.md") {
     return -2;
-  }
-  if (relPath === "00-overview.md") {
-    return -1;
   }
   const parts = relPath.split("/");
   const sectionMatch = /^(\d{2})-/.exec(parts[0] ?? "");
@@ -192,7 +186,7 @@ export function neighbors(
   pages: CoursePage[],
   slug: string,
 ): { prev?: CoursePage; next?: CoursePage; current?: CoursePage } {
-  const navPages = pages.filter((p) => p.slug !== "00-overview");
+  const navPages = pages;
   const current = pageBySlug(pages, slug);
   if (!current) {
     return {};

@@ -1,55 +1,41 @@
 # Workspace & tasks
 
-**Phần:** [Cơ bản về chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~10 phút · **Trước đó:** [Cách chat hoạt động](01-how-chat-works.md)
+**Phần:** [Chat cơ bản](README.md) · **Trước:** [Cách chat hoạt động](01-how-chat-works.md)  
+**Thời gian:** ~10 phút
 
-**Mục tiêu:** Kiểm tra sức khỏe dự án và tiếp tục công việc đã tạm dừng.
+**Mục tiêu:** Check workspace và tiếp tục task đang dở.
 
 ---
 
-## Kiểm tra workspace
+## Check workspace
 
 ```
 check my workspace
-```
-
-```
 why did pre-commit block me
-```
-
-```
 stale clarifications
 ```
 
 CLI: `npx ai-spector setup --check`
 
-Dùng sau init, nâng cấp hoặc commit thất bại.
-
 ---
 
-## Tasks & resume
+## Tasks
 
-Lần chạy generate là **tasks** với state đã lưu (clarifications, plans, tiến độ wave).
+Generate tạo **task** có state (clarifications, plan, waves):
 
 ```
 active tasks
-```
-
-```
 resume my SRS
-```
-
-```
 pause task
 ```
 
-| Cụm từ | Ý nghĩa |
-|--------|---------|
-| *resume SRS* | Tiếp tục **generation task** |
-| *review documents* | **Document sign-off** (workflow khác) |
+| Lệnh | Ý nghĩa |
+|------|---------|
+| *resume SRS* | Tiếp tục task generate |
+| *review documents* | Approve document *(workflow khác)* |
 
 ---
 
-## Phần tiếp theo
+## Tiếp theo
 
-[Graph & nguồn dữ liệu](../03-graph/README.md)
+[Graph & sources](../03-graph/README.md)

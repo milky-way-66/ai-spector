@@ -1,10 +1,10 @@
-# Phần: Cơ bản về chat
+# Phần: Chat cơ bản
 
-Cách agent định tuyến yêu cầu của bạn.
+Agent định tuyến yêu cầu của bạn.
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Cách chat hoạt động](01-how-chat-works.md) | 10 phút | Routing, cụm từ thường dùng, các loại approve |
-| [Workspace & tasks](02-workspace-and-tasks.md) | 10 phút | Health check, resume/pause |
+| Bài | Thời gian | Mục tiêu |
+|-----|-----------|----------|
+| [Cách chat hoạt động](01-how-chat-works.md) | 10 phút | Routing, câu lệnh, các loại approve |
+| [Workspace & tasks](02-workspace-and-tasks.md) | 10 phút | Check workspace, resume/pause |
 
-**Phần tiếp theo:** [Graph & nguồn dữ liệu](../03-graph/README.md)
+**Tiếp:** [Graph & sources](../03-graph/README.md)

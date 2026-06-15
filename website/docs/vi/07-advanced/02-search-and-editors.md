@@ -1,15 +1,16 @@
-# Semantic search & editor thứ hai
+# Search & editors
 
-**Phần:** [Nâng cao](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~10 phút · **Tùy chọn**
+**Phần:** [Nâng cao](README.md) · **Tùy chọn**
 
-**Mục tiêu:** Tìm kiếm theo ngữ nghĩa và hỗ trợ cả Cursor lẫn Claude Code.
+**Mục tiêu:** Semantic search + dùng cả Cursor lẫn Claude Code.
 
 ---
 
 ## Semantic search *(Python 3.11+)*
 
-Bật lúc init hoặc sau: `npx ai-spector cocoindex setup`
+```bash
+npx ai-spector cocoindex setup
+```
 
 ```
 find all mentions of rate limiting
@@ -21,16 +22,14 @@ show graph for user login
 
 ## Editor thứ hai
 
-Chạy lại init với cả hai editor:
-
 ```bash
 npx ai-spector init --target both
 ```
 
-Bật skills và reload MCP cho editor mới (giống [Setup & skills](../01-get-started/02-setup-and-skills.md)).
+Bật skills + reload MCP cho editor mới.
 
 ---
 
-## Hoàn thành khóa học
+## Xong
 
 [Trang chủ khóa học](../README.md)

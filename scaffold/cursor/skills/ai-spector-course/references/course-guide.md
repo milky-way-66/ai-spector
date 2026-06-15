@@ -34,7 +34,7 @@ If port 4177 is busy, the command may fail — retry or suggest the user close t
 | Review, comments, sign-off | `06-review/01-review-comments-changes` | `review documents` |
 | Custom templates | `07-advanced/01-custom-templates` | `set up template pack` |
 | Semantic search, editors | `07-advanced/02-search-and-editors` | `find mentions of rate limiting` |
-| General onboarding / "where do I start" | `00-overview` → `01-get-started` | `open the course` or setup |
+| General onboarding / "where do I start" | `index` → `01-get-started` | `open the course` or setup |
 
 ## Section index (quick links)
 

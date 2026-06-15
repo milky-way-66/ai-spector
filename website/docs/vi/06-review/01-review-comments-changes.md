@@ -1,31 +1,26 @@
-# Review, comments & thay đổi
+# Review, comments & changes
 
-**Phần:** [Review & thay đổi](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~15 phút
+**Phần:** [Review](README.md) · **Thời gian:** ~15 phút
 
-**Mục tiêu:** Sign-off tài liệu, đóng feedback threads và chỉnh sửa có mục tiêu.
+**Mục tiêu:** Approve docs, đóng comments, chỉnh sửa có mục tiêu.
 
 ---
 
 ## Document review
 
-Sign-off chính thức sau readiness scoring:
-
 ```
 review documents
 ```
 
-hoặc *"review srs/01-overview"*, *"what needs review"*, *"pending client approval"*.
+Hoặc *"review srs/01-overview"*, *"what needs review"*.
 
-Flow: queue → agent đọc doc + checklists + graph impact → tóm tắt → bạn **approve** / **request changes** / **dismiss**.
+Flow: queue → agent đọc doc + checklist + impact → bạn **approve** / **request changes**.
 
-Custom checklists: JSON trong `.ai-spector/.docflow/config/review-checklists/`.
+Checklist custom: `.ai-spector/.docflow/config/review-checklists/`
 
 ---
 
-## Comment threads
-
-Feedback không chính thức trên từng section:
+## Comments
 
 ```
 resolve comments
@@ -34,22 +29,22 @@ resolve C-001
 add a comment to srs.md: missing forgot-password flow
 ```
 
-Lưu trong `.ai-spector/comments/` — commit cùng repo.
+Lưu tại `.ai-spector/comments/`
 
 ---
 
-## Thay đổi tăng dần
+## Incremental changes
 
-Thêm hoặc cập nhật một feature mà không regenerate toàn bộ SRS:
+Thêm feature không regenerate cả SRS:
 
 ```
 I want to add login with Google
 ```
 
-Dùng **resolve-task**: clarify → plan → approve plan → chỉnh sửa có mục tiêu → index.
+Dùng **resolve-task**: clarify → plan → approve → edit → index.
 
 ---
 
-## Phần tiếp theo
+## Tiếp theo
 
-[Nâng cao](../07-advanced/README.md) *(tùy chọn)*
+[Nâng cao](../07-advanced/README.md)

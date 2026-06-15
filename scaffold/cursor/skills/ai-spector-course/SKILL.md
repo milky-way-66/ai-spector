@@ -51,7 +51,7 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
 | Item | Path |
 |------|------|
 | Course index | `website/docs/README.md` · Vietnamese: `website/docs/vi/README.md` |
-| Overview | `website/docs/00-overview.md` |
+| Course home | `website/docs/README.md` |
 | Lessons | `website/docs/<section>/` |
 
 `docs/course/` is a symlink to `website/docs/` for npm and CLI. If missing locally, the bundled package still ships course files.

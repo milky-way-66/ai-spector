@@ -70,7 +70,7 @@ describe("course render", () => {
     const page = pageBySlug(pages, "02-chat-basics/01-how-chat-works");
     const html = buildCoursePageHtml({
       title: page!.title,
-      bodyHtml: "<p>Hello</p>",
+      bodyHtml: "<h2>Section</h2><p>Hello</p>",
       pages,
       activeSlug: page!.slug,
       activePage: page,
@@ -78,7 +78,7 @@ describe("course render", () => {
     expect(html).toContain("Chat basics");
     expect(html).toContain("Lesson 3 of 13");
     expect(html).toContain("Try in chat");
-    expect(html).toContain("On this page");
+    expect(html).toContain("has-toc");
   });
 });
 

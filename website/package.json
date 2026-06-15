@@ -8,6 +8,8 @@
     "prebuild": "npm run sync-vi-docs",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
+    "start:vi": "docusaurus start --locale vi",
+    "preview": "docusaurus build && docusaurus serve",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",

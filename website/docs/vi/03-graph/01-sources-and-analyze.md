@@ -1,20 +1,19 @@
-# Thêm nguồn & analyze
+# Sources & analyze
 
-**Phần:** [Graph & nguồn dữ liệu](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~10 phút
+**Phần:** [Graph & sources](README.md) · **Thời gian:** ~10 phút
 
-**Mục tiêu:** Đặt yêu cầu đúng chỗ và trích xuất vào traceability graph.
+**Mục tiêu:** Thêm nguồn và analyze vào graph.
 
 ---
 
-## Thêm tài liệu nguồn
+## Thêm sources
 
-Thả file vào `docs/data-source/` — `.md`, `.txt`, hoặc `.pdf` (text phải chọn được).
+Copy file vào `docs/data-source/` — `.md`, `.txt`, `.pdf` (text chọn được).
 
-Gồm meeting notes, user stories, BRD, mô tả API. Agent đọc nhưng không sửa các file này.
+Meeting notes, user stories, BRD, API docs. Agent đọc, không sửa.
 
 ```bash
-ls docs/data-source/   # ít nhất một file trước khi analyze
+ls docs/data-source/   # ít nhất 1 file
 ```
 
 ---
@@ -25,20 +24,20 @@ ls docs/data-source/   # ít nhất một file trước khi analyze
 analyze my data source
 ```
 
-Agent trích xuất actors, use cases và features vào `.ai-spector/graph/traceability.graph.json`. Xem lại tóm tắt; bổ sung chi tiết vào nguồn và chạy lại nếu thiếu.
+Trích xuất actors, use cases, features → `.ai-spector/graph/traceability.graph.json`. Thiếu gì thì bổ sung nguồn và analyze lại.
 
 ---
 
-## Kiểm tra
+## Check
 
 ```
 validate the graph
 ```
 
-Không có lỗi critical (warnings ở giai đoạn này là OK).
+Không có lỗi critical. Warnings ở giai đoạn này OK.
 
 ---
 
 ## Tiếp theo
 
-[Validate, index & explore](02-validate-index-explore.md)
+[Validate & explore](02-validate-index-explore.md)

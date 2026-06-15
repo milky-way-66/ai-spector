@@ -1,10 +1,10 @@
 # Phần: Nâng cao
 
-Tính năng nâng cao tùy chọn.
+Tính năng tùy chọn.
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Custom templates](01-custom-templates.md) | 10 phút | SRS / basic-design pack của team |
-| [Search & editor thứ hai](02-search-and-editors.md) | 10 phút | CocoIndex + setup hai editor |
+| Bài | Thời gian | Mục tiêu |
+|-----|-----------|----------|
+| [Custom templates](01-custom-templates.md) | 10 phút | Template pack của team |
+| [Search & editors](02-search-and-editors.md) | 10 phút | CocoIndex + 2 editors |
 
-**Hoàn thành khóa học.** [Trang chủ](../README.md)
+**Xong.** [Trang chủ](../README.md)

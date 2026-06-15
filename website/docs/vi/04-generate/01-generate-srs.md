@@ -1,9 +1,8 @@
-# Tạo SRS
+# Generate SRS
 
-**Phần:** [Tạo tài liệu](README.md) · **Khóa học:** [Trang chủ](../README.md)  
-**Thời gian:** ~15 phút · **Trước đó:** [Validate graph](../03-graph/02-validate-index-explore.md)
+**Phần:** [Generate](README.md) · **Thời gian:** ~15 phút
 
-**Mục tiêu:** Chạy toàn bộ workflow SRS có gate — clarify, plan, viết, phê duyệt specs.
+**Mục tiêu:** Chạy workflow SRS đầy đủ.
 
 ---
 
@@ -13,34 +12,30 @@
 generate the SRS
 ```
 
-Agent tạo **task** — chưa ghi file.
+Tạo **task** — chưa ghi file.
 
 ---
 
-## Clarify & phê duyệt plan
+## Clarify & plan
 
-1. Kiểm tra workspace
-2. Câu hỏi làm rõ (câu trả lời lưu cho phiên sau)
-3. Briefing: nguồn và graph nodes định hình SRS
-4. Bảng plan — trả lời **`yes, go ahead`** (phê duyệt plan — không phải document sign-off)
+1. Check workspace
+2. Câu hỏi clarify
+3. Briefing từ sources + graph
+4. Bảng plan → **`yes, go ahead`** *(approve plan, không phải approve doc)*
 
-Tạm dừng bất cứ lúc nào: `pause task` → sau đó `resume my SRS`.
-
----
-
-## Generation waves
-
-SRS viết theo **waves** (thứ tự phụ thuộc template) trong `docs/srs/`. Tiến độ được lưu — an toàn khi resume nếu bị gián đoạn.
-
-Sau khi viết: `refresh the index`.
-
-Sai nội dung? Sửa `docs/data-source/` → re-analyze → regenerate. Chỉnh trực tiếp `docs/srs/` có thể bị ghi đè khi regen.
+Pause: `pause task` · Resume: `resume my SRS`
 
 ---
 
-## Phê duyệt specs đã trích xuất
+## Waves
 
-Sau generate, xem lại mục **SPEC-NNN** — chỉ specs được approve mới merge vào graph:
+Viết theo **waves** vào `docs/srs/`. Xong: `refresh the index`.
+
+Sai nội dung? Sửa `docs/data-source/` → re-analyze → regenerate.
+
+---
+
+## Approve specs
 
 ```
 pending specs
@@ -48,13 +43,7 @@ approve SPEC-001
 reject SPEC-002 — duplicate of UC-003
 ```
 
-Đây là **spec approval** — không phải document sign-off chính thức (xem [Review & thay đổi](../06-review/01-review-comments-changes.md)).
-
----
-
-## Kiểm tra
-
-`docs/srs/` có actors và use cases. Specs đã approve xuất hiện trong graph.
+Đây là **spec approval** — khác **document review** ([Review](../06-review/01-review-comments-changes.md)).
 
 ---
 

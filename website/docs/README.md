@@ -4,29 +4,17 @@ sidebar_position: 1
 
 # AI Spector Course
 
-Focused lessons for using AI Spector in **Cursor** or **Claude Code**. Most work happens in chat.
+Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, prototypes. **Describe what you need in chat.**
 
-**Start:** [Overview](00-overview.md) → [Get started](01-get-started/README.md)
+`npx ai-spector course serve --open` · Tiếng Việt: `--lang vi` → `/course/vi/`
 
----
-
-## View in your browser
-
-```bash
-npm run docs:dev                             # Docusaurus → http://localhost:3000/docs/
-npx ai-spector course serve --open           # offline CLI viewer (same markdown)
-npx ai-spector course serve --open --lang vi
-```
-
-Edit **`website/docs/`** (English) and **`website/docs/vi/`** (Vietnamese).
-
-`docs/course/` at the repo root is a symlink to `website/docs/` for npm and `course serve`.
-
-**In chat:** say *"open the course"* or *"learn ai-spector"* — the agent starts the server and links the right lesson. For Vietnamese: *"mở khóa học ai-spector"* or *"khóa học tiếng Việt"*.
+**In chat:** *"open the course"* · *"learn ai-spector"* · *"mở khóa học ai-spector"*
 
 ---
 
-## Sections *(13 lessons)*
+## Structure
+
+**7 sections, 13 lessons** — each lesson ~10–15 min, one coherent task.
 
 | Section | Lessons | Covers |
 |---------|---------|--------|
@@ -37,6 +25,17 @@ Edit **`website/docs/`** (English) and **`website/docs/vi/`** (Vietnamese).
 | [Design & prototype](05-prototype/README.md) | 2 | Translations, UI mockup |
 | [Review & changes](06-review/README.md) | 1 | Sign-off, comments, edits |
 | [Advanced](07-advanced/README.md) | 2 | Templates, search, editors |
+
+---
+
+## Pipeline
+
+```text
+docs/data-source/ → analyze → validate → generate SRS (gated) → basic design
+  → prototype → review documents
+```
+
+Every **generate** run: workspace check → clarify → plan approval → waves → spec review.
 
 ---
 
@@ -51,9 +50,6 @@ Edit **`website/docs/`** (English) and **`website/docs/vi/`** (Vietnamese).
 
 ---
 
-## Reference
+## Next
 
-**Tiếng Việt:** [Khóa học tiếng Việt](vi/README.md)
-
-- [Multi-template packs](../../docs/plan/multi-template-structure.md)
-- [SDK](../../docs/plan/sdk.md)
+[Get started](01-get-started/README.md)
