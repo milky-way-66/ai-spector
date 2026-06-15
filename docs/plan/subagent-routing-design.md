@@ -154,7 +154,7 @@ Each row is a **first-class subagent**. `workflowId` is stable for routing, logg
 
 | workflowId | Subagent name | Skill (brief) | Primary user cues | Owned MCP tools (typical) |
 |------------|---------------|---------------|-------------------|---------------------------|
-| `doc-review` | **Review Worker** | `ai-spector-review` | `/review`, approve doc, review queue, `srs/…` + approve | `review_check`, `review_queue`, `review_status`, `graph_impact`, `review_session_*`, `review_approve`/`reject` |
+| `doc-review` | **Review Worker** | `ai-spector-review` | `/review`, approve doc, review queue, `srs/…` + approve | `review_check`, `review_queue`, `review_status`, `readiness_scan`, `readiness_output_checklist`, `graph_impact`, `review_session_*`, `review_approve`/`reject` |
 | `resolve-comments` | **Comments Worker** | `ai-spector-resolve-comments` | C-NNN, inbox, resolve thread, feedback on doc | `comments_inbox`, `comments_show`, `comments_plan`, `comments_resolve` |
 | `generate-srs` | **SRS Generate Worker** | `ai-spector-generate-srs` | generate SRS, write chapter, DAG wave | `task_*`, `workspace_check`, `context_*`, `task_record_wave`, `spec_record`, `index` |
 | `generate-basic-design` | **BD Generate Worker** | `ai-spector-generate-basic-design` | screen list, API design, wireframes | same pattern as SRS |
@@ -187,7 +187,7 @@ read_first:
   - .cursor/skills/ai-spector-review/references/runbook.md
 phase: reviewing          # from ReviewSession or handoff
 activeLogicalPath: srs/01-overview
-allowedTools: [review_status, graph_impact, review_session_ack_review]
+allowedTools: [review_status, readiness_scan, readiness_output_checklist, graph_impact, review_session_ack_review]
 forbiddenTools: [review_approve, spec_approve, task_approve_plan, comments_resolve]
 userGoal: "Review srs/01-overview for sign-off"
 stopAt: human_gate        # await user decision after written review
@@ -201,7 +201,7 @@ Mirror server gates in the subagent brief:
 
 | Worker | Phase | Can call | Cannot call |
 |--------|-------|----------|-------------|
-| Review | before ack | `review_status`, `graph_impact` | `review_approve` |
+| Review | before ack | `review_status`, `readiness_scan`, `readiness_output_checklist`, `graph_impact` | `review_approve` |
 | Review | `awaiting_decision` | `review_approve`, `review_reject` | `spec_approve`, … |
 | Resolve-task | pre-plan | `docs_search`, `context_list` | `graph_impact`, edits, `resolve_task` |
 | Resolve-task | post `task_approve_plan` | `resolve_task`, edits, `index` | `review_approve` |
@@ -374,7 +374,7 @@ Spawn: doc-review, phase=detect
 Worker: review_check → review_queue → wait user pick
 User: srs/01-overview
 Spawn: doc-review, phase=reviewing, path=srs/01-overview
-Worker: review_status → read doc → graph_impact → write review → ack → waiting_user
+Worker: review_status → readiness checklist → read doc → graph_impact → write review → ack → waiting_user
 User: Approve
 Spawn: doc-review, phase=awaiting_decision
 Worker: review_approve → workflow_complete

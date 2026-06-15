@@ -95,6 +95,7 @@ Use `workflowGuidance` from `review_status` — it lists `nextTools`, `notTheseT
 - `readiness.outputChecklist` — rubric items to score met/partial/missing
 
 See [readiness-compliance.md](./readiness-compliance.md) for scoring rules and report template.
+Custom team checklists: [custom-checklists.md](./custom-checklists.md).
 
 **Read the document to understand context.** The diff alone is not enough — you need to see what the changed sections mean in the full document.
 
@@ -125,6 +126,7 @@ readiness_output_checklist({ paths: ["<docPath>"], docType: "<type>" })
 3. Include the **Readiness compliance** table in Phase 4 (see [readiness-compliance.md](./readiness-compliance.md))
 
 Blocking partial/missing items belong in **Concerns** and affect **Recommendation**.
+Custom items (`source: custom`) follow the same scoring — see [custom-checklists.md](./custom-checklists.md).
 
 ---
 

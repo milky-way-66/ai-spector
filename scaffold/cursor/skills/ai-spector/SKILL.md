@@ -39,7 +39,9 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 | **Visualize graph** | *(no MCP tool)* | `npx ai-spector graph visualize --open` |
 | Detect changed docs | `review_check({})` | `npx ai-spector review check --json` |
 | Review queue | `review_queue({ track, showDiff })` | `npx ai-spector review queue --json` |
-| Doc review status + diff | `review_status({ logicalPath, includeHistory? })` | `npx ai-spector review status <path> --json [--history]` |
+| Doc review status + diff + readiness | `review_status({ logicalPath, includeHistory? })` | `npx ai-spector review status <path> --json [--history]` |
+| Output checklist rubric | `readiness_output_checklist({ paths, logicalPath?, docType? })` | `npx ai-spector readiness output-checklist …` |
+| Structural doc scan | `readiness_scan({ paths, docType?, updateLastScan: false })` | `npx ai-spector readiness scan …` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 | List all docs with review status | `review_list({ status?, prefix? })` | `npx ai-spector review list --json` |
@@ -76,6 +78,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Item | Path |
 |------|------|
 | Config (languages, paths) | `.ai-spector/docflow.config.json` |
+| Custom review checklists | `.ai-spector/.docflow/config/review-checklists/` — see `ai-spector-review` → `custom-checklists.md` |
 | Graph | `.ai-spector/graph/traceability.graph.json` |
 | Query | `graph_query({ id })` MCP · fallback: `npx ai-spector graph query <id> --json` |
 | Templates | `.ai-spector/templates/` |

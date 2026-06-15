@@ -5,6 +5,8 @@
 ## Read first
 
 1. [../skills/ai-spector-review/references/runbook.md](../skills/ai-spector-review/references/runbook.md)
+2. [../skills/ai-spector-review/references/readiness-compliance.md](../skills/ai-spector-review/references/readiness-compliance.md)
+3. [../skills/ai-spector-review/references/custom-checklists.md](../skills/ai-spector-review/references/custom-checklists.md) — user-extensible JSON checklists
 
 ## NOT WHEN
 

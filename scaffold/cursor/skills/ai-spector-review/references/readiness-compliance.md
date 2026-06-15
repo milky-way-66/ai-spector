@@ -17,7 +17,8 @@ readiness_output_checklist({ paths: [docPath], docType: "<type>", logicalPath: "
 
 ## Custom checklists (user-extensible)
 
-Teams can add JSON files under `.ai-spector/.docflow/config/review-checklists/`:
+Teams add JSON files under `.ai-spector/.docflow/config/review-checklists/`.
+Full guide: [custom-checklists.md](./custom-checklists.md).
 
 | Location | Applies to |
 |----------|------------|
@@ -25,10 +26,8 @@ Teams can add JSON files under `.ai-spector/.docflow/config/review-checklists/`:
 | `<docType>/<doc-stem>.json` | One document (e.g. `01-overview.json` → `srs/01-overview`) |
 | `*.json` at root with `match` | Glob / pattern filter |
 
-See [review-checklists/README.md](../../../../.ai-spector/.docflow/config/review-checklists/README.md) in the scaffold.
-
-Custom items appear in the checklist with `source: "custom"` and `checklistFile`. Score them
-in the same compliance table as built-in ISO criteria.
+Custom items appear with `source: "custom"` and `checklistFile`. Score them in the same
+compliance table as built-in ISO criteria.
 
 ## Doc type from logical path
 
@@ -62,10 +61,10 @@ Structural scan **errors** (not warnings) should also appear in **Concerns**.
 Structural scan: <ok | N errors, M warnings>
 <D-list structural findings with severity error/warning, or "No structural issues.">
 
-| ID | ISO | Severity | Status | Evidence / gap |
-|----|-----|----------|--------|----------------|
-| §2-003 | 9.6.6 | blocking | met | §2.5 lists 3 assumptions with owners |
-| §2-004 | 9.6.7 | blocking | partial | Operational concept mentions actors but no main success flow |
+| ID | ISO | Severity | Source | Status | Evidence / gap |
+|----|-----|----------|--------|--------|----------------|
+| §2-003 | 9.6.6 | blocking | criteria | met | §2.5 lists 3 assumptions with owners |
+| SEC-001 | — | blocking | custom | partial | Threat actors listed but no mitigations |
 
 Blocking partial/missing: <count> — <recommendation>
 ```

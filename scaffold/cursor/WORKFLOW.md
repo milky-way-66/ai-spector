@@ -61,7 +61,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Translation status | “what’s stale in JP”, “pending translations” | `ai-spector-lang-status` | `lang_queue({})` MCP |
 | Sync translations | “resolve translations”, “update JP from EN” | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | “resolve comments”, “fix C-001” | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
-| **Review documents** | **`/review`**, “review docs”, “approve SRS”, “approve srs/01-overview”, “pending review”, “what changed since approval” | `ai-spector-review` | `review_check` → queue table → pick → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_reject` |
+| **Review documents** | **`/review`**, “review docs”, “approve SRS”, “approve srs/01-overview”, “pending review”, “what changed since approval” | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_reject` |
 | Add/update one feature or section | “I want to add login with Google”, “add requirement”, “update auth section” | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
 | Explore graph | “show the graph” | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
@@ -83,7 +83,7 @@ Which did you mean?
 
 | You mean… | Say… | Tool |
 |-----------|------|------|
-| Sign off a document | **`/review`** or “approve srs/01-overview” | `review_approve` via `ai-spector-review` |
+| Sign off a document | **`/review`** or “approve srs/01-overview” | `review_approve` via `ai-spector-review` (includes readiness + custom checklists) |
 | Approve extracted spec | “approve SPEC-001” | `spec_approve` |
 | Approve plan to execute | “yes, go ahead” (after plan table) | `task_approve_plan` |
 | Mark comment thread done | “resolve C-012” | `comments_resolve` |

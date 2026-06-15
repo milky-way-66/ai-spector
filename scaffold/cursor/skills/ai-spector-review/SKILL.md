@@ -5,10 +5,11 @@ description: >-
   (comments_resolve / ai-spector-resolve-comments), extracted specs (spec_approve /
   SPEC-NNN), or task plans (task_approve_plan). Use for /review, review queue,
   approve doc by logical path (srs/01-overview), pending client approval, what
-  changed since last sign-off. Agent must read the doc, check graph impact, write
-  a review summary, then wait for user decision before review_approve.
+  changed since last sign-off. Agent must read the doc, score readiness + custom checklists,
+  check graph impact, write a review summary, then wait for user decision before review_approve.
 paths:
   - ".ai-spector/.docflow/review-queue/**"
+  - ".ai-spector/.docflow/config/review-checklists/**"
   - "docs/**"
 ---
 
@@ -26,6 +27,7 @@ Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_
 
 [references/runbook.md](references/runbook.md) — follow phases in order.
 [references/readiness-compliance.md](references/readiness-compliance.md) — checklist scoring during review.
+[references/custom-checklists.md](references/custom-checklists.md) — how users extend checklists (drop JSON files).
 
 ## What makes this skill different from mechanical approve
 
@@ -38,7 +40,7 @@ It **reads the document**, **scores readiness checklist**, **understands the cha
 - [ ] review check         → find changed documents
 - [ ] review queue         → show pending table, wait for user pick
 - [ ] read document        → understand current content, not just diff
-- [ ] readiness compliance → structural scan + output checklist (from review_status.readiness)
+- [ ] readiness compliance → structural scan + output checklist + **custom checklists** (review_status.readiness)
 - [ ] graph_impact         → check downstream blast radius
 - [ ] write review summary → diff, readiness table, concerns, recommendation
 - [ ] review_session_ack_review → unlock approve gate

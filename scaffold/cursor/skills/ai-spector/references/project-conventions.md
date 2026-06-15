@@ -22,6 +22,11 @@ Missing templates → `npx ai-spector init --force`.
 | Basic design | `docs/basic-design/` |
 | HTML prototype | `prototype/src/` |
 
+## Review checklists (custom)
+
+Drop JSON files under `.ai-spector/.docflow/config/review-checklists/<docType>/`.
+Merged into document review automatically. Guide: `ai-spector-review/references/custom-checklists.md`.
+
 ## Document language
 
 Stored in `.ai-spector/.docflow/config/workspace/language.json` (`documentLanguage` field).

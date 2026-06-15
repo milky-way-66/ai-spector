@@ -78,7 +78,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
 | comment threads, C-001, inbox, resolve comments, open threads | `ai-spector-resolve-comments` | `references/runbook.md` |
-| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed" | `ai-spector-review` | `references/runbook.md` |
+| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed", custom review checklist | `ai-spector-review` | `references/runbook.md`, `references/custom-checklists.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
 | “generate docs” (no layer named) | `ai-spector-generate` | `SKILL.md` |

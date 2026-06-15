@@ -1,76 +1,59 @@
 # Custom review checklists
 
 Drop JSON files here to extend what the review agent checks during document sign-off.
-Custom items are merged with built-in ISO readiness criteria in `review_status` and
+Custom items merge with built-in ISO readiness criteria in `review_status` and
 `readiness_output_checklist`.
+
+**Full guide (agents + users):** `.cursor/skills/ai-spector-review/references/custom-checklists.md`
+(after `npx ai-spector sync-cursor` or init).
+
+## Quick start
+
+```bash
+# 1. Copy the sample
+cp srs/_all/security-gates.json.example srs/_all/security-gates.json
+
+# 2. Edit items in security-gates.json
+
+# 3. Run /review — agent scores custom items in Readiness compliance table
+```
 
 ## Folder layout
 
 ```
 review-checklists/
   srs/
-    _all/                    ← applies to every SRS document
+    _all/                    ← every SRS document
       security-gates.json
-    01-overview.json         ← only srs/01-overview (filename = doc stem)
-    1-introduction.json      ← only srs/1-introduction
+    01-overview.json         ← only srs/01-overview
   basic-design/
     _all/
       api-style.json
-  detail-design/
-    _all/
-      coding-standards.json
 ```
 
-Optional: JSON files directly under `review-checklists/` with a `match` block for
-cross-type or glob patterns.
+| Location | Applies to |
+|----------|------------|
+| `<docType>/_all/*.json` | All documents of that type |
+| `<docType>/<doc-stem>.json` | One document |
+| Root `*.json` with `match` | Glob patterns |
 
-## File format
+## Minimal file format
 
 ```json
 {
   "version": 1,
   "title": "Security review gates",
-  "description": "Optional note shown to the agent",
   "items": [
     {
       "id": "SEC-001",
       "severity": "blocking",
       "question": "Are threat actors and mitigations documented?",
-      "agentCheck": "Look for a threat/risk subsection with named actors and controls"
+      "agentCheck": "Look for named actors and corresponding controls"
     }
   ]
 }
 ```
 
-### Optional `match` (pattern-based)
+Severity: `blocking` | `should-ask` | `nice-to-have`.
 
-```json
-{
-  "title": "Feature security",
-  "match": {
-    "logicalPaths": ["srs/features/**", "srs/3-*"],
-    "docPaths": ["**/features/**"]
-  },
-  "items": [ ... ]
-}
-```
-
-Patterns use `*` (within segment) and `**` (across `/`).
-
-### Severity
-
-| Value | Meaning |
-|-------|---------|
-| `blocking` | Flag in review Concerns; recommend Request changes if partial/missing |
-| `should-ask` | Note in compliance table |
-| `nice-to-have` | Optional note |
-
-## Samples
-
-- `_all/security-gates.json.example` — copy to `_all/security-gates.json` and edit
-- Files prefixed with `_` (except `_all.json`) are ignored — use for templates
-
-## During review
-
-The agent scores each item **met | partial | missing** and includes custom items
-(source `custom`, with `checklistFile`) in the Readiness compliance table.
+Files named `*.example` or prefixed with `_` (except `_all.json`) are ignored.
