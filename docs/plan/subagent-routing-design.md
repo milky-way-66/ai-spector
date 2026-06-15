@@ -329,7 +329,7 @@ Ordered by value / dependency (same pattern as [review-routing-impl-plan.md](./r
 
 | Task | File |
 |------|------|
-| B.1 `scaffold/cursor/subagents/` directory with one `.md` per `workflowId` | new |
+| B.1 `scaffold/cursor/agents/` directory with one `.md` per `workflowId` (YAML frontmatter for Cursor registration) | new |
 | B.2 Each file: role, read_first, phase tool matrix, output contract, NOT WHEN | new |
 | B.3 Link from skill `SKILL.md` → matching subagent brief | skills |
 | B.4 Commands: `/resolve-comments`, `/generate-srs` (optional) | `scaffold/cursor/commands/` |
@@ -427,7 +427,7 @@ Spawn: doc-review with session path
 
 | Question | Recommendation |
 |----------|----------------|
-| Cursor native subagents vs `Task` tool? | Start with `Task` + scaffold briefs (Phase B); migrate if Cursor adds project subagent config. |
+| Cursor native subagents vs `Task` tool? | Use `.cursor/agents/` with YAML frontmatter; orchestrator spawns via `Task({ subagent_type: workflowId })` or `/workflowId`. |
 | Should workers run `readonly: true` for plan/discover phases? | Yes for resolve-task Phase 3 (discover only). |
 | Multi-doc review in one spawn? | No — one logical path per spawn; parent loops on queue. |
 | Spec queue inside generate worker or separate? | Separate `spec-queue` worker after `task_record_wave` offers extract — keeps generate context smaller. |

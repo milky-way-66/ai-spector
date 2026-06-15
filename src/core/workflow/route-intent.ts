@@ -202,7 +202,7 @@ function buildHandoff(
     phase: inferPhase(skill, ctx, matchedBy),
     userGoal,
     resumeFromState: hasPersistedState,
-    readBrief: `.cursor/subagents/${workflowId}.md`,
+    readBrief: `.cursor/agents/${workflowId}.md`,
     runInBackground: !gated,
     ...(allowedTools?.length ? { allowedTools } : {}),
     ...(forbiddenTools?.length ? { forbiddenTools } : {}),

@@ -1,0 +1,21 @@
+---
+description: Run ai-spector CLI via npx (works with global install or package dependency)
+alwaysApply: true
+---
+
+# AI Spector CLI invocation
+
+Agents must run the CLI as **`npx ai-spector …`**, not bare `ai-spector`.
+
+- Works when the package is only a project dependency (no global install).
+- Still works when `ai-spector` is installed globally (`npx` resolves the local or latest package as appropriate).
+
+Examples:
+
+```bash
+npx ai-spector graph validate
+npx ai-spector index
+npx ai-spector prototype manifest --strict
+```
+
+Do not substitute `ai-spector` without `npx` in terminal commands or skill runbooks.

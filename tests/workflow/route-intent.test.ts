@@ -23,7 +23,7 @@ describe("classifyWorkflowIntent", () => {
     const r = classifyWorkflowIntent("/review", emptyCtx);
     expect(r.skill).toBe("ai-spector-review");
     expect(r.workflowId).toBe("doc-review");
-    expect(r.handoff?.readBrief).toBe(".cursor/subagents/doc-review.md");
+    expect(r.handoff?.readBrief).toBe(".cursor/agents/doc-review.md");
     expect(r.handoff?.runInBackground).toBe(false);
     expect(r.confidence).toBe("high");
     expect(r.avoidTools).toContain("spec_approve");

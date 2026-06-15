@@ -33,6 +33,8 @@ describe("sync-cursor", () => {
       true,
     );
     expect(await pathExists(join(root, ".cursor/WORKFLOW.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/subagents/doc-review.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/agents/doc-review.md"))).toBe(true);
+    const docReview = await readFile(join(root, ".cursor/agents/doc-review.md"), "utf8");
+    expect(docReview).toMatch(/^---\nname: doc-review\n/);
   });
 });
