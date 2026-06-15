@@ -19,6 +19,22 @@ const TASK_APPROVE = "task_approve_plan";
 const COMMENTS_RESOLVE = "comments_resolve";
 const APPROVE_SIBLINGS = [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE] as const;
 
+function gateBlockedGuidance(
+  workflowId: WorkflowId,
+  phase: string,
+  message: string,
+  nextTools: string[],
+): WorkflowToolGuidance {
+  return {
+    workflowId,
+    phase,
+    message: `${message} Do not call task_approve_plan yet.`,
+    nextTools,
+    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
+    canProceed: false,
+  };
+}
+
 export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance {
   const workflowId: WorkflowId =
     task.kind === "resolve"
@@ -48,11 +64,59 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
   }
 
   if (task.plan) {
+    if (task.kind === "generate") {
+      const checkDone = task.steps.find((s) => s.id === "check")?.status === "done";
+      const clarifyDone = task.steps.find((s) => s.id === "clarify")?.status === "done";
+      const briefingDone = task.steps.find((s) => s.id === "briefing")?.status === "done";
+      if (!checkDone) {
+        return gateBlockedGuidance(workflowId, "check", "Run workspace_check, record snapshot.workspaceCheckAt, mark check done.", [
+          "workspace_check",
+          "task_update",
+        ]);
+      }
+      if (!clarifyDone || !task.snapshot.readinessReportShown) {
+        return gateBlockedGuidance(
+          workflowId,
+          "clarify",
+          "Run readiness_assess, show criteria table, set snapshot.readinessReportShown, resolve gaps.",
+          ["readiness_assess", "context_list", "task_update"],
+        );
+      }
+      if (!briefingDone || !task.snapshot.briefingConfirmedAt) {
+        return gateBlockedGuidance(
+          workflowId,
+          "briefing",
+          "Present per-file context briefing — user must confirm before plan table.",
+          ["task_update", "context_list"],
+        );
+      }
+      if (!task.snapshot.planPresentedAt || task.phaseStatus !== "awaiting_user") {
+        return gateBlockedGuidance(
+          workflowId,
+          "plan",
+          "Show plan table with criteria/ISO refs — set phaseStatus awaiting_user and snapshot.planPresentedAt.",
+          ["task_update"],
+        );
+      }
+    } else if (task.steps.find((s) => s.id === "clarify")?.status !== "done") {
+      return gateBlockedGuidance(workflowId, "clarify", "Clarify GoalSpec fields before plan approval.", [
+        "task_update",
+        "context_list",
+      ]);
+    } else if (!task.snapshot.planPresentedAt || task.phaseStatus !== "awaiting_user") {
+      return gateBlockedGuidance(
+        workflowId,
+        "plan",
+        "Show GoalSpec + TaskPlan — wait for explicit yes (not ok/scope alone).",
+        ["task_update"],
+      );
+    }
+
     return {
       workflowId,
       phase: "awaiting_plan_approval",
       message:
-        "Plan is drafted — show GoalSpec + TaskPlan to the user and wait for explicit yes, then task_approve_plan.",
+        'Plan table shown — wait for explicit yes (yes / đồng ý / go ahead). "ok" or scope alone is NOT approval. Then task_approve_plan.',
       nextTools: ["task_update", TASK_APPROVE],
       notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
       canProceed: false,

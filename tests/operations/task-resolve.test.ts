@@ -14,6 +14,7 @@ import {
   runTaskGet,
   runTaskUpdate,
 } from "../../src/core/operations/task.js";
+import { passResolveGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 async function scaffold(root: string): Promise<void> {
@@ -53,11 +54,7 @@ describe("resolve-task task file integration", () => {
         [{ nodeId: "F-01", directCallers: 0, riskLevel: "low" }],
       );
 
-      await runTaskUpdate({
-        root,
-        taskId: task.id,
-        patch: { goal, plan: { kind: "resolve", plan } },
-      });
+      await passResolveGates(root, task.id, goal, plan);
       await runTaskApprovePlan({ root, taskId: task.id });
 
       const ctx = await loadResolveExecutionContext({ root, taskId: task.id });
@@ -87,11 +84,7 @@ describe("resolve-task task file integration", () => {
         [{ nodeId: "auth", directCallers: 0, riskLevel: "low" }],
       );
 
-      await runTaskUpdate({
-        root,
-        taskId: task.id,
-        patch: { goal, plan: { kind: "resolve", plan } },
-      });
+      await passResolveGates(root, task.id, goal, plan);
       await runTaskApprovePlan({ root, taskId: task.id });
 
       const ctx = await loadResolveExecutionContext({ root, taskId: task.id });

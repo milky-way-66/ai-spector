@@ -21,6 +21,12 @@ import {
 } from "../workflow/guidance.js";
 import { recordWorkflowFromTask } from "../workflow/active-worker.js";
 import { resolveAuditActor } from "../util/audit-actor.js";
+import {
+  assertGenerateExecutionAllowed,
+  assertGeneratePlanStoreAllowed,
+  assertTaskApprovePlanAllowed,
+  assertTaskStepUpdateAllowed,
+} from "./task-gates.js";
 
 export type { TaskKind, WorkflowId };
 export type { GoalSpec, TaskPlan } from "./resolve-task.js";
@@ -153,6 +159,10 @@ export interface TaskSnapshot {
   graphMergedAt?: string;
   /** Set when the full readiness criteria table was shown to the user (clarify gate). */
   readinessReportShown?: boolean;
+  /** Set when user confirmed the per-file context briefing (briefing gate). */
+  briefingConfirmedAt?: string;
+  /** Set when the plan table was shown in chat and phaseStatus is awaiting_user. */
+  planPresentedAt?: string;
   /** Set when extract stage offered spec_record to the user (extract gate before task_complete). */
   extractOffered?: boolean;
 }
@@ -623,7 +633,12 @@ export async function runTaskUpdate(opts: TaskUpdateOptions): Promise<TaskUpdate
   if (patch.currentStepId !== undefined) task.currentStepId = patch.currentStepId;
   if (patch.nextAction !== undefined) task.nextAction = patch.nextAction;
   if (patch.goal !== undefined) task.goal = patch.goal;
-  if (patch.plan !== undefined) task.plan = patch.plan;
+  if (patch.plan !== undefined) {
+    if (patch.plan && task.kind === "generate") {
+      assertGeneratePlanStoreAllowed(task);
+    }
+    task.plan = patch.plan;
+  }
   if (patch.blockers !== undefined) task.blockers = patch.blockers;
   if (patch.contextRefs) {
     task.contextRefs = { ...task.contextRefs, ...patch.contextRefs };
@@ -632,16 +647,7 @@ export async function runTaskUpdate(opts: TaskUpdateOptions): Promise<TaskUpdate
     task.snapshot = { ...task.snapshot, ...patch.snapshot };
   }
   if (patch.step) {
-    if (
-      patch.step.id === "clarify" &&
-      patch.step.patch.status === "done" &&
-      task.kind === "generate" &&
-      !task.snapshot.readinessReportShown
-    ) {
-      throw new Error(
-        'Cannot mark clarify "done" until readiness report was shown — set snapshot.readinessReportShown via task_update after presenting the full criteria table (ID, ISO, status).',
-      );
-    }
+    assertTaskStepUpdateAllowed(task, patch.step.id, patch.step.patch.status);
     applyStepPatch(task, patch.step.id, patch.step.patch);
     if (patch.step.patch.status === "done" && patch.step.patch.artifacts?.length) {
       const hashes = { ...(task.snapshot.artifactHashes ?? {}) };
@@ -693,9 +699,8 @@ export async function runTaskApprovePlan(
   if (opts.plan) {
     task.plan = opts.plan;
   }
-  if (!task.plan) {
-    throw new Error(`Task "${task.id}" has no plan to approve`);
-  }
+
+  assertTaskApprovePlanAllowed(task);
 
   const now = new Date().toISOString();
   task.planApprovedAt = now;
@@ -1034,6 +1039,8 @@ export async function recordGenerateWaveProgress(
   if (loaded.kind !== "generate") {
     throw new Error(`Task "${loaded.id}" is kind "${loaded.kind}", not generate`);
   }
+
+  assertGenerateExecutionAllowed(loaded);
 
   const now = new Date().toISOString();
   const wavePatch: TaskUpdatePatch = {

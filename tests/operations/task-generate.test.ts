@@ -9,6 +9,7 @@ import {
   runTaskGet,
   runTaskUpdate,
 } from "../../src/core/operations/task.js";
+import { passGenerateGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 async function scaffold(root: string): Promise<void> {
@@ -56,11 +57,7 @@ describe("generate task workflow", () => {
         ],
       });
 
-      await runTaskUpdate({
-        root,
-        taskId: task.id,
-        patch: { plan: { kind: "generate", plan } },
-      });
+      await passGenerateGates(root, task.id, plan);
 
       const approved = await runTaskApprovePlan({ root, taskId: task.id });
       expect(approved.task.currentStepId).toBe("wave-1");

@@ -29,8 +29,10 @@ export const APPROVE_TOOL_DESCRIPTIONS = {
   task_approve_plan: [
     "Mark the workflow task plan as approved — sets planApprovedAt and unlocks execute/generate steps.",
     "",
-    "WHEN: User explicitly approves a GoalSpec + TaskPlan table during resolve-task or generate workflow (yes / go ahead / execute).",
-    `NOT WHEN: Document sign-off by logical path (use ${SIBLING_REVIEW}); extracted spec SPEC-NNN (use ${SIBLING_SPEC}); comment thread done (use ${SIBLING_COMMENTS}).`,
+    "WHEN: User explicitly approves a GoalSpec + TaskPlan table shown in chat (yes / đồng ý / go ahead) — NOT on scope-only messages like \"ok, tạo 4 file đầu\".",
+    `NOT WHEN: Document sign-off (use ${SIBLING_REVIEW}); extracted spec SPEC-NNN (use ${SIBLING_SPEC}); comment thread done (use ${SIBLING_COMMENTS}).`,
+    "REQUIRES (generate): check+clarify+briefing steps done; snapshot.workspaceCheckAt, readinessReportShown, briefingConfirmedAt, planPresentedAt; phaseStatus awaiting_user.",
+    "REQUIRES (resolve): goal set, clarify done, planPresentedAt, phaseStatus awaiting_user.",
     `SIBLING TOOLS: ${SIBLING_REVIEW}, ${SIBLING_SPEC}, ${SIBLING_COMMENTS}.`,
   ].join("\n"),
 

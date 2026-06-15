@@ -46,6 +46,7 @@ describe("task resume", () => {
         root,
         taskId: task.id,
         patch: {
+          snapshot: { workspaceCheckAt: new Date().toISOString() },
           step: {
             id: "check",
             patch: {

@@ -16,6 +16,7 @@ import {
   taskIndexPath,
 } from "@/core/operations/task.js";
 import { readJson } from "@/core/util/fs.js";
+import { passResolveGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 import type { TaskIndex, TaskState } from "@/core/operations/task.js";
 
@@ -107,6 +108,7 @@ describe("task state store", () => {
         root,
         taskId: task.id,
         patch: {
+          snapshot: { workspaceCheckAt: "2026-06-12T10:00:00.000Z" },
           step: {
             id: "check",
             patch: { status: "done", completedAt: "2026-06-12T10:00:00.000Z" },
@@ -146,16 +148,7 @@ describe("task state store", () => {
         [{ nodeId: "F-01", directCallers: 0, riskLevel: "low" }],
       );
 
-      await runTaskUpdate({
-        root,
-        taskId: task.id,
-        patch: {
-          goal,
-          plan: { kind: "resolve", plan },
-          phase: "plan",
-          phaseStatus: "awaiting_user",
-        },
-      });
+      await passResolveGates(root, task.id, goal, plan);
 
       const approved = await runTaskApprovePlan({ root, taskId: task.id });
       expect(approved.task.planApprovedAt).toBeTruthy();
@@ -292,7 +285,7 @@ describe("task state store", () => {
           taskId: task.id,
           patch: { step: { id: "clarify", patch: { status: "done" } } },
         }),
-      ).rejects.toThrow(/readinessReportShown/);
+      ).rejects.toThrow(/readiness report was shown/);
 
       const ok = await runTaskUpdate({
         root,

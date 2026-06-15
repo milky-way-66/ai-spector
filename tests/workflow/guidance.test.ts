@@ -34,11 +34,72 @@ function minimalTask(overrides: Partial<TaskState>): TaskState {
 }
 
 describe("buildTaskWorkflowGuidance", () => {
-  it("suggests task_approve_plan when plan exists but not approved", () => {
-    const g = buildTaskWorkflowGuidance(minimalTask({ plan: { version: 1, rows: [] } as TaskState["plan"] }));
+  it("suggests task_approve_plan when plan exists and gates are complete", () => {
+    const g = buildTaskWorkflowGuidance(
+      minimalTask({
+        kind: "generate",
+        workflow: "generate-srs",
+        plan: {
+          kind: "generate",
+          plan: {
+            docType: "srs",
+            scope: "all",
+            briefing: [{ target: "docs/srs/en/1.md" }],
+            rows: [
+              {
+                output: "docs/srs/en/1.md",
+                dagNode: "srs.introduction",
+                sources: [],
+                keyPoints: ["intro"],
+              },
+            ],
+          },
+        },
+        phaseStatus: "awaiting_user",
+        snapshot: {
+          workspaceCheckAt: "2026-06-15T00:00:00.000Z",
+          readinessReportShown: true,
+          briefingConfirmedAt: "2026-06-15T00:00:00.000Z",
+          planPresentedAt: "2026-06-15T00:00:00.000Z",
+        },
+        steps: [
+          { id: "check", phase: "check", description: "", status: "done" },
+          { id: "clarify", phase: "clarify", description: "", status: "done" },
+          { id: "briefing", phase: "briefing", description: "", status: "done" },
+          { id: "plan", phase: "plan", description: "", status: "pending" },
+        ],
+      }),
+    );
     expect(g.phase).toBe("awaiting_plan_approval");
     expect(g.nextTools).toContain("task_approve_plan");
     expect(g.notTheseTools).toContain("review_approve");
+  });
+
+  it("blocks task_approve_plan when generate gates are incomplete", () => {
+    const g = buildTaskWorkflowGuidance(
+      minimalTask({
+        kind: "generate",
+        workflow: "generate-srs",
+        plan: {
+          kind: "generate",
+          plan: {
+            docType: "srs",
+            scope: "all",
+            briefing: [{ target: "docs/srs/en/1.md" }],
+            rows: [
+              {
+                output: "docs/srs/en/1.md",
+                dagNode: "srs.introduction",
+                sources: [],
+                keyPoints: ["intro"],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    expect(g.phase).toBe("check");
+    expect(g.notTheseTools).toContain("task_approve_plan");
   });
 
   it("suggests resolve_task when plan approved", () => {

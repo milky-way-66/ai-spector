@@ -14,6 +14,7 @@ import {
   runTaskResume,
   runTaskUpdate,
 } from "@/core/operations/task.js";
+import { passGenerateGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 async function scaffold(root: string): Promise<void> {
@@ -64,11 +65,7 @@ describe("task state success criteria (plan §13)", () => {
         ],
       });
 
-      await runTaskUpdate({
-        root,
-        taskId: created.id,
-        patch: { plan: { kind: "generate", plan } },
-      });
+      await passGenerateGates(root, created.id, plan);
       await runTaskApprovePlan({ root, taskId: created.id });
       await runTaskPause({ root, taskId: created.id });
 

@@ -38,7 +38,9 @@ An empty `tasks/index.json` (`active: {}`) is **not** “ready” — `bootstrap
 - Proceeding because briefing/plan was shown in chat without MCP task calls
 
 After plan approval: each DAG wave ends with `readiness_scan` → `workspace_check` → `task_record_wave`.
-Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only after `snapshot.extractOffered`.
+Mark check done only after `snapshot.workspaceCheckAt`. Mark clarify done only after `snapshot.readinessReportShown`.
+Mark briefing done only after `snapshot.briefingConfirmedAt`. Set `snapshot.planPresentedAt` when plan table is shown.
+Mark complete only after `snapshot.extractOffered`.
 
 ## Load at start
 1. Step 0 above (task_list → create or resume)

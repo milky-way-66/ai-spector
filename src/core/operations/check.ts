@@ -22,6 +22,8 @@ import { resolveReadinessConfigStatus } from "../readiness/config.js";
 import { validateCustomPack } from "../template/pack-validate.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
+import { listApprovedTaskGateViolations } from "./task-gates.js";
+import type { TaskState } from "./task.js";
 
 export type CheckSeverity = "error" | "warning";
 
@@ -78,6 +80,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "TASK-001", severity: "warning" },
   { id: "TASK-002", severity: "warning" },
   { id: "TASK-003", severity: "warning" },
+  { id: "TASK-004", severity: "error" },
   { id: "GRAPH-001", severity: "warning" },
   { id: "PACK-001", severity: "warning" },
   { id: "READY-001", severity: "warning" },
@@ -91,6 +94,11 @@ interface TaskIndexForCheck {
 interface TaskForCheck {
   planApprovedAt?: string | null;
   status?: string;
+  kind?: string;
+  snapshot?: TaskState["snapshot"];
+  steps?: TaskState["steps"];
+  goal?: TaskState["goal"];
+  plan?: TaskState["plan"];
 }
 
 async function loadTaskIndexForCheck(root: string): Promise<TaskIndexForCheck> {
@@ -194,6 +202,18 @@ async function checkGenerateTaskGate(
       activeId,
       activePack,
     );
+    return;
+  }
+
+  const violations = listApprovedTaskGateViolations(task as TaskState);
+  if (violations.length > 0 && enabled(rules, "TASK-004")) {
+    add({
+      ruleId: "TASK-004",
+      severity: severityOf(rules, "TASK-004", "error"),
+      message: `Active ${slot} task ${activeId} has planApprovedAt but skipped workflow gates: ${violations.join("; ")}`,
+      path: `.ai-spector/.docflow/tasks/${activeId}.json`,
+      fix: `task_abandon({ taskId: "${activeId}", reason: "invalid gate state" }) then restart from check → clarify → briefing → plan`,
+    });
   }
 }
 

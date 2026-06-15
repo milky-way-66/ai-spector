@@ -485,6 +485,14 @@ export const TaskUpdatePatchSchema = z.object({
         .boolean()
         .optional()
         .describe("Required before clarify step can be marked done on generate tasks"),
+      briefingConfirmedAt: z
+        .string()
+        .optional()
+        .describe("ISO timestamp when user confirmed context briefing — required before briefing step done"),
+      planPresentedAt: z
+        .string()
+        .optional()
+        .describe("ISO timestamp when plan table was shown — required before task_approve_plan"),
       extractOffered: z
         .boolean()
         .optional()

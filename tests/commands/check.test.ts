@@ -9,6 +9,7 @@ import {
   runTaskUpdate,
 } from "@/core/operations/task.js";
 import { pathExists, writeJson } from "@/core/util/fs.js";
+import { passGenerateGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 const MIN_CONFIG = {
@@ -167,11 +168,7 @@ describe("runCheck", () => {
         ],
         waves: [{ wave: 1, nodeIds: ["srs.introduction"] }],
       });
-      await runTaskUpdate({
-        root,
-        taskId: created.task.id,
-        patch: { plan: { kind: "generate", plan } },
-      });
+      await passGenerateGates(root, created.task.id, plan);
       await runTaskApprovePlan({ root, taskId: created.task.id });
       await writeFile(join(root, rel), "# Introduction\n", "utf8");
       const result = await runCheck({ root, paths: [rel] });
