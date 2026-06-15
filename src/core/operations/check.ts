@@ -1,5 +1,6 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { workspaceRulesPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig, primaryLanguage } from "../config/load.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 import {
@@ -234,7 +235,7 @@ async function listPackGenerateDocs(
 }
 
 async function loadRules(root: string): Promise<RuleConfig[]> {
-  const cfgPath = join(root, ".ai-spector/.docflow/config/workspace.rules.json");
+  const cfgPath = workspaceRulesPath(root);
   if (await pathExists(cfgPath)) {
     try {
       const loaded = await readJson<WorkspaceRules>(cfgPath);

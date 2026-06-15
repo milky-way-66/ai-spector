@@ -64,7 +64,7 @@ Read `.ai-spector/docflow.config.json` at the project root. Check the `languages
 
 - **Multiple languages configured** → generate primary language first, then translate to secondary languages from the primary output. Never generate secondary languages independently from the graph — always translate from the finished primary file.
 - **Single language configured** → generate only for that language.
-- **`languages` missing** → fall back to reading `.ai-spector/.docflow/config/language.json`. If `documentLanguage` is empty or missing, load [language-picker.md](./language-picker.md) and run the picker.
+- **`languages` missing** → fall back to reading `.ai-spector/.docflow/config/workspace/language.json`. If `documentLanguage` is empty or missing, load [language-picker.md](./language-picker.md) and run the picker.
 
 **Output path rule:**
 
@@ -72,9 +72,9 @@ Read `.ai-spector/docflow.config.json` at the project root. Check the `languages
 |-------------|-------------|
 | Builtin (SRS) | `docs/srs/{lang.code}/{filename}` |
 | Builtin (basic design) | `docs/basic-design/{lang.code}/{filename}` |
-| Custom pack | Path from `dag.srs.json` node (`output` or `outputPattern`). If the path includes `{lang}`, substitute `lang.code`. If it does not include `{lang}`, write to the path as-is (no language subfolder added automatically). |
+| Custom pack | Path from `doc-types/srs/dag.json` node (`output` or `outputPattern`). If the path includes `{lang}`, substitute `lang.code`. If it does not include `{lang}`, write to the path as-is (no language subfolder added automatically). |
 
-For custom packs: **never rewrite the output path** to add a language subfolder that the manifest didn't define. Respect the path exactly as written in `dag.srs.json`.
+For custom packs: **never rewrite the output path** to add a language subfolder that the manifest didn't define. Respect the path exactly as written in `doc-types/srs/dag.json`.
 
 ### Multi-language generation order (mandatory)
 

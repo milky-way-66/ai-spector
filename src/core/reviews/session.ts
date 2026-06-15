@@ -98,7 +98,7 @@ function sessionPhaseHint(session: ReviewSessionFile): string {
     case "queue":
       return "Pick a document from the queue, then call review_status for that logicalPath.";
     case "reviewing":
-      return "Write the structured review summary in chat, then call review_session_ack_review.";
+      return "Read the document, score readiness checklist items (met/partial/missing), write the structured review summary in chat, then call review_session_ack_review.";
     case "done":
       return "Start a new review with review_session_start or review_check.";
     default:

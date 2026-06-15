@@ -5,10 +5,10 @@ Use during import to ensure custom packs reach parity with builtin SRS workflow.
 | Capability | Builtin SRS | Custom pack (after install) | Who completes |
 |------------|-------------|-----------------------------|---------------|
 | Templates | `.ai-spector/templates/srs/` | `.ai-spector/packs/<pack>/templates/` | Install |
-| DAG + graph seeds | `dag.srs.json` | Regenerated from manifest | Install (CLI) |
+| DAG + graph seeds | `doc-types/srs/dag.json` | Regenerated from manifest | Install (CLI) |
 | Generate hints | runbook + DAG | `generate-hints.md` | Install (CLI) |
-| Readiness criteria | `readiness-criteria.srs.json` | `readiness-criteria.json` + config copy | Install + **user review** |
-| Completeness rules | `completeness-rules.srs.json` | `completeness-rules.json` | Install |
+| Readiness criteria | `doc-types/srs/readiness-criteria.json` | `readiness-criteria.json` + config copy | Install + **user review** |
+| Completeness rules | `doc-types/srs/completeness-rules.json` | `completeness-rules.json` | Install |
 | Gated workflow | `generate-workflow.md` | `workflow-setup.md` + skill | Install + **agent skill** |
 | Context store | `context/srs.json` | `context/<docType>.json` | Install (empty) + **clarify** |
 | Per-chapter context | `srs-context/*.md` | `pack-context/*.md` | Install + **agent review** |

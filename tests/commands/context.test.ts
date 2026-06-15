@@ -59,6 +59,8 @@ describe("context store", () => {
       expect(result.entry.status).toBe("answered");
       expect(result.entry.answer).toBe("Google + email/password.");
       expect(result.entry.answeredBy).toBe("khang");
+      expect(result.entry.answeredByUsername).toBe("unknown");
+      expect(result.entry.answeredByRole).toBe("user");
       expect(result.entry.answeredAt).toBeDefined();
     });
   });

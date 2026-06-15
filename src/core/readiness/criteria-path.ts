@@ -1,5 +1,8 @@
 import { join } from "node:path";
 import type { DocflowConfig } from "../config/types.js";
+import {
+  docTypeReadinessCriteriaPath,
+} from "../config/docflow-paths.js";
 import { pathExists } from "../util/fs.js";
 
 export async function resolveCriteriaFilePath(
@@ -7,13 +10,12 @@ export async function resolveCriteriaFilePath(
   config: DocflowConfig,
   docType?: string,
 ): Promise<{ path: string; docType: string; packName: string | null }> {
-  const configDir = join(root, ".ai-spector/.docflow/config");
   const srsPack = config.packs.srs;
   const effectiveDocType = docType ?? "srs";
 
   if (effectiveDocType === "srs" && srsPack === "builtin") {
     return {
-      path: join(configDir, "readiness-criteria.srs.json"),
+      path: docTypeReadinessCriteriaPath(root, "srs"),
       docType: "srs",
       packName: null,
     };
@@ -27,7 +29,7 @@ export async function resolveCriteriaFilePath(
         : null;
 
   if (packName) {
-    const configCopy = join(configDir, `readiness-criteria.${packName}.json`);
+    const configCopy = docTypeReadinessCriteriaPath(root, packName);
     if (await pathExists(configCopy)) {
       return { path: configCopy, docType: effectiveDocType, packName };
     }
@@ -38,7 +40,7 @@ export async function resolveCriteriaFilePath(
   }
 
   return {
-    path: join(configDir, "readiness-criteria.srs.json"),
+    path: docTypeReadinessCriteriaPath(root, "srs"),
     docType: effectiveDocType === "srs" ? "srs" : effectiveDocType,
     packName,
   };

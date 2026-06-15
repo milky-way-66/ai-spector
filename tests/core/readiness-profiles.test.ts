@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { mergeTailoringProfile } from "../../src/core/readiness/profiles.js";
+import {
+  listReadinessProfiles,
+  loadTailoringProfile,
+  mergeTailoringProfile,
+} from "../../src/core/readiness/profiles.js";
 import type { ReadinessCriteriaFile, TailoringProfile } from "../../src/core/readiness/types.js";
 
 const base: ReadinessCriteriaFile = {
@@ -16,9 +20,37 @@ const base: ReadinessCriteriaFile = {
   ],
 };
 
+describe("readiness profiles bundle", () => {
+  it("lists general as a file-backed profile marked default", async () => {
+    const profiles = await listReadinessProfiles();
+    const general = profiles.find((p) => p.id === "general");
+    expect(general).toBeDefined();
+    expect(general?.default).toBe(true);
+    expect(profiles[0]?.id).toBe("general");
+  });
+
+  it("loads general profile from readiness/profiles/general.json", async () => {
+    const general = await loadTailoringProfile("general");
+    expect(general?.id).toBe("general");
+    expect(general?.extends).toBe("srs");
+  });
+});
+
 describe("mergeTailoringProfile", () => {
   it("returns general when profile is null", () => {
     const merged = mergeTailoringProfile(base, null);
+    expect(merged.appliedProfiles).toEqual(["general"]);
+    expect(merged.globalCriteria).toHaveLength(2);
+  });
+
+  it("general file profile applies same baseline as null", () => {
+    const general: TailoringProfile = {
+      id: "general",
+      title: "General",
+      extends: "srs",
+      default: true,
+    };
+    const merged = mergeTailoringProfile(base, general);
     expect(merged.appliedProfiles).toEqual(["general"]);
     expect(merged.globalCriteria).toHaveLength(2);
   });

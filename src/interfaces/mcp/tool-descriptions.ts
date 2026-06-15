@@ -51,6 +51,7 @@ export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
     "",
     "WHEN: Preparing or continuing document review before review_approve; user asks what changed since approval.",
     `NOT WHEN: Inline comment threads (comments_show / comments_list); extracted specs (spec_list); task plan state (task_get).`,
+    "Returns readiness.structuralScan + readiness.outputChecklist when doc type is known — score each checklist item met/partial/missing in the review summary.",
     "Call before review_approve for the same logicalPath.",
   ].join("\n"),
 

@@ -273,7 +273,7 @@ function ambiguousApprove(message: string, ctx: WorkflowRouteContext): WorkflowR
         nextTools:
           ctx.reviewSession!.phase === "awaiting_decision"
             ? ["review_approve", "review_reject"]
-            : ["review_status", "review_session_ack_review"],
+            : ["review_status", "readiness_scan", "readiness_output_checklist", "review_session_ack_review"],
         avoidTools: ["spec_approve", "task_approve_plan", "comments_resolve"],
       },
     );

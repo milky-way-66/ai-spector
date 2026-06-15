@@ -8,7 +8,7 @@
   "sources": {
     "srs": {
       "root": "docs/srs",
-      "dag": ".ai-spector/.docflow/config/dag.srs.json",
+      "dag": ".ai-spector/.docflow/config/doc-types/srs/dag.json",
       "glob": "**/*.md"
     },
     "basicDesign": {

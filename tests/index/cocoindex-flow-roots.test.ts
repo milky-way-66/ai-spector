@@ -31,9 +31,9 @@ describe("scaffold flow.py _load_doc_roots", () => {
         mkdirSync(join(projectRoot, "docs/data-source"), { recursive: true });
         mkdirSync(join(projectRoot, "docs/srs"), { recursive: true });
         writeFileSync(join(projectRoot, "docs/data-source/requirements.md"), "# req\n");
-        mkdirSync(join(projectRoot, ".ai-spector/.docflow/config"), { recursive: true });
+        mkdirSync(join(projectRoot, ".ai-spector/.docflow/config/workspace"), { recursive: true });
         writeFileSync(
-          join(projectRoot, ".ai-spector/.docflow/config/index.docs.json"),
+          join(projectRoot, ".ai-spector/.docflow/config/workspace/index.docs.json"),
           JSON.stringify({
             version: 1,
             outputs: { srs: "x", basicDesign: "y" },
@@ -48,7 +48,7 @@ describe("scaffold flow.py _load_doc_roots", () => {
           "import json, sys",
           "from pathlib import Path",
           "PROJECT_ROOT = Path(sys.argv[1])",
-          'INDEX_CONFIG = PROJECT_ROOT / ".ai-spector/.docflow/config/index.docs.json"',
+          'INDEX_CONFIG = PROJECT_ROOT / ".ai-spector/.docflow/config/workspace/index.docs.json"',
           match![0],
           "for r in _load_doc_roots():",
           "    print(r.resolve())",

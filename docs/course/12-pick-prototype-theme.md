@@ -57,7 +57,7 @@ Each preview shows a sample screen rendered with that theme. Compare them.
 I pick stripe
 ```
 
-The agent saves the choice to `prototype/manifest.json` and updates `prototype.config.json`.
+The agent saves the choice to `prototype/manifest.json` and updates `prototype/config.json`.
 
 ---
 

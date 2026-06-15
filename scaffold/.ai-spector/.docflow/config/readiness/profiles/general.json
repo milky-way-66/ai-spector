@@ -1,0 +1,7 @@
+{
+  "id": "general",
+  "title": "General (default)",
+  "description": "ISO SRS baseline with no tailoring overlay.",
+  "extends": "srs",
+  "default": true
+}

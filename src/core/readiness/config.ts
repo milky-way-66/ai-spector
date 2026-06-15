@@ -1,4 +1,8 @@
 import { join } from "node:path";
+import {
+  docTypeCompletenessRulesPath,
+  relFromRoot,
+} from "../config/docflow-paths.js";
 import type { DocflowConfig, PackManifest, ReadinessConfig } from "../config/types.js";
 import { loadDocflowConfig, resolveActivePackManifest } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
@@ -87,15 +91,14 @@ async function completenessRulesPath(
   docType: string,
   packName: string | null,
 ): Promise<string | null> {
-  const configDir = join(root, ".ai-spector/.docflow/config");
   if (packName) {
-    const p = join(configDir, `completeness-rules.${packName}.json`);
-    if (await pathExists(p)) return p.replace(root + "/", "");
+    const p = docTypeCompletenessRulesPath(root, packName);
+    if (await pathExists(p)) return relFromRoot(root, p);
     const packP = join(root, ".ai-spector/packs", packName, "completeness-rules.json");
-    if (await pathExists(packP)) return packP.replace(root + "/", "");
+    if (await pathExists(packP)) return relFromRoot(root, packP);
   }
-  const builtin = join(configDir, `completeness-rules.${docType}.json`);
-  if (await pathExists(builtin)) return builtin.replace(root + "/", "");
+  const builtin = docTypeCompletenessRulesPath(root, docType);
+  if (await pathExists(builtin)) return relFromRoot(root, builtin);
   return null;
 }
 
@@ -193,8 +196,8 @@ export async function resolveReadinessConfigStatus(opts: {
 
   const standardsNote =
     "readiness.standards in docflow.config.json declares project intent. " +
-    "readiness_assess scores against readiness-criteria.<docType>.json (per-criterion iso29148 refs). " +
-    "readiness_scan checks output structure via completeness-rules.<docType>.json.";
+    "readiness_assess scores against doc-types/<docType>/readiness-criteria.json (per-criterion iso29148 refs). " +
+    "readiness_scan checks output structure via doc-types/<docType>/completeness-rules.json.";
 
   return {
     configured: isReadinessExplicitlyConfigured(config),

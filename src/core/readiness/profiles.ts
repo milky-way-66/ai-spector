@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { scaffoldBundleRoot } from "../config/load.js";
+import { readinessProfilesDir } from "../config/docflow-paths.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type {
   ReadinessCriteriaFile,
@@ -10,9 +10,7 @@ import type {
   TailoringProfile,
 } from "./types.js";
 
-export function bundledReadinessProfilesDir(): string {
-  return join(scaffoldBundleRoot(), ".ai-spector/.docflow/config/readiness-profiles");
-}
+export { readinessProfilesDir as bundledReadinessProfilesDir } from "../config/docflow-paths.js";
 
 export interface ProfileSummary {
   id: string;
@@ -43,7 +41,7 @@ function sortProfileSummaries(profiles: ProfileSummary[]): ProfileSummary[] {
 }
 
 export async function listReadinessProfiles(): Promise<ProfileSummary[]> {
-  const dir = bundledReadinessProfilesDir();
+  const dir = readinessProfilesDir();
   if (!(await pathExists(dir))) {
     return [{ id: "general", title: "General (default)", default: true }];
   }
@@ -64,7 +62,7 @@ export async function resolveDefaultReadinessProfileId(): Promise<string> {
 }
 
 export async function loadTailoringProfile(profileId: string): Promise<TailoringProfile | null> {
-  const path = join(bundledReadinessProfilesDir(), `${profileId}.json`);
+  const path = join(readinessProfilesDir(), `${profileId}.json`);
   if (!(await pathExists(path))) {
     throw new Error(
       `Unknown readiness profile "${profileId}". Run readiness_profiles_list for available profiles.`,

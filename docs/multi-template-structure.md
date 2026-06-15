@@ -59,8 +59,8 @@ my-project/
 │   │
 │   └── .docflow/
 │       ├── config/
-│       │   ├── dag.srs.json              ← SRS generation DAG
-│       │   ├── dag.srs.graph-seeds.json  ← DAG node → graph document id
+│       │   ├── doc-types/srs/dag.json              ← SRS generation DAG
+│       │   ├── doc-types/srs/dag.graph-seeds.json  ← DAG node → graph document id
 │       │   ├── dag.basic-design.json     ← builtin basic-design DAG
 │       │   ├── dag.detail-design.json
 │       │   └── …
@@ -141,7 +141,7 @@ Path: `.ai-spector/docflow.config.json`
 - Individual template file paths → in pack `manifest.json` → `documents[].template`
 - Output paths for generated markdown → in manifest → `documents[].output` / `outputPattern`
 - Per-domain vocabulary (`useCase`, `feature`, `epic`, …) → manifest → `perDomain`, `perDomainTemplates`, `defaultListedIn`
-- DAG node order → `.ai-spector/.docflow/config/dag.srs.json` (derived from manifest when a custom pack is active)
+- DAG node order → `.ai-spector/.docflow/config/doc-types/srs/dag.json` (derived from manifest when a custom pack is active)
 - Placeholder resolution hints → `.ai-spector/packs/<name>/context-map.json`
 
 ---
@@ -200,7 +200,7 @@ On `template install` or `template use <name>`, the CLI also writes:
 
 - `generate-hints.md` — wave 0 / wave 1 generation instructions for agents
 - `context-map.json` — scanned `{placeholder}` → suggested graph sources
-- Overwrites `dag.srs.json` and `dag.srs.graph-seeds.json` from the manifest
+- Overwrites `doc-types/srs/dag.json` and `doc-types/srs/dag.graph-seeds.json` from the manifest
 
 ---
 

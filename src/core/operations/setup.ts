@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
+import { prototypeConfigPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { runInit } from "./init.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
@@ -165,7 +166,7 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
       });
     }
 
-    const protoConfigPath = join(root, ".ai-spector/.docflow/config/prototype.config.json");
+    const protoConfigPath = prototypeConfigPath(root);
     if (await pathExists(protoConfigPath)) {
       const protoConfig = await readJson<{ prototypeDir?: string }>(protoConfigPath);
       const protoDir = protoConfig.prototypeDir?.trim() || "prototype";

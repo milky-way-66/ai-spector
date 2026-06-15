@@ -324,7 +324,7 @@ export function buildPackReadinessCriteria(
       "scaffold/cursor/skills/ai-spector/references/plan-and-briefing.md",
     ],
     criteriaPath: `.ai-spector/packs/${manifest.packName}/readiness-criteria.json`,
-    configCopyPath: `.ai-spector/.docflow/config/readiness-criteria.${manifest.packName}.json`,
+    configCopyPath: `.ai-spector/.docflow/config/doc-types/${manifest.packName}/readiness-criteria.json`,
     requirementQuality: {
       iso29148: "§5.2",
       note: "Apply when pack produces atomic requirements (FR/NFR)",
@@ -430,7 +430,7 @@ export function buildWorkflowSetupMarkdown(manifest: PackManifest, options?: Pac
     "| File | Role |",
     "|------|------|",
     `| \`.ai-spector/packs/${name}/readiness-criteria.json\` | Per-pack input criteria (headings + placeholders + ISO global) |`,
-    `| \`.ai-spector/.docflow/config/readiness-criteria.${name}.json\` | Copy for workspace_check / tools |`,
+    `| \`.ai-spector/.docflow/config/doc-types/${name}/readiness-criteria.json\` | Copy for workspace_check / tools |`,
     `| \`.ai-spector/packs/${name}/completeness-rules.json\` | Output validation (required headings) |`,
     `| \`.ai-spector/packs/${name}/context-map.json\` | Placeholder → graph source (resolve TODOs) |`,
     "",

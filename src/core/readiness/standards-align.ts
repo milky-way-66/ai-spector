@@ -37,7 +37,7 @@ export function checkStandardsAlignment(
   const unmatchedInCriteria = configDeclared.filter((id) => !criteriaSet.has(id));
 
   let note =
-    "docflow.config readiness.standards declares project intent; readiness_assess scores against readiness-criteria.*.json.";
+    "docflow.config readiness.standards declares project intent; readiness_assess scores against doc-types/*/readiness-criteria.json.";
   if (unmatchedInCriteria.length > 0) {
     note +=
       ` Config tags not found in criteria file: ${unmatchedInCriteria.join(", ")} — update config or criteria standards list.`;

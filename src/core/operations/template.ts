@@ -10,6 +10,13 @@ import {
   loadDocumentsManifest,
   loadBasicDesignListManifest,
 } from "../config/load.js";
+import {
+  docTypeConfigDir,
+  docTypeCompletenessRulesPath,
+  docTypeDagGraphSeedsPath,
+  docTypeDagPath,
+  docTypeReadinessCriteriaPath,
+} from "../config/docflow-paths.js";
 import { readJson, writeJson, pathExists, copyTree } from "../util/fs.js";
 import { buildSectionRegistry } from "../registry/build.js";
 import { applyPrimaryLanguageOutputs } from "../graph/translation.js";
@@ -314,7 +321,7 @@ async function writeGenerateHints(packDir: string, manifest: PackManifest): Prom
     `- Readiness:     \`.ai-spector/packs/${manifest.packName}/readiness-criteria.json\``,
     `- Workflow:      \`.ai-spector/packs/${manifest.packName}/workflow-setup.md\``,
     `- Inspect pack:  \`npx ai-spector template inspect ${manifest.packName}\``,
-    `- Active graph seeds: see \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+    `- Active graph seeds: see \`.ai-spector/.docflow/config/doc-types/srs/dag.graph-seeds.json\``,
     "",
     "## Gated workflow (mandatory)",
     "",
@@ -419,10 +426,10 @@ async function writePackReadinessArtifacts(
   await writeJson(packCompletenessPath, completeness);
   await writeFile(workflowPath, workflowMd, "utf8");
 
-  const configDir = join(root, ".ai-spector", ".docflow", "config");
+  const configDir = join(root, ".ai-spector", ".docflow", "config", "doc-types", manifest.packName);
   await mkdir(configDir, { recursive: true });
-  await writeJson(join(configDir, `readiness-criteria.${manifest.packName}.json`), readiness);
-  await writeJson(join(configDir, `completeness-rules.${manifest.packName}.json`), completeness);
+  await writeJson(docTypeReadinessCriteriaPath(root, manifest.packName), readiness);
+  await writeJson(docTypeCompletenessRulesPath(root, manifest.packName), completeness);
 }
 
 async function readContextMapFromPack(packDir: string): Promise<{ placeholders?: Record<string, { source: string }> }> {
@@ -510,8 +517,8 @@ async function writePackGenerateSkill(
       ``,
       `Read these files before generating:`,
       `1. \`.ai-spector/packs/${name}/generate-hints.md\``,
-      `2. \`.ai-spector/.docflow/config/dag.srs.json\``,
-      `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+      `2. \`.ai-spector/.docflow/config/doc-types/srs/dag.json\``,
+      `3. \`.ai-spector/.docflow/config/doc-types/srs/dag.graph-seeds.json\``,
       ``,
       `Then follow the wave structure from \`generate-hints.md\`.`,
       ``,
@@ -567,8 +574,8 @@ async function writePackGenerateSkill(
     ``,
     `## Load at start (in order)`,
     `1. \`.ai-spector/packs/${name}/generate-hints.md\``,
-    `2. \`.ai-spector/.docflow/config/dag.srs.json\``,
-    `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\``,
+    `2. \`.ai-spector/.docflow/config/doc-types/srs/dag.json\``,
+    `3. \`.ai-spector/.docflow/config/doc-types/srs/dag.graph-seeds.json\``,
     `4. [\`generate-workflow.md\`](../ai-spector/references/generate-workflow.md)`,
     `5. \`.ai-spector/packs/${name}/readiness-criteria.json\``,
     `6. \`.ai-spector/packs/${name}/workflow-setup.md\``,
@@ -714,8 +721,8 @@ async function writePackGenerateSkill(
     ``,
     `Read these files before generating anything:`,
     `1. \`.ai-spector/packs/${name}/generate-hints.md\` — wave structure`,
-    `2. \`.ai-spector/.docflow/config/dag.srs.json\` — DAG node order`,
-    `3. \`.ai-spector/.docflow/config/dag.srs.graph-seeds.json\` — graph seed ids`,
+    `2. \`.ai-spector/.docflow/config/doc-types/srs/dag.json\` — DAG node order`,
+    `3. \`.ai-spector/.docflow/config/doc-types/srs/dag.graph-seeds.json\` — graph seed ids`,
     ``,
     `## Workflow`,
     ``,
@@ -794,18 +801,18 @@ async function writePackGenerateSkill(
 }
 
 async function writeDagFiles(root: string, dag: object, seeds: object): Promise<void> {
-  const dagDir = join(root, ".ai-spector", ".docflow", "config");
+  const dagDir = docTypeConfigDir(root, "srs");
   await mkdir(dagDir, { recursive: true });
-  await writeJson(join(dagDir, "dag.srs.json"), dag);
-  await writeJson(join(dagDir, "dag.srs.graph-seeds.json"), seeds);
+  await writeJson(docTypeDagPath(root, "srs"), dag);
+  await writeJson(docTypeDagGraphSeedsPath(root, "srs"), seeds);
 }
 
 async function restoreBuiltinDagFiles(root: string): Promise<void> {
   const { scaffoldBundleRoot } = await import("../config/load.js");
-  const srcDir = join(scaffoldBundleRoot(), ".ai-spector", ".docflow", "config");
-  const destDir = join(root, ".ai-spector", ".docflow", "config");
+  const srcDir = join(scaffoldBundleRoot(), ".ai-spector", ".docflow", "config", "doc-types", "srs");
+  const destDir = join(root, ".ai-spector", ".docflow", "config", "doc-types", "srs");
   await mkdir(destDir, { recursive: true });
-  for (const name of ["dag.srs.json", "dag.srs.graph-seeds.json"]) {
+  for (const name of ["dag.json", "dag.graph-seeds.json"]) {
     const src = join(srcDir, name);
     const dest = join(destDir, name);
     if (existsSync(src)) {
@@ -1178,7 +1185,7 @@ async function runTemplateInstall(opts: {
   const usedAiSkill = existsSync(stagedSkillPath);
   console.log(`  Templates → .ai-spector/packs/${packName}/templates/`);
   console.log(`  Active    → docflow.config.json updated`);
-  console.log(`  DAG       → .ai-spector/.docflow/config/dag.srs.json updated`);
+  console.log(`  DAG       → .ai-spector/.docflow/config/doc-types/srs/dag.json updated`);
   console.log(`  Skill     → .cursor/skills/ai-spector-generate-${packName}/SKILL.md ${usedAiSkill ? "(AI-written)" : "(auto-generated from manifest)"}`);
   console.log(`           → .claude/skills/ai-spector-generate-${packName}/skill.md`);
   console.log(`  Readiness → .ai-spector/packs/${packName}/readiness-criteria.json`);

@@ -30,7 +30,7 @@ wired into pre-commit. Design ref: §4.
 | 1.1 | `CheckOptions` / `CheckFinding` / `CheckResult` types + `runCheck` | `src/core/operations/check.ts` |
 | 1.2 | Rule engine: load `workspace.rules.json`, evaluate STRUCT/CFG/TMPL/CTX/GRAPH rules | `src/core/operations/check.ts` (+ `core/util/` helpers as needed) |
 | 1.3 | `--fix` for `autoFixable` findings (mkdir, scaffold empty config) | same |
-| 1.4 | Default rule config | `scaffold/.ai-spector/.docflow/config/workspace.rules.json` |
+| 1.4 | Default rule config | `scaffold/.ai-spector/.docflow/config/workspace/rules.json` |
 | 1.5 | `formatCheck(result)` | `src/interfaces/cli/format/check.ts` |
 | 1.6 | CLI `check [--json] [--fix]` handler | `src/cli.ts` |
 | 1.7 | MCP tool `workspace_check({ fix? })` | `src/interfaces/mcp/tools/check.ts` |

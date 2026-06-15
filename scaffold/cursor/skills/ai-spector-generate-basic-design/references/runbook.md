@@ -29,7 +29,7 @@ Generate basic design markdown **from the traceability graph** and upstream SRS.
 
 - `dag.basic-design.json`
 - `dag.basic-design.graph-seeds.json` — seeds + `documentNodes` for ingest
-- `completeness-rules.basic-design.json`
+- `doc-types/basic-design/completeness-rules.json`
 - `workflow.dependencies.json` → `generate-basic-design`
 - `.ai-spector/docflow.config.json` → `languages[]` — output language(s) and folders
 

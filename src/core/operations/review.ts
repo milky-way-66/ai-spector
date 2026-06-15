@@ -6,6 +6,13 @@ import { pathExists } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { normalizeLogicalPath } from "../comments/paths.js";
 import { resolveReviewDocPath } from "../reviews/doc-resolve.js";
+import { docTypeFromLogicalPath } from "../reviews/doc-type.js";
+import {
+  runReadinessOutputChecklist,
+  runReadinessScan,
+  type ReadinessOutputChecklistResult,
+  type ReadinessScanResult,
+} from "./readiness.js";
 import { listThreads } from "../comments/storage.js";
 import { computeLineDiff } from "../util/diff.js";
 import {
@@ -89,6 +96,15 @@ export interface ReviewStatusOptions {
   historySince?: string;
 }
 
+export interface ReviewReadinessContext {
+  docPath: string;
+  docType: string;
+  /** Structural checks (headings, placeholders, empty sections). */
+  structuralScan: ReadinessScanResult;
+  /** Rubric for agent semantic scoring — judge each item met | partial | missing. */
+  outputChecklist: ReadinessOutputChecklistResult;
+}
+
 export interface ReviewStatusResult {
   approval: ApprovalRecord;
   diff: DiffFile | null;
@@ -97,6 +113,8 @@ export interface ReviewStatusResult {
   /** Hash of the approved snapshot when stale is true. */
   approvedContentHash?: string;
   history?: HistoryLine[];
+  /** Resolved on-disk path and readiness rubric when doc type is known. */
+  readiness?: ReviewReadinessContext;
   /** Agent routing: recommended next MCP tools and whether review_approve is allowed now. */
   workflowGuidance?: ReviewWorkflowGuidance;
   /** Persisted review session gate state (`.session.json`). */
@@ -375,6 +393,29 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     }),
     ...(live.stale ? { stale: true, approvedContentHash } : {}),
   };
+
+  try {
+    const docType = docTypeFromLogicalPath(lp);
+    if (docType) {
+      const { docPath } = await resolveReviewDocPath(projectRoot, lp);
+      const [structuralScan, outputChecklist] = await Promise.all([
+        runReadinessScan({
+          root: projectRoot,
+          docType,
+          paths: [docPath],
+          updateLastScan: false,
+        }),
+        runReadinessOutputChecklist({
+          root: projectRoot,
+          docType,
+          paths: [docPath],
+        }),
+      ]);
+      result.readiness = { docPath, docType, structuralScan, outputChecklist };
+    }
+  } catch {
+    // Readiness config or doc path may be unavailable — review proceeds without checklist
+  }
 
   if (opts.includeHistory) {
     result.history = await readHistory(projectRoot, lp, {

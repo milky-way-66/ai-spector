@@ -30,7 +30,7 @@ everything else is reported with a remediation hint.
 | GRAPH-001 | warning | `graph.json` parses (deep validation stays with `graph validate`) |
 
 Severities are configurable per project in
-`.ai-spector/.docflow/config/workspace.rules.json`.
+`.ai-spector/.docflow/config/workspace/rules.json`.
 
 ## Agent behavior
 

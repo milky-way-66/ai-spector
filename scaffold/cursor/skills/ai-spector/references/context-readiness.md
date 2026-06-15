@@ -14,7 +14,7 @@ Standards grounding (see `standards[]` in criteria file):
 | **IEEE 830** (superseded) | Legacy outline — mapped via 29148 |
 | **CPRE Elicitation** | System context, requirements sources |
 
-Machine-readable criteria: `.ai-spector/.docflow/config/readiness-criteria.<docType>.json`
+Machine-readable criteria: `.ai-spector/.docflow/config/doc-types/<docType>/readiness-criteria.json`
 
 **Prefer MCP** (CLI only if MCP unavailable):
 
@@ -49,8 +49,8 @@ Configure in `.ai-spector/docflow.config.json`:
 | Layer | Source | Question answered | When |
 |-------|--------|-------------------|------|
 | **Intent** | `docflow.config` → `readiness.standards[]` | Which standards does the project declare? | Reporting / alignment check |
-| **Input assess** | `readiness-criteria.<docType>.json` → `standards[]`, per-criterion `iso29148` | Enough context to write? | CLARIFY (`readiness_assess`) |
-| **Output structure** | `completeness-rules.<docType>.json` | File structure valid (headings, no TODO/TBD)? | After GENERATE (`readiness_scan`) |
+| **Input assess** | `doc-types/<docType>/readiness-criteria.json` → `standards[]`, per-criterion `iso29148` | Enough context to write? | CLARIFY (`readiness_assess`) |
+| **Output structure** | `doc-types/<docType>/completeness-rules.json` | File structure valid (headings, no TODO/TBD)? | After GENERATE (`readiness_scan`) |
 | **Output semantic** | `readiness_output_checklist` + **agent** | Written prose covers ISO criteria? | After GENERATE — [output-compliance.md](./output-compliance.md) |
 
 `readiness.standards` in docflow.config is **metadata** — it does not drive scoring.
@@ -62,13 +62,13 @@ After changing `profile`, run `readiness_scan({ updateLastScan: true })` — `wo
 
 `readiness_assess` returns structured JSON: `ready`, `summary`, `criteria[]`, `blockingGaps`, `questionsForUser`, `inventory`.
 
-**Tailoring profiles** (bundled in `readiness-profiles/`):
+**Tailoring profiles** (bundled in `readiness/profiles/` — one JSON file per profile):
 
-| Profile | Use |
-|---------|-----|
-| `general` | Default ISO SRS baseline |
-| `regulated` | Extends SRS — safety class, V&V, traceability, audit gates |
-| `arc42` | Replaces SRS — architecture doc (arc42 sections) |
+| Profile | File | Use |
+|---------|------|-----|
+| `general` | `general.json` | Default ISO SRS baseline (`default: true`) |
+| `regulated` | `regulated.json` | Extends SRS — safety class, V&V, traceability, audit gates |
+| `arc42` | `arc42.json` | Replaces SRS — architecture doc (arc42 sections) |
 
 Set default in `.ai-spector/docflow.config.json`:
 
@@ -80,7 +80,7 @@ Set default in `.ai-spector/docflow.config.json`:
 
 | `packs.srs` | Readiness file |
 |-------------|----------------|
-| `"builtin"` | `readiness-criteria.srs.json` (v2 — full ISO SRS) |
+| `"builtin"` | `doc-types/srs/readiness-criteria.json` (v2 — full ISO SRS) |
 | `"<custom>"` | `readiness-criteria.<custom>.json` — auto-generated on `template install` |
 | either | Pack copy: `.ai-spector/packs/<pack>/readiness-criteria.json` |
 
@@ -111,7 +111,7 @@ is true. Do not mark clarify done with a shortened summary — show ID, ISO ref,
 
 | User signal | Targets |
 |-------------|---------|
-| "generate all SRS" | All DAG nodes in `dag.srs.json` waves |
+| "generate all SRS" | All DAG nodes in `doc-types/srs/dag.json` waves |
 | Explicit paths (`docs/srs/en/3-use-cases.md`) | Map path → DAG node + dependency closure |
 | "§3 + §4", "use cases and features" | `srs.3-use-cases`, `srs.4-system-features` (+ deps) |
 | "trial / wave 0" | Only nodes in agreed wave — **still run readiness for those nodes** |
@@ -142,7 +142,7 @@ requirements. Cite findings as "industry baseline"; still ask the user to confir
 
 ## Step 3 — Score readiness per target
 
-For each target chapter, evaluate criteria from `readiness-criteria.<docType>.json`:
+For each target chapter, evaluate criteria from `doc-types/<docType>/readiness-criteria.json`:
 
 1. **Global criteria** (`globalCriteria`) — apply once per run.
 2. **Target criteria** — match `dagNode` to selected targets.
@@ -187,7 +187,7 @@ Show the user a table **before** the question batch. Include **ISO ref** column 
 
 ```
 Readiness — generate SRS §3 + §4 (en)
-Standards intent: ISO-29148 (config) — assess source: readiness-criteria.srs.json
+Standards intent: ISO-29148 (config) — assess source: doc-types/srs/readiness-criteria.json
 
 | ID | ISO | Dimension | Criterion | Status | Evidence | Gap |
 |----|-----|-----------|-----------|--------|----------|-----|
@@ -231,7 +231,7 @@ Domain search used: yes — PCI-DSS payment handling (user confirmed: not applic
 
 ### SRS (builtin)
 
-- Criteria file: `readiness-criteria.srs.json`
+- Criteria file: `doc-types/srs/readiness-criteria.json`
 - Graph probes: see `srs-context/*.md` for template↔graph mapping
 - List chapters (§3, §4) need **entity lists** in graph; detail chapters need **per-entity fields**
 - If graph is empty but user wants §3/§4: readiness will flag blocking — offer:

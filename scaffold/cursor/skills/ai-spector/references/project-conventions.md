@@ -24,7 +24,7 @@ Missing templates → `npx ai-spector init --force`.
 
 ## Document language
 
-Stored in `.ai-spector/.docflow/config/language.json` (`documentLanguage` field).
+Stored in `.ai-spector/.docflow/config/workspace/language.json` (`documentLanguage` field).
 
 - **Before the first write** in any session, check this file. If `documentLanguage` is `null` or missing, run the language-picker flow ([language-picker.md](./language-picker.md)) — ask the user, persist the answer, then continue.
 - **All generated content** (headings, body, tables, labels) must be in `documentLanguage`. Identifiers (UC-01, F-02, API paths, code) are never translated.

@@ -49,7 +49,7 @@ Union of four sources:
 
 1. **Readiness criteria** — every criterion with status `missing` or `partial` where
    `severity: "blocking"` (and `should-ask` unless user waived depth).
-2. **Completeness rules** — `completeness-rules.<docType>.json` input-side gaps
+2. **Completeness rules** — `doc-types/<docType>/completeness-rules.json` input-side gaps
    (reframe missing preconditions as questions).
 3. **Graph coverage** — DAG seed nodes that resolve to empty (no actors for §2,
    no `UC-xx` for §3 list, no `F-xx` for §4…).

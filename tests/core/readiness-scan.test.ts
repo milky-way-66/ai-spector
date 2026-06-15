@@ -13,13 +13,13 @@ async function writeJson(path: string, data: unknown) {
 describe("readiness scan", () => {
   it("flags missing headings and TODO placeholders", async () => {
     const root = await mkdtemp(join(tmpdir(), "aispector-rscan-"));
-    const configDir = join(root, ".ai-spector/.docflow/config");
+    const configDir = join(root, ".ai-spector/.docflow/config/doc-types/srs");
     await mkdir(configDir, { recursive: true });
     await mkdir(join(root, "docs/srs/en"), { recursive: true });
 
-    const bundle = join(packageBundleRoot(), "scaffold/.ai-spector/.docflow/config");
-    await copyFile(join(bundle, "readiness-criteria.srs.json"), join(configDir, "readiness-criteria.srs.json"));
-    await copyFile(join(bundle, "completeness-rules.srs.json"), join(configDir, "completeness-rules.srs.json"));
+    const bundle = join(packageBundleRoot(), "scaffold/.ai-spector/.docflow/config/doc-types/srs");
+    await copyFile(join(bundle, "readiness-criteria.json"), join(configDir, "readiness-criteria.json"));
+    await copyFile(join(bundle, "completeness-rules.json"), join(configDir, "completeness-rules.json"));
 
     await writeJson(join(root, ".ai-spector/docflow.config.json"), {
       version: 1,
@@ -46,13 +46,13 @@ describe("readiness scan", () => {
 
   it("suggests regulated content when profile is regulated", async () => {
     const root = await mkdtemp(join(tmpdir(), "aispector-rscan-"));
-    const configDir = join(root, ".ai-spector/.docflow/config");
+    const configDir = join(root, ".ai-spector/.docflow/config/doc-types/srs");
     await mkdir(configDir, { recursive: true });
     await mkdir(join(root, "docs/srs/en"), { recursive: true });
 
-    const bundle = join(packageBundleRoot(), "scaffold/.ai-spector/.docflow/config");
-    await copyFile(join(bundle, "readiness-criteria.srs.json"), join(configDir, "readiness-criteria.srs.json"));
-    await copyFile(join(bundle, "completeness-rules.srs.json"), join(configDir, "completeness-rules.srs.json"));
+    const bundle = join(packageBundleRoot(), "scaffold/.ai-spector/.docflow/config/doc-types/srs");
+    await copyFile(join(bundle, "readiness-criteria.json"), join(configDir, "readiness-criteria.json"));
+    await copyFile(join(bundle, "completeness-rules.json"), join(configDir, "completeness-rules.json"));
 
     await writeJson(join(root, ".ai-spector/docflow.config.json"), {
       version: 1,

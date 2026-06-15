@@ -39,11 +39,11 @@ export interface ReadinessDocTypeSetting {
 
 /** Readiness tailoring — set in docflow.config.json; query via readiness_config MCP. */
 export interface ReadinessConfig {
-  /** Default profile when docTypes.<type>.profile is unset: general | regulated | arc42 */
+  /** Default profile when docTypes.<type>.profile is unset — must match a file in readiness/profiles/ */
   profile?: string;
   /**
    * Declared standards intent for the project (ISO-29148, IEC-62304, …).
-   * Does not drive readiness_assess directly — scoring uses `readiness-criteria.<docType>.json`
+   * Does not drive readiness_assess directly — scoring uses `doc-types/<docType>/readiness-criteria.json`
    * `standards[]` and per-criterion `iso29148` refs. Query alignment via readiness_config /
    * readiness_assess `standardsAlignment`.
    */
@@ -62,7 +62,7 @@ export interface DocflowConfig {
   version: number;
   /** Configured languages. First entry is the primary language. */
   languages: LanguageConfig[];
-  /** Readiness tailoring — see readiness-profiles/ in docflow config. */
+  /** Readiness tailoring — see readiness/profiles/ in docflow config. */
   readiness?: ReadinessConfig;
   /**
    * Language code the client prefers for document review and delivery.

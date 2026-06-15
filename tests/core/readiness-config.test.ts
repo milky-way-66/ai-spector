@@ -39,12 +39,15 @@ describe("readiness config", () => {
 
   it("detects profile drift", async () => {
     const root = await mkdtemp(join(tmpdir(), "aispector-rcfg-"));
-    await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
+    await mkdir(join(root, ".ai-spector/.docflow/config/doc-types/srs"), { recursive: true });
     const srcCriteria = join(
       packageBundleRoot(),
-      "scaffold/.ai-spector/.docflow/config/readiness-criteria.srs.json",
+      "scaffold/.ai-spector/.docflow/config/doc-types/srs/readiness-criteria.json",
     );
-    await copyFile(srcCriteria, join(root, ".ai-spector/.docflow/config/readiness-criteria.srs.json"));
+    await copyFile(
+      srcCriteria,
+      join(root, ".ai-spector/.docflow/config/doc-types/srs/readiness-criteria.json"),
+    );
     await writeJson(join(root, ".ai-spector/docflow.config.json"), {
       version: 1,
       languages: [{ code: "en", label: "English" }],

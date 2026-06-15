@@ -1,15 +1,15 @@
 # Basic auth picker — username, password, htpasswd
 
-Before **any** prototype HTML is generated, the project must have HTTP basic auth configured. Run this flow when `prototype.config.json` has no `basicAuth` (or username/password is empty).
+Before **any** prototype HTML is generated, the project must have HTTP basic auth configured. Run this flow when `prototype/config.json` has no `basicAuth` (or username/password is empty).
 
 Skip when:
 
-- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype.config.json` — run `npx ai-spector prototype auth --from-config` only if `prototype/.htpasswd` is missing
+- `basicAuth.username` and `basicAuth.password` are already set in `.ai-spector/.docflow/config/prototype/config.json` — run `npx ai-spector prototype auth --from-config` only if `prototype/.htpasswd` is missing
 - User is only previewing themes (no generation)
 
 ## Step 1 — Check stored credentials
 
-Read `.ai-spector/.docflow/config/prototype.config.json`. If `basicAuth.username` and `basicAuth.password` are non-empty, skip asking. Ensure `prototype/.htpasswd` exists; if not:
+Read `.ai-spector/.docflow/config/prototype/config.json`. If `basicAuth.username` and `basicAuth.password` are non-empty, skip asking. Ensure `prototype/.htpasswd` exists; if not:
 
 ```bash
 npx ai-spector prototype auth --from-config
@@ -27,7 +27,7 @@ Prototype hosting uses HTTP basic auth. Choose credentials for reviewers:
 
 Reply with both values (e.g. "username: demo / password: …").
 
-Credentials are saved in `.ai-spector/.docflow/config/prototype.config.json` and hashed into `prototype/.htpasswd` for nginx/Apache.
+Credentials are saved in `.ai-spector/.docflow/config/prototype/config.json` and hashed into `prototype/.htpasswd` for nginx/Apache.
 ```
 
 If the user gives only one field, ask for the missing one and wait.
@@ -44,7 +44,7 @@ This writes:
 
 | Artifact | Purpose |
 |----------|---------|
-| `prototype.config.json` → `basicAuth` | Plain username/password for regeneration and team reference |
+| `prototype/config.json` → `basicAuth` | Plain username/password for regeneration and team reference |
 | `prototype/.htpasswd` | Apache apr1 hash for web server `auth_basic` |
 
 Then continue with theme resolution and [runbook.md](runbook.md) §1 (setup).
@@ -58,4 +58,4 @@ If the user asks to rotate credentials:
 
 ## Security note
 
-`prototype.config.json` contains the password in plain text. Treat the file like a secret in production; restrict repo access or use environment-specific config outside git if needed.
+`prototype/config.json` contains the password in plain text. Treat the file like a secret in production; restrict repo access or use environment-specific config outside git if needed.

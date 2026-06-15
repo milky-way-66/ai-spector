@@ -249,8 +249,14 @@ export function buildReviewSessionWorkflowGuidance(
       return {
         ...base,
         phase: "reviewing",
-        message: `Reviewing ${session.activeLogicalPath ?? "document"} — write review summary, then review_session_ack_review.`,
-        nextTools: ["review_status", "graph_impact", "review_session_ack_review"],
+        message: `Reviewing ${session.activeLogicalPath ?? "document"} — score readiness checklist, write review summary, then review_session_ack_review.`,
+        nextTools: [
+          "review_status",
+          "readiness_scan",
+          "readiness_output_checklist",
+          "graph_impact",
+          "review_session_ack_review",
+        ],
         canProceed: false,
       };
     case "awaiting_decision":

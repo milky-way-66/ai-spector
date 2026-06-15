@@ -55,7 +55,7 @@ export async function loadMergedReadinessCriteria(opts: {
       docType: "arc42",
       packName: resolved.packName,
       profileId,
-      criteriaPath: `readiness-profiles/arc42.json`,
+      criteriaPath: `readiness/profiles/arc42.json`,
       criteria: base,
       appliedProfiles: base.appliedProfiles ?? ["arc42"],
     };

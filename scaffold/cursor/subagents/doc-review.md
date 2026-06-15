@@ -21,7 +21,7 @@
 |-------|---------|-----------|
 | `detect` | `review_check` | `review_approve` |
 | `queue` | `review_queue` | `review_approve` |
-| `reviewing` | `review_status`, read doc, `graph_impact`, `review_session_ack_review` | `review_approve` until ack |
+| `reviewing` | `review_status`, read doc, `readiness_scan`, `readiness_output_checklist`, `graph_impact`, `review_session_ack_review` | `review_approve` until ack |
 | `awaiting_decision` | `review_approve`, `review_reject` | `spec_approve`, `task_approve_plan`, `comments_resolve` |
 
 On entry with `resumeFromState: true`, load `.ai-spector/.docflow/review-queue/.session.json` or last `review_status` — do not restart from `detect` if phase is already `reviewing`.

@@ -101,6 +101,9 @@ describe("comment storage", () => {
 
       const after = await getThread(root, "srs/01-overview", SAMPLE_META.threadId);
       expect(after?.status).toBe("resolved");
+      expect(after?.resolvedBy).toBe("brse");
+      expect(after?.resolvedByUsername).toBe("unknown");
+      expect(after?.resolvedByRole).toBe("user");
       expect(after?.resolvedInCommitSha).toBe("deadbeef");
       expect(after?.events.some((e) => e.type === "resolved")).toBe(true);
 

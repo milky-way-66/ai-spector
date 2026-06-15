@@ -7,11 +7,11 @@ When **no document language is stored** and the user did not name one in this re
 Skip this flow when:
 
 - User named a language in this request ("write in Japanese", "use Vietnamese")
-- `.ai-spector/.docflow/config/language.json` already exists and has `documentLanguage` set (use it — do not re-ask)
+- `.ai-spector/.docflow/config/workspace/language.json` already exists and has `documentLanguage` set (use it — do not re-ask)
 
 ## Step 1 — Check for stored preference
 
-Read `.ai-spector/.docflow/config/language.json`. If the file exists and `documentLanguage` is a non-empty string, use that language for all document content. Skip the rest of this document.
+Read `.ai-spector/.docflow/config/workspace/language.json`. If the file exists and `documentLanguage` is a non-empty string, use that language for all document content. Skip the rest of this document.
 
 ## Step 2 — Ask the user
 
@@ -40,7 +40,7 @@ Any other input: reply "Please choose 1 (English), 2 (Japanese), or 3 (Vietnames
 
 ## Step 3 — Persist the choice
 
-When the user replies, create or overwrite `.ai-spector/.docflow/config/language.json`:
+When the user replies, create or overwrite `.ai-spector/.docflow/config/workspace/language.json`:
 
 ```json
 {

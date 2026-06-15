@@ -19,6 +19,21 @@ export interface ReviewWorkflowGuidance {
 
 const NOT_APPROVE_SIBLINGS = ["spec_approve", "task_approve_plan", "comments_resolve"] as const;
 
+const READINESS_REVIEW_TOOLS = [
+  "readiness_scan",
+  "readiness_output_checklist",
+] as const;
+
+const INTERNAL_REVIEW_TOOLS = [
+  "review_check",
+  "review_queue",
+  "review_status",
+  "graph_impact",
+  ...READINESS_REVIEW_TOOLS,
+  "review_session_ack_review",
+  "review_approve",
+] as const;
+
 export function buildReviewWorkflowGuidance(
   approval: ApprovalRecord,
   opts?: { stale?: boolean; session?: ReviewSessionFile | null },
@@ -60,11 +75,12 @@ export function buildReviewWorkflowGuidance(
       phase: "stale_needs_rereview",
       canReviewApprove: canApprove,
       message:
-        "Content changed since last sign-off. Run review_check if needed, load diff via review_status, write a review summary, review_session_ack_review, then review_approve.",
+        "Content changed since last sign-off. Run review_check if needed, load diff via review_status, score readiness checklist, write a review summary, review_session_ack_review, then review_approve.",
       nextTools: [
         "review_check",
         "review_status",
         "graph_impact",
+        ...READINESS_REVIEW_TOOLS,
         "review_session_ack_review",
         "review_approve",
       ],
@@ -78,15 +94,8 @@ export function buildReviewWorkflowGuidance(
       phase: "awaiting_internal_review",
       canReviewApprove: canApprove,
       message:
-        "Internal sign-off: review_check → review_queue → review_status + read doc → graph_impact → write review → review_session_ack_review → user yes → review_approve.",
-      nextTools: [
-        "review_check",
-        "review_queue",
-        "review_status",
-        "graph_impact",
-        "review_session_ack_review",
-        "review_approve",
-      ],
+        "Internal sign-off: review_check → review_queue → review_status + read doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve.",
+      nextTools: [...INTERNAL_REVIEW_TOOLS],
       notTheseTools: [...NOT_APPROVE_SIBLINGS],
     });
   }

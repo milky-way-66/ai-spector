@@ -12,9 +12,9 @@ Spawn **`doc-review`** worker — brief: [../subagents/doc-review.md](../subagen
 |-------|--------|
 | 0 | `review_check({})` — find changed documents |
 | 1 | `review_queue({ track: "internal" })` — show table; **wait for user to pick** |
-| 2 | `review_status({ logicalPath, showDiff: true })` + read the doc file |
+| 2 | `review_status({ logicalPath, showDiff: true })` + read the doc file + score readiness checklist |
 | 3 | `graph_impact` on the document path |
-| 4 | Write structured review in chat (summary, diff, impact, recommendation) |
+| 4 | Write structured review in chat (summary, diff, readiness compliance, impact, recommendation) |
 | 4b | `review_session_ack_review({ logicalPath })` |
 | 5 | Show decision menu; **wait for user reply** |
 | 6 | On **Approve** only → `review_approve({ logicalPath, by })` |

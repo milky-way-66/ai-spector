@@ -45,7 +45,7 @@ Plan — generate SRS (en)
 
 Clarifications resolved this run: Q-001, Q-003
 Accepted assumptions in effect: Q-007 — payment retry = 3 attempts
-Standards: ISO-29148 (from docflow.config) — criteria from readiness-criteria.srs.json
+Standards: ISO-29148 (from docflow.config) — criteria from doc-types/srs/readiness-criteria.json
 
 Proceed? (yes / edit scope / revisit clarifications)
 ```

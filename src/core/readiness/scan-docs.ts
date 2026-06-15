@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { docTypeCompletenessRulesPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig, primaryLanguage, resolveActivePackManifest } from "../config/load.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 import type { PackManifest } from "../config/types.js";
@@ -196,11 +197,10 @@ async function loadCompletenessRules(
   docType: string,
   packName: string | null,
 ): Promise<CompletenessRulesFile | null> {
-  const configDir = join(root, ".ai-spector/.docflow/config");
   const candidates = [
-    packName ? join(configDir, `completeness-rules.${packName}.json`) : null,
+    packName ? docTypeCompletenessRulesPath(root, packName) : null,
     packName ? join(root, ".ai-spector/packs", packName, "completeness-rules.json") : null,
-    join(configDir, `completeness-rules.${docType}.json`),
+    docTypeCompletenessRulesPath(root, docType),
   ].filter(Boolean) as string[];
 
   for (const p of candidates) {

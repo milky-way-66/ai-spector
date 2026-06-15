@@ -2,11 +2,11 @@
 
 > **Hard rule: never auto-select a stack.** The agent may recommend based on project context, but the user must explicitly confirm before any file is generated or setup runs.
 
-Run this flow **once**, before theme resolution and `prototype setup`, when `prototype.config.json` has no `techStack`.
+Run this flow **once**, before theme resolution and `prototype setup`, when `prototype/config.json` has no `techStack`.
 
 Skip when:
 
-- `techStack` is already set in `.ai-spector/.docflow/config/prototype.config.json`
+- `techStack` is already set in `.ai-spector/.docflow/config/prototype/config.json`
 - User named a stack in this request (e.g. "use Vue", "generate with React", `--stack vue`)
 
 ## Supported stacks
@@ -62,7 +62,7 @@ Framework stacks use `buildMode: spa`. After stack selection, follow [spa-protot
 
 ## Step 1 — Check stored stack
 
-Read `.ai-spector/.docflow/config/prototype.config.json`. If `techStack` is set, skip this entire flow.
+Read `.ai-spector/.docflow/config/prototype/config.json`. If `techStack` is set, skip this entire flow.
 
 ## Step 2 — Gather project context
 
@@ -124,7 +124,7 @@ When the user picks (number, name, or keyword like "use vue"):
 npx ai-spector prototype stack <chosen-stack>
 ```
 
-This writes `techStack` and derives `buildMode` in `prototype.config.json`. Then continue with [runbook.md](runbook.md) from step 0 (auth) onward.
+This writes `techStack` and derives `buildMode` in `prototype/config.json`. Then continue with [runbook.md](runbook.md) from step 0 (auth) onward.
 
 ## Changing the stack later
 

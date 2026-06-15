@@ -34,9 +34,9 @@ Generate SRS markdown **from the traceability graph** in DAG order.
 
 ## Config
 
-- `dag.srs.json` — order + `dependsOn`
-- `dag.srs.graph-seeds.json` — DAG id → `doc.srs.*` seed
-- `completeness-rules.srs.json`
+- `doc-types/srs/dag.json` — order + `dependsOn`
+- `doc-types/srs/dag.graph-seeds.json` — DAG id → `doc.srs.*` seed
+- `doc-types/srs/completeness-rules.json`
 - `workflow.dependencies.json` → `generate-srs`
 - `.ai-spector/docflow.config.json` → `languages[]` — output language(s) and folders
 

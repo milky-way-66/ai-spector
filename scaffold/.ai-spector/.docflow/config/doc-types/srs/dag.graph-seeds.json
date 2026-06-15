@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Map dag.srs.json node ids to traceability graph document ids for /generate-srs",
+  "description": "Map doc-types/srs/dag.json node ids to traceability graph document ids for /generate-srs",
   "seeds": {
     "srs.introduction": "doc.srs.1-introduction",
     "srs.overall-description": "doc.srs.2-overall-description",

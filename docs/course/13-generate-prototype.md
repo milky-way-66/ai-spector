@@ -55,7 +55,7 @@ generate prototype with React
 
 The agent:
 
-1. Sets `buildMode: "spa"` in `.ai-spector/.docflow/config/prototype.config.json`
+1. Sets `buildMode: "spa"` in `.ai-spector/.docflow/config/prototype/config.json`
 2. Generates framework components/views under `prototype/src/` (one per screen)
 3. Expects you (or the agent) to run the framework build, then sync the output:
 
@@ -201,7 +201,7 @@ npx ai-spector prototype sync
 
 **Build output is in the wrong folder**
 
-Set paths in `.ai-spector/.docflow/config/prototype.config.json`:
+Set paths in `.ai-spector/.docflow/config/prototype/config.json`:
 
 ```json
 {

@@ -38,7 +38,7 @@ describe("doc source discovery contract", () => {
       "# API Detail: Auth SSO\n\n**Feature ID**: F-01\n",
     );
     write(
-      ".ai-spector/.docflow/config/index.docs.json",
+      ".ai-spector/.docflow/config/workspace/index.docs.json",
       JSON.stringify({
         version: 1,
         outputs: {

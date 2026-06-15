@@ -1,4 +1,5 @@
 import { basename, join } from "node:path";
+import { docTypeDagPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { loadMergedReadinessCriteria } from "./resolve.js";
@@ -65,17 +66,8 @@ function normalizeRelPath(root: string, p: string): string {
   return n.replace(/^\.\//, "");
 }
 
-function dagFileName(docType: string, packName: string | null): string {
-  if (docType === "srs") return "dag.srs.json";
-  if (docType === "basic-design") return "dag.basic-design.json";
-  if (packName) return `dag.${packName}.json`;
-  return `dag.${docType}.json`;
-}
-
-async function loadDag(root: string, docType: string, packName: string | null): Promise<DagFile | null> {
-  const configDir = join(root, ".ai-spector/.docflow/config");
-  const name = dagFileName(docType, packName);
-  const path = join(configDir, name);
+async function loadDag(root: string, docType: string, _packName: string | null): Promise<DagFile | null> {
+  const path = docTypeDagPath(root, docType);
   if (!(await pathExists(path))) return null;
   return readJson<DagFile>(path);
 }

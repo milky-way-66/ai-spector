@@ -2,7 +2,7 @@
 
 User workflow: [**_workflow.md**](./_workflow.md). **CLI failures:** [**cli-failures.md**](./cli-failures.md). Agent CLI: [**_graph.md**](./_graph.md).
 
-Load `.ai-spector/.docflow/config/workflow.dependencies.json` for the active step.
+Load `.ai-spector/.docflow/config/workspace/workflow.dependencies.json` for the active step.
 
 ## When checks fail
 

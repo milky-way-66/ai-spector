@@ -5,6 +5,8 @@ import type { DocflowConfig, DocumentsManifest, LanguageConfig, PackManifest } f
 import { assertSupportedLanguageCode } from "./types.js";
 import { readJson } from "../util/fs.js";
 
+export { bundledPrototypeConfigPath } from "./docflow-paths.js";
+
 const CONFIG_NAME = "docflow.config.json";
 
 /** Installed package root (schemas, templates, documents.json). */
@@ -22,9 +24,6 @@ export function themesBundleRoot(): string {
   return join(packageBundleRoot(), "assets", "themes");
 }
 
-export function bundledPrototypeConfigPath(): string {
-  return join(scaffoldBundleRoot(), ".ai-spector/.docflow/config/prototype.config.json");
-}
 
 /** Cursor commands/skills/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
 export function scaffoldCursorBundleRoot(): string {

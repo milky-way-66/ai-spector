@@ -14,8 +14,8 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 ## Philosophy
 
 - **Screen design is source of truth** — `docs/basic-design/list-screens.md` + `docs/basic-design/screens/<slug>.md`
-- **Tech stack must be confirmed first** — if `prototype.config.json` has no `techStack`, run the [stack picker](stack-picker.md): check for existing framework in the project, present ranked options, wait for user choice. Once chosen, never ask again.
-- **Basic auth must be configured before generating** — if `prototype.config.json` has no `basicAuth`, run the [auth picker](auth-picker.md): ask for username/password, then `npx ai-spector prototype auth`. Once saved, do not ask again unless the user wants to rotate credentials.
+- **Tech stack must be confirmed first** — if `prototype/config.json` has no `techStack`, run the [stack picker](stack-picker.md): check for existing framework in the project, present ranked options, wait for user choice. Once chosen, never ask again.
+- **Basic auth must be configured before generating** — if `prototype/config.json` has no `basicAuth`, run the [auth picker](auth-picker.md): ask for username/password, then `npx ai-spector prototype auth`. Once saved, do not ask again unless the user wants to rotate credentials.
 - **Theme must be confirmed before generating** — if no theme is stored, run the [theme picker](theme-picker.md): recommend 3 fits from project context, open previews, wait for user choice. Once chosen (stored in `prototype/theme.json` or config), never ask again.
 - **One file per screen** — file type determined by `techStack`; filename must match `prototypeStem` in `prototype/manifest.json`
 - **Stack drives buildMode** — `html` → `static`; all framework stacks → `spa` (unless `buildMode` is explicitly overridden in config)
@@ -28,7 +28,7 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 | **static** (default) | `"static"` or omitted | `/src/<stem>.html` | Plain HTML files served directly |
 | **spa** | `"spa"` | `/<slug>` | Single-page app (React, Vue, etc.) with client-side routing |
 
-**How to set SPA mode:** add `"buildMode": "spa"` to `.ai-spector/.docflow/config/prototype.config.json`.
+**How to set SPA mode:** add `"buildMode": "spa"` to `.ai-spector/.docflow/config/prototype/config.json`.
 
 **Config fields for the sync workflow:**
 
@@ -69,7 +69,7 @@ In SPA mode:
 
 ### 0. Resolve tech stack
 
-**If `prototype.config.json` → `techStack` is missing**, run the **[stack picker](stack-picker.md)** — do not run setup or generate files until the user confirms a stack.
+**If `prototype/config.json` → `techStack` is missing**, run the **[stack picker](stack-picker.md)** — do not run setup or generate files until the user confirms a stack.
 
 When the user confirms:
 
@@ -81,7 +81,7 @@ This persists `techStack` and sets `buildMode` (`html` → `static`, all others 
 
 ### 0b. Resolve basic auth
 
-**If `prototype.config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/.htpasswd` exists.
+**If `prototype/config.json` → `basicAuth` is missing** (no username/password), run the **[auth picker](auth-picker.md)** — do not generate HTML until credentials are saved and `prototype/.htpasswd` exists.
 
 If credentials exist but `prototype/.htpasswd` is missing:
 
@@ -96,7 +96,7 @@ npx ai-spector prototype auth --from-config
 1. Theme named in this request (`--theme`, “use stripe theme”, etc.)
 2. `prototype/theme.json` → `themeName`
 3. `prototype/manifest.json` → `themeName` (non-empty)
-4. `.ai-spector/.docflow/config/prototype.config.json` → `defaultTheme`
+4. `.ai-spector/.docflow/config/prototype/config.json` → `defaultTheme`
 
 **If no stored theme is found** and the user did **not** name one in this request, run the **[theme picker](theme-picker.md)**.
 
@@ -119,7 +119,7 @@ npx ai-spector prototype setup --theme <resolved-name>
 
 Omit `--theme` only when setup can infer the same name from stored files (the CLI reads `theme.json` / config automatically).
 
-**Persist** when the user explicitly names a theme in this session: `prototype setup --theme <name>` updates `prototype/theme.json` and saves `defaultTheme` in `prototype.config.json` for later runs.
+**Persist** when the user explicitly names a theme in this session: `prototype setup --theme <name>` updates `prototype/theme.json` and saves `defaultTheme` in `prototype/config.json` for later runs.
 
 List all themes:
 
@@ -154,7 +154,7 @@ Do not skip this step. Screen detail docs summarize the spec; the graph has the 
 
 ### 3. Generate prototype files
 
-Read `techStack` (and `buildMode`) from `prototype.config.json`. File type and structure depend on the stack:
+Read `techStack` (and `buildMode`) from `prototype/config.json`. File type and structure depend on the stack:
 
 | `techStack` | File per screen | Route / nav pattern | Entrypoint |
 |-------------|-----------------|---------------------|------------|
@@ -216,7 +216,7 @@ Use this workflow when the prototype files are built in a separate folder (e.g. 
 
 ### One-time config
 
-Add to `.ai-spector/.docflow/config/prototype.config.json`:
+Add to `.ai-spector/.docflow/config/prototype/config.json`:
 
 ```json
 {

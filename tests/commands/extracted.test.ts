@@ -92,6 +92,8 @@ describe("extracted-spec review queue", () => {
       const result = await runSpecApprove({ root, docType: "srs", id: "SPEC-001", by: "khang" });
       expect(result.spec.status).toBe("approved");
       expect(result.spec.reviewedBy).toBe("khang");
+      expect(result.spec.reviewedByUsername).toBe("unknown");
+      expect(result.spec.reviewedByRole).toBe("user");
       expect(result.merge).toBeDefined();
       expect(result.merge!.stats.nodesCreated).toBe(1);
 

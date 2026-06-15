@@ -101,7 +101,7 @@ Formatter in `src/interfaces/cli/format/`, MCP handler in
 
 ### 4.2 What it checks (rule set, configurable)
 
-Driven by `.ai-spector/.docflow/config/workspace.rules.json` so projects can
+Driven by `.ai-spector/.docflow/config/workspace/rules.json` so projects can
 extend it:
 
 | Rule | Severity | Checks |

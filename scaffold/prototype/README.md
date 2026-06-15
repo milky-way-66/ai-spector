@@ -10,7 +10,7 @@ Before generating HTML, configure HTTP basic auth (credentials in config, hash i
 npx ai-spector prototype auth --username <user> --password '<secret>'
 ```
 
-Stored in `.ai-spector/.docflow/config/prototype.config.json` (`basicAuth`) and `prototype/.htpasswd`.
+Stored in `.ai-spector/.docflow/config/prototype/config.json` (`basicAuth`) and `prototype/.htpasswd`.
 
 Regenerate `.htpasswd` after cloning if the file is missing:
 
@@ -20,7 +20,7 @@ npx ai-spector prototype auth --from-config
 
 ## Setup (once per project or when changing theme)
 
-The agent resolves the theme automatically (`theme.json`, manifest, or `prototype.config.json` → `defaultTheme`).
+The agent resolves the theme automatically (`theme.json`, manifest, or `prototype/config.json` → `defaultTheme`).
 
 **First time (no theme saved):** the agent reads your project docs, recommends **3 best-fit themes**, opens preview samples in your browser, and waits for you to pick before setup.
 

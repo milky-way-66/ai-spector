@@ -27,6 +27,7 @@ Legacy `reviews/` is migrated automatically on first review command, or via `npx
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 | Check downstream impact | `graph_impact({ file: "<docPath>", change: "content updated" })` | `npx ai-spector graph impact --file <path> --json` |
+| Structural + semantic rubric | Included in `review_status` → `readiness` block; or `readiness_scan` + `readiness_output_checklist` | `npx ai-spector readiness scan --paths <path> --json` |
 
 ---
 
@@ -89,6 +90,12 @@ Then read the actual document file (get `docPath` from `logicalPathToDocPath` �
 
 Use `workflowGuidance` from `review_status` — it lists `nextTools`, `notTheseTools`, and whether `canReviewApprove` is true for the current state.
 
+**Readiness:** `review_status` returns `readiness` when the logical path maps to a doc type:
+- `readiness.structuralScan` — automated structural findings
+- `readiness.outputChecklist` — rubric items to score met/partial/missing
+
+See [readiness-compliance.md](./readiness-compliance.md) for scoring rules and report template.
+
 **Read the document to understand context.** The diff alone is not enough — you need to see what the changed sections mean in the full document.
 
 ---
@@ -100,6 +107,24 @@ graph_impact({ file: "<docPath>", change: "content updated — reviewing for app
 ```
 
 Note which downstream nodes or documents are affected. This tells you whether approving this change will require regenerating other docs.
+
+---
+
+## Phase 3b — Readiness compliance
+
+Use the `readiness` block from `review_status` (Phase 2). If absent, run:
+
+```
+readiness_scan({ paths: ["<docPath>"], docType: "<type>", updateLastScan: false })
+readiness_output_checklist({ paths: ["<docPath>"], docType: "<type>" })
+```
+
+1. **Structural scan** — report errors/warnings from `readiness.structuralScan.findings`
+2. **Semantic checklist** — read the document and score each `outputChecklist.items[]` entry:
+   - **met** / **partial** / **missing** with a short evidence quote
+3. Include the **Readiness compliance** table in Phase 4 (see [readiness-compliance.md](./readiness-compliance.md))
+
+Blocking partial/missing items belong in **Concerns** and affect **Recommendation**.
 
 ---
 
@@ -128,6 +153,10 @@ If none: "No downstream impact detected.">
 <List any open threads on this document if openThreadWarning was returned.
 If none: omit this section.>
 
+**Readiness compliance**
+<Structural scan summary + compliance table — see readiness-compliance.md.
+Include blocking partial/missing count.>
+
 **Concerns** *(omit section if none)*
 <Flag anything that looks wrong, incomplete, inconsistent, or risky.
 Examples: a section was deleted without explanation, a requirement ID was
@@ -147,6 +176,7 @@ contradicts an earlier section.>
 - **Explain the meaning** — "Section 3.2 now requires OAuth 2.0 instead of API keys" not "line 42 was changed".
 - **Flag traceability breaks** — if a requirement ID or section anchor was removed or renamed, call it out explicitly.
 - **Note missing content** — if lines were deleted without replacement and the section now reads incomplete, say so.
+- **Score readiness checklist** — do not skip Phase 3b; blocking partial/missing items must appear in Concerns.
 - **Be honest about concerns** — recommend "Request changes" when something looks wrong. Do not approve to be helpful.
 
 After Phase 4, **before** asking the user to decide:
@@ -240,6 +270,7 @@ git push
 ## Guardrails
 
 - **Never skip the review write (Phase 4).** Even for a one-line change, write a brief summary.
+- **Never skip readiness compliance (Phase 3b).** Include structural scan + checklist table in the review.
 - **Never skip `review_session_ack_review` after Phase 4.** `review_approve` is blocked without it.
 - **Never approve without showing the full review first.** Even if the user says "just approve it", still write the review — then ack — then approve.
 - **Never approve if `overallStatus` is already `pending_client` or `approved`.** Tell the user the current state.

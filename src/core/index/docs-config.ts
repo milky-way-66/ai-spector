@@ -21,6 +21,8 @@ export interface IndexDocsConfig {
 
 export const INDEX_PLACEHOLDER_MARKERS = ["not yet run", "No entries yet"] as const;
 
+import { workspaceIndexDocsPath } from "../config/docflow-paths.js";
+
 export function indexDocsConfigPath(projectRoot: string): string {
-  return `${projectRoot}/.ai-spector/.docflow/config/index.docs.json`;
+  return workspaceIndexDocsPath(projectRoot);
 }

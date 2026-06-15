@@ -8,7 +8,7 @@ builtin SRS has — tailored to your manifest and scan result.
 | Artifact | Location |
 |----------|----------|
 | Readiness criteria (input) | `.ai-spector/packs/<pack>/readiness-criteria.json` |
-| Config copy | `.ai-spector/.docflow/config/readiness-criteria.<pack>.json` |
+| Config copy | `.ai-spector/.docflow/config/doc-types/<pack>/readiness-criteria.json` |
 | Completeness rules (output) | `.ai-spector/packs/<pack>/completeness-rules.json` |
 | Workflow guide | `.ai-spector/packs/<pack>/workflow-setup.md` |
 | Placeholder map | `.ai-spector/packs/<pack>/context-map.json` (existing) |
@@ -82,7 +82,7 @@ CHECK → readiness report → CLARIFY → BRIEFING → PLAN → GENERATE
 
 | Active pack | Readiness file |
 |-------------|----------------|
-| `packs.srs: "builtin"` | `readiness-criteria.srs.json` |
+| `packs.srs: "builtin"` | `doc-types/srs/readiness-criteria.json` |
 | `packs.srs: "<custom>"` | `readiness-criteria.<custom>.json` or pack dir copy |
 
 Agent: read `docflow.config.json` → resolve path before clarify stage.

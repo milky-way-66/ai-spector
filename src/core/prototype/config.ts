@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { bundledPrototypeConfigPath, findProjectRoot } from "../config/load.js";
+import { prototypeConfigPath } from "../config/docflow-paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import type { PrototypeBasicAuth, PrototypeConfig, PrototypeTechStack } from "./types.js";
 
@@ -26,10 +27,7 @@ export async function loadPrototypeConfig(
   root?: string,
 ): Promise<{ projectRoot: string; config: PrototypeConfig }> {
   const projectRoot = root ?? findProjectRoot();
-  const projectConfig = join(
-    projectRoot,
-    ".ai-spector/.docflow/config/prototype.config.json",
-  );
+  const projectConfig = prototypeConfigPath(projectRoot);
   let raw: Partial<PrototypeConfig> = {};
   if (await pathExists(projectConfig)) {
     raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
@@ -76,10 +74,7 @@ export async function persistPrototypeDefaultScreen(
   if (!id) {
     return;
   }
-  const projectConfig = join(
-    projectRoot,
-    ".ai-spector/.docflow/config/prototype.config.json",
-  );
+  const projectConfig = prototypeConfigPath(projectRoot);
   let raw: Partial<PrototypeConfig> = {};
   if (await pathExists(projectConfig)) {
     raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
@@ -99,10 +94,7 @@ export async function persistPrototypeDefaultTheme(
   if (!name) {
     return;
   }
-  const projectConfig = join(
-    projectRoot,
-    ".ai-spector/.docflow/config/prototype.config.json",
-  );
+  const projectConfig = prototypeConfigPath(projectRoot);
   let raw: Partial<PrototypeConfig> = {};
   if (await pathExists(projectConfig)) {
     raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
@@ -118,10 +110,7 @@ export async function persistPrototypeTechStack(
   projectRoot: string,
   techStack: PrototypeTechStack,
 ): Promise<PrototypeConfig> {
-  const projectConfig = join(
-    projectRoot,
-    ".ai-spector/.docflow/config/prototype.config.json",
-  );
+  const projectConfig = prototypeConfigPath(projectRoot);
   let raw: Partial<PrototypeConfig> = {};
   if (await pathExists(projectConfig)) {
     raw = await readJson<Partial<PrototypeConfig>>(projectConfig);
@@ -150,10 +139,7 @@ export async function persistPrototypeBasicAuth(
   if (!username || !password) {
     throw new Error("username and password are required");
   }
-  const projectConfig = join(
-    projectRoot,
-    ".ai-spector/.docflow/config/prototype.config.json",
-  );
+  const projectConfig = prototypeConfigPath(projectRoot);
   let raw: Partial<PrototypeConfig> = {};
   if (await pathExists(projectConfig)) {
     raw = await readJson<Partial<PrototypeConfig>>(projectConfig);

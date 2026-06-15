@@ -52,7 +52,7 @@ This is the **project config** ai-spector reads on every command. Template pack 
 | Template filenames | `.ai-spector/packs/<name>/manifest.json` → `documents[].template` |
 | Generated doc output paths | Pack `manifest.json` → `output` / `outputPattern` |
 | Placeholder → graph mapping | `.ai-spector/packs/<name>/context-map.json` |
-| Generation wave order | `.ai-spector/packs/<name>/generate-hints.md` + `.ai-spector/.docflow/config/dag.srs.json` |
+| Generation wave order | `.ai-spector/packs/<name>/generate-hints.md` + `.ai-spector/.docflow/config/doc-types/srs/dag.json` |
 | Actual template markdown | `.ai-spector/packs/<name>/templates/` (custom) or `.ai-spector/templates/` (builtin) |
 
 Inspect current active pack:

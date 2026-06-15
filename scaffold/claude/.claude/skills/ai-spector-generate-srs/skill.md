@@ -38,7 +38,7 @@ Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` fo
              data-source files used, applied Q-xxx answers, open assumptions,
              template, and notable context NOT used → user confirms
 4. PLAN      plan table (output × DAG × criteria IDs × ISO refs × sources × key
-             points, wave order from dag.srs.json) → wait for explicit "yes".
+             points, wave order from doc-types/srs/dag.json) → wait for explicit "yes".
              Never write before it.
 5. GENERATE  per DAG wave; after each wave: readiness_scan →
              readiness_output_checklist → agent output compliance table →
@@ -52,7 +52,7 @@ Always set `sourceRefs` on recorded answers — `index` flips entries to stale
 when those files change, and the next run re-asks only the stale questions.
 
 Read the DAG config for wave order:
-`.ai-spector/.docflow/config/dag.srs.json`
+`.ai-spector/.docflow/config/doc-types/srs/dag.json`
 
 Generate one section at a time following the DAG. After each section or wave:
 

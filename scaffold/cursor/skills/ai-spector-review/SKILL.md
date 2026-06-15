@@ -25,11 +25,12 @@ Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_
 ## Required reading
 
 [references/runbook.md](references/runbook.md) — follow phases in order.
+[references/readiness-compliance.md](references/readiness-compliance.md) — checklist scoring during review.
 
 ## What makes this skill different from mechanical approve
 
 The agent does not just show a diff and ask "approve?".  
-It **reads the document**, **understands the change in context**, **checks graph impact**, and **writes a review** before asking the user to decide.
+It **reads the document**, **scores readiness checklist**, **understands the change in context**, **checks graph impact**, and **writes a review** before asking the user to decide.
 
 ## Checklist
 
@@ -37,8 +38,9 @@ It **reads the document**, **understands the change in context**, **checks graph
 - [ ] review check         → find changed documents
 - [ ] review queue         → show pending table, wait for user pick
 - [ ] read document        → understand current content, not just diff
+- [ ] readiness compliance → structural scan + output checklist (from review_status.readiness)
 - [ ] graph_impact         → check downstream blast radius
-- [ ] write review summary → what changed, why it matters, concerns, recommendation
+- [ ] write review summary → diff, readiness table, concerns, recommendation
 - [ ] review_session_ack_review → unlock approve gate
 - [ ] wait for user        → approve / request changes / dismiss
 - [ ] review approve / reject (if approved)

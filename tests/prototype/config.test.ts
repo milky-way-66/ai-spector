@@ -59,7 +59,7 @@ describe("persistPrototypeDefaultTheme", () => {
       await persistPrototypeDefaultTheme(root, "stripe");
       const raw = await import("node:fs/promises").then((fs) =>
         fs.readFile(
-          join(root, ".ai-spector/.docflow/config/prototype.config.json"),
+          join(root, ".ai-spector/.docflow/config/prototype/config.json"),
           "utf8",
         ),
       );
