@@ -4,7 +4,7 @@ Agents use this when intent is ambiguous.
 
 ## Priority
 
-0. **Document sign-off** — `/review`, *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-review`** first. **Not** resolve-task, generate, or comments unless user explicitly switches topic after disambiguation.
+0. **Document sign-off** — *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-review`** first. **Not** resolve-task, generate, or comments unless user explicitly switches topic after disambiguation.
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` exists and `phase` is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic). Check session via last `review_status` response or `review_check`.
 1. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** (`task_list` → `task_resume`). Skip if message is clearly document sign-off (priority 0) or an active review session exists (priority 0.5).
 2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
@@ -12,6 +12,8 @@ Agents use this when intent is ambiguous.
 4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
 5. **Natural language** — match skill `description`; then read that skill's `references/` runbook.
 6. **Still unclear** — call MCP `workflow_route({ message })` → read `handoff.readBrief` skill runbook; if `askUser`, ask in chat first (see approve disambiguation below).
+
+`workflow_route` phrase coverage is enforced by `src/core/workflow/route-intent-examples.ts` (mirrors the WORKFLOW.md table).
 
 ## DISAMBIGUATION: "approve" means four different things
 
@@ -73,6 +75,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 | generate docs, write SRS (full chapter/DAG), generate use cases from graph | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
 | add feature, add requirement, update section, "I want to add…", "we need…" | `ai-spector-resolve-task` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
+| detail design, feature-level design | `ai-spector-generate-detail-design` | `references/runbook.md` |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |

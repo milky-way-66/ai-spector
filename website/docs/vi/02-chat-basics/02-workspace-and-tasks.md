@@ -38,4 +38,4 @@ pause task
 
 ## Tiếp theo
 
-[Graph & sources](../03-graph/README.md)
+[Thay đổi từng phần](03-incremental-changes.md)

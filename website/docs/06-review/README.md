@@ -1,9 +1,12 @@
 # Section: Review & changes
 
-Sign-off, feedback, and targeted edits.
+Sign-off and feedback — **three separate workflows** in two lessons.
 
 | Lesson | Time | Goal |
 |--------|------|------|
-| [Review, comments & changes](01-review-comments-changes.md) | 15 min | Document sign-off, comments, incremental edits |
+| [Document review & sign-off](01-document-review.md) | 15 min | Formal approve with readiness |
+| [Comment threads](02-comment-threads.md) | 10 min | Resolve C-NNN feedback |
+
+Incremental edits: [Incremental changes](../02-chat-basics/03-incremental-changes.md).
 
 **Next section:** [Advanced](../07-advanced/README.md) *(optional)*

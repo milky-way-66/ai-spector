@@ -30,7 +30,7 @@ const UI: Record<CourseLocale, CourseUiStrings> = {
   en: {
     course: "Course",
     courseTitle: "AI Spector Course",
-    brandSub: "13 lessons · ~10 min each",
+    brandSub: "15 lessons · ~10 min each",
     searchPlaceholder: "Search lessons…",
     searchAria: "Search lessons",
     onThisPage: "On this page",
@@ -51,7 +51,7 @@ const UI: Record<CourseLocale, CourseUiStrings> = {
   vi: {
     course: "Khóa học",
     courseTitle: "Khóa học AI Spector",
-    brandSub: "13 bài · ~10 phút mỗi bài",
+    brandSub: "15 bài · ~10 phút mỗi bài",
     searchPlaceholder: "Tìm bài học…",
     searchAria: "Tìm bài học",
     onThisPage: "Trên trang này",

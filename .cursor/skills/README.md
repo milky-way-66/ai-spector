@@ -2,7 +2,7 @@
 
 Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules → Agent Skills).
 
-**You do not need slash commands.** Describe what you want ("generate SRS", "analyze data source"); Cursor matches the skill `description` and the agent reads that skill's **runbook** under `references/`.
+Describe what you want ("generate SRS", "analyze data source"); Cursor matches the skill `description` and the agent reads that skill's **runbook** under `references/`. If intent is ambiguous, the agent asks one clarifying question or calls `workflow_route`.
 
 **Pipeline overview:** [../WORKFLOW.md](../WORKFLOW.md)  
 **Disambiguation:** [_skill-router.md](./_skill-router.md)
@@ -15,11 +15,12 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules �
 | **Setup / bootstrap project** | `ai-spector-setup` |
 | Check workspace structure / stale clarifications | `ai-spector-check` |
 | Analyze, index, validate graph, impact, visualize | `ai-spector-graph` |
-| SRS / requirements | `ai-spector-generate-srs` — or **`/generate-srs`** |
+| SRS / requirements | `ai-spector-generate-srs` |
 | Screens, APIs, DB basic design | `ai-spector-generate-basic-design` |
+| Detail design (feature-level) | `ai-spector-generate-detail-design` |
 | HTML prototype | `ai-spector-generate-prototype` |
-| Review comments | `ai-spector-resolve-comments` — or **`/resolve-comments`** |
-| **Document sign-off / review queue** | `ai-spector-review` — or **`/review`** |
+| Review comments | `ai-spector-resolve-comments` |
+| **Document sign-off / review queue** | `ai-spector-review` |
 | Add/update feature or section ("I want to add…") | `ai-spector-resolve-task` (plan-first) |
 | Resume / active tasks | `ai-spector-task` |
 | Approve SPEC-NNN | `ai-spector-generate` + extract-specs |

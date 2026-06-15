@@ -2,6 +2,14 @@
 
 Turn requirements into a traceability graph.
 
+```mermaid
+flowchart LR
+  DS[docs/data-source/] --> A[analyze]
+  A --> G[traceability.graph.json]
+  G --> V[validate]
+  V --> I[index]
+```
+
 | Lesson | Time | Goal |
 |--------|------|------|
 | [Add sources & analyze](01-sources-and-analyze.md) | 10 min | Ingest requirements |

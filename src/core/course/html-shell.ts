@@ -131,6 +131,7 @@ button { font: inherit; cursor: pointer; }
     z-index: 25;
   }
   .sidebar-backdrop.open { display: block; }
+  .content-panel { width: 100%; }
 }
 
 .sidebar {
@@ -181,9 +182,10 @@ button { font: inherit; cursor: pointer; }
 .nav-group a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .nav-group li.hidden { display: none; }
 
-.main-wrap { padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem; max-width: 56rem; }
+.main-wrap { padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem; width: 100%; }
 .content-panel {
-  max-width: 48rem;
+  width: 70%;
+  max-width: none;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -276,6 +278,23 @@ button { font: inherit; cursor: pointer; }
 }
 .content blockquote p { margin: 0; }
 
+.mermaid-diagram {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow-x: auto;
+}
+.mermaid-diagram pre.mermaid {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  overflow: visible;
+}
+.mermaid-diagram svg { max-width: 100%; height: auto; }
+
 .pager {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -340,7 +359,7 @@ const SCRIPTS = (copyLabel: string, copiedLabel: string) => `
     });
   }
 
-  document.querySelectorAll('.content pre').forEach(function (pre) {
+  document.querySelectorAll('.content pre:not(.mermaid)').forEach(function (pre) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'copy-btn';
@@ -369,6 +388,15 @@ const SCRIPTS = (copyLabel: string, copiedLabel: string) => `
       if (h.tagName === 'H3') a.className = 'toc-h3';
       li.appendChild(a);
       tocList.appendChild(li);
+    });
+  }
+
+  if (typeof mermaid !== 'undefined') {
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: prefersDark ? 'dark' : 'default',
+      securityLevel: 'loose',
     });
   }
 })();
@@ -597,6 +625,7 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
       </div>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>${SCRIPTS(ui.copy, ui.copied)}</script>
 </body>
 </html>`;

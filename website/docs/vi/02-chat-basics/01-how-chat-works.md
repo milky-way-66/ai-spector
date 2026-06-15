@@ -6,28 +6,32 @@
 
 ---
 
-## Orchestrator & workers
+## Skills & routing
 
 | Thành phần | Vai trò |
 |------------|---------|
-| **Orchestrator** | Hiểu intent, hỏi thêm, gọi worker |
-| **Worker** | Một job theo runbook (analyze, generate, review…) |
+| **Routing** | `_skill-router.md` + `ai-spector-routing.mdc` chọn skill |
+| **Skill** | Một workflow với runbook trong `references/` |
 
-Mô tả trong chat — skills route đến worker đúng. Dùng được cả **Cursor** và **Claude Code**.
+Mô tả trong chat — agent đọc skill và làm theo runbook. Dùng được **Cursor** và **Claude Code**.
+
+Intent chưa rõ → **`workflow_route`** hoặc hỏi một câu.
+
+**Tham khảo:** `.cursor/WORKFLOW.md`
 
 ---
 
-## Câu lệnh thường dùng
+## Skill map (tham khảo nhanh)
 
-| Muốn… | Gõ |
-|-------|-----|
-| Generate SRS | *"generate the SRS"* |
-| Review/approve doc | *"review documents"*, *"approve srs/01-overview"* |
-| Xử lý comments | *"resolve comments"* |
-| Analyze sources | *"analyze my data source"* |
-| Check workspace | *"check my workspace"* |
-
-Không chắc? Gõ *"help me approve"*.
+| Muốn… | Skill | Ví dụ |
+|-------|-------|-------|
+| Setup / check | `ai-spector-setup` / `check` | `setup ai-spector project` |
+| Graph | `ai-spector-graph` | `analyze my data source` |
+| Generate SRS | `ai-spector-generate-srs` | `generate the SRS` |
+| Sửa một phần | `ai-spector-resolve-task` | `I want to add login with Google` |
+| Sign-off doc | `ai-spector-review` | `review documents`, `approve srs/01-overview` |
+| Comments | `ai-spector-resolve-comments` | `resolve comments` |
+| Resume task | `ai-spector-task` | `resume my SRS` |
 
 ---
 
@@ -39,6 +43,15 @@ Không chắc? Gõ *"help me approve"*.
 | Approve spec | *"approve SPEC-001"* | document approve |
 | Chạy plan | *"yes, go ahead"* | document approve |
 | Đóng comment | *"resolve C-012"* | document approve |
+
+Không chắc? Gõ *"help me approve"*.
+
+---
+
+## Bạn sẽ thấy gì
+
+- Agent chọn đúng skill; ambiguous approve → menu 4 lựa chọn.
+- Bật hết skills trong `.cursor/skills/`.
 
 ---
 

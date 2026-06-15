@@ -25,9 +25,11 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
       ? "resolve-task"
       : task.workflow === "generate-basic-design"
         ? "generate-basic-design"
-        : task.workflow === "generate-prototype"
-          ? "generate-prototype"
-          : "generate-srs";
+        : task.workflow === "generate-detail-design"
+          ? "generate-detail-design"
+          : task.workflow === "generate-prototype"
+            ? "generate-prototype"
+            : "generate-srs";
 
   if (task.planApprovedAt) {
     const executeTools =

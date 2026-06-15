@@ -56,6 +56,14 @@ Wizard: **editor** (Cursor / Claude / both), **languages**, **git hook** (yes), 
 
 ---
 
+## What you should see
+
+- Wizard completes without errors.
+- `ls .ai-spector/` and `docs/data-source/` exist.
+- `node_modules/ai-spector` present after install.
+
+---
+
 ## Check
 
 ```bash
@@ -67,13 +75,11 @@ ls node_modules/ai-spector   # package installed locally
 
 ## Troubleshooting
 
-**`npx ai-spector init` not found**
-
-Run `npm install ai-spector` first (with `--registry` on the internal network).
-
-**Registry error on install**
-
-Check VPN / company network, then retry the `npm install` command.
+| Symptom | Fix |
+|---------|-----|
+| `npx ai-spector init` not found | Run `npm install ai-spector` first |
+| Registry error on install | Check VPN / company network |
+| Not a git repo | `git init` and initial commit |
 
 ---
 

@@ -3,7 +3,7 @@ name: ai-spector-review
 description: >-
   Formal document sign-off workflow (MCP review_approve). NOT for comment threads
   (comments_resolve / ai-spector-resolve-comments), extracted specs (spec_approve /
-  SPEC-NNN), or task plans (task_approve_plan). Use for /review, review queue,
+  SPEC-NNN), or task plans (task_approve_plan). Use for review queue,
   approve doc by logical path (srs/01-overview), pending client approval, what
   changed since last sign-off. Agent must read the doc, score readiness + custom checklists,
   check graph impact, write a review summary, then wait for user decision before review_approve.

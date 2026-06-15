@@ -14,16 +14,16 @@ Workflow tài liệu trong **Cursor** hoặc **Claude Code**: graph, SRS, basic 
 
 ## Cấu trúc
 
-**7 phần, 13 bài** — mỗi bài ~10–15 phút, một task rõ ràng.
+**7 phần, 15 bài** — mỗi bài ~10–15 phút, một task rõ ràng.
 
 | Phần | Bài | Nội dung |
 |------|-----|----------|
 | [Bắt đầu](01-get-started/README.md) | 2 | Init, setup, skills |
-| [Chat cơ bản](02-chat-basics/README.md) | 2 | Routing, workspace, tasks |
+| [Chat cơ bản](02-chat-basics/README.md) | 3 | Routing, workspace, thay đổi từng phần |
 | [Graph & sources](03-graph/README.md) | 2 | Analyze, validate, index |
 | [Generate](04-generate/README.md) | 2 | SRS + basic design |
 | [Prototype](05-prototype/README.md) | 2 | Translations, UI mockup |
-| [Review](06-review/README.md) | 1 | Approve, comments, chỉnh sửa |
+| [Review](06-review/README.md) | 2 | Sign-off + comment threads |
 | [Nâng cao](07-advanced/README.md) | 2 | Templates, search, editors |
 
 ---

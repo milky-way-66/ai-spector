@@ -38,6 +38,7 @@ async function loadFirstActiveTask(
     return {
       id: task.id,
       kind: task.kind,
+      workflow: task.workflow,
       planApproved: !!task.planApprovedAt,
     };
   }

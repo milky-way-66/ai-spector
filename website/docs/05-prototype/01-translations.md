@@ -21,6 +21,23 @@ Agent translates stale files, then re-indexes.
 
 ---
 
+## What you should see
+
+- `lang_queue` or status showing stale translation files.
+- Translated files under language folders (e.g. `docs/vi/`).
+- Index refreshed after sync.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Nothing to translate | Generate primary language docs first |
+| Stale after EN edit | `resolve translations` then `refresh the index` |
+
+---
+
 ## Next
 
 [Build prototype](02-build-prototype.md) — or skip here if you don't need a UI mockup.

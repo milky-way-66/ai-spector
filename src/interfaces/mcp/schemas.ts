@@ -381,7 +381,12 @@ export const ReviewListSchema = RootSchema.extend({
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
 export const TaskKindEnum = z.enum(["generate", "resolve"]);
-export const BuiltinWorkflowIdEnum = z.enum(["generate-srs", "generate-basic-design", "resolve"]);
+export const BuiltinWorkflowIdEnum = z.enum([
+  "generate-srs",
+  "generate-basic-design",
+  "generate-detail-design",
+  "resolve",
+]);
 /** Custom template packs use `generate-<pack-name>` (same gated steps as generate-srs). */
 export const WorkflowIdEnum = z.union([
   BuiltinWorkflowIdEnum,

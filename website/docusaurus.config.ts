@@ -34,10 +34,13 @@ const config: Config = {
 
   markdown: {
     format: 'md',
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'ignore',
     },
   },
+
+  themes: ['@docusaurus/theme-mermaid'],
 
   i18n: {
     defaultLocale: 'en',
@@ -104,6 +107,9 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+    },
+    mermaid: {
+      theme: {light: 'neutral', dark: 'dark'},
     },
   } satisfies Preset.ThemeConfig,
 };

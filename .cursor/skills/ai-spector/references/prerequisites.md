@@ -1,14 +1,14 @@
 # Workflow prerequisites (shared)
 
-User workflow: [**_workflow.md**](./_workflow.md). **CLI failures:** [**cli-failures.md**](./cli-failures.md). Agent CLI: [**_graph.md**](./_graph.md).
+User workflow: [**WORKFLOW.md**](../../WORKFLOW.md). **CLI failures:** [**cli-failures.md**](./cli-failures.md). Agent CLI: [**graph.md**](./graph.md).
 
 Load `.ai-spector/.docflow/config/workspace/workflow.dependencies.json` for the active step.
 
 ## When checks fail
 
-1. **Stop immediately** — do not read `.ai-spector/templates/`, spawn subagents, or write outputs.
+1. **Stop immediately** — do not read `.ai-spector/templates/`, switch to other skills, or write outputs.
 2. Reply with the **Blocked** format in [cli-failures.md](./cli-failures.md) (include full CLI output; offer fix / workaround / pause).
-3. Help the user fix the issue; re-run the failed CLI; then continue the slash command.
+3. Help the user fix the issue; re-run the failed CLI; then continue the workflow.
 
 ## Graph context (only after CLI succeeds)
 

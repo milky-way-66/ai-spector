@@ -411,7 +411,10 @@ task
   .command("create")
   .description("Create a new workflow task")
   .requiredOption("-k, --kind <kind>", "generate | resolve")
-  .requiredOption("-w, --workflow <workflow>", "generate-srs | generate-basic-design | resolve")
+  .requiredOption(
+    "-w, --workflow <workflow>",
+    "generate-srs | generate-basic-design | generate-detail-design | resolve",
+  )
   .requiredOption("-t, --trigger <text>", "User intent that started this task")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("--doc-type <type>", "Doc type for generate workflows (e.g. srs)")
@@ -731,7 +734,7 @@ langQueue
 
 program
   .command("sync-cursor")
-  .description("Refresh .cursor/commands and .cursor/skills from scaffold/cursor/ (no full re-init)")
+  .description("Refresh .cursor/skills and rules from scaffold/cursor/ (no full re-init)")
   .option("-C, --cwd <path>", "Target directory", process.cwd())
   .action(async (opts) => {
     const result = await runSyncCursor({ targetDir: resolve(opts.cwd ?? process.cwd()) });

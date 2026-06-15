@@ -26,6 +26,8 @@ Xem khóa học lúc chờ: `npx ai-spector course serve --open --lang vi`
 
 Skills chính: `ai-spector`, `ai-spector-review`, `ai-spector-graph`, `ai-spector-generate-srs`.
 
+File routing (sau init): `.cursor/skills/_skill-router.md`, `.cursor/WORKFLOW.md`, rule `.cursor/rules/ai-spector-routing.mdc`.
+
 ---
 
 ## Check

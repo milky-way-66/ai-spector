@@ -56,6 +56,25 @@ function rewriteMarkdownLinks(
   });
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"');
+}
+
+/** Turn GFM ```mermaid fences into elements mermaid.js can render. */
+export function transformMermaidBlocks(html: string): string {
+  return html.replace(
+    /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+    (_, inner: string) => {
+      const diagram = decodeHtmlEntities(inner);
+      return `<div class="mermaid-diagram"><pre class="mermaid">${diagram}</pre></div>`;
+    },
+  );
+}
+
 export async function renderCourseMarkdown(
   markdown: string,
   currentRelPath = "README.md",
@@ -63,7 +82,7 @@ export async function renderCourseMarkdown(
 ): Promise<string> {
   const prepared = rewriteMarkdownLinks(markdown, currentRelPath, locale);
   const file = await mdProcessor.process(prepared);
-  return String(file);
+  return transformMermaidBlocks(String(file));
 }
 
 export async function loadPageHtml(

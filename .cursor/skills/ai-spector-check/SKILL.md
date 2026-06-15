@@ -1,9 +1,9 @@
 ---
 name: ai-spector-check
 description: >-
-  Validates the ai-spector workspace structure and config (required dirs, docflow.config.json,
-  languages, templates, stale clarifications, graph parseability). Use for "check my workspace",
-  "is the project set up correctly", "why did pre-commit block me", "stale clarifications".
+  Validates workspace structure/config OR manages the clarification context store.
+  Workspace: "check my workspace", "why did pre-commit block me". Clarifications:
+  "open questions", "stale clarifications", "what did I answer about auth".
   Do NOT use for graph semantic validation ("validate the graph" → ai-spector-graph).
 ---
 
@@ -24,6 +24,11 @@ MCP `workspace_check({ fix?: boolean })` — fallback `npx ai-spector check [--f
 
 ## Boundaries
 
-- Structure/config only. "validate the graph" → `ai-spector-graph`
-  (`graph validate`); prototype checks → `prototype validate`.
-- This check also runs automatically as stage 1 of every generate run.
+| Intent | Route |
+|--------|-------|
+| Structure, config, pre-commit hook | This skill → `workspace_check` |
+| Open questions, stale Q-ids, past answers | This skill → `context_list` / `context_resolve` ([context-store.md](../ai-spector/references/context-store.md)) |
+| Graph semantic health | `ai-spector-graph` (`graph_validate`) |
+| Prototype manifest | `prototype validate` |
+
+- Structure/config check also runs as stage 1 of every generate run.

@@ -25,13 +25,15 @@ If port 4177 is busy, the command may fail — retry or suggest the user close t
 | Enable skills, finish setup | `01-get-started/02-setup-and-skills` | `check my workspace` |
 | How chat / routing works | `02-chat-basics/01-how-chat-works` | `help me approve` |
 | Workspace, tasks, resume | `02-chat-basics/02-workspace-and-tasks` | `active tasks` |
+| Add one feature / section | `02-chat-basics/03-incremental-changes` | `I want to add login with Google` |
 | Data source, analyze | `03-graph/01-sources-and-analyze` | `analyze my data source` |
 | Validate graph, explore | `03-graph/02-validate-index-explore` | `validate the graph` |
 | Generate SRS (gated flow) | `04-generate/01-generate-srs` | `generate the SRS` |
 | Basic design | `04-generate/02-basic-design` | `generate basic design` |
 | Translations / multi-language | `05-prototype/01-translations` | `add language vi` |
 | HTML / SPA prototype | `05-prototype/02-build-prototype` | `generate prototype` |
-| Review, comments, sign-off | `06-review/01-review-comments-changes` | `review documents` |
+| Document sign-off / review | `06-review/01-document-review` | `review documents` |
+| Comment threads | `06-review/02-comment-threads` | `resolve comments` |
 | Custom templates | `07-advanced/01-custom-templates` | `set up template pack` |
 | Semantic search, editors | `07-advanced/02-search-and-editors` | `find mentions of rate limiting` |
 | General onboarding / "where do I start" | `index` → `01-get-started` | `open the course` or setup |
@@ -41,11 +43,11 @@ If port 4177 is busy, the command may fail — retry or suggest the user close t
 | Section | Slug prefix | Lessons |
 |---------|-------------|---------|
 | Get started | `01-get-started` | prerequisites, setup & skills |
-| Chat basics | `02-chat-basics` | how chat works, workspace & tasks |
+| Chat basics | `02-chat-basics` | how chat works, workspace & tasks, incremental changes |
 | Graph & sources | `03-graph` | sources & analyze, validate & explore |
 | Generate documents | `04-generate` | SRS, basic design |
 | Design & prototype | `05-prototype` | translations, build prototype |
-| Review & changes | `06-review` | review, comments & edits |
+| Review & changes | `06-review` | document review, comment threads |
 | Advanced | `07-advanced` | custom templates, search & editors |
 
 ## Agent response template

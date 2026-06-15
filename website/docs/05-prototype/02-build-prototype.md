@@ -41,11 +41,29 @@ npx serve -s prototype/dist/
 
 ---
 
+## What you should see
+
+- Theme picker with 3 recommendations or direct theme name.
+- HTML files under `prototype/` (or `prototype/dist/` for SPA).
+- `prototype validate --strict` passes.
+
+---
+
 ## Check
 
 ```bash
 npx ai-spector prototype validate --strict
 ```
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| No screens to prototype | Complete basic design screen list first |
+| SPA blank after build | Run `prototype sync` after framework build |
+| Validate fails | Read validator output; fix missing screen links |
 
 ---
 

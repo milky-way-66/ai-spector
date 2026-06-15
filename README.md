@@ -1,6 +1,6 @@
 # AI Spector
 
-Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, and UI prototypes (static HTML or SPA). **Describe what you need in chat** — an orchestrator routes to specialized workers that run `ai-spector` MCP tools. You rarely touch the terminal.
+Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, and UI prototypes (static HTML or SPA). **Describe what you need in chat** — the agent matches a **skill**, reads its runbook, and runs `ai-spector` MCP tools. You rarely touch the terminal.
 
 **Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
 
@@ -83,12 +83,12 @@ After `init`, see `.cursor/WORKFLOW.md` (Cursor) or `CLAUDE.md` (Claude Code) fo
 
 ### How chat routing works
 
-| Layer | Role |
+| Piece | Role |
 |-------|------|
-| **Orchestrator** | Classifies your message, asks clarifying questions, spawns a worker |
-| **Worker** | One job (analyze, generate SRS, review docs, …) with a saved task state |
+| **Routing** | `_skill-router.md` + `ai-spector-routing.mdc` classify your message; `workflow_route` when ambiguous |
+| **Skill** | One workflow (analyze, generate SRS, review docs, …) with a runbook under `references/` |
 
-Say what you want in natural language — same in Cursor and Claude Code. If intent is unclear (especially **“approve”**), the agent asks once before acting.
+Say what you want in natural language — same in Cursor and Claude Code. The agent reads the matching skill and follows its runbook. If intent is unclear (especially **“approve”**), it asks once before acting.
 
 ### First run
 

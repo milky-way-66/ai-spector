@@ -43,4 +43,5 @@ Ask one question or infer from context, then switch skill:
 |-------|-------|
 | Requirements / SRS | `ai-spector-generate-srs` |
 | Screens, APIs, DB | `ai-spector-generate-basic-design` |
+| Detail design (feature-level) | `ai-spector-generate-detail-design` |
 | HTML mockups | `ai-spector-generate-prototype` |

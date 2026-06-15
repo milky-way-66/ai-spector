@@ -352,6 +352,8 @@ Ordered by value / dependency (same pattern as [review-routing-impl-plan.md](./r
 
 **Status:** ✅ Implemented (C.1–C.3)
 
+**Note (2026-06):** Subagent spawn (`scaffold/cursor/agents/`) was removed; skill + `workflow_route` routing remains. Phrase parity is tested via `route-intent-examples.ts`.
+
 ### Phase D — Observability
 
 | Task | File |

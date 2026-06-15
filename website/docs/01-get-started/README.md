@@ -2,6 +2,13 @@
 
 Install AI Spector and make the agent ready to work.
 
+```mermaid
+flowchart LR
+  I[npm install] --> N[npx ai-spector init]
+  N --> S[setup in chat]
+  S --> K[enable skills]
+```
+
 | Lesson | Time | Goal |
 |--------|------|------|
 | [Prerequisites & init](01-prerequisites-and-init.md) | 10 min | Install package + `npx ai-spector init` |

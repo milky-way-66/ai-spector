@@ -16,6 +16,7 @@ const SKILL_BY_WORKFLOW: Record<WorkflowId, string> = {
   "resolve-comments": "ai-spector-resolve-comments",
   "generate-srs": "ai-spector-generate-srs",
   "generate-basic-design": "ai-spector-generate-basic-design",
+  "generate-detail-design": "ai-spector-generate-detail-design",
   "generate-prototype": "ai-spector-generate-prototype",
   "resolve-task": "ai-spector-resolve-task",
   "task-router": "ai-spector-task",
@@ -23,6 +24,10 @@ const SKILL_BY_WORKFLOW: Record<WorkflowId, string> = {
   "graph-ops": "ai-spector-graph",
   search: "ai-spector-search",
   "setup-check": "ai-spector-setup",
+  course: "ai-spector-course",
+  "lang-status": "ai-spector-lang-status",
+  "resolve-translation": "ai-spector-resolve-translation",
+  "template-import": "ai-spector-template-import",
 };
 
 export interface WorkflowActiveContext {
@@ -140,6 +145,7 @@ export async function recordWorkflowActive(
     source: WorkflowActiveFile["source"];
     context?: WorkflowActiveContext;
     event?: string;
+    skill?: string;
   },
 ): Promise<WorkflowActiveFile> {
   const now = new Date().toISOString();
@@ -147,7 +153,7 @@ export async function recordWorkflowActive(
   const active: WorkflowActiveFile = {
     version: 1,
     workflowId: patch.workflowId,
-    skill: SKILL_BY_WORKFLOW[patch.workflowId],
+    skill: patch.skill ?? SKILL_BY_WORKFLOW[patch.workflowId],
     phase: patch.phase,
     updatedAt: now,
     source: patch.source,
@@ -203,6 +209,7 @@ export async function recordWorkflowFromHandoff(
     workflowId: handoff.workflowId,
     phase: handoff.phase,
     source: "workflow_route",
+    skill: handoff.skill,
     event: "routed",
     context: {
       ...(handoff.context?.activeLogicalPath !== undefined
@@ -235,9 +242,11 @@ export async function recordWorkflowFromTask(
       ? "resolve-task"
       : task.workflow === "generate-basic-design"
         ? "generate-basic-design"
-        : task.workflow === "generate-prototype"
-          ? "generate-prototype"
-          : "generate-srs";
+        : task.workflow === "generate-detail-design"
+          ? "generate-detail-design"
+          : task.workflow === "generate-prototype"
+            ? "generate-prototype"
+            : "generate-srs";
   const phase = task.planApprovedAt ? "plan_approved" : task.plan ? "awaiting_plan_approval" : "planning";
 
   return recordWorkflowActive(projectRoot, {

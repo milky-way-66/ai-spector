@@ -31,5 +31,5 @@ CLI: `npx ai-spector task <subcommand>`
 ## Route to workflow skills
 
 After loading task state, hand off to:
-- **generate** → `ai-spector-generate-srs` or `ai-spector-generate-basic-design`
+- **generate** → `ai-spector-generate-srs`, `ai-spector-generate-basic-design`, or `ai-spector-generate-detail-design` (by `workflow` field)
 - **resolve** → `ai-spector-resolve-task`

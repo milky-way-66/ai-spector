@@ -33,6 +33,16 @@ Browse the course while you wait: `npx ai-spector course serve --open`
 
 Key skills: `ai-spector`, `ai-spector-review`, `ai-spector-graph`, `ai-spector-generate-srs`.
 
+Routing files (after init): `.cursor/skills/_skill-router.md`, `.cursor/WORKFLOW.md`, and always-on rule `.cursor/rules/ai-spector-routing.mdc`.
+
+---
+
+## What you should see
+
+- Setup checklist with pass/fail items.
+- All skills enabled in Cursor settings.
+- MCP server `ai-spector` connected (reload if tools missing).
+
 ---
 
 ## Check
@@ -42,6 +52,16 @@ validate the graph
 ```
 
 The agent invokes a graph tool (empty graph is fine) — not a generic refusal.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Agent doesn't know ai-spector | Enable all skills; reload MCP |
+| MCP tools missing | Cmd+Shift+P → Reload MCP Servers |
+| Skills routing wrong | Re-enable every folder under `.cursor/skills/` |
 
 ---
 

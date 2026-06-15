@@ -35,7 +35,7 @@ export function courseBundleRoot(): string {
 }
 
 
-/** Cursor commands/skills/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
+/** Cursor skills/rules/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
 export function scaffoldCursorBundleRoot(): string {
   return join(scaffoldBundleRoot(), "cursor");
 }

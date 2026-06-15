@@ -27,6 +27,14 @@ Use after init, upgrades, or failed commits.
 
 ---
 
+## What you should see (workspace check)
+
+- Table of findings: rule, severity, message, fix hint.
+- Optional `fix: true` for auto-fixable items.
+- No edits to `docs/` — audit only.
+
+---
+
 ## Tasks & resume
 
 Generation runs are **tasks** with saved state (clarifications, plans, wave progress).
@@ -47,9 +55,28 @@ pause task
 |--------|-------|
 | *resume SRS* | Continue a **generation task** |
 | *review documents* | **Document sign-off** (different workflow) |
+| *continue* during active review | Resumes **review session**, not task — name the doc if unsure |
 
 ---
 
-## Next section
+## What you should see (tasks)
 
-[Graph & sources](../03-graph/README.md)
+- `task_list` shows task id, kind (generate / resolve), plan approved or not.
+- `resume my SRS` continues from last wave or plan gate — not from scratch.
+- Paused task persists under `.ai-spector/.docflow/tasks/`.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| No active tasks | Start `generate the SRS` or resolve-task again |
+| Resume does wrong thing | Check for active review session; say *"resume generation task"* |
+| Pre-commit blocked | Run `check my workspace`; read hook output |
+
+---
+
+## Next
+
+[Incremental changes](03-incremental-changes.md)

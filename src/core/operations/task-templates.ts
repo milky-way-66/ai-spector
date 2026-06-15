@@ -1,4 +1,8 @@
-export type BuiltinWorkflowId = "generate-srs" | "generate-basic-design" | "resolve";
+export type BuiltinWorkflowId =
+  | "generate-srs"
+  | "generate-basic-design"
+  | "generate-detail-design"
+  | "resolve";
 /** Builtin workflows or custom pack workflows (`generate-<pack-name>`). */
 export type WorkflowId = BuiltinWorkflowId | `generate-${string}`;
 
@@ -40,6 +44,11 @@ export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
     kind: "generate",
     steps: GENERATE_STEPS,
   },
+  "generate-detail-design": {
+    id: "generate-detail-design",
+    kind: "generate",
+    steps: GENERATE_STEPS,
+  },
   resolve: { id: "resolve", kind: "resolve", steps: RESOLVE_STEPS },
 };
 
@@ -67,6 +76,7 @@ export function activeSlotFor(kind: TaskKind, workflow: string, docType?: string
   if (kind === "resolve") return "resolve";
   if (workflow === "generate-srs") return "generate:srs";
   if (workflow === "generate-basic-design") return "generate:basic-design";
+  if (workflow === "generate-detail-design") return "generate:detail-design";
   if (docType?.trim()) return `generate:${docType.trim()}`;
   if (isCustomGenerateWorkflow(workflow)) {
     return `generate:${workflow.replace(/^generate-/, "")}`;
@@ -78,18 +88,21 @@ export function activeSlotFor(kind: TaskKind, workflow: string, docType?: string
 export function workflowForPackDocType(docType: string, activePack?: string): string {
   if (docType === "srs" && (!activePack || activePack === "builtin")) return "generate-srs";
   if (docType === "basic-design") return "generate-basic-design";
+  if (docType === "detail-design") return "generate-detail-design";
   if (activePack && activePack !== "builtin" && docType === activePack) {
     return `generate-${activePack}`;
   }
   return `generate-${docType}`;
 }
 
-export type GenerateDocType = "srs" | "basic-design";
+export type GenerateDocType = "srs" | "basic-design" | "detail-design";
 
-export const GENERATE_DOC_TYPES: GenerateDocType[] = ["srs", "basic-design"];
+export const GENERATE_DOC_TYPES: GenerateDocType[] = ["srs", "basic-design", "detail-design"];
 
 export function workflowForDocType(docType: GenerateDocType): WorkflowId {
-  return docType === "srs" ? "generate-srs" : "generate-basic-design";
+  if (docType === "srs") return "generate-srs";
+  if (docType === "detail-design") return "generate-detail-design";
+  return "generate-basic-design";
 }
 
 export function activeSlotForDocType(docType: GenerateDocType): string {
@@ -101,6 +114,7 @@ export function generateSlotFromDocPath(relPath: string): string | null {
   const n = relPath.replace(/\\/g, "/");
   if (/^docs\/srs\/[^/]+\/.+\.md$/i.test(n)) return "generate:srs";
   if (/^docs\/basic-design\/[^/]+\/.+\.md$/i.test(n)) return "generate:basic-design";
+  if (/^docs\/detail-design\/[^/]+\/.+\.md$/i.test(n)) return "generate:detail-design";
   return null;
 }
 
@@ -128,6 +142,7 @@ export function generateSlotFromPackOutputs(
 export function slotToDocTypeLabel(slot: string): string | null {
   if (slot === "generate:srs") return "srs";
   if (slot === "generate:basic-design") return "basic-design";
+  if (slot === "generate:detail-design") return "detail-design";
   if (slot.startsWith("generate:")) return slot.slice("generate:".length);
   return null;
 }
