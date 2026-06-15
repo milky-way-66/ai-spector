@@ -18,8 +18,8 @@ Legacy `reviews/` is migrated automatically on first review command, or via `npx
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
-| Start / reset session | `review_session_start({})` | `npx ai-spector review session start --json` |
-| Detect changed documents | `review_check({})` | `npx ai-spector review check --json` |
+| **Start review (preferred)** | `review_begin({ logicalPath? })` | `npx ai-spector review begin [path] --json` |
+| Detect + queue first reviews | `review_check({})` | `npx ai-spector review check --json` |
 | Show review queue | `review_queue({ track: "internal", showDiff: true })` | `npx ai-spector review queue --track internal --json` |
 | Load status + diff + history | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json --history` |
 | Ack review summary written | `review_session_ack_review({ logicalPath })` | `npx ai-spector review session ack <path> --json` |
@@ -35,29 +35,37 @@ Legacy `reviews/` is migrated automatically on first review command, or via `npx
 
 | User says | Agent does |
 |-----------|------------|
-| `/review` | Detect changes → queue table → wait for pick → full review |
-| `/review srs/01-overview` | Skip to review of that specific doc |
+| `/review` | `review_begin({})` → queue table → wait for pick → full review |
+| `/review srs/01-overview` or "review introduction" | `review_begin({ logicalPath })` → full review |
 | `/review approve srs/01-overview` | Still run review first, then approve if no concerns |
 | "what changed since last approval" | `review_status` with diff for the named doc |
-| "review queue" | Show pending table only, no auto-review |
+| "review queue" | `review_begin({})` or `review_queue` — show pending table only |
 
 ---
 
-## Phase 0 — Detect changes
+## Phase 0 — Discover and detect
+
+**User named a document:** skip queue pick — go to Phase 2 with `review_begin({ logicalPath })`.
+
+**No document named:**
 
 ```
-review_check({})
+review_begin({})
 ```
 
-Report in one line: `"Scanned N documents — M changed since last approval."`.
+Report: `"Found N document(s) on disk — M pending internal review."` (from `discovery` + queue).
 
-If `invalidated === 0`: tell the user, stop here.
+If `discovered === 0`: no docs on disk — tell user to generate docs first.
 
 If errors exist, list them but continue with valid documents.
+
+`review_check({})` is equivalent for detect-only; prefer `review_begin` as the single entry point.
 
 ---
 
 ## Phase 1 — Show queue, wait for pick
+
+Skip when user already named a document in Phase 0.
 
 ```
 review_queue({ track: "internal", showDiff: false })
@@ -65,28 +73,30 @@ review_queue({ track: "internal", showDiff: false })
 
 Present as a table — never raw JSON:
 
-| # | Document | Queued | +Lines | -Lines | Reason |
-|---|----------|--------|--------|--------|--------|
-| 1 | `srs/01-overview` | 2026-06-11 | +3 | -1 | content changed |
-| 2 | `bd/api-design` | 2026-06-10 | +12 | -5 | content changed |
+| # | Document | Kind | Queued | +Lines | -Lines | Reason |
+|---|----------|------|--------|--------|--------|--------|
+| 1 | `srs/01-overview` | first | 2026-06-11 | — | — | first_review |
+| 2 | `srs/02-scope` | changed | 2026-06-10 | +12 | -5 | content_changed |
 
-Use `linesAdded` / `linesRemoved` from the queue diff payload.
+Use `reason` from queue (`first_review` | `content_changed`). Diff lines apply to re-reviews only.
 
-**Stop and ask:** "Which document should I review? Reply with a number or path. I'll read it and write a review before asking you to approve."
-
-Do not proceed until the user picks.
+**Stop and ask:** "Which document should I review? Reply with a number or path."
 
 ---
 
-## Phase 2 — Load diff and document
+## Phase 2 — Load review bundle
 
-Run both in parallel:
+**Preferred entry:**
 
 ```
-review_status({ logicalPath: "<picked>", showDiff: true })
+review_begin({ logicalPath: "<picked or named>", showDiff: true })
 ```
 
-Then read the actual document file (get `docPath` from `logicalPathToDocPath` — typically `docs/srs/en/<file>.md` or `docs/basic-design/en/<file>.md`).
+Or `review_status({ logicalPath, showDiff: true })` — both auto-register never-reviewed docs.
+
+Use `reviewKind` / `reviewTemplate` from the response (`first` | `re_review` | `client_signoff`).
+
+Then read the **full** document file (`docPath` in the response — e.g. `docs/srs/en/1-introduction.md`).
 
 Use `workflowGuidance` from `review_status` — it lists `nextTools`, `notTheseTools`, and whether `canReviewApprove` is true for the current state.
 
@@ -134,7 +144,54 @@ Custom items (`source: custom`) follow the same scoring — see [custom-checklis
 
 This is the core of the skill. Write a structured review in chat **before** asking the user to decide.
 
-### Review format
+Branch on `reviewTemplate` from `review_begin` / `review_status`:
+
+### Template: `first` (first sign-off)
+
+```
+## Review: <logicalPath>
+
+**Document overview**
+<2-4 sentences on scope, structure, and overall quality.>
+
+**Impact**
+<From graph_impact. If none: "No downstream impact detected.">
+
+**Readiness compliance**
+<Structural scan + compliance table — see readiness-compliance.md.>
+
+**Concerns** *(omit if none)*
+
+**Recommendation**
+Approve | Request changes | Dismiss
+```
+
+Omit **Summary of changes** and **Diff** — show "N/A — first sign-off" if needed.
+
+### Template: `re_review` (content changed since last sign-off)
+
+```
+## Review: <logicalPath>
+
+**Summary of changes**
+<2-4 sentences in plain language — what changed and why it matters.>
+
+**Diff**
+<From review_status. Cap at 30 lines.>
+
+**Impact**
+<From graph_impact.>
+
+**Readiness compliance**
+<Table per readiness-compliance.md.>
+
+**Concerns** *(omit if none)*
+
+**Recommendation**
+Approve | Request changes | Dismiss
+```
+
+### Legacy combined format (when template unclear)
 
 ```
 ## Review: <logicalPath>
@@ -277,6 +334,7 @@ git push
 - **Never approve without showing the full review first.** Even if the user says "just approve it", still write the review — then ack — then approve.
 - **Never approve if `overallStatus` is already `pending_client` or `approved`.** Tell the user the current state.
 - **Recommend "Request changes" honestly.** Do not approve to avoid friction.
+- **Never patch `.session.json`, registry, or queue files.** If blocked, follow `workflowGuidance.hint` / `suggestedTools` from the tool error — file feedback if the path is still broken.
 - **Never touch `internal_queue/` files directly.** Always go through MCP tools / CLI.
 - **Read the document, not just the diff.** Phase 2 requires reading the actual file.
 

@@ -118,6 +118,7 @@ import {
   runReviewStatus,
   runReviewQueue,
   runReviewCheck,
+  runReviewBegin,
   runReviewReject,
   runReviewList,
   runReviewMigrate,
@@ -129,6 +130,7 @@ import {
   formatReviewStatus,
   formatReviewQueue,
   formatReviewCheck,
+  formatReviewBegin,
   formatReviewReject,
   formatReviewList,
   formatReviewMigrate,
@@ -1172,6 +1174,27 @@ review
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewQueue(result));
+  });
+
+review
+  .command("begin [logicalPath]")
+  .description("Discover docs on disk, queue never-reviewed files, and start review for one document")
+  .option("--no-diff", "Skip diff content when logicalPath is provided")
+  .option("--history", "Include approval history when logicalPath is provided")
+  .option("--history-limit <n>", "Max history entries to return", parseInt)
+  .option("--history-since <iso>", "Only history entries after this ISO timestamp")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string | undefined, opts, cmd) => {
+    const result = await runReviewBegin({
+      root: projectRootOpt(cmd),
+      logicalPath: logicalPath || undefined,
+      showDiff: opts.diff !== false,
+      includeHistory: opts.history,
+      historyLimit: opts.historyLimit,
+      historySince: opts.historySince,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewBegin(result));
   });
 
 review

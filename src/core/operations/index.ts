@@ -39,7 +39,7 @@ import {
   DOC_INDEX_DEFAULT_ROOTS,
 } from "../index/docs-build.js";
 import { reconcileTranslationQueue } from "../lang/queue.js";
-import { reconcileReviews } from "../reviews/reconcile.js";
+import { runReviewDiscovery, type ReviewDiscoveryResult } from "../reviews/register.js";
 import { runContextStaleScan } from "./context.js";
 
 export type IndexStepStatus = "ok" | "skipped" | "failed";
@@ -77,7 +77,15 @@ export interface IndexReport {
   nextAction?: string;
   cocoindexUpdated?: boolean;
   cocoindexSkipped?: boolean;
-  reviewQueue?: { scanned: number; invalidated: number; alreadyPending: number; errors: number };
+  reviewQueue?: {
+    scanned: number;
+    invalidated: number;
+    alreadyPending: number;
+    discovered?: number;
+    queued?: number;
+    updated?: number;
+    errors: number;
+  };
 }
 
 async function detectIndexSources(
@@ -104,14 +112,102 @@ async function detectIndexSources(
   };
 }
 
-function indexNextAction(sources: IndexSources): string | undefined {
+function indexNextAction(
+  sources: IndexSources,
+  reviewQueue?: IndexReport["reviewQueue"],
+): string | undefined {
   if (sources.dataSource && !sources.knowledgeExtracted) {
     return "Data source found but no extracted knowledge — analyze docs/data-source/ (agent skill writes analysis/knowledge.json), then re-run index.";
   }
   if (!sources.srs) {
     return "No SRS documents yet — stop after analysis. Generate the SRS next, then re-run index.";
   }
+  if (reviewQueue) {
+    const pending =
+      (reviewQueue.queued ?? 0) + (reviewQueue.updated ?? 0) + (reviewQueue.invalidated ?? 0);
+    if (pending > 0) {
+      const parts: string[] = [];
+      if (reviewQueue.queued) parts.push(`${reviewQueue.queued} new`);
+      if (reviewQueue.updated) parts.push(`${reviewQueue.updated} pending updated`);
+      if (reviewQueue.invalidated) parts.push(`${reviewQueue.invalidated} changed since sign-off`);
+      return `${parts.join(", ")} queued for internal review — run review_begin or /review.`;
+    }
+  }
   return undefined;
+}
+
+function reviewDiscoveryIndexSummary(
+  rr: ReviewDiscoveryResult,
+): NonNullable<IndexReport["reviewQueue"]> {
+  return {
+    scanned: rr.scanned,
+    invalidated: rr.invalidated,
+    alreadyPending: rr.alreadyPending,
+    discovered: rr.discovered,
+    queued: rr.queued,
+    updated: rr.updated,
+    errors: rr.errors.length,
+  };
+}
+
+function formatReviewQueueIndexDetail(rr: ReviewDiscoveryResult): string {
+  const parts: string[] = [];
+  if (rr.discovered > 0) parts.push(`${rr.discovered} on disk`);
+  if (rr.queued > 0) parts.push(`+${rr.queued} first-review`);
+  if (rr.updated > 0) parts.push(`${rr.updated} pending updated`);
+  if (rr.scanned > 0) parts.push(`${rr.scanned} approval(s) scanned`);
+  if (rr.invalidated > 0) parts.push(`+${rr.invalidated} invalidated`);
+  if (rr.alreadyPending > 0) parts.push(`${rr.alreadyPending} already pending`);
+  if (rr.errors.length > 0) parts.push(`${rr.errors.length} error(s)`);
+  return parts.length > 0 ? parts.join(", ") : "queue in sync with disk";
+}
+
+/** Scan doc folders, queue new files, sync pending hashes, invalidate stale sign-offs. */
+async function refreshReviewQueueFromDisk(
+  projectRoot: string,
+  record: (step: IndexStepResult) => void,
+): Promise<IndexReport["reviewQueue"] | undefined> {
+  try {
+    const rr = await runReviewDiscovery(projectRoot);
+    const summary = reviewDiscoveryIndexSummary(rr);
+    const detail = formatReviewQueueIndexDetail(rr);
+
+    if (rr.discovered === 0 && rr.scanned === 0) {
+      record({
+        id: "review-queue",
+        label: "Review queue sync",
+        status: "skipped",
+        detail: "no reviewable documents on disk",
+      });
+      return summary;
+    }
+
+    if (rr.errors.length > 0) {
+      record({
+        id: "review-queue",
+        label: "Review queue sync",
+        status: "ok",
+        detail: `${detail} (${rr.errors.length} path error(s) skipped)`,
+      });
+      return summary;
+    }
+
+    record({
+      id: "review-queue",
+      label: "Review queue sync",
+      status: "ok",
+      detail,
+    });
+    return summary;
+  } catch (err) {
+    record({
+      id: "review-queue",
+      label: "Review queue sync",
+      status: "failed",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+    return undefined;
+  }
 }
 
 export async function runIndex(
@@ -150,8 +246,10 @@ export async function runIndex(
 
   const runGraph = !docsOnly;
   const runDocs = !graphOnly && !opts.skipDocs;
+  const shouldSyncReviewQueue = runDocs || sources.srs || sources.basicDesign;
 
   let graphJson: TraceabilityGraph | null = null;
+  let reviewQueueSummary: IndexReport["reviewQueue"];
 
   if (runGraph) {
     try {
@@ -536,6 +634,10 @@ export async function runIndex(
           status: "ok",
           detail: `srs ${fileCounts.srs ?? 0} files (hash ${hashes.srs ?? "—"}), basic-design ${fileCounts.basicDesign ?? 0} files (hash ${hashes.basicDesign ?? "—"}), data-source ${fileCounts.dataSource ?? 0} files (hash ${hashes.dataSource ?? "—"})`,
         });
+
+        if (shouldSyncReviewQueue) {
+          reviewQueueSummary = await refreshReviewQueueFromDisk(projectRoot, record);
+        }
       }
     } catch (err) {
       record({
@@ -580,41 +682,8 @@ export async function runIndex(
     });
   }
 
-  let reviewQueueSummary: IndexReport["reviewQueue"];
-  try {
-    const rr = await reconcileReviews(projectRoot);
-    reviewQueueSummary = {
-      scanned: rr.scanned,
-      invalidated: rr.invalidated,
-      alreadyPending: rr.alreadyPending,
-      errors: rr.errors.length,
-    };
-    if (rr.scanned === 0) {
-      record({
-        id: "review-queue",
-        label: "Review queue",
-        status: "skipped",
-        detail: "no approval records yet — run review approve to initialise",
-      });
-    } else {
-      const parts = [`${rr.scanned} scanned`];
-      if (rr.invalidated > 0) parts.push(`+${rr.invalidated} invalidated`);
-      if (rr.alreadyPending > 0) parts.push(`${rr.alreadyPending} already pending`);
-      if (rr.errors.length > 0) parts.push(`${rr.errors.length} error(s)`);
-      record({
-        id: "review-queue",
-        label: "Review queue",
-        status: "ok",
-        detail: rr.errors.length > 0 ? `${parts.join(", ")} (${rr.errors.length} path error(s) skipped)` : parts.join(", "),
-      });
-    }
-  } catch (err) {
-    record({
-      id: "review-queue",
-      label: "Review queue",
-      status: "failed",
-      detail: err instanceof Error ? err.message : String(err),
-    });
+  if (shouldSyncReviewQueue && reviewQueueSummary === undefined) {
+    reviewQueueSummary = await refreshReviewQueueFromDisk(projectRoot, record);
   }
 
   try {
@@ -719,7 +788,7 @@ export async function runIndex(
     steps,
     failed,
     sources,
-    nextAction: indexNextAction(sources),
+    nextAction: indexNextAction(sources, reviewQueueSummary),
     cocoindexUpdated,
     cocoindexSkipped,
     reviewQueue: reviewQueueSummary,

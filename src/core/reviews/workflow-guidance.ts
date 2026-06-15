@@ -1,4 +1,5 @@
 import { canInternalApprove } from "./errors.js";
+import { reviewTemplateForKind, type ReviewKind } from "./review-kind.js";
 import type { ApprovalRecord, ReviewSessionFile } from "./types.js";
 
 export type ReviewWorkflowPhase =
@@ -15,6 +16,7 @@ export interface ReviewWorkflowGuidance {
   message: string;
   nextTools: string[];
   notTheseTools: string[];
+  reviewTemplate?: "first" | "re_review" | "client_signoff";
 }
 
 const NOT_APPROVE_SIBLINGS = ["spec_approve", "task_approve_plan", "comments_resolve"] as const;
@@ -36,7 +38,7 @@ const INTERNAL_REVIEW_TOOLS = [
 
 export function buildReviewWorkflowGuidance(
   approval: ApprovalRecord,
-  opts?: { stale?: boolean; session?: ReviewSessionFile | null },
+  opts?: { stale?: boolean; session?: ReviewSessionFile | null; reviewKind?: ReviewKind },
 ): ReviewWorkflowGuidance {
   const stale = opts?.stale === true;
   const session = opts?.session;
@@ -46,8 +48,17 @@ export function buildReviewWorkflowGuidance(
     session.phase === "awaiting_decision" &&
     !!session.reviewWrittenAt;
 
+  const reviewTemplate = reviewTemplateForKind(
+    opts?.reviewKind ??
+      (approval.overallStatus === "pending_client"
+        ? "client_signoff"
+        : approval.internal.status === "pending" && !approval.snapshotRef
+          ? "first"
+          : "re_review"),
+  );
+
   const applySessionGate = (guidance: ReviewWorkflowGuidance): ReviewWorkflowGuidance => {
-    const withWorker = { ...guidance, workflowId: "doc-review" as const };
+    const withWorker = { ...guidance, workflowId: "doc-review" as const, reviewTemplate };
     if (!canInternalApprove(approval) || guidance.canReviewApprove === false) {
       return withWorker;
     }
@@ -94,8 +105,8 @@ export function buildReviewWorkflowGuidance(
       phase: "awaiting_internal_review",
       canReviewApprove: canApprove,
       message:
-        "Internal sign-off: review_check → review_queue → review_status + read doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve.",
-      nextTools: [...INTERNAL_REVIEW_TOOLS],
+        "Internal sign-off: review_begin → read full doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve.",
+      nextTools: ["review_begin", ...INTERNAL_REVIEW_TOOLS],
       notTheseTools: [...NOT_APPROVE_SIBLINGS],
     });
   }

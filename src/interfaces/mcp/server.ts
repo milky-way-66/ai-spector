@@ -38,6 +38,7 @@ import {
   ReviewStatusSchema,
   ReviewQueueSchema,
   ReviewCheckSchema,
+  ReviewBeginSchema,
   ReviewRejectSchema,
   ReviewListSchema,
   ReviewSessionStartSchema,
@@ -112,6 +113,7 @@ import {
   toolReviewStatus,
   toolReviewQueue,
   toolReviewCheck,
+  toolReviewBegin,
   toolReviewReject,
   toolReviewList,
   toolReviewSessionStart,
@@ -590,6 +592,18 @@ server.registerTool(
 );
 
 server.registerTool(
+  "review_begin",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_begin,
+    inputSchema: ReviewBeginSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewBegin(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
   "review_reject",
   {
     description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_reject,
@@ -944,7 +958,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "readiness_assess", "readiness_scan", "readiness_output_checklist",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
-    "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
+    "review_approve", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",
     "review_session_start", "review_session_ack_review",
     "workflow_route", "workflow_status",
     "workspace_check",

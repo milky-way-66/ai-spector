@@ -252,6 +252,17 @@ export const ReviewQueueSchema = RootSchema.extend({
 
 export const ReviewCheckSchema = RootSchema;
 
+export const ReviewBeginSchema = RootSchema.extend({
+  logicalPath: z
+    .string()
+    .optional()
+    .describe("Logical document path to start reviewing (e.g. srs/1-introduction). Omit for queue summary."),
+  showDiff: z.boolean().optional().describe("Include diff when logicalPath is set (default: true)"),
+  includeHistory: z.boolean().optional().describe("Include approval history when logicalPath is set"),
+  historyLimit: z.number().int().positive().optional(),
+  historySince: z.string().optional(),
+});
+
 export const ReviewSessionStartSchema = RootSchema;
 
 export const ReviewSessionAckReviewSchema = RootSchema.extend({

@@ -49,19 +49,29 @@ export type ApproveToolName = keyof typeof APPROVE_TOOL_DESCRIPTIONS;
 
 export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
   review_status: [
-    "Formal document sign-off status (internal + client tracks), diff since last sign-off, and workflowGuidance for next steps.",
+    "Load formal document sign-off status, diff, readiness rubric, reviewKind, and workflowGuidance.",
     "",
-    "WHEN: Preparing or continuing document review before review_approve; user asks what changed since approval.",
+    "WHEN: Continuing review for a known logicalPath; creates registry entry automatically if the file exists on disk.",
     `NOT WHEN: Inline comment threads (comments_show / comments_list); extracted specs (spec_list); task plan state (task_get).`,
-    "Returns readiness.structuralScan + readiness.outputChecklist when doc type is known — score each checklist item met/partial/missing in the review summary.",
-    "Call before review_approve for the same logicalPath.",
+    "Prefer review_begin as the entry point for new review sessions.",
+    "Returns readiness.structuralScan + readiness.outputChecklist when doc type is known.",
   ].join("\n"),
 
   review_check: [
-    "Scan formally signed-off documents for content changes; invalidate stale sign-offs and refresh the internal queue.",
+    "Discover docs on disk, queue never-reviewed files, and scan signed-off documents for content changes.",
     "",
     "WHEN: Start of /review session or after editing approved documents.",
     "NOT WHEN: Comment inbox; spec queue; task planning.",
+    "Returns discovered (files on disk), queued (new first-review entries), plus scanned/invalidated for existing approvals.",
+  ].join("\n"),
+
+  review_begin: [
+    "Single entry for document review — discovers docs on disk, queues first reviews, and loads the review bundle.",
+    "",
+    "WHEN: User says review <path>, /review, or start document sign-off. Prefer over review_check + review_status for new flows.",
+    "WITH logicalPath: returns approval, readiness, diff, reviewKind, reviewTemplate, session phase reviewing, workflowGuidance.",
+    "WITHOUT logicalPath: returns discovery stats + internal queue for user pick.",
+    `NOT WHEN: Inline comments (comments_*); extracted specs (spec_*); task plan (task_*).`,
   ].join("\n"),
 
   review_queue: [

@@ -3,6 +3,7 @@ import type {
   ReviewStatusResult,
   ReviewQueueResult,
   ReviewCheckResult,
+  ReviewBeginResult,
   ReviewRejectResult,
   ReviewListResult,
   ReviewMigrateResult,
@@ -129,16 +130,54 @@ export function formatReviewQueue(result: ReviewQueueResult): string {
 export function formatReviewCheck(result: ReviewCheckResult): string {
   const lines: string[] = [];
   if (result.migrated) lines.push("Migrated legacy reviews/ to .ai-spector/.docflow/review-queue/");
-  lines.push(`Scanned ${result.scanned} approval(s)`);
+  lines.push(
+    `Discovered ${result.discovered} document(s) on disk — ${result.queued} newly queued for first review`,
+  );
+  if (result.updated > 0) lines.push(`  ${result.updated} pending doc(s) updated from disk`);
+  lines.push(`Scanned ${result.scanned} existing approval(s)`);
   if (result.invalidated > 0) lines.push(`  ${result.invalidated} invalidated (content changed)`);
   if (result.alreadyPending > 0) lines.push(`  ${result.alreadyPending} already pending`);
+  if (result.alreadyQueued > 0) lines.push(`  ${result.alreadyQueued} already queued`);
   if (result.errors.length > 0) {
     lines.push(`  ${result.errors.length} error(s):`);
     for (const e of result.errors) lines.push(`    ${e.logicalPath}: ${e.error}`);
   }
-  if (result.invalidated === 0 && result.errors.length === 0) {
-    lines.push("  all approved documents are up to date");
+  if (
+    result.discovered === 0 &&
+    result.invalidated === 0 &&
+    result.queued === 0 &&
+    result.errors.length === 0
+  ) {
+    lines.push("  no reviewable documents on disk — generate or add docs first");
+  } else if (result.invalidated === 0 && result.errors.length === 0 && result.queued === 0) {
+    lines.push("  all known documents are up to date");
   }
+  return lines.join("\n");
+}
+
+export function formatReviewBegin(result: ReviewBeginResult): string {
+  if ("approval" in result) {
+    const lines = [formatReviewStatus(result)];
+    lines.push("");
+    lines.push(
+      `Discovery: ${result.discovery.discovered} on disk, ${result.discovery.queued} newly queued` +
+        (result.discovery.updated > 0 ? `, ${result.discovery.updated} pending updated` : ""),
+    );
+    if (result.reviewKind) {
+      lines.push(`Review kind: ${result.reviewKind} (template: ${result.reviewTemplate ?? result.reviewKind})`);
+    }
+    return lines.join("\n");
+  }
+
+  const lines: string[] = [];
+  lines.push(
+    `Discovered ${result.discovery.discovered} document(s) — ${result.queue.internal.pending.length} pending internal review`,
+  );
+  if (result.workflowGuidance?.message) {
+    lines.push(result.workflowGuidance.message);
+  }
+  lines.push("");
+  lines.push(formatReviewQueue(result.queue));
   return lines.join("\n");
 }
 

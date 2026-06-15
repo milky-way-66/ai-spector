@@ -296,8 +296,8 @@ export function buildReviewSessionWorkflowGuidance(
       return {
         ...base,
         phase: "detect",
-        message: "Review session detect — run review_queue next; pick a document.",
-        nextTools: ["review_queue", "review_check"],
+        message: "Review session detect — run review_begin or review_queue next; pick a document.",
+        nextTools: ["review_begin", "review_queue", "review_check"],
         canProceed: false,
       };
     case "queue": {
@@ -306,8 +306,8 @@ export function buildReviewSessionWorkflowGuidance(
       return {
         ...base,
         phase: "queue",
-        message: `Review queue${suffix} — user picks logicalPath, then review_status.`,
-        nextTools: ["review_status"],
+        message: `Review queue${suffix} — user picks logicalPath, then review_begin or review_status.`,
+        nextTools: ["review_begin", "review_status"],
         canProceed: false,
       };
     }
@@ -317,6 +317,7 @@ export function buildReviewSessionWorkflowGuidance(
         phase: "reviewing",
         message: `Reviewing ${session.activeLogicalPath ?? "document"} — score readiness checklist, write review summary, then review_session_ack_review.`,
         nextTools: [
+          "review_begin",
           "review_status",
           "readiness_scan",
           "readiness_output_checklist",
@@ -337,8 +338,8 @@ export function buildReviewSessionWorkflowGuidance(
       return {
         ...base,
         phase: "done",
-        message: "Review session complete — start fresh with review_check or review_session_start.",
-        nextTools: ["review_check", "review_session_start"],
+        message: "Review session complete — start fresh with review_begin or review_check.",
+        nextTools: ["review_begin", "review_check", "review_session_start"],
         canProceed: false,
       };
     default:
@@ -346,7 +347,7 @@ export function buildReviewSessionWorkflowGuidance(
         ...base,
         phase: session.phase,
         message: "Follow doc-review worker runbook phases in order.",
-        nextTools: ["review_check", "review_queue", "review_status"],
+        nextTools: ["review_begin", "review_check", "review_queue", "review_status"],
         canProceed: false,
       };
   }

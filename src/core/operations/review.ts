@@ -35,6 +35,8 @@ import {
   updateFingerprint,
 } from "../reviews/storage.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
+import { ensureApprovalForReview, runReviewDiscovery } from "../reviews/register.js";
+import { deriveReviewKind, reviewTemplateForKind, type ReviewKind, type ReviewTemplate } from "../reviews/review-kind.js";
 import { computeLiveStaleness } from "../reviews/staleness.js";
 import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
 import { assertCanInternalApprove } from "../reviews/errors.js";
@@ -119,6 +121,10 @@ export interface ReviewStatusResult {
   workflowGuidance?: ReviewWorkflowGuidance;
   /** Persisted review session gate state (`.session.json`). */
   session?: ReviewSessionFile | null;
+  /** Classification for review template selection. */
+  reviewKind?: ReviewKind;
+  reviewTemplate?: ReviewTemplate;
+  docPath?: string;
 }
 
 export interface ReviewQueueOptions {
@@ -143,11 +149,46 @@ export interface ReviewCheckResult {
   scanned: number;
   invalidated: number;
   alreadyPending: number;
+  /** Markdown files found on disk under docs/srs, docs/basic-design, docs/detail-design. */
+  discovered: number;
+  /** Never-reviewed docs registered this run. */
+  queued: number;
+  /** Pending-internal docs whose on-disk content changed this run. */
+  updated: number;
+  alreadyQueued: number;
   errors: Array<{ logicalPath: string; error: string }>;
   migrated?: boolean;
   session?: ReviewSessionFile;
   workflowGuidance?: WorkflowToolGuidance;
 }
+
+export interface ReviewBeginOptions {
+  root?: string;
+  logicalPath?: string;
+  showDiff?: boolean;
+  includeHistory?: boolean;
+  historyLimit?: number;
+  historySince?: string;
+}
+
+export interface ReviewBeginDiscovery {
+  discovered: number;
+  queued: number;
+  updated: number;
+  alreadyQueued: number;
+  scanned: number;
+  invalidated: number;
+  alreadyPending: number;
+}
+
+export type ReviewBeginResult =
+  | (ReviewStatusResult & { discovery: ReviewBeginDiscovery })
+  | {
+      discovery: ReviewBeginDiscovery;
+      queue: ReviewQueueResult;
+      session: ReviewSessionFile;
+      workflowGuidance: ReviewWorkflowGuidance;
+    };
 
 export interface ReviewRejectOptions {
   root?: string;
@@ -332,16 +373,15 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
 
-  const persisted = await getApproval(projectRoot, lp);
-  if (!persisted) {
-    throw new Error(`No approval record found for: ${lp}. Run 'review check' to initialise.`);
-  }
+  const { approval: ensured, reviewKind } = await ensureApprovalForReview(projectRoot, lp);
+  const persisted = ensured;
 
   const approvedContentHash = persisted.contentHash;
   const live = await computeLiveStaleness(projectRoot, persisted, {
     showDiff: opts.showDiff !== false,
   });
   const approval = live.effectiveApproval;
+  const kind = reviewKind === "first" && !live.stale ? reviewKind : deriveReviewKind(approval);
 
   let diff: DiffFile | null = null;
   if (opts.showDiff !== false) {
@@ -383,13 +423,17 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     reviewWrittenAt: null,
   });
 
+  let docPath: string | undefined;
   const result: ReviewStatusResult = {
     approval,
     diff,
     session,
+    reviewKind: kind,
+    reviewTemplate: reviewTemplateForKind(kind),
     workflowGuidance: buildReviewWorkflowGuidance(approval, {
       stale: live.stale,
       session,
+      reviewKind: kind,
     }),
     ...(live.stale ? { stale: true, approvedContentHash } : {}),
   };
@@ -397,7 +441,8 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
   try {
     const docType = docTypeFromLogicalPath(lp);
     if (docType) {
-      const { docPath } = await resolveReviewDocPath(projectRoot, lp);
+      const resolved = await resolveReviewDocPath(projectRoot, lp);
+      docPath = resolved.docPath;
       const [structuralScan, outputChecklist] = await Promise.all([
         runReadinessScan({
           root: projectRoot,
@@ -413,6 +458,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
         }),
       ]);
       result.readiness = { docPath, docType, structuralScan, outputChecklist };
+      result.docPath = docPath;
     }
   } catch {
     // Readiness config or doc path may be unavailable — review proceeds without checklist
@@ -430,6 +476,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
 
 export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQueueResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
+  await runReviewDiscovery(projectRoot);
   const session = await setReviewSessionPhase(projectRoot, "queue");
   const track = opts.track ?? "all";
 
@@ -526,12 +573,72 @@ export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCh
   const projectRoot = await prepareReviewRoot(opts.root);
   const session = await setReviewSessionPhase(projectRoot, "detect");
   const migration = await ensureReviewQueueMigrated(projectRoot);
-  const result = await reconcileReviews(projectRoot);
-  const guidance = buildReviewSessionWorkflowGuidance(session);
+  const result = await runReviewDiscovery(projectRoot);
+  const guidance = buildReviewSessionWorkflowGuidance(session, {
+    pendingCount: result.queued + result.invalidated + result.alreadyPending,
+  });
   if (migration?.migrated) {
     return { ...result, migrated: true, session, workflowGuidance: guidance };
   }
   return { ...result, session, workflowGuidance: guidance };
+}
+
+export async function runReviewBegin(opts: ReviewBeginOptions): Promise<ReviewBeginResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const discovery = await runReviewDiscovery(projectRoot);
+
+  if (!opts.logicalPath) {
+    const queue = await runReviewQueue({ root: projectRoot, track: "internal", showDiff: false });
+    const session = await setReviewSessionPhase(projectRoot, "queue");
+    const pendingTotal = queue.internal.pending.length;
+    return {
+      discovery: {
+        discovered: discovery.discovered,
+        queued: discovery.queued,
+        updated: discovery.updated,
+        alreadyQueued: discovery.alreadyQueued,
+        scanned: discovery.scanned,
+        invalidated: discovery.invalidated,
+        alreadyPending: discovery.alreadyPending,
+      },
+      queue,
+      session,
+      workflowGuidance: {
+        workflowId: "doc-review",
+        phase: "awaiting_internal_review",
+        canReviewApprove: false,
+        message:
+          discovery.discovered === 0
+            ? "No reviewable documents on disk — generate or add docs first, then review_begin."
+            : `Found ${discovery.discovered} document(s) on disk — ${pendingTotal} pending internal review. Call review_begin with logicalPath to start reviewing one.`,
+        nextTools: ["review_begin", "review_status", "review_queue"],
+        notTheseTools: ["review_approve", "spec_approve", "task_approve_plan", "comments_resolve"],
+        reviewTemplate: "first",
+      },
+    };
+  }
+
+  const status = await runReviewStatus({
+    root: projectRoot,
+    logicalPath: opts.logicalPath,
+    showDiff: opts.showDiff,
+    includeHistory: opts.includeHistory,
+    historyLimit: opts.historyLimit,
+    historySince: opts.historySince,
+  });
+
+  return {
+    ...status,
+    discovery: {
+      discovered: discovery.discovered,
+      queued: discovery.queued,
+      updated: discovery.updated,
+      alreadyQueued: discovery.alreadyQueued,
+      scanned: discovery.scanned,
+      invalidated: discovery.invalidated,
+      alreadyPending: discovery.alreadyPending,
+    },
+  };
 }
 
 export async function runReviewReject(opts: ReviewRejectOptions): Promise<ReviewRejectResult> {
@@ -621,17 +728,17 @@ export async function runReviewSessionAckReview(
 
   if (!session) {
     throw new Error(
-      `No review session for ${lp}. Run review_session_start or review_check, then review_status.`,
+      `No review session for ${lp}. Call review_begin({ logicalPath: "${lp}" }) to start reviewing.`,
     );
   }
   if (session.activeLogicalPath !== lp) {
     throw new Error(
-      `Session tracks ${session.activeLogicalPath ?? "(none)"}, not ${lp}. Call review_status for ${lp} first.`,
+      `Session tracks ${session.activeLogicalPath ?? "(none)"}, not ${lp}. Call review_begin({ logicalPath: "${lp}" }) first.`,
     );
   }
   if (session.phase !== "reviewing" && session.phase !== "awaiting_decision") {
     throw new Error(
-      `Cannot acknowledge review in session phase "${session.phase}". Call review_status for ${lp} first.`,
+      `Cannot acknowledge review in session phase "${session.phase}". Call review_begin({ logicalPath: "${lp}" }) first.`,
     );
   }
 

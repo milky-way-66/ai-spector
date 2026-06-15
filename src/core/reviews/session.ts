@@ -94,13 +94,13 @@ const SESSION_GATE_TOOLS = [
 function sessionPhaseHint(session: ReviewSessionFile): string {
   switch (session.phase) {
     case "detect":
-      return "Run review_check and review_queue, pick a document, then review_status.";
+      return "Call review_begin (optionally with logicalPath) to discover docs and start reviewing.";
     case "queue":
-      return "Pick a document from the queue, then call review_status for that logicalPath.";
+      return "Pick a document from the queue, then call review_begin or review_status for that logicalPath.";
     case "reviewing":
-      return "Read the document, score readiness checklist items (met/partial/missing), write the structured review summary in chat, then call review_session_ack_review.";
+      return "Read the full document, score readiness checklist items (met/partial/missing), write the structured review summary in chat, then call review_session_ack_review.";
     case "done":
-      return "Start a new review with review_session_start or review_check.";
+      return "Start a new review with review_begin or review_check.";
     default:
       return "Follow the ai-spector-review runbook phases in order.";
   }
@@ -118,8 +118,8 @@ export function assertReviewSessionAllowsApprove(
     throw new ReviewPreconditionError(
       "session_not_ready",
       `Cannot sign off ${logicalPath}: no active review session.`,
-      "Start review_check (or review_session_start), call review_status for this document, write a review summary, then review_session_ack_review before review_approve.",
-      [...SESSION_GATE_TOOLS, ...notThese],
+      `Call review_begin({ logicalPath: "${logicalPath}" }), write a review summary, then review_session_ack_review before review_approve.`,
+      ["review_begin", "review_status", "review_session_ack_review", ...notThese],
       logicalPath,
       undefined,
       undefined,
@@ -131,8 +131,8 @@ export function assertReviewSessionAllowsApprove(
     throw new ReviewPreconditionError(
       "session_not_ready",
       `Cannot sign off ${logicalPath}: session is tracking ${session.activeLogicalPath ?? "(none)"}.`,
-      "Call review_status for the document you want to approve, then review_session_ack_review.",
-      ["review_status", "review_session_ack_review", ...notThese],
+      `Call review_begin({ logicalPath: "${logicalPath}" }) or review_status for the document you want to approve, then review_session_ack_review.`,
+      ["review_begin", "review_status", "review_session_ack_review", ...notThese],
       logicalPath,
       undefined,
       session.phase,
@@ -161,8 +161,8 @@ export function assertReviewSessionAllowsApprove(
     throw new ReviewPreconditionError(
       "session_content_changed",
       `Cannot sign off ${logicalPath}: document content changed since review_status.`,
-      "Re-run review_status for the new content, rewrite the review summary, then review_session_ack_review.",
-      ["review_status", "review_session_ack_review", ...notThese],
+      `Document edited since review_status. Re-run review_begin({ logicalPath: "${logicalPath}" }) and rewrite the review summary, then review_session_ack_review.`,
+      ["review_begin", "review_status", "review_session_ack_review", ...notThese],
       logicalPath,
       undefined,
       session.phase,

@@ -1,4 +1,4 @@
-import type { TaskState } from "./task.js";
+import type { StoredPlan, TaskState } from "./task.js";
 
 type StepStatus = TaskState["steps"][number]["status"];
 
@@ -164,7 +164,9 @@ export function listApprovedTaskGateViolations(task: TaskState): string[] {
   return violations;
 }
 
-export function assertTaskApprovePlanAllowed(task: TaskState): void {
+export function assertTaskApprovePlanAllowed(
+  task: TaskState,
+): asserts task is TaskState & { plan: StoredPlan } {
   if (task.planApprovedAt) {
     throw new TaskPreconditionError(
       "plan_already_approved",

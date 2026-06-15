@@ -124,8 +124,8 @@ export function assertCanInternalApprove(
     throw new ReviewPreconditionError(
       "fully_approved",
       `Cannot sign off ${logicalPath}: document is fully approved on both tracks.`,
-      "No internal sign-off needed. If content changed, run review_check first to invalidate stale approval.",
-      ["review_check", "review_status", ...notThese],
+      "No internal sign-off needed. If content changed, run review_begin or review_check first to invalidate stale approval.",
+      ["review_begin", "review_check", "review_status", ...notThese],
       logicalPath,
       overallStatus,
     );
@@ -135,8 +135,8 @@ export function assertCanInternalApprove(
     throw new ReviewPreconditionError(
       "client_rejected",
       `Cannot sign off ${logicalPath}: client rejected this document.`,
-      "Fix the document per client feedback, run review_check, complete the review runbook, then call review_approve.",
-      ["review_check", "review_status", "review_queue", ...notThese],
+      "Fix the document per client feedback, run review_begin, complete the review runbook, then call review_approve.",
+      ["review_begin", "review_status", "review_queue", ...notThese],
       logicalPath,
       overallStatus,
     );
@@ -145,8 +145,8 @@ export function assertCanInternalApprove(
   throw new ReviewPreconditionError(
     "invalid_state",
     `Cannot sign off ${logicalPath}: document is in state "${overallStatus}" (internal: ${approval.internal.status}).`,
-    "Run review_check to refresh the queue, then review_status and the ai-spector-review runbook before review_approve.",
-    ["review_check", "review_status", "review_queue", ...notThese],
+    "Run review_begin to refresh the queue, then follow the ai-spector-review runbook before review_approve.",
+    ["review_begin", "review_status", "review_queue", ...notThese],
     logicalPath,
     overallStatus,
   );
