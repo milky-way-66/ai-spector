@@ -7,8 +7,9 @@ Always invoke **`npx ai-spector <subcommand>`** in the terminal. Do not use bare
 ## Init and upgrades
 
 ```bash
-npx ai-spector init          # first time
-npx ai-spector sync-cursor   # refresh commands/skills after package upgrade
+npm install ai-spector          # first time (add --registry for internal Verdaccio)
+npx ai-spector init             # scaffold project
+npx ai-spector sync-cursor      # refresh skills after package upgrade
 ```
 
 Missing templates → `npx ai-spector init --force`.

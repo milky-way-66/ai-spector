@@ -28,7 +28,9 @@ When `package.json` exists and step `npm-dep` is not `ok`:
 npm install -D ai-spector
 ```
 
-If there is no `package.json`, tell the user they can use `npx ai-spector` without a local install, or run `npm init -y` first if they want a project package.
+On the **internal Verdaccio registry**, add `--registry http://10.101.0.239:4873` to that install command. Then `npx ai-spector init` if scaffold is missing.
+
+If there is no `package.json`, tell the user to run `npm init -y` first, then install + init as above.
 
 ---
 

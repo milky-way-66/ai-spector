@@ -6,11 +6,17 @@ is not available.
 ## Minimum — new project
 
 ```bash
-# 1. Audit
+# 0. Install (internal registry — add --registry http://10.101.0.239:4873)
+npm install ai-spector
+
+# 1. Scaffold
+npx ai-spector init
+
+# 2. Audit
 npx ai-spector setup --check
 
-# 2. Scaffold (replace 'en' with your language codes)
-npx ai-spector setup --yes --languages en --install-dep
+# Or non-interactive scaffold + dep in one go:
+# npx ai-spector setup --yes --languages en --install-dep
 
 # 3. Verify
 npx ai-spector setup --check

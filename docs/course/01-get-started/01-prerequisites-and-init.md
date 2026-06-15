@@ -3,7 +3,7 @@
 **Section:** [Get started](README.md) · **Course:** [Home](../README.md)  
 **Time:** ~10 min
 
-**Goal:** Confirm your environment and scaffold the project with one command.
+**Goal:** Confirm your environment, install AI Spector, and scaffold the project.
 
 ---
 
@@ -23,12 +23,26 @@ cd /path/to/your/project
 git status   # or: git init && git commit -m "initial commit"
 ```
 
+If you have no `package.json` yet: `npm init -y`
+
 ---
 
-## Initialize
+## Install & init
+
+**Two steps** — install the package first, then run the wizard.
+
+**Internal registry** (no `npm login`):
 
 ```bash
-npx ai-spector@latest init --registry http://10.101.0.239:4873
+npm install ai-spector --registry http://10.101.0.239:4873
+npx ai-spector init
+```
+
+**Public npm:**
+
+```bash
+npm install ai-spector
+npx ai-spector init
 ```
 
 Wizard: **editor** (Cursor / Claude / both), **languages**, **git hook** (yes), **CocoIndex** (no for now).
@@ -46,9 +60,20 @@ Wizard: **editor** (Cursor / Claude / both), **languages**, **git hook** (yes), 
 
 ```bash
 ls .ai-spector/ docs/data-source/
+ls node_modules/ai-spector   # package installed locally
 ```
 
-Both exist.
+---
+
+## Troubleshooting
+
+**`npx ai-spector init` not found**
+
+Run `npm install ai-spector` first (with `--registry` on the internal network).
+
+**Registry error on install**
+
+Check VPN / company network, then retry the `npm install` command.
 
 ---
 

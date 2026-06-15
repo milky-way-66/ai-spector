@@ -4,7 +4,7 @@ Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**
 
 **Cần có:** Node 20+, Git, [Cursor](https://cursor.com) và/hoặc [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(không bắt buộc — dùng cho tìm kiếm thông minh với CocoIndex)*.
 
-Hướng dẫn chi tiết: [docs/setup-guide.md](docs/setup-guide.md)
+Hướng dẫn từng bước: `npx ai-spector course serve --open` · [Khóa học](docs/course/README.md)
 
 **English:** [README.md](README.md)
 
@@ -23,15 +23,25 @@ Hướng dẫn chi tiết: [docs/setup-guide.md](docs/setup-guide.md)
 
 ---
 
-### Bước 1 — Khởi tạo project *(bước duy nhất cần gõ lệnh)*
+### Bước 1 — Cài gói & khởi tạo *(CLI)*
 
-Chạy một lần ở thư mục gốc project. **Lần đầu** cần thêm `--registry` để `npx` tải gói từ registry nội bộ (`http://10.101.0.239:4873`). **Không cần** `npm login`.
+Chạy một lần ở thư mục gốc project. **Cài gói trước**, rồi chạy wizard init.
+
+**Registry nội bộ** (Verdaccio — **không cần** `npm login`):
 
 ```bash
-npx ai-spector@latest init --registry http://10.101.0.239:4873
+npm install ai-spector --registry http://10.101.0.239:4873
+npx ai-spector init
 ```
 
-Lệnh sẽ hỏi: dùng Cursor, Claude Code hay cả hai; ngôn ngữ tài liệu; git hook; và có bật CocoIndex không.
+**npm công khai:**
+
+```bash
+npm install ai-spector
+npx ai-spector init
+```
+
+Wizard init sẽ hỏi: Cursor, Claude Code hay cả hai; ngôn ngữ; git hook; CocoIndex (tùy chọn).
 
 Sau khi chạy xong sẽ có:
 
@@ -148,8 +158,12 @@ Sau đó: **“generate prototype for all screens”**. Với SPA, chạy build 
 | Đồng bộ đa ngôn ngữ | “add language vi”, “resolve translations” — [Translations](docs/course/05-prototype/01-translations.md) |
 | Template tùy chỉnh | “set up template pack”, `generate <pack-name>` — [Custom templates](docs/course/07-advanced/01-custom-templates.md) |
 | Xem phần nào bị ảnh hưởng | “what’s the impact of my changes” |
-| Xử lý comment | “resolve comments” |
-| Xem sơ đồ trực quan | “visualize the graph” |
+| Xử lý comment | “resolve comments”, “show open comments” |
+| Duyệt / phê duyệt tài liệu | “review documents”, “approve srs/01-overview” |
+| Tạm dừng / tiếp tục task | “active tasks”, “resume my SRS” |
+| Thêm / sửa một phần nhỏ | “I want to add login with Google” |
+| Xem sơ đồ trực quan | “show the graph”, `npx ai-spector graph visualize --open` |
+| Kiểm tra workspace | “check my workspace” |
 
 ### Quy trình thường gặp
 
@@ -163,7 +177,16 @@ docs/data-source/  →  analyze  →  validate graph  →  generate SRS  →  in
 
 ## CLI (nếu cần)
 
-Chỉ dùng khi viết script hoặc debug: `npx ai-spector index`, `graph validate`, `graph visualize --open`, `graph impact --git`, `prototype auth|themes|preview|setup|manifest|validate`. Gõ `npx ai-spector --help` để xem đầy đủ.
+Chủ yếu dùng chat. Một số lệnh hữu ích:
+
+```bash
+npx ai-spector course serve --open
+npx ai-spector setup --check
+npx ai-spector graph validate
+npx ai-spector graph visualize --open
+```
+
+Đầy đủ: `npx ai-spector --help`
 
 ---
 
@@ -184,7 +207,7 @@ Chỉ dùng khi viết script hoặc debug: `npx ai-spector index`, `graph valid
 
 Dùng khi bạn viết **script, CI, hoặc backend tùy chỉnh** — cùng các thao tác typed như CLI và MCP:
 
-- **[Hướng dẫn SDK](docs/sdk.md)** — cài đặt, entry points, ví dụ, tham chiếu API
+- **[Hướng dẫn SDK](docs/plan/sdk.md)** — cài đặt, entry points, ví dụ, tham chiếu API
 
 ```bash
 npm install ai-spector
