@@ -42,5 +42,7 @@ Orchestrator spawns this worker for setup flows.
 
 ## Natural language triggers
 
-"setup ai-spector", "initialize project", "bootstrap docflow", "get started",
+"setup ai-spector", "initialize project", "bootstrap docflow",
 "how do I set up ai-spector", "set up a new project" → this skill.
+
+For **learning only** (open browser course, tutorials): `ai-spector-course` — not this skill.

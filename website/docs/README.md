@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # AI Spector Course
 
 Focused lessons for using AI Spector in **Cursor** or **Claude Code**. Most work happens in chat.
@@ -9,8 +13,16 @@ Focused lessons for using AI Spector in **Cursor** or **Claude Code**. Most work
 ## View in your browser
 
 ```bash
-npx ai-spector course serve --open
+npm run docs:dev                             # Docusaurus → http://localhost:3000/docs/
+npx ai-spector course serve --open           # offline CLI viewer (same markdown)
+npx ai-spector course serve --open --lang vi
 ```
+
+Edit **`website/docs/`** (English) and **`website/docs/vi/`** (Vietnamese).
+
+`docs/course/` at the repo root is a symlink to `website/docs/` for npm and `course serve`.
+
+**In chat:** say *"open the course"* or *"learn ai-spector"* — the agent starts the server and links the right lesson. For Vietnamese: *"mở khóa học ai-spector"* or *"khóa học tiếng Việt"*.
 
 ---
 
@@ -41,5 +53,7 @@ npx ai-spector course serve --open
 
 ## Reference
 
-- [Multi-template packs](../plan/multi-template-structure.md)
-- [SDK](../plan/sdk.md)
+**Tiếng Việt:** [Khóa học tiếng Việt](vi/README.md)
+
+- [Multi-template packs](../../docs/plan/multi-template-structure.md)
+- [SDK](../../docs/plan/sdk.md)

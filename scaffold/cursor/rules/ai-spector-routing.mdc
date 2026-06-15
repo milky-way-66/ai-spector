@@ -41,6 +41,7 @@ Workers must **not** call `workflow_route` or read `_skill-router.md`.
 | `ai-spector-generate` (spec) | `spec-queue` |
 | `ai-spector-graph` | `graph-ops` |
 | `ai-spector-search` | `search` |
+| `ai-spector-course` | *(parent — open course + link lesson; no worker)* |
 | `ai-spector-setup` / `ai-spector-check` | `setup-check` |
 
 Spawn: `Task({ prompt: handoff from workflow_route, run_in_background: false })` for gated workflows.

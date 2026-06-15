@@ -12,6 +12,7 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules �
 
 | You want to… | Skill / worker |
 |--------------|----------------|
+| **Learn / open course / tutorials** | `ai-spector-course` |
 | **Setup / bootstrap project** | `setup-check` |
 | Check workspace structure / stale clarifications | `setup-check` |
 | Analyze, index, validate graph, impact, visualize | `graph-ops` |

@@ -1,4 +1,6 @@
-/** Human labels for course section folders (`01-get-started` → "Get started"). */
+import { DEFAULT_COURSE_LOCALE, sectionLabelForLocale, type CourseLocale } from "./locale.js";
+
+/** English section labels (default). */
 export const SECTION_LABELS: Record<string, string> = {
   "01-get-started": "Get started",
   "02-chat-basics": "Chat basics",
@@ -17,8 +19,8 @@ export function sectionIdFromRelPath(relPath: string): string | undefined {
   return parts[0];
 }
 
-export function sectionLabel(sectionId: string): string {
-  return SECTION_LABELS[sectionId] ?? humanizeSectionId(sectionId);
+export function sectionLabel(sectionId: string, locale: CourseLocale = DEFAULT_COURSE_LOCALE): string {
+  return sectionLabelForLocale(sectionId, locale) ?? humanizeSectionId(sectionId);
 }
 
 function humanizeSectionId(sectionId: string): string {

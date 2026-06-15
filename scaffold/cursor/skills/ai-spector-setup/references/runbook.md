@@ -145,3 +145,11 @@ Report a short summary table:
 | User: add docs/data-source/ | **manual** |
 
 Suggest next command: `"analyze my data source"` when ready.
+
+**New users** may also want the interactive course:
+
+```bash
+npx ai-spector course serve --open
+```
+
+Or in chat: *"open the course"* → routes to `ai-spector-course` skill.

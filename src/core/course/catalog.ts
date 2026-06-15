@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathExists } from "../util/fs.js";
 import { courseBundleRoot } from "../config/load.js";
+import { DEFAULT_COURSE_LOCALE, type CourseLocale } from "./locale.js";
 import { sectionIdFromRelPath, sectionLabel } from "./sections.js";
 
 export interface CoursePage {
@@ -89,17 +90,36 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 }
 
 /** Prefer project-local course copy when present; otherwise bundled docs. */
-export async function resolveCourseRoot(projectRoot?: string): Promise<string> {
+export async function resolveCourseRoot(
+  projectRoot?: string,
+  locale: CourseLocale = DEFAULT_COURSE_LOCALE,
+): Promise<string> {
+  const bundled = courseBundleRoot();
+  const localBase = projectRoot ? join(projectRoot, "docs", "course") : bundled;
+
+  if (locale === "vi") {
+    const viCandidates = [join(localBase, "vi"), join(bundled, "vi")];
+    for (const root of viCandidates) {
+      if (await pathExists(root)) {
+        return root;
+      }
+    }
+    throw new Error("Vietnamese course not found (expected website/docs/vi/ or docs/course/vi/)");
+  }
+
   if (projectRoot) {
     const local = join(projectRoot, "docs", "course");
     if (await pathExists(local)) {
       return local;
     }
   }
-  return courseBundleRoot();
+  return bundled;
 }
 
-export async function loadCoursePages(courseRoot: string): Promise<CoursePage[]> {
+export async function loadCoursePages(
+  courseRoot: string,
+  locale: CourseLocale = DEFAULT_COURSE_LOCALE,
+): Promise<CoursePage[]> {
   const relPaths = await collectMarkdownFiles(courseRoot);
   const pages: CoursePage[] = [];
 
@@ -115,7 +135,7 @@ export async function loadCoursePages(courseRoot: string): Promise<CoursePage[]>
       order: orderFromRelPath(relPath),
       title: titleFromMarkdown(markdown, slug),
       sectionId,
-      sectionTitle: sectionId ? sectionLabel(sectionId) : undefined,
+      sectionTitle: sectionId ? sectionLabel(sectionId, locale) : undefined,
     });
   }
 

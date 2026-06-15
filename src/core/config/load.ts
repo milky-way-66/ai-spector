@@ -24,7 +24,7 @@ export function themesBundleRoot(): string {
   return join(packageBundleRoot(), "assets", "themes");
 }
 
-/** Step-by-step user course shipped with the package (`docs/course/`). */
+/** Step-by-step user course (`website/docs/`, exposed as `docs/course/` in the package). */
 export function courseBundleRoot(): string {
   return join(packageBundleRoot(), "docs", "course");
 }

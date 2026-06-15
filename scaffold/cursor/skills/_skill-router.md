@@ -56,7 +56,8 @@ When in doubt: if the user names a document and asks about approval/status → `
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
 | resume task, continue SRS, active tasks, pause task, list tasks | `ai-spector-task` | `references/runbook.md` |
-| setup, init, bootstrap, get started | `ai-spector-setup` | `references/runbook.md` |
+| learn, course, tutorial, walkthrough, "how do I", open course, mở khóa học, khóa học tiếng Việt | `ai-spector-course` | `references/course-guide.md` |
+| setup, init, bootstrap, get started *(run setup)* | `ai-spector-setup` | `references/runbook.md` |
 | check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `SKILL.md` |
 | clarifications, open questions, context store, "what did I answer" | `ai-spector-check` → context tools | `ai-spector/references/context-store.md` |
 | extracted specs, spec queue, approve/reject spec | (generate skills, stage 6) | `ai-spector/references/extract-specs.md` |

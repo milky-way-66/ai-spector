@@ -4,7 +4,7 @@ Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS
 
 **Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
 
-**Learn:** `npx ai-spector course serve --open` · [Course](docs/course/README.md) *(13 lessons, ~10 min each)*
+**Learn:** `npm run docs:dev` · [Course](website/docs/README.md) · Tiếng Việt: `/vi/docs/` · Offline: `npx ai-spector course serve --open`
 
 **Tiếng Việt:** [README.vi.md](README.vi.md)
 

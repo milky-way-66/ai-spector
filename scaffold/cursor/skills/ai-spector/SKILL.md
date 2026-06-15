@@ -88,6 +88,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 
 | Intent | Skill |
 |--------|-------|
+| Learn / open course / tutorials | `ai-spector-course` |
 | Setup / bootstrap project | `ai-spector-setup` |
 | Analyze, index, validate, impact, visualize | `ai-spector-graph` |
 | Add/update one feature or section ("I want to add…") | `ai-spector-resolve-task` |
