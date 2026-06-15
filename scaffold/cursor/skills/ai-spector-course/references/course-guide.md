@@ -5,15 +5,11 @@ Help users **learn** AI Spector. Open the browser course and deep-link to the ri
 ## Open course
 
 ```bash
-npx ai-spector course serve --open              # English
-npx ai-spector course serve --open --lang vi    # Tiếng Việt
+npx ai-spector course serve --open
 ```
 
-- **English home:** `http://127.0.0.1:4177/course/index`
-- **Vietnamese home:** `http://127.0.0.1:4177/course/vi/index`
-- **Lesson:** `http://127.0.0.1:4177/course/<slug>` or `http://127.0.0.1:4177/course/vi/<slug>`
-
-**Vietnamese triggers:** *"mở khóa học"*, *"khóa học tiếng Việt"* → `--lang vi` and read `website/docs/vi/`.
+- **Home:** `http://127.0.0.1:4177/course/index`
+- **Lesson:** `http://127.0.0.1:4177/course/<slug>`
 
 If port 4177 is busy, the command may fail — retry or suggest the user close the other instance.
 

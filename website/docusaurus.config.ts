@@ -3,7 +3,6 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const courseExclude = [
-  '**/vi/**',
   '**/sdk.md',
   '**/browser-integration.md',
   '**/multi-template-structure.md',
@@ -44,11 +43,7 @@ const config: Config = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'vi'],
-    localeConfigs: {
-      en: {label: 'English'},
-      vi: {label: 'Tiếng Việt'},
-    },
+    locales: ['en'],
   },
 
   presets: [
@@ -85,10 +80,6 @@ const config: Config = {
           sidebarId: 'courseSidebar',
           position: 'left',
           label: 'Course',
-        },
-        {
-          type: 'localeDropdown',
-          position: 'right',
         },
       ],
     },

@@ -6,9 +6,9 @@ sidebar_position: 1
 
 Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, prototypes. **Describe what you need in chat.**
 
-`npx ai-spector course serve --open` · Tiếng Việt: `--lang vi` → `/course/vi/`
+`npx ai-spector course serve --open`
 
-**In chat:** *"open the course"* · *"learn ai-spector"* · *"mở khóa học ai-spector"*
+**In chat:** *"open the course"* · *"learn ai-spector"*
 
 ---
 

@@ -25,7 +25,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 
 | You want to… | Say (examples) | Skill | Agent runs (MCP preferred) |
 |--------------|----------------|-------|---------------------------|
-| **Learn / open course** | "open the course", "learn ai-spector", "mở khóa học", "khóa học tiếng Việt" | `ai-spector-course` | `course serve --open [--lang vi]` → link lesson |
+| **Learn / open course** | "open the course", "learn ai-spector" | `ai-spector-course` | `course serve --open` → link lesson |
 | **Setup project** | "setup ai-spector", "initialize project", "bootstrap project" | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
 | **Check workspace** | "check my workspace", "why did pre-commit block me", "stale clarifications" | `ai-spector-check` | `workspace_check({})` → findings table → optional `fix: true` |
 | **Resume / manage tasks** | "resume my SRS", "continue generation", "active tasks", "pause task" | `ai-spector-task` | `task_list` → `task_resume` / `task_get` → route to generate or resolve skill |

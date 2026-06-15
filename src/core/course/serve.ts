@@ -14,7 +14,6 @@ export interface CourseServeOptions {
   host?: string;
   port?: number;
   open?: boolean;
-  lang?: string;
 }
 
 export interface CourseServeResult {
@@ -46,12 +45,6 @@ async function handleRequest(
 
   if (path === "/" || path === "/course" || path === "/course/") {
     res.writeHead(302, { Location: "/course/index" });
-    res.end();
-    return;
-  }
-
-  if (path === "/course/vi" || path === "/course/vi/") {
-    res.writeHead(302, { Location: "/course/vi/index" });
     res.end();
     return;
   }
@@ -88,7 +81,7 @@ async function handleRequest(
 export async function runCourseServe(opts: CourseServeOptions = {}): Promise<CourseServeResult> {
   const host = opts.host ?? "127.0.0.1";
   const port = opts.port ?? 4177;
-  const locale = normalizeCourseLocale(opts.lang);
+  const locale = normalizeCourseLocale();
   const courseRoot = await resolveCourseRoot(opts.projectRoot, locale);
   const pages = await loadCoursePages(courseRoot, locale);
 
@@ -113,12 +106,10 @@ export async function runCourseServe(opts: CourseServeOptions = {}): Promise<Cou
 }
 
 export function formatCourseServeStarted(result: CourseServeResult): string {
-  const langNote = result.locale === "vi" ? " (Tiếng Việt)" : "";
   return [
-    `AI Spector course server running${langNote}`,
+    "AI Spector course server running",
     `  ${result.url}`,
     `  Pages: ${result.pageCount} (from ${result.courseRoot})`,
-    "  Languages: /course/ (English) · /course/vi/ (Tiếng Việt)",
     "",
     "Press Ctrl+C to stop.",
   ].join("\n");

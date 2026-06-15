@@ -86,22 +86,6 @@ button { font: inherit; cursor: pointer; }
   text-decoration: none;
   white-space: nowrap;
 }
-.lang-switch {
-  display: flex;
-  gap: .2rem;
-  font-size: .75rem;
-  border: 1px solid var(--border);
-  border-radius: .4rem;
-  overflow: hidden;
-}
-.lang-switch a {
-  padding: .3rem .5rem;
-  text-decoration: none;
-  color: var(--muted);
-  background: var(--bg);
-}
-.lang-switch a:hover { color: var(--accent); }
-.lang-switch a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
 .layout {
   display: grid;
@@ -511,17 +495,6 @@ function metaBadges(
   return `<div class="lesson-meta">${badges.join("")}</div>`;
 }
 
-function langSwitcherHtml(activeSlug: string, locale: CourseLocale, ui: ReturnType<typeof courseUi>): string {
-  const enUrl = coursePageUrl("en", activeSlug);
-  const viUrl = coursePageUrl("vi", activeSlug);
-  const enActive = locale === "en" ? " active" : "";
-  const viActive = locale === "vi" ? " active" : "";
-  return `<div class="lang-switch" role="navigation" aria-label="Language">
-    <a class="${enActive.trim()}" href="${enUrl}" hreflang="en">${escapeHtml(ui.langEn)}</a>
-    <a class="${viActive.trim()}" href="${viUrl}" hreflang="vi">${escapeHtml(ui.langVi)}</a>
-  </div>`;
-}
-
 function chatHintHtml(page: CoursePage | undefined, locale: CourseLocale, ui: ReturnType<typeof courseUi>): string {
   const hint = chatHintForSection(page?.sectionId, locale);
   return `<div class="chat-hint"><strong>${escapeHtml(ui.inEditor)}</strong> ${hint}</div>`;
@@ -596,7 +569,6 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
   <header class="topbar">
     <button type="button" class="menu-btn" aria-label="${escapeHtml(ui.openNav)}">☰</button>
     <p class="topbar-title">${escapeHtml(shortTitle(opts.title))}</p>
-    ${langSwitcherHtml(opts.activeSlug, locale, ui)}
     <div class="progress-wrap" title="${escapeHtml(ui.progressTitle)}">
       <span>${escapeHtml(progressLabel)}</span>
       <div class="progress-bar" aria-hidden="true"><div class="progress-fill" style="width:${progress.pct}%"></div></div>

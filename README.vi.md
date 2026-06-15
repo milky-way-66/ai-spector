@@ -4,7 +4,7 @@ Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**
 
 **Cần có:** Node 20+, Git, [Cursor](https://cursor.com) và/hoặc [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(không bắt buộc — dùng cho tìm kiếm thông minh với CocoIndex)*.
 
-Hướng dẫn từng bước: `npm run docs:dev` hoặc `npx ai-spector course serve --open --lang vi` · [Khóa học](website/docs/vi/README.md)
+Hướng dẫn từng bước: `npm run docs:dev` hoặc `npx ai-spector course serve --open` · [Course](website/docs/README.md)
 
 **English:** [README.md](README.md)
 

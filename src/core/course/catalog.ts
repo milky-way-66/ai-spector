@@ -94,12 +94,11 @@ export class CourseNotFoundError extends Error {
 }
 
 export function formatCourseNotFoundMessage(
-  locale: CourseLocale,
+  _locale: CourseLocale,
   checkedPaths: string[],
 ): string {
-  const langLabel = locale === "vi" ? "Vietnamese" : "English";
   const lines = [
-    `Course files not found (${langLabel}).`,
+    "Course files not found.",
     "",
     "Checked:",
     ...checkedPaths.map((p) => `  - ${p}`),
@@ -121,20 +120,6 @@ export async function resolveCourseRoot(
 ): Promise<string> {
   const bundled = courseBundleRoot();
   const local = projectRoot ? join(projectRoot, "docs", "course") : undefined;
-
-  if (locale === "vi") {
-    const checkedPaths: string[] = [];
-    if (local) {
-      checkedPaths.push(join(local, "vi"));
-    }
-    checkedPaths.push(join(bundled, "vi"));
-    for (const root of checkedPaths) {
-      if (await pathExists(root)) {
-        return root;
-      }
-    }
-    throw new CourseNotFoundError(locale, checkedPaths);
-  }
 
   const checkedPaths: string[] = [];
   if (local) {

@@ -1399,14 +1399,12 @@ course
   .option("--port <number>", "Port (default: 4177)", (v) => Number(v), 4177)
   .option("--host <host>", "Host (default: 127.0.0.1)", "127.0.0.1")
   .option("--open", "Open the course in your default browser")
-  .option("--lang <code>", "Default language for --open: en or vi (default: en)", "en")
   .action(async (opts, cmd) => {
     const result = await runCourseServe({
       projectRoot: projectRootOpt(cmd),
       host: opts.host,
       port: opts.port,
       open: opts.open,
-      lang: opts.lang,
     });
     console.log(formatCourseServeStarted(result));
     await new Promise<void>(() => {

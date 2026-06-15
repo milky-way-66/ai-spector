@@ -3,8 +3,7 @@ name: ai-spector-course
 description: >-
   Opens and guides users through the AI Spector interactive course. Use when the user asks to
   learn ai-spector, open the course, see tutorials, walkthrough, onboarding, "how do I use this",
-  "show me how", "where do I start", "teach me", "mở khóa học", "khóa học tiếng Việt",
-  "hướng dẫn tôi dùng ai-spector", or wants help understanding workflow steps
+  "show me how", "where do I start", "teach me", or wants help understanding workflow steps
   without running a task yet. Do NOT use for setup execution (→ ai-spector-setup) or running
   analyze/generate/review tasks — route those to task skills after pointing at the right lesson.
 ---
@@ -22,11 +21,10 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
 1. **Open the course in the browser** (if not already running):
 
    ```bash
-   npx ai-spector course serve --open              # English
-   npx ai-spector course serve --open --lang vi    # Vietnamese
+   npx ai-spector course serve --open
    ```
 
-   Default URLs: `http://127.0.0.1:4177/course/index` (en) · `http://127.0.0.1:4177/course/vi/index` (vi).
+   Default URL: `http://127.0.0.1:4177/course/index`
 
 2. **Pick the best lesson** from [references/course-guide.md](references/course-guide.md) based on the user's question. Link directly:
 
@@ -50,8 +48,7 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
 
 | Item | Path |
 |------|------|
-| Course index | `website/docs/README.md` · Vietnamese: `website/docs/vi/README.md` |
-| Course home | `website/docs/README.md` |
+| Course index | `website/docs/README.md` |
 | Lessons | `website/docs/<section>/` |
 
 `docs/course/` is a symlink to `website/docs/` for npm and CLI. If missing locally, the bundled package still ships course files.

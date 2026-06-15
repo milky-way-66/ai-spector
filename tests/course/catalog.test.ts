@@ -57,15 +57,6 @@ describe("course render", () => {
     expect(html).toContain('href="/course/04-generate/01-generate-srs"');
   });
 
-  it("rewrites links for Vietnamese locale", async () => {
-    const html = await renderCourseMarkdown(
-      "See [SRS](../04-generate/01-generate-srs.md).",
-      "03-graph/02-validate-index-explore.md",
-      "vi",
-    );
-    expect(html).toContain('href="/course/vi/04-generate/01-generate-srs"');
-  });
-
   it("renders mermaid fences for client-side diagrams", async () => {
     const md = "```mermaid\nflowchart LR\n  A --> B\n```";
     const html = await renderCourseMarkdown(md);
@@ -114,33 +105,5 @@ describe("course render", () => {
     expect(html).toContain("Lesson 3 of 15");
     expect(html).toContain("Try in chat");
     expect(html).toContain("has-toc");
-  });
-});
-
-describe("course locale", () => {
-  it("loads Vietnamese lessons", async () => {
-    const viRoot = `${configLoad.courseBundleRoot()}/vi`;
-    const pages = await loadCoursePages(viRoot, "vi");
-    const lessons = pages.filter((p) => /\/\d{2}-.+\.md$/.test(p.relPath));
-    expect(lessons.length).toBe(15);
-    expect(pages.some((p) => p.slug === "02-chat-basics/01-how-chat-works")).toBe(true);
-  });
-
-  it("builds Vietnamese shell with language switcher", async () => {
-    const viRoot = `${configLoad.courseBundleRoot()}/vi`;
-    const pages = await loadCoursePages(viRoot, "vi");
-    const page = pageBySlug(pages, "01-get-started/01-prerequisites-and-init");
-    const html = buildCoursePageHtml({
-      title: page!.title,
-      bodyHtml: "<p>Xin chào</p>",
-      pages,
-      activeSlug: page!.slug,
-      activePage: page,
-      locale: "vi",
-    });
-    expect(html).toContain('lang="vi"');
-    expect(html).toContain("Bài 1 / 15");
-    expect(html).toContain("/course/vi/");
-    expect(html).toContain("Tiếng Việt");
   });
 });
