@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "title": "Security review gates (example)",
+  "description": "Copy to _all/security-gates.json and customize for your team.",
+  "items": [
+    {
+      "id": "SEC-001",
+      "severity": "blocking",
+      "question": "Are threat actors and mitigations documented?",
+      "agentCheck": "Verify the document names threat actors (or abuse cases) and corresponding mitigations or controls"
+    },
+    {
+      "id": "SEC-002",
+      "severity": "should-ask",
+      "question": "Is data classification stated for sensitive fields?",
+      "agentCheck": "Look for data sensitivity, PII, or classification labels where user or system data is described"
+    }
+  ]
+}

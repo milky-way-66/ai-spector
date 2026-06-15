@@ -409,6 +409,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
           root: projectRoot,
           docType,
           paths: [docPath],
+          logicalPath: lp,
         }),
       ]);
       result.readiness = { docPath, docType, structuralScan, outputChecklist };

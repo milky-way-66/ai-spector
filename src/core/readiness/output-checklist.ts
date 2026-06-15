@@ -3,6 +3,7 @@ import { docTypeDagPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { loadMergedReadinessCriteria } from "./resolve.js";
+import { loadCustomChecklistItems } from "./custom-checklists.js";
 import type { ReadinessCriterion, ReadinessCriteriaFile } from "./types.js";
 
 export interface DagNodeDef {
@@ -28,6 +29,11 @@ export interface OutputChecklistItem {
   heading?: string;
   /** Prompt for the agent — verify this in the written file body (semantic judgment). */
   agentCheck: string;
+  /** Built-in readiness criteria vs user file in review-checklists/. */
+  source?: "criteria" | "custom";
+  /** Repo-relative path to custom checklist file when source is custom. */
+  checklistFile?: string;
+  checklistTitle?: string;
 }
 
 export interface OutputChecklistForPath {
@@ -45,6 +51,8 @@ export interface ReadinessOutputChecklistResult {
   agentRole: string;
   workflow: string[];
   checklists: OutputChecklistForPath[];
+  /** User checklist files that contributed items (review-checklists/). */
+  customChecklistFiles?: string[];
 }
 
 const AGENT_ROLE =
@@ -173,6 +181,8 @@ export interface BuildOutputChecklistOptions {
   docType?: string;
   profile?: string;
   paths: string[];
+  /** Review logical path (e.g. srs/01-overview) — improves custom checklist matching. */
+  logicalPath?: string;
 }
 
 export async function buildReadinessOutputChecklist(
@@ -186,6 +196,7 @@ export async function buildReadinessOutputChecklist(
   });
   const dag = await loadDag(root, merged.docType, merged.packName);
   const checklists: OutputChecklistForPath[] = [];
+  const customFiles = new Set<string>();
 
   for (const rawPath of opts.paths) {
     const relPath = normalizeRelPath(root, rawPath);
@@ -202,7 +213,16 @@ export async function buildReadinessOutputChecklist(
       field: c.field,
       heading: c.heading,
       agentCheck: buildAgentCheck(c),
+      source: "criteria" as const,
     }));
+
+    const custom = await loadCustomChecklistItems(root, {
+      docType: merged.docType,
+      docPath: relPath,
+      logicalPath: opts.logicalPath,
+    });
+    for (const f of custom.files) customFiles.add(f);
+    items.push(...custom.items);
 
     checklists.push({
       path: relPath,
@@ -220,5 +240,6 @@ export async function buildReadinessOutputChecklist(
     agentRole: AGENT_ROLE,
     workflow: WORKFLOW_STEPS,
     checklists,
+    ...(customFiles.size > 0 ? { customChecklistFiles: [...customFiles] } : {}),
   };
 }

@@ -654,6 +654,10 @@ export const ReadinessOutputChecklistSchema = RootSchema.extend({
     .optional()
     .describe("Document type (default: srs)"),
   profile: z.string().optional().describe("Tailoring profile override"),
+  logicalPath: z
+    .string()
+    .optional()
+    .describe("Review logical path (e.g. srs/01-overview) — improves custom checklist matching"),
   paths: z
     .array(z.string())
     .describe("Generated doc paths just written — agent scores checklist items semantically"),

@@ -75,5 +75,6 @@ export async function toolReadinessOutputChecklist(
     docType: input.docType,
     profile: input.profile,
     paths: input.paths,
+    logicalPath: input.logicalPath,
   });
 }

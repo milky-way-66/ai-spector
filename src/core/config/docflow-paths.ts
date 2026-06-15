@@ -63,6 +63,15 @@ export function docTypeReadinessCriteriaPath(root: string, docTypeOrPack: string
   return join(docTypeConfigDir(root, docTypeOrPack), "readiness-criteria.json");
 }
 
+/** User-extensible review checklists — drop `.json` files per doc type. */
+export function reviewChecklistsDir(root: string): string {
+  return join(docflowConfigDir(root), "review-checklists");
+}
+
+export function reviewChecklistsDocTypeDir(root: string, docType: string): string {
+  return join(reviewChecklistsDir(root), docType);
+}
+
 export function readinessProfilesDir(): string {
   return join(scaffoldBundleRoot(), DOCFLOW_CONFIG_REL, "readiness/profiles");
 }

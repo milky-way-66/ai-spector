@@ -12,8 +12,23 @@ If `readiness` is missing (unknown doc type or config error), call tools manuall
 
 ```
 readiness_scan({ paths: [docPath], docType: "<type>", updateLastScan: false })
-readiness_output_checklist({ paths: [docPath], docType: "<type>" })
+readiness_output_checklist({ paths: [docPath], docType: "<type>", logicalPath: "<logicalPath>" })
 ```
+
+## Custom checklists (user-extensible)
+
+Teams can add JSON files under `.ai-spector/.docflow/config/review-checklists/`:
+
+| Location | Applies to |
+|----------|------------|
+| `<docType>/_all/*.json` | Every document of that type |
+| `<docType>/<doc-stem>.json` | One document (e.g. `01-overview.json` → `srs/01-overview`) |
+| `*.json` at root with `match` | Glob / pattern filter |
+
+See [review-checklists/README.md](../../../../.ai-spector/.docflow/config/review-checklists/README.md) in the scaffold.
+
+Custom items appear in the checklist with `source: "custom"` and `checklistFile`. Score them
+in the same compliance table as built-in ISO criteria.
 
 ## Doc type from logical path
 
