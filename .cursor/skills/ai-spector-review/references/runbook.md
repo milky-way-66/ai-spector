@@ -270,7 +270,7 @@ Wait for the user's reply. Do not auto-approve.
 ### 1 — Approve
 
 ```
-review_approve({ logicalPath: "<path>", by: "<reviewer name>" })
+review_approve({ logicalPath: "<path>", by: "<reviewer name>", note: "<optional note>" })
 ```
 
 Confirm in chat:

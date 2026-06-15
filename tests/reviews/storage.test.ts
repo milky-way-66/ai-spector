@@ -142,6 +142,30 @@ describe.sequential("review operations", () => {
     });
   });
 
+  it("approve persists optional reviewer note on registry and history", async () => {
+    await withTempProject(async (root) => {
+      await setupProject(root);
+      await seedPendingDoc(root, "srs/1-introduction", "# Introduction\n\nContent.");
+
+      await runReviewStatus({ root, logicalPath: "srs/1-introduction", showDiff: false });
+      await runReviewSessionAckReview({ root, logicalPath: "srs/1-introduction" });
+
+      const approved = await runApprove({
+        root,
+        logicalPath: "srs/1-introduction",
+        by: "alice",
+        note: "Minor wording fixes only",
+      });
+      expect(approved.note).toBe("Minor wording fixes only");
+
+      const approval = await getApproval(root, "srs/1-introduction");
+      expect(approval?.internal.note).toBe("Minor wording fixes only");
+
+      const history = await readHistory(root, "srs/1-introduction");
+      expect(history[0]?.note).toBe("Minor wording fixes only");
+    });
+  });
+
   it("list returns all documents with approval records", async () => {
     await withTempProject(async (root) => {
       await setupProject(root);

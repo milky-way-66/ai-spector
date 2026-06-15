@@ -232,6 +232,7 @@ export const ResolveTaskSchema = RootSchema.extend({
 export const ReviewApproveSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
   ...AuditActorOverrideSchema,
+  note: z.string().optional().describe("Review note"),
 });
 
 export const ReviewStatusSchema = RootSchema.extend({

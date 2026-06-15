@@ -77,6 +77,8 @@ export interface ReviewApproveOptions {
   /** Optional name override; generic values resolve to git user.name. */
   username?: string;
   role?: "user" | "client";
+  /** Reviewer note on approve (optional). */
+  note?: string;
 }
 
 export interface ReviewApproveResult {
@@ -87,6 +89,7 @@ export interface ReviewApproveResult {
   contentHash: string;
   movedToClientQueue: boolean;
   openThreadWarning: string | null;
+  note?: string;
 }
 
 export interface ReviewStatusOptions {
@@ -315,6 +318,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     approvedAt: now,
     approvedBy: actor.by,
     invalidatedAt: null,
+    note: opts.note ?? null,
   };
   approval.lastEventAt = now;
   approval.overallStatus = deriveOverallStatus(approval);
@@ -353,6 +357,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     username: actor.username,
     role: actor.role,
     hash: contentHash,
+    ...(opts.note ? { note: opts.note } : {}),
   });
 
   await clearReviewSession(projectRoot);
@@ -366,6 +371,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     contentHash,
     movedToClientQueue: true,
     openThreadWarning,
+    ...(opts.note ? { note: opts.note } : {}),
   };
 }
 

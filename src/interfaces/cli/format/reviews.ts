@@ -38,6 +38,7 @@ export function formatApproveResult(result: ReviewApproveResult): string {
   lines.push(`Approved: ${result.logicalPath}`);
   lines.push(`  by: ${result.approvedByUsername} <${result.approvedBy}> (${result.approvedByRole})`);
   lines.push(`  hash: ${result.contentHash}`);
+  if (result.note) lines.push(`  note: ${result.note}`);
   if (result.movedToClientQueue) lines.push("  moved to client review queue");
   if (result.openThreadWarning) lines.push(`  warning: ${result.openThreadWarning}`);
   return lines.join("\n");
@@ -53,7 +54,7 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
   lines.push(`  overall:  ${approval.overallStatus}`);
   lines.push(
     approval.internal.status === "approved"
-      ? `  internal: approved by ${approval.internal.approvedBy} on ${approval.internal.approvedAt?.slice(0, 10)}`
+      ? `  internal: approved by ${approval.internal.approvedBy} on ${approval.internal.approvedAt?.slice(0, 10)}${approval.internal.note ? ` — ${approval.internal.note}` : ""}`
       : `  internal: ${approval.internal.status}${approval.internal.invalidatedAt ? ` (invalidated ${approval.internal.invalidatedAt.slice(0, 10)})` : ""}`,
   );
   lines.push(
@@ -74,6 +75,8 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
       if (h.by) parts.push(`by ${h.username ?? "unknown"} <${h.by}>`);
       if (h.role) parts.push(`role ${h.role}`);
       if (h.hash) parts.push(`hash ${h.hash}`);
+      if (h.note) parts.push(`note "${h.note}"`);
+      if (h.reason) parts.push(`reason "${h.reason}"`);
       lines.push(`  ${parts.join(" ")}`);
     }
   }

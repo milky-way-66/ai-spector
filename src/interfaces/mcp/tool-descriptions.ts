@@ -15,6 +15,7 @@ export const APPROVE_TOOL_DESCRIPTIONS = {
     "WHEN: User wants document sign-off by logical path (e.g. srs/01-overview), after completing the ai-spector-review runbook (review_status + written review + user yes).",
     `NOT WHEN: SPEC-NNN or extracted spec queue (use ${SIBLING_SPEC}); user approved a TaskPlan table (use ${SIBLING_TASK}); comment thread C-NNN addressed (use ${SIBLING_COMMENTS}).`,
     `REQUIRES: review_status for the same logicalPath, review_session_ack_review after writing the review summary, then user yes.`,
+    "OPTIONAL: note — reviewer comment stored on approval record and history.",
     `SIBLING TOOLS: ${SIBLING_SPEC}, ${SIBLING_TASK}, ${SIBLING_COMMENTS}.`,
   ].join("\n"),
 

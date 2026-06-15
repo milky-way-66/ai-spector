@@ -23,6 +23,8 @@ export interface InternalTrack {
   approvedAt: string | null;
   approvedBy: string | null;
   invalidatedAt: string | null;
+  /** Reviewer note on internal approve (optional). */
+  note?: string | null;
 }
 
 export interface ClientTrack {
@@ -116,6 +118,8 @@ export interface HistoryLine {
   previousHash?: string;
   newHash?: string;
   reason?: string;
+  /** Reviewer note on approve (optional). */
+  note?: string;
   meta?: Record<string, unknown>;
 }
 

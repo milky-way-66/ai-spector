@@ -1107,6 +1107,7 @@ review
   .option("--by <email>", "Reviewer email override (default: git user.email)")
   .option("--username <name>", "Reviewer name override (default: git user.name)")
   .option("--role <role>", "Actor role: user | client (default: user)")
+  .option("--note <note>", "Review note")
   .option("--json", "JSON output for agents")
   .action(async (logicalPath: string, opts, cmd) => {
     const result = await runApprove({
@@ -1115,6 +1116,7 @@ review
       by: opts.by,
       username: opts.username,
       role: opts.role,
+      note: opts.note,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatApproveResult(result));

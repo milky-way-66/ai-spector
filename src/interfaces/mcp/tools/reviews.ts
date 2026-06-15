@@ -29,6 +29,7 @@ export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchem
     by: input.by,
     username: input.username,
     role: input.role,
+    note: input.note,
   });
 }
 
