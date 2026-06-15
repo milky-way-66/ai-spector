@@ -49,6 +49,25 @@ Creates:
 - **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
 - Pre-commit hook (when git is available)
 
+### Upgrade (refresh skills & rules)
+
+After installing a newer `ai-spector` version, refresh the editor scaffold from the package. This updates skills and rules only — it does **not** touch `.ai-spector/`, your graph, or `docs/`.
+
+```bash
+npm install ai-spector@latest          # public npm; add --registry … for Verdaccio
+npx ai-spector sync-cursor             # Cursor → .cursor/skills/, .cursor/rules/
+npx ai-spector sync-claude             # Claude Code → CLAUDE.md, .claude/skills/
+```
+
+Then **reload MCP** in your editor (`.cursor/mcp.json` or `.mcp.json`).
+
+In chat you can also say **“sync ai-spector cursor skills”** or **“sync ai-spector claude skills”**.
+
+| Command | What it updates |
+|---------|-----------------|
+| `sync-cursor` | Cursor skills, routing rules, `WORKFLOW.md` under `.cursor/` |
+| `sync-claude` | `CLAUDE.md`, Claude skills and rules under `.claude/` |
+
 ### Step 2 — Finish setup in chat
 
 ```text
@@ -180,8 +199,7 @@ Full list: `npx ai-spector --help`.
 | Validate errors after edits | **“re-index the graph”** |
 | Pre-commit hook missing | **“install ai-spector git hook”** |
 | Agent stuck on CLI error | `.cursor/skills/ai-spector/references/cli-failures.md` |
-
-After upgrading: reload MCP; run **`npx ai-spector sync-cursor`** (Cursor) or **`npx ai-spector sync-claude`** (Claude Code) if scaffold skills changed.
+| Stale skills after upgrade | [Upgrade (refresh skills & rules)](#upgrade-refresh-skills--rules) — `sync-cursor` / `sync-claude`, then reload MCP |
 
 ---
 
@@ -218,6 +236,46 @@ npm install ai-spector-graph
 
 ```bash
 npm install && npm run build && npm test
+```
+
+### Release (bump version & publish)
+
+Version lives in `package.json`. Use the deploy script — it runs tests, optionally bumps semver, builds, and publishes.
+
+**Public npm:**
+
+```bash
+npm run deploy:npm
+```
+
+**Internal Verdaccio** (copy `.env.example` → `.env` first):
+
+```bash
+npm run deploy
+```
+
+The script prompts to bump **patch** (default), **minor**, or **major**. Override with env vars:
+
+| Variable | Effect |
+|----------|--------|
+| `BUMP=minor` | Bump minor instead of patch |
+| `SKIP_BUMP=1` | Publish current `package.json` version as-is |
+| `SKIP_TEST=1` | Skip `npm test` before publish |
+
+**Manual bump only** (no publish):
+
+```bash
+npm version patch --no-git-tag-version   # or minor | major
+```
+
+`prepublishOnly` runs `npm run build` automatically before publish — fix build errors before retrying.
+
+Publish is implemented in **`scripts/deploy.sh`** (`npm run deploy` / `npm run deploy:npm`). Edit that script for registry URLs, auth prompts, or bump behavior.
+
+**Update scaffold bundles** (after editing `scaffold/cursor/`):
+
+```bash
+npm run build:claude-scaffold   # regenerate scaffold/claude/ from scaffold/cursor/
 ```
 
 MIT — [LICENSE](LICENSE).

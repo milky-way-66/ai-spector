@@ -51,6 +51,25 @@ Sau khi chạy xong sẽ có:
 - **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
 - Hook git trước khi commit *(nếu project có git)*
 
+### Nâng cấp (cập nhật skills & rules)
+
+Sau khi cài phiên bản `ai-spector` mới, refresh scaffold từ gói. Chỉ cập nhật skills và rules — **không** ghi đè `.ai-spector/`, graph, hay `docs/`.
+
+```bash
+npm install ai-spector@latest          # npm công khai; thêm --registry … cho Verdaccio
+npx ai-spector sync-cursor             # Cursor → .cursor/skills/, .cursor/rules/
+npx ai-spector sync-claude             # Claude Code → CLAUDE.md, .claude/skills/
+```
+
+Sau đó **reload MCP** (`.cursor/mcp.json` hoặc `.mcp.json`).
+
+Trong chat: **"sync ai-spector cursor skills"** hoặc **"sync ai-spector claude skills"**.
+
+| Lệnh | Cập nhật |
+|------|----------|
+| `sync-cursor` | Skills, rules, `WORKFLOW.md` trong `.cursor/` |
+| `sync-claude` | `CLAUDE.md`, skills và rules trong `.claude/` |
+
 ---
 
 ### Bước 2 — Hoàn tất setup trong chat
@@ -117,13 +136,12 @@ Trong chat:
 
 ```text
 add Claude Code support to ai-spector
+add Cursor support to ai-spector
 sync ai-spector cursor skills
 sync ai-spector claude skills
 ```
 
-Sau khi nâng cấp ai-spector:
-- **Cursor:** `npx ai-spector sync-cursor` hoặc gõ **"sync ai-spector cursor skills"** trong chat
-- **Claude Code:** `npx ai-spector sync-claude` hoặc gõ **"sync ai-spector claude skills"** trong chat
+Hoặc chạy `npx ai-spector sync-cursor` / `sync-claude` — xem [Nâng cấp](#nâng-cấp-cập-nhật-skills--rules) ở trên.
 
 ---
 
@@ -239,6 +257,46 @@ npm install ai-spector-graph
 
 ```bash
 npm install && npm run build && npm test
+```
+
+### Phát hành (tăng version & publish)
+
+Version nằm trong `package.json`. Dùng script deploy — chạy test, tùy chọn bump semver, build, rồi publish.
+
+**npm công khai:**
+
+```bash
+npm run deploy:npm
+```
+
+**Verdaccio nội bộ** (copy `.env.example` → `.env` trước):
+
+```bash
+npm run deploy
+```
+
+Script hỏi bump **patch** (mặc định), **minor**, hoặc **major**. Ghi đè bằng biến môi trường:
+
+| Biến | Tác dụng |
+|------|----------|
+| `BUMP=minor` | Bump minor thay vì patch |
+| `SKIP_BUMP=1` | Publish đúng version hiện tại trong `package.json` |
+| `SKIP_TEST=1` | Bỏ qua `npm test` trước publish |
+
+**Chỉ bump thủ công** (không publish):
+
+```bash
+npm version patch --no-git-tag-version   # hoặc minor | major
+```
+
+`prepublishOnly` tự chạy `npm run build` trước publish — sửa lỗi build rồi thử lại.
+
+Script publish nằm ở **`scripts/deploy.sh`** (`npm run deploy` / `npm run deploy:npm`). Sửa file đó nếu cần đổi registry, auth, hoặc logic bump version.
+
+**Cập nhật scaffold** (sau khi sửa `scaffold/cursor/`):
+
+```bash
+npm run build:claude-scaffold   # tạo lại scaffold/claude/ từ scaffold/cursor/
 ```
 
 MIT — [LICENSE](LICENSE).

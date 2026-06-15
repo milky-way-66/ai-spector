@@ -116,7 +116,7 @@ export function normalizeApprovalRecord(raw: ApprovalRecord & {
 /** True when registry entry still uses legacy approvedBy / approvedAt fields. */
 export function approvalNeedsNormalization(raw: {
   internal?: RawInternalTrack;
-  client?: RawClientFields;
+  client?: RawClientTrack;
 }): boolean {
   const internal = raw.internal;
   if (internal && ("approvedBy" in internal || "approvedAt" in internal)) return true;
