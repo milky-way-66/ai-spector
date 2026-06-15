@@ -1,12 +1,39 @@
-import { describe, expect, it } from "vitest";
-import { courseBundleRoot } from "@/core/config/load.js";
-import { loadCoursePages, neighbors, pageBySlug } from "@/core/course/catalog.js";
+import { describe, expect, it, vi } from "vitest";
+import * as configLoad from "@/core/config/load.js";
+import {
+  CourseNotFoundError,
+  formatCourseNotFoundMessage,
+  loadCoursePages,
+  neighbors,
+  pageBySlug,
+  resolveCourseRoot,
+} from "@/core/course/catalog.js";
 import { renderCourseMarkdown } from "@/core/course/render.js";
 import { buildCoursePageHtml } from "@/core/course/html-shell.js";
 
 describe("course catalog", () => {
+  it("resolves bundled course from website/docs", () => {
+    const root = configLoad.courseBundleRoot();
+    expect(root).toMatch(/website\/docs$/);
+  });
+
+  it("throws a clear error when course files are missing", async () => {
+    const missingBundled = "/tmp/ai-spector-course-bundle-missing";
+    const missingProject = "/tmp/ai-spector-course-project-missing";
+    vi.spyOn(configLoad, "courseBundleRoot").mockReturnValue(missingBundled);
+    await expect(resolveCourseRoot(missingProject, "en")).rejects.toBeInstanceOf(CourseNotFoundError);
+    await expect(resolveCourseRoot(missingProject, "en")).rejects.toThrow(/Course files not found/);
+    const msg = formatCourseNotFoundMessage("en", [
+      `${missingProject}/docs/course`,
+      missingBundled,
+    ]);
+    expect(msg).toContain("Checked:");
+    expect(msg).toContain("npm install ai-spector");
+    vi.restoreAllMocks();
+  });
+
   it("loads composed lessons (13 + section READMEs)", async () => {
-    const pages = await loadCoursePages(courseBundleRoot());
+    const pages = await loadCoursePages(configLoad.courseBundleRoot());
     const lessons = pages.filter((p) => /\/\d{2}-.+\.md$/.test(p.relPath));
     expect(lessons.length).toBe(13);
     expect(pages.some((p) => p.slug === "04-generate/01-generate-srs")).toBe(true);
@@ -14,7 +41,7 @@ describe("course catalog", () => {
   });
 
   it("resolves neighbors across sections", async () => {
-    const pages = await loadCoursePages(courseBundleRoot());
+    const pages = await loadCoursePages(configLoad.courseBundleRoot());
     const { next } = neighbors(pages, "01-get-started/02-setup-and-skills");
     expect(next?.slug).toBe("02-chat-basics");
   });
@@ -39,7 +66,7 @@ describe("course render", () => {
   });
 
   it("builds section-grouped shell", async () => {
-    const pages = await loadCoursePages(courseBundleRoot());
+    const pages = await loadCoursePages(configLoad.courseBundleRoot());
     const page = pageBySlug(pages, "02-chat-basics/01-how-chat-works");
     const html = buildCoursePageHtml({
       title: page!.title,
@@ -57,7 +84,7 @@ describe("course render", () => {
 
 describe("course locale", () => {
   it("loads Vietnamese lessons", async () => {
-    const viRoot = `${courseBundleRoot()}/vi`;
+    const viRoot = `${configLoad.courseBundleRoot()}/vi`;
     const pages = await loadCoursePages(viRoot, "vi");
     const lessons = pages.filter((p) => /\/\d{2}-.+\.md$/.test(p.relPath));
     expect(lessons.length).toBe(13);
@@ -65,7 +92,7 @@ describe("course locale", () => {
   });
 
   it("builds Vietnamese shell with language switcher", async () => {
-    const viRoot = `${courseBundleRoot()}/vi`;
+    const viRoot = `${configLoad.courseBundleRoot()}/vi`;
     const pages = await loadCoursePages(viRoot, "vi");
     const page = pageBySlug(pages, "01-get-started/01-prerequisites-and-init");
     const html = buildCoursePageHtml({

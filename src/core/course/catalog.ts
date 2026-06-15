@@ -89,31 +89,72 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
   return line.slice(2).trim();
 }
 
+export class CourseNotFoundError extends Error {
+  constructor(
+    readonly locale: CourseLocale,
+    readonly checkedPaths: string[],
+  ) {
+    super(formatCourseNotFoundMessage(locale, checkedPaths));
+    this.name = "CourseNotFoundError";
+  }
+}
+
+export function formatCourseNotFoundMessage(
+  locale: CourseLocale,
+  checkedPaths: string[],
+): string {
+  const langLabel = locale === "vi" ? "Vietnamese" : "English";
+  const lines = [
+    `Course files not found (${langLabel}).`,
+    "",
+    "Checked:",
+    ...checkedPaths.map((p) => `  - ${p}`),
+    "",
+    "Fix:",
+    "  1. Reinstall ai-spector (course ships in node_modules/ai-spector/website/docs/):",
+    "       npm install ai-spector",
+    "  2. Or add a local copy in your project:",
+    "       docs/course/  (optional override)",
+    "  3. From the ai-spector repo: edit website/docs/ (docs/course is a dev symlink).",
+  ];
+  return lines.join("\n");
+}
+
 /** Prefer project-local course copy when present; otherwise bundled docs. */
 export async function resolveCourseRoot(
   projectRoot?: string,
   locale: CourseLocale = DEFAULT_COURSE_LOCALE,
 ): Promise<string> {
   const bundled = courseBundleRoot();
-  const localBase = projectRoot ? join(projectRoot, "docs", "course") : bundled;
+  const local = projectRoot ? join(projectRoot, "docs", "course") : undefined;
 
   if (locale === "vi") {
-    const viCandidates = [join(localBase, "vi"), join(bundled, "vi")];
-    for (const root of viCandidates) {
+    const checkedPaths: string[] = [];
+    if (local) {
+      checkedPaths.push(join(local, "vi"));
+    }
+    checkedPaths.push(join(bundled, "vi"));
+    for (const root of checkedPaths) {
       if (await pathExists(root)) {
         return root;
       }
     }
-    throw new Error("Vietnamese course not found (expected website/docs/vi/ or docs/course/vi/)");
+    throw new CourseNotFoundError(locale, checkedPaths);
   }
 
-  if (projectRoot) {
-    const local = join(projectRoot, "docs", "course");
+  const checkedPaths: string[] = [];
+  if (local) {
+    checkedPaths.push(local);
     if (await pathExists(local)) {
       return local;
     }
   }
-  return bundled;
+  checkedPaths.push(bundled);
+  if (await pathExists(bundled)) {
+    return bundled;
+  }
+
+  throw new CourseNotFoundError(locale, checkedPaths);
 }
 
 export async function loadCoursePages(

@@ -24,9 +24,14 @@ export function themesBundleRoot(): string {
   return join(packageBundleRoot(), "assets", "themes");
 }
 
-/** Step-by-step user course (`website/docs/`, exposed as `docs/course/` in the package). */
+/** Step-by-step user course (`website/docs/`, legacy path `docs/course/`). */
 export function courseBundleRoot(): string {
-  return join(packageBundleRoot(), "docs", "course");
+  const root = packageBundleRoot();
+  const primary = join(root, "website", "docs");
+  if (existsSync(primary)) {
+    return primary;
+  }
+  return join(root, "docs", "course");
 }
 
 

@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.8.49",
+  "version": "0.8.51",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -33,6 +33,7 @@
     "documents-basic-design.json",
     "scaffold",
     "assets",
+    "website/docs",
     "docs/course",
     "README.md",
     "README.vi.md",
