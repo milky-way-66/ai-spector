@@ -11,6 +11,9 @@ import type {
   ReviewListSchema,
   ReviewSessionStartSchema,
   ReviewSessionAckReviewSchema,
+  ReviewWithdrawSchema,
+  ReviewReopenSchema,
+  ReviewConfigSchema,
 } from "../schemas.js";
 import {
   runApprove,
@@ -24,6 +27,9 @@ import {
   runReviewList,
   runReviewSessionStart,
   runReviewSessionAckReview,
+  runWithdraw,
+  runReopen,
+  runReviewConfig,
 } from "@/core/operations/review.js";
 
 export async function toolReviewDecline(input: z.infer<typeof ReviewDeclineSchema>) {
@@ -112,4 +118,30 @@ export async function toolReviewSessionAckReview(
   input: z.infer<typeof ReviewSessionAckReviewSchema>,
 ) {
   return runReviewSessionAckReview({ root: input.root, logicalPath: input.logicalPath });
+}
+
+export async function toolReviewWithdraw(input: z.infer<typeof ReviewWithdrawSchema>) {
+  return runWithdraw({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    track: input.track,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+  });
+}
+
+export async function toolReviewReopen(input: z.infer<typeof ReviewReopenSchema>) {
+  return runReopen({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    track: input.track,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+  });
+}
+
+export async function toolReviewConfig(input: z.infer<typeof ReviewConfigSchema>) {
+  return runReviewConfig({ root: input.root });
 }

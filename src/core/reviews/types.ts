@@ -20,7 +20,10 @@ export type HistoryEvent =
   | "internal_quorum_met"
   | "client_quorum_met"
   | "internal_closed"
-  | "client_closed";
+  | "client_closed"
+  | "vote_withdrawn"
+  | "track_reopened"
+  | "client_reset";
 export type ReviewTrack = "internal" | "client";
 import type { AuditActorRole } from "../util/audit-actor.js";
 export type ReviewActorRole = AuditActorRole;
@@ -50,6 +53,7 @@ export interface InternalTrack {
   closedBy: string | null;
   closeReason?: string | null;
   invalidatedAt: string | null;
+  reopenedAt: string | null;
 }
 
 export interface ClientTrack {
@@ -59,6 +63,7 @@ export interface ClientTrack {
   closedAt: string | null;
   closedBy: string | null;
   closeReason?: string | null;
+  reopenedAt: string | null;
 }
 
 /** Per-document approval state stored in registry.json. */

@@ -247,6 +247,20 @@ export const ReviewApproveSchema = RootSchema.extend({
   note: z.string().optional().describe("Review note"),
 });
 
+export const ReviewWithdrawSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
+  track: z.enum(["internal", "client"]).optional().describe("Review track (default: internal)"),
+  ...AuditActorOverrideSchema,
+});
+
+export const ReviewReopenSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
+  track: z.enum(["internal", "client"]).optional().describe("Review track (default: internal)"),
+  ...AuditActorOverrideSchema,
+});
+
+export const ReviewConfigSchema = RootSchema;
+
 export const ReviewStatusSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path"),
   showDiff: z.boolean().optional().describe("Include diff content in result (default: true)"),

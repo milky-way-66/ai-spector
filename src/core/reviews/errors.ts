@@ -1,4 +1,5 @@
-import type { ApprovalRecord } from "./types.js";
+import type { ApprovalRecord, ClientTrack, InternalTrack, ReviewTrack } from "./types.js";
+import { isTrackClosed, isTrackOpenForVotes } from "./votes.js";
 
 export type ReviewApproveBlockReason =
   | "already_pending_client"
@@ -8,9 +9,13 @@ export type ReviewApproveBlockReason =
   | "session_not_ready"
   | "session_content_changed";
 
+export type ReviewWithdrawBlockReason = "no_vote_to_withdraw" | "track_closed";
+
+export type ReviewReopenBlockReason = "track_already_open" | "invalid_state";
+
 export interface ReviewPreconditionPayload {
   error: "PRECONDITION_FAILED";
-  reason: ReviewApproveBlockReason;
+  reason: ReviewApproveBlockReason | ReviewWithdrawBlockReason | ReviewReopenBlockReason;
   message: string;
   hint: string;
   /** Plain-language explanation for the user (shown in chat). */
@@ -55,12 +60,15 @@ export function defaultReviewPreconditionUserMessage(
   return DEFAULT_USER_MESSAGES[reason](logicalPath);
 }
 
-/** Thrown when `review_approve` / runApprove cannot run in the current approval state. */
+/** Thrown when review workflow preconditions fail. */
 export class ReviewPreconditionError extends Error {
   readonly code = "PRECONDITION_FAILED" as const;
 
   constructor(
-    public readonly reason: ReviewApproveBlockReason,
+    public readonly reason:
+      | ReviewApproveBlockReason
+      | ReviewWithdrawBlockReason
+      | ReviewReopenBlockReason,
     message: string,
     public readonly hint: string,
     public readonly suggestedTools: string[] = [],
@@ -72,7 +80,10 @@ export class ReviewPreconditionError extends Error {
     super(message);
     this.name = "ReviewPreconditionError";
     this.userMessage =
-      userMessage ?? defaultReviewPreconditionUserMessage(reason, logicalPath);
+      userMessage ??
+      (reason in DEFAULT_USER_MESSAGES
+        ? defaultReviewPreconditionUserMessage(reason as ReviewApproveBlockReason, logicalPath)
+        : message);
   }
 
   readonly userMessage: string;
@@ -93,10 +104,7 @@ export class ReviewPreconditionError extends Error {
 }
 
 export function canInternalApprove(approval: ApprovalRecord): boolean {
-  return (
-    approval.internal.status === "pending" ||
-    approval.internal.status === "needs_review"
-  );
+  return isTrackOpenForVotes(approval.internal);
 }
 
 export function canInternalClose(approval: ApprovalRecord): boolean {
@@ -175,5 +183,71 @@ export function assertCanInternalApprove(
     ["review_begin", "review_status", "review_queue", ...notThese],
     logicalPath,
     overallStatus,
+  );
+}
+
+function trackForReview(approval: ApprovalRecord, track: ReviewTrack): InternalTrack | ClientTrack {
+  return track === "internal" ? approval.internal : approval.client;
+}
+
+export function assertCanWithdraw(
+  approval: ApprovalRecord,
+  logicalPath: string,
+  track: ReviewTrack,
+  by: string,
+): void {
+  const t = trackForReview(approval, track);
+  if (isTrackOpenForVotes(t)) {
+    if (t.votes.some((v) => v.by === by)) {
+      return;
+    }
+    throw new ReviewPreconditionError(
+      "no_vote_to_withdraw",
+      `No vote to withdraw for ${logicalPath} on ${track} track.`,
+      "You can only withdraw your own vote when you have already voted on an open track.",
+      ["review_status", "review_approve", "review_decline"],
+      logicalPath,
+      approval.overallStatus,
+    );
+  }
+
+  throw new ReviewPreconditionError(
+    "track_closed",
+    `Cannot withdraw vote on ${logicalPath}: ${track} track is closed (${t.status}).`,
+    "Use review_reopen to reopen the track, then withdraw or change your vote.",
+    ["review_reopen", "review_status"],
+    logicalPath,
+    approval.overallStatus,
+  );
+}
+
+export function assertCanReopen(
+  approval: ApprovalRecord,
+  logicalPath: string,
+  track: ReviewTrack,
+): void {
+  const t = trackForReview(approval, track);
+  if (isTrackClosed(t)) {
+    return;
+  }
+
+  if (isTrackOpenForVotes(t)) {
+    throw new ReviewPreconditionError(
+      "track_already_open",
+      `Cannot reopen ${logicalPath}: ${track} track is already open (${t.status}).`,
+      "Withdraw or change votes while the track is open; reopen is only for closed tracks.",
+      ["review_withdraw", "review_status", "review_approve"],
+      logicalPath,
+      approval.overallStatus,
+    );
+  }
+
+  throw new ReviewPreconditionError(
+    "invalid_state",
+    `Cannot reopen ${logicalPath}: ${track} track is in state "${t.status}".`,
+    "Run review_status to inspect the document review state.",
+    ["review_status", "review_queue"],
+    logicalPath,
+    approval.overallStatus,
   );
 }

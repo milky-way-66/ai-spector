@@ -39,9 +39,16 @@ import { ensureApprovalForReview, runReviewDiscovery } from "../reviews/register
 import { deriveReviewKind, reviewTemplateForKind, type ReviewKind, type ReviewTemplate } from "../reviews/review-kind.js";
 import { computeLiveStaleness } from "../reviews/staleness.js";
 import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
-import { assertCanInternalApprove, assertCanInternalClose } from "../reviews/errors.js";
+import { assertCanInternalApprove, assertCanInternalClose, assertCanWithdraw, assertCanReopen } from "../reviews/errors.js";
+import { loadReviewQueueConfig, type ReviewQueueConfig } from "../reviews/config.js";
 import { computeQuorum } from "../reviews/quorum.js";
-import { emptyClientTrack, upsertVote, trackQuorum } from "../reviews/votes.js";
+import {
+  emptyClientTrack,
+  upsertVote,
+  removeVote,
+  trackQuorum,
+  shouldAutoCloseTrack,
+} from "../reviews/votes.js";
 import {
   assertReviewSessionAllowsApprove,
   clearReviewSession,
@@ -69,6 +76,9 @@ import type {
   ReviewSessionFile,
   QuorumSummary,
   ReviewVote,
+  ReviewTrack,
+  InternalTrack,
+  ClientTrack,
 } from "../reviews/types.js";
 
 // ── Options / Results ─────────────────────────────────────────────────────────
@@ -137,6 +147,52 @@ export interface ReviewCloseResult {
   reason: string;
   quorum: QuorumSummary;
 }
+
+export interface ReviewWithdrawOptions {
+  root?: string;
+  logicalPath: string;
+  track?: ReviewTrack;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
+}
+
+export interface ReviewWithdrawResult {
+  logicalPath: string;
+  track: ReviewTrack;
+  withdrawnBy: string;
+  withdrawnByUsername: string;
+  withdrawnByRole: "user" | "client";
+  contentHash: string;
+  quorum: QuorumSummary;
+  quorumMet: boolean;
+}
+
+export interface ReviewReopenOptions {
+  root?: string;
+  logicalPath: string;
+  track?: ReviewTrack;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
+}
+
+export interface ReviewReopenResult {
+  logicalPath: string;
+  track: ReviewTrack;
+  reopenedBy: string;
+  reopenedByUsername: string;
+  reopenedByRole: "user" | "client";
+  contentHash: string;
+  clientReset: boolean;
+  quorum: QuorumSummary;
+}
+
+export interface ReviewConfigOptions {
+  root?: string;
+}
+
+export type ReviewConfigResult = ReviewQueueConfig;
 
 export interface ReviewStatusOptions {
   root?: string;
@@ -406,6 +462,75 @@ async function appendInternalVoteHistory(
   });
 }
 
+type ReviewActor = { by: string; username: string; role: "user" | "client" };
+
+function openClosedTrack(track: InternalTrack | ClientTrack, now: string): void {
+  track.status = "pending";
+  track.quorumMetAt = null;
+  track.closedAt = null;
+  track.closedBy = null;
+  track.closeReason = null;
+  track.reopenedAt = now;
+}
+
+async function cascadeResetClientTrack(
+  projectRoot: string,
+  lp: string,
+  approval: ApprovalRecord,
+  now: string,
+  actor: ReviewActor,
+  contentHash: string,
+): Promise<boolean> {
+  const hadClientActivity =
+    approval.client.votes.length > 0 ||
+    approval.client.status !== "pending" ||
+    approval.client.quorumMetAt != null;
+
+  approval.client = emptyClientTrack();
+
+  const clientEntry = await removeFromQueue(projectRoot, "client", lp);
+  if (clientEntry) {
+    await archiveQueueEntry(projectRoot, "client", "resolved", clientEntry);
+  }
+
+  if (hadClientActivity) {
+    await appendHistory(projectRoot, lp, {
+      event: "client_reset",
+      track: "client",
+      at: now,
+      by: actor.by,
+      username: actor.username,
+      role: actor.role,
+      hash: contentHash,
+    });
+  }
+
+  return hadClientActivity;
+}
+
+async function maybeFinalizeInternalQuorum(
+  projectRoot: string,
+  lp: string,
+  approval: ApprovalRecord,
+  content: string,
+  contentHash: string,
+  docPath: string,
+  now: string,
+  actor: ReviewActor,
+  quorum: QuorumSummary,
+): Promise<boolean> {
+  if (!shouldAutoCloseTrack(approval.internal, quorum, now)) {
+    return false;
+  }
+
+  approval.internal.status = "approved";
+  approval.internal.quorumMetAt = now;
+  approval.internal.closedAt = now;
+  approval.internal.closedBy = actor.by;
+  await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
+  return true;
+}
+
 // ── Operations ────────────────────────────────────────────────────────────────
 
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
@@ -425,6 +550,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     openThreadWarning = `${openThreads.length} open comment thread(s) on this document`;
   }
 
+  const config = await loadReviewQueueConfig(projectRoot);
   const now = new Date().toISOString();
 
   let approval = await getApproval(projectRoot, lp);
@@ -448,15 +574,20 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
   approval.docPath = docPath;
   approval.contentHash = contentHash;
   approval.internal.votes = upsertVote(approval.internal.votes, vote);
-  const quorum = computeQuorum(approval.internal.votes);
+  const quorum = computeQuorum(approval.internal.votes, config.internal.minApprovals);
 
   let movedToClientQueue = false;
-  if (quorum.met) {
-    approval.internal.status = "approved";
-    approval.internal.quorumMetAt = now;
-    approval.internal.closedAt = now;
-    approval.internal.closedBy = actor.by;
-    await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
+  if (await maybeFinalizeInternalQuorum(
+    projectRoot,
+    lp,
+    approval,
+    content,
+    contentHash,
+    docPath,
+    now,
+    actor,
+    quorum,
+  )) {
     movedToClientQueue = true;
   }
 
@@ -489,7 +620,8 @@ export async function runDecline(opts: ReviewDeclineOptions): Promise<ReviewDecl
     role: opts.role ?? "user",
   });
 
-  const { docPath, contentHash } = await loadDocContentHash(projectRoot, lp);
+  const { docPath, contentHash, content } = await loadDocContentHash(projectRoot, lp);
+  const config = await loadReviewQueueConfig(projectRoot);
   const now = new Date().toISOString();
 
   let approval = await getApproval(projectRoot, lp);
@@ -511,15 +643,21 @@ export async function runDecline(opts: ReviewDeclineOptions): Promise<ReviewDecl
   approval.docPath = docPath;
   approval.contentHash = contentHash;
   approval.internal.votes = upsertVote(approval.internal.votes, vote);
-  const quorum = computeQuorum(approval.internal.votes);
+  const quorum = computeQuorum(approval.internal.votes, config.internal.minApprovals);
 
-  if (quorum.met) {
-    approval.internal.status = "approved";
-    approval.internal.quorumMetAt = now;
-    approval.internal.closedAt = now;
-    approval.internal.closedBy = actor.by;
-    const { content } = await loadDocContentHash(projectRoot, lp);
-    await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
+  let quorumMet = false;
+  if (await maybeFinalizeInternalQuorum(
+    projectRoot,
+    lp,
+    approval,
+    content,
+    contentHash,
+    docPath,
+    now,
+    actor,
+    quorum,
+  )) {
+    quorumMet = true;
   }
 
   approval.lastEventAt = now;
@@ -535,9 +673,147 @@ export async function runDecline(opts: ReviewDeclineOptions): Promise<ReviewDecl
     contentHash,
     decision: "decline",
     quorum,
-    quorumMet: quorum.met,
+    quorumMet,
     ...(opts.note ? { note: opts.note } : {}),
   };
+}
+
+export async function runWithdraw(opts: ReviewWithdrawOptions): Promise<ReviewWithdrawResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const lp = normalizeLogicalPath(opts.logicalPath);
+  const track = opts.track ?? "internal";
+  const actor = await resolveAuditActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? (track === "client" ? "client" : "user"),
+  });
+
+  const { docPath, contentHash } = await loadDocContentHash(projectRoot, lp);
+  const config = await loadReviewQueueConfig(projectRoot);
+  const now = new Date().toISOString();
+
+  const approval = await getApproval(projectRoot, lp);
+  if (!approval) {
+    throw new Error(`No approval record for ${lp}`);
+  }
+
+  assertCanWithdraw(approval, lp, track, actor.by);
+
+  const minApprovals =
+    track === "internal" ? config.internal.minApprovals : config.client.minApprovals;
+  const trackState = track === "internal" ? approval.internal : approval.client;
+
+  trackState.votes = removeVote(trackState.votes, actor.by);
+  const quorum = computeQuorum(trackState.votes, minApprovals);
+
+  approval.docPath = docPath;
+  approval.contentHash = contentHash;
+  approval.lastEventAt = now;
+  approval.overallStatus = deriveOverallStatus(approval);
+  await saveApproval(projectRoot, approval);
+
+  await appendHistory(projectRoot, lp, {
+    event: "vote_withdrawn",
+    track,
+    at: now,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+    hash: contentHash,
+  });
+
+  return {
+    logicalPath: lp,
+    track,
+    withdrawnBy: actor.by,
+    withdrawnByUsername: actor.username,
+    withdrawnByRole: actor.role,
+    contentHash,
+    quorum,
+    quorumMet: quorum.met,
+  };
+}
+
+export async function runReopen(opts: ReviewReopenOptions): Promise<ReviewReopenResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const lp = normalizeLogicalPath(opts.logicalPath);
+  const track = opts.track ?? "internal";
+  const actor = await resolveAuditActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? (track === "client" ? "client" : "user"),
+  });
+
+  const { docPath, contentHash } = await loadDocContentHash(projectRoot, lp);
+  const config = await loadReviewQueueConfig(projectRoot);
+  const now = new Date().toISOString();
+
+  const approval = await getApproval(projectRoot, lp);
+  if (!approval) {
+    throw new Error(`No approval record for ${lp}`);
+  }
+
+  assertCanReopen(approval, lp, track);
+
+  let clientReset = false;
+  if (track === "internal") {
+    openClosedTrack(approval.internal, now);
+    clientReset = await cascadeResetClientTrack(projectRoot, lp, approval, now, actor, contentHash);
+
+    await addToQueue(projectRoot, "internal", {
+      logicalPath: lp,
+      queuedAt: now,
+      reason: "first_review",
+      approvedHash: contentHash,
+      currentHash: contentHash,
+    });
+  } else {
+    openClosedTrack(approval.client, now);
+    await addToQueue(projectRoot, "client", {
+      logicalPath: lp,
+      queuedAt: now,
+      reason: "awaiting_client_signoff",
+      approvedHash: contentHash,
+      currentHash: contentHash,
+    });
+  }
+
+  approval.docPath = docPath;
+  approval.contentHash = contentHash;
+  approval.lastEventAt = now;
+  approval.overallStatus = deriveOverallStatus(approval);
+  await saveApproval(projectRoot, approval);
+
+  const minApprovals =
+    track === "internal" ? config.internal.minApprovals : config.client.minApprovals;
+  const trackState = track === "internal" ? approval.internal : approval.client;
+  const quorum = computeQuorum(trackState.votes, minApprovals);
+
+  await appendHistory(projectRoot, lp, {
+    event: "track_reopened",
+    track,
+    at: now,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+    hash: contentHash,
+  });
+
+  return {
+    logicalPath: lp,
+    track,
+    reopenedBy: actor.by,
+    reopenedByUsername: actor.username,
+    reopenedByRole: actor.role,
+    contentHash,
+    clientReset,
+    quorum,
+  };
+}
+
+export async function runReviewConfig(opts: ReviewConfigOptions = {}): Promise<ReviewConfigResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  return loadReviewQueueConfig(projectRoot);
 }
 
 export async function runClose(opts: ReviewCloseOptions): Promise<ReviewCloseResult> {
@@ -561,7 +837,8 @@ export async function runClose(opts: ReviewCloseOptions): Promise<ReviewCloseRes
   }
 
   assertCanInternalClose(approval, lp);
-  const quorum = trackQuorum(approval.internal);
+  const config = await loadReviewQueueConfig(projectRoot);
+  const quorum = trackQuorum(approval.internal, config.internal.minApprovals);
   if (quorum.met) {
     throw new Error(`Cannot close ${lp}: internal quorum already met`);
   }
@@ -661,12 +938,14 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     reviewWrittenAt: null,
   });
 
+  const reviewConfig = await loadReviewQueueConfig(projectRoot);
+
   let docPath: string | undefined;
   const result: ReviewStatusResult = {
     approval,
     diff,
-    internalQuorum: trackQuorum(approval.internal),
-    clientQuorum: trackQuorum(approval.client),
+    internalQuorum: trackQuorum(approval.internal, reviewConfig.internal.minApprovals),
+    clientQuorum: trackQuorum(approval.client, reviewConfig.client.minApprovals),
     session,
     reviewKind: kind,
     reviewTemplate: reviewTemplateForKind(kind),
@@ -674,6 +953,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
       stale: live.stale,
       session,
       reviewKind: kind,
+      internalMinApprovals: reviewConfig.internal.minApprovals,
     }),
     ...(live.stale ? { stale: true, approvedContentHash } : {}),
   };
@@ -767,6 +1047,7 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
 
 export async function runReviewList(opts: ReviewListOptions): Promise<ReviewListResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
+  const reviewConfig = await loadReviewQueueConfig(projectRoot);
   const logicalPaths = await discoverApprovals(projectRoot);
 
   const entries: ReviewListEntry[] = [];
@@ -793,11 +1074,11 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
         contentHash: approval.contentHash,
         internal: {
           status: approval.internal.status,
-          quorum: trackQuorum(approval.internal),
+          quorum: trackQuorum(approval.internal, reviewConfig.internal.minApprovals),
         },
         client: {
           status: approval.client.status,
-          quorum: trackQuorum(approval.client),
+          quorum: trackQuorum(approval.client, reviewConfig.client.minApprovals),
         },
         ...(live.stale
           ? { stale: true, approvedContentHash: persisted.contentHash }

@@ -140,7 +140,12 @@ export {
   runReviewMigrate,
   runReviewSessionStart,
   runReviewSessionAckReview,
+  runWithdraw,
+  runReopen,
+  runReviewConfig,
 } from "../../core/operations/review.js";
+export { loadReviewQueueConfig } from "../../core/reviews/config.js";
+export type { ReviewQueueConfig } from "../../core/reviews/config.js";
 export {
   ReviewPreconditionError,
   canInternalApprove,

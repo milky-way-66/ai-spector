@@ -62,6 +62,7 @@ export function normalizeInternalTrack(raw: RawInternalTrack): InternalTrack {
     closedBy,
     closeReason: raw.closeReason ?? null,
     invalidatedAt: raw.invalidatedAt ?? null,
+    reopenedAt: raw.reopenedAt ?? null,
   };
 }
 
@@ -93,6 +94,7 @@ export function normalizeClientTrack(raw: RawClientTrack): ClientTrack {
     closedAt,
     closedBy,
     closeReason: raw.closeReason ?? raw.comment ?? null,
+    reopenedAt: raw.reopenedAt ?? null,
   };
 }
 

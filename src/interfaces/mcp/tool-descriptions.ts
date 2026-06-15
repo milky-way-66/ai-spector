@@ -10,13 +10,13 @@ const SIBLING_COMMENTS = "comments_resolve";
 
 export const APPROVE_TOOL_DESCRIPTIONS = {
   review_approve: [
-    "Cast an internal approve vote on a document (2/3 quorum of voters). Moves to client queue when quorum is met.",
+    "Cast an internal approve vote on a document. Moves to client queue when approve count reaches minApprovals from review-queue.json.",
     "",
     "WHEN: User wants document sign-off by logical path (e.g. srs/01-overview), after completing the ai-spector-review runbook (review_status + written review + user yes).",
     `NOT WHEN: SPEC-NNN or extracted spec queue (use ${SIBLING_SPEC}); user approved a TaskPlan table (use ${SIBLING_TASK}); comment thread C-NNN addressed (use ${SIBLING_COMMENTS}).`,
     `REQUIRES: review_status for the same logicalPath, review_session_ack_review after writing the review summary, then user yes.`,
     "OPTIONAL: note — reviewer comment stored on vote and history.",
-    `SIBLING TOOLS: review_decline, review_close, ${SIBLING_SPEC}, ${SIBLING_TASK}, ${SIBLING_COMMENTS}.`,
+    `SIBLING TOOLS: review_decline, review_withdraw, review_reopen, review_close, ${SIBLING_SPEC}, ${SIBLING_TASK}, ${SIBLING_COMMENTS}.`,
   ].join("\n"),
 
   spec_approve: [
@@ -90,14 +90,34 @@ export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
   ].join("\n"),
 
   review_decline: [
-    "Cast an internal decline vote on a document pending review (2/3 quorum).",
+    "Cast an internal decline vote on a document pending review.",
     "",
-    "WHEN: Reviewer disagrees with sign-off but quorum is not yet decided.",
-    "NOT WHEN: Dismissing trivial re-review (review_reject); closing review without quorum (review_close).",
+    "WHEN: Reviewer disagrees with sign-off but minApprovals is not yet met.",
+    "NOT WHEN: Dismissing trivial re-review (review_reject); closing review without quorum (review_close); withdrawing vote (review_withdraw).",
+  ].join("\n"),
+
+  review_withdraw: [
+    "Withdraw your own vote on an open review track.",
+    "",
+    "WHEN: Reviewer wants to remove their vote while the track is still pending.",
+    "NOT WHEN: Track is closed — use review_reopen first.",
+  ].join("\n"),
+
+  review_reopen: [
+    "Reopen a closed review track (approved or rejected). Internal reopen resets the client track.",
+    "",
+    "WHEN: Team needs to re-review after quorum was met or review was closed.",
+    "NOT WHEN: Track is still open — use review_withdraw or review_decline / review_approve.",
+  ].join("\n"),
+
+  review_config: [
+    "Show review queue configuration (minApprovals per track) from review-queue.json.",
+    "",
+    "WHEN: Inspecting quorum thresholds before review votes.",
   ].join("\n"),
 
   review_close: [
-    "Manually close internal review when 2/3 quorum cannot be reached.",
+    "Manually close internal review when minApprovals cannot be reached.",
     "",
     "WHEN: Review is stuck with insufficient approvals and a lead ends the review.",
     "REQUIRES: reason — stored on the track and in history.",

@@ -45,6 +45,9 @@ import {
   ReviewListSchema,
   ReviewSessionStartSchema,
   ReviewSessionAckReviewSchema,
+  ReviewWithdrawSchema,
+  ReviewReopenSchema,
+  ReviewConfigSchema,
   WorkspaceCheckSchema,
   ContextListSchema,
   ContextRecordSchema,
@@ -122,6 +125,9 @@ import {
   toolReviewList,
   toolReviewSessionStart,
   toolReviewSessionAckReview,
+  toolReviewWithdraw,
+  toolReviewReopen,
+  toolReviewConfig,
 } from "./tools/reviews.js";
 import { toolWorkflowRoute } from "./tools/workflow-route.js";
 import { toolWorkflowStatus } from "./tools/workflow-status.js";
@@ -588,6 +594,50 @@ server.registerTool(
 );
 
 server.registerTool(
+  "review_withdraw",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_withdraw,
+    inputSchema: ReviewWithdrawSchema.shape,
+  },
+  async (input) => {
+    try {
+      const result = await toolReviewWithdraw(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+server.registerTool(
+  "review_reopen",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_reopen,
+    inputSchema: ReviewReopenSchema.shape,
+  },
+  async (input) => {
+    try {
+      const result = await toolReviewReopen(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+server.registerTool(
+  "review_config",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_config,
+    inputSchema: ReviewConfigSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewConfig(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
   "review_status",
   {
     description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_status,
@@ -994,7 +1044,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "readiness_assess", "readiness_scan", "readiness_output_checklist",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
-    "review_approve", "review_decline", "review_close", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",
+    "review_approve", "review_decline", "review_close", "review_withdraw", "review_reopen", "review_config", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",
     "review_session_start", "review_session_ack_review",
     "workflow_route", "workflow_status",
     "workspace_check",

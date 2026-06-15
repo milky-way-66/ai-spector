@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeQuorum, requiredApprovals } from "@/core/reviews/quorum.js";
+import { computeQuorum } from "@/core/reviews/quorum.js";
 import type { ReviewVote } from "@/core/reviews/types.js";
 
 function vote(decision: "approve" | "decline", by: string): ReviewVote {
@@ -11,34 +11,33 @@ function vote(decision: "approve" | "decline", by: string): ReviewVote {
   };
 }
 
-describe("requiredApprovals", () => {
-  it("returns 0 for no voters", () => {
-    expect(requiredApprovals(0)).toBe(0);
-  });
-
-  it("requires 1 approval for 1 voter", () => {
-    expect(requiredApprovals(1)).toBe(1);
-  });
-
-  it("requires 2 approvals for 2 or 3 voters", () => {
-    expect(requiredApprovals(2)).toBe(2);
-    expect(requiredApprovals(3)).toBe(2);
-  });
-});
-
-describe("computeQuorum", () => {
-  it("met with single approve", () => {
-    expect(computeQuorum([vote("approve", "a")])).toMatchObject({
+describe("computeQuorum with minApprovals", () => {
+  it("pending when approve count is below minimum", () => {
+    expect(computeQuorum([vote("approve", "a")], 2)).toMatchObject({
       voterCount: 1,
       approveCount: 1,
-      required: 1,
+      required: 2,
+      met: false,
+    });
+  });
+
+  it("met when approve count reaches minimum", () => {
+    expect(
+      computeQuorum([vote("approve", "a"), vote("approve", "b")], 2),
+    ).toMatchObject({
+      voterCount: 2,
+      approveCount: 2,
+      required: 2,
       met: true,
     });
   });
 
-  it("met with 2 approve and 1 decline", () => {
+  it("met with 2 approve and 1 decline when min is 2", () => {
     expect(
-      computeQuorum([vote("approve", "a"), vote("approve", "b"), vote("decline", "c")]),
+      computeQuorum(
+        [vote("approve", "a"), vote("approve", "b"), vote("decline", "c")],
+        2,
+      ),
     ).toMatchObject({
       voterCount: 3,
       approveCount: 2,
@@ -47,12 +46,21 @@ describe("computeQuorum", () => {
     });
   });
 
-  it("pending with 1 approve and 1 decline", () => {
-    expect(computeQuorum([vote("approve", "a"), vote("decline", "b")])).toMatchObject({
+  it("pending with 1 approve and 1 decline when min is 2", () => {
+    expect(computeQuorum([vote("approve", "a"), vote("decline", "b")], 2)).toMatchObject({
       voterCount: 2,
       approveCount: 1,
       required: 2,
       met: false,
+    });
+  });
+
+  it("met with single approve when min is 1", () => {
+    expect(computeQuorum([vote("approve", "a")], 1)).toMatchObject({
+      voterCount: 1,
+      approveCount: 1,
+      required: 1,
+      met: true,
     });
   });
 });

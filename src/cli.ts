@@ -129,11 +129,17 @@ import {
   runReviewMigrate,
   runReviewSessionStart,
   runReviewSessionAckReview,
+  runWithdraw,
+  runReopen,
+  runReviewConfig,
 } from "./core/operations/review.js";
 import {
   formatApproveResult,
   formatDeclineResult,
   formatCloseResult,
+  formatWithdrawResult,
+  formatReopenResult,
+  formatReviewConfig,
   formatReviewStatus,
   formatReviewQueue,
   formatReviewCheck,
@@ -1133,7 +1139,7 @@ const review = program
 
 review
   .command("approve <logicalPath>")
-  .description("Cast internal approve vote (2/3 quorum); moves to client queue when quorum met")
+  .description("Cast internal approve vote; moves to client queue when minApprovals is met")
   .option("--by <email>", "Reviewer email override (default: git user.email)")
   .option("--username <name>", "Reviewer name override (default: git user.name)")
   .option("--role <role>", "Actor role: user | client (default: user)")
@@ -1173,7 +1179,7 @@ review
 
 review
   .command("close <logicalPath>")
-  .description("Manually close internal review when quorum cannot be reached")
+  .description("Manually close internal review when minApprovals cannot be reached")
   .requiredOption("--reason <text>", "Why the review is closed")
   .option("--by <email>", "Actor email override")
   .option("--username <name>", "Actor name override")
@@ -1188,6 +1194,58 @@ review
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCloseResult(result));
+  });
+
+review
+  .command("withdraw <logicalPath>")
+  .description("Withdraw your vote on an open internal review track")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
+  .option("--track <track>", "Review track: internal | client (default: internal)")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runWithdraw({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      by: opts.by,
+      username: opts.username,
+      role: opts.role,
+      track: opts.track,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatWithdrawResult(result));
+  });
+
+review
+  .command("reopen <logicalPath>")
+  .description("Reopen a closed internal review track (resets client track when internal)")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
+  .option("--track <track>", "Review track: internal | client (default: internal)")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runReopen({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      by: opts.by,
+      username: opts.username,
+      role: opts.role,
+      track: opts.track,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReopenResult(result));
+  });
+
+review
+  .command("config")
+  .description("Show review queue configuration (minApprovals per track)")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewConfig({ root: projectRootOpt(cmd) });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewConfig(result));
   });
 
 review

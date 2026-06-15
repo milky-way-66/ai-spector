@@ -25,6 +25,12 @@ async function setupReviewProject(root: string): Promise<void> {
   });
   await mkdir(join(root, "docs/srs"), { recursive: true });
   await mkdir(join(root, ".ai-spector/.docflow/review-queue/snapshots"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
+  await writeJson(join(root, ".ai-spector/.docflow/config/review-queue.json"), {
+    version: 1,
+    internal: { minApprovals: 2 },
+    client: { minApprovals: 1 },
+  });
 }
 
 async function ackAndApprove(
@@ -42,6 +48,11 @@ describe("multi-vote internal review", () => {
   it("single approve meets quorum and moves to client queue", async () => {
     await withTempProject(async (root) => {
       await setupReviewProject(root);
+      await writeJson(join(root, ".ai-spector/.docflow/config/review-queue.json"), {
+        version: 1,
+        internal: { minApprovals: 1 },
+        client: { minApprovals: 1 },
+      });
       const content = "# Overview\nDraft";
       const docRel = "docs/srs/01-overview.md";
       const lp = "srs/01-overview";

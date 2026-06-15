@@ -9,6 +9,9 @@ import type {
   ReviewMigrateResult,
   ReviewSessionStartResult,
   ReviewSessionAckReviewResult,
+  ReviewWithdrawResult,
+  ReviewReopenResult,
+  ReviewConfigResult,
 } from "@/core/operations/review.js";
 import type { DiffFile, QueueEntry } from "@/core/reviews/types.js";
 
@@ -67,6 +70,32 @@ export function formatCloseResult(result: import("@/core/operations/review.js").
     `  by: ${result.closedByUsername} <${result.closedBy}>\n` +
     `  reason: ${result.reason}\n` +
     `  quorum at close: ${result.quorum.approveCount}/${result.quorum.required} (${result.quorum.voterCount} voter(s))`
+  );
+}
+
+export function formatWithdrawResult(result: ReviewWithdrawResult): string {
+  return (
+    `Withdrew vote on ${result.track} track: ${result.logicalPath}\n` +
+    `  by: ${result.withdrawnByUsername} <${result.withdrawnBy}>\n` +
+    `  quorum: ${result.quorum.approveCount}/${result.quorum.required} approvals (${result.quorum.voterCount} voter(s))`
+  );
+}
+
+export function formatReopenResult(result: ReviewReopenResult): string {
+  const lines = [
+    `Reopened ${result.track} track: ${result.logicalPath}`,
+    `  by: ${result.reopenedByUsername} <${result.reopenedBy}>`,
+    `  quorum: ${result.quorum.approveCount}/${result.quorum.required} approvals (${result.quorum.voterCount} voter(s))`,
+  ];
+  if (result.clientReset) lines.push("  client track reset");
+  return lines.join("\n");
+}
+
+export function formatReviewConfig(result: ReviewConfigResult): string {
+  return (
+    `Review queue config:\n` +
+    `  internal.minApprovals: ${result.internal.minApprovals}\n` +
+    `  client.minApprovals: ${result.client.minApprovals}`
   );
 }
 

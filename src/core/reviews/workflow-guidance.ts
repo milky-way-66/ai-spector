@@ -39,7 +39,12 @@ const INTERNAL_REVIEW_TOOLS = [
 
 export function buildReviewWorkflowGuidance(
   approval: ApprovalRecord,
-  opts?: { stale?: boolean; session?: ReviewSessionFile | null; reviewKind?: ReviewKind },
+  opts?: {
+    stale?: boolean;
+    session?: ReviewSessionFile | null;
+    reviewKind?: ReviewKind;
+    internalMinApprovals?: number;
+  },
 ): ReviewWorkflowGuidance {
   const stale = opts?.stale === true;
   const session = opts?.session;
@@ -101,7 +106,8 @@ export function buildReviewWorkflowGuidance(
   }
 
   if (approval.overallStatus === "pending_internal" || canInternalApprove(approval)) {
-    const quorum = trackQuorum(approval.internal);
+    const minApprovals = opts?.internalMinApprovals ?? 1;
+    const quorum = trackQuorum(approval.internal, minApprovals);
     const quorumNote =
       quorum.voterCount > 0 && !quorum.met
         ? ` Internal quorum: ${quorum.approveCount}/${quorum.required} approvals (${quorum.voterCount} voter(s)).`
@@ -111,8 +117,15 @@ export function buildReviewWorkflowGuidance(
       phase: "awaiting_internal_review",
       canReviewApprove: canApprove,
       message:
-        `Internal sign-off: review_begin → read full doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve (cast vote; 2/3 quorum).${quorumNote}`,
-      nextTools: ["review_begin", ...INTERNAL_REVIEW_TOOLS, "review_decline", "review_close"],
+        `Internal sign-off: review_begin → read full doc → readiness checklist → graph_impact → write review → review_session_ack_review → user yes → review_approve (cast vote; min ${minApprovals} approval(s) required).${quorumNote}`,
+      nextTools: [
+        "review_begin",
+        ...INTERNAL_REVIEW_TOOLS,
+        "review_decline",
+        "review_withdraw",
+        "review_close",
+        "review_reopen",
+      ],
       notTheseTools: [...NOT_APPROVE_SIBLINGS],
     });
   }

@@ -1,4 +1,4 @@
-import type { InternalTrack, ClientTrack, ReviewVote } from "./types.js";
+import type { InternalTrack, ClientTrack, ReviewVote, QuorumSummary } from "./types.js";
 import { computeQuorum } from "./quorum.js";
 
 export function emptyInternalTrack(): InternalTrack {
@@ -9,6 +9,7 @@ export function emptyInternalTrack(): InternalTrack {
     closedAt: null,
     closedBy: null,
     invalidatedAt: null,
+    reopenedAt: null,
   };
 }
 
@@ -19,6 +20,7 @@ export function emptyClientTrack(): ClientTrack {
     quorumMetAt: null,
     closedAt: null,
     closedBy: null,
+    reopenedAt: null,
   };
 }
 
@@ -30,10 +32,29 @@ export function upsertVote(votes: ReviewVote[], vote: ReviewVote): ReviewVote[] 
   return next;
 }
 
-export function trackQuorum(track: InternalTrack | ClientTrack) {
-  return computeQuorum(track.votes);
+export function removeVote(votes: ReviewVote[], by: string): ReviewVote[] {
+  return votes.filter((v) => v.by !== by);
+}
+
+export function trackQuorum(track: InternalTrack | ClientTrack, minApprovals: number) {
+  return computeQuorum(track.votes, minApprovals);
 }
 
 export function isTrackOpenForVotes(track: InternalTrack | ClientTrack): boolean {
   return track.status === "pending" || track.status === "needs_review";
+}
+
+export function isTrackClosed(track: InternalTrack | ClientTrack): boolean {
+  return track.status === "approved" || track.status === "rejected";
+}
+
+/** After reopen, auto-close only when quorum is met and the action occurs after reopenedAt. */
+export function shouldAutoCloseTrack(
+  track: InternalTrack | ClientTrack,
+  quorum: QuorumSummary,
+  actionAt: string,
+): boolean {
+  if (!quorum.met) return false;
+  if (!track.reopenedAt) return true;
+  return actionAt > track.reopenedAt;
 }
