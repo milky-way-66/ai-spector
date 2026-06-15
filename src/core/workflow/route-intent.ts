@@ -183,6 +183,27 @@ function inferPhase(
   return "start";
 }
 
+function skillReadBrief(skill: string): string {
+  if (skill === "ai-spector-generate") {
+    return ".cursor/skills/ai-spector/references/extract-specs.md";
+  }
+  const runbookSkills = new Set([
+    "ai-spector-review",
+    "ai-spector-resolve-comments",
+    "ai-spector-generate-srs",
+    "ai-spector-generate-basic-design",
+    "ai-spector-generate-prototype",
+    "ai-spector-resolve-task",
+    "ai-spector-task",
+    "ai-spector-setup",
+    "ai-spector-resolve-translation",
+  ]);
+  if (runbookSkills.has(skill)) {
+    return `.cursor/skills/${skill}/references/runbook.md`;
+  }
+  return `.cursor/skills/${skill}/SKILL.md`;
+}
+
 function buildHandoff(
   workflowId: WorkflowId,
   skill: string,
@@ -202,7 +223,7 @@ function buildHandoff(
     phase: inferPhase(skill, ctx, matchedBy),
     userGoal,
     resumeFromState: hasPersistedState,
-    readBrief: `.cursor/agents/${workflowId}.md`,
+    readBrief: skillReadBrief(skill),
     runInBackground: !gated,
     ...(allowedTools?.length ? { allowedTools } : {}),
     ...(forbiddenTools?.length ? { forbiddenTools } : {}),

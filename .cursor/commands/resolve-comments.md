@@ -2,11 +2,12 @@
 
 Git-backed **comment threads** — not formal document sign-off, specs, or task plans.
 
-## Orchestrator
+## Start here
 
-Spawn **`resolve-comments`** worker — brief: [../agents/resolve-comments.md](../agents/resolve-comments.md)
+1. Activate skill **`ai-spector-resolve-comments`**
+2. Read `.cursor/skills/ai-spector-resolve-comments/references/runbook.md`
 
-## Worker steps (MCP preferred)
+## Agent steps (MCP preferred)
 
 | Phase | Action |
 |-------|--------|
@@ -28,4 +29,4 @@ Spawn **`resolve-comments`** worker — brief: [../agents/resolve-comments.md](.
 | Approve SPEC-003 | "approve SPEC-003" |
 | Yes to plan table | "yes, go ahead" (task approval) |
 
-Routing: [skills/_skill-router.md](../skills/_skill-router.md) · Subagents: [agents/README.md](../agents/README.md)
+Routing: [skills/_skill-router.md](../skills/_skill-router.md)

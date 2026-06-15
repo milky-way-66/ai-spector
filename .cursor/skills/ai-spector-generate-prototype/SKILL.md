@@ -11,13 +11,6 @@ paths:
 ---
 
 # Generate Prototype
-
-## Subagent worker
-
-**workflowId:** `generate-prototype` · **Brief:** [../../agents/generate-prototype.md](../../agents/generate-prototype.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 ## Load at start
 1. [references/runbook.md](references/runbook.md)
 

@@ -11,13 +11,6 @@ paths:
 ---
 
 # AI Spector — Semantic Search
-
-## Subagent worker
-
-**workflowId:** `search` · **Brief:** [../../agents/search.md](../../agents/search.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 **Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
 CocoIndex adds **semantic proximity** on top of the formal traceability graph.

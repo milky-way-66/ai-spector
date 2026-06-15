@@ -12,13 +12,6 @@ paths:
 ---
 
 # AI Spector — Project setup
-
-## Subagent worker
-
-**workflowId:** `setup-check` · **Brief:** [../../agents/setup-check.md](../../agents/setup-check.md)
-
-Orchestrator spawns this worker for setup flows.
-
 **Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
 ## Two paths

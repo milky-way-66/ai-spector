@@ -9,13 +9,6 @@ paths:
 ---
 
 # AI Spector — Task state
-
-## Subagent worker
-
-**workflowId:** `task-router` · **Brief:** [../../agents/task-router.md](../../agents/task-router.md)
-
-Orchestrator spawns this worker to list/resume tasks, then hand off to `generate-srs` or `resolve-task`.
-
 **Read first:** [references/runbook.md](references/runbook.md)
 
 ## When to use

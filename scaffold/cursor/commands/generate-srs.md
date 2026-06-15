@@ -2,11 +2,12 @@
 
 Full **SRS generation** from the traceability graph (gated waves). Not incremental single-feature adds.
 
-## Orchestrator
+## Start here
 
-Spawn **`generate-srs`** worker — brief: [../agents/generate-srs.md](../agents/generate-srs.md)
+1. Activate skill **`ai-spector-generate-srs`**
+2. Read `.cursor/skills/ai-spector-generate-srs/references/runbook.md`
 
-## Worker steps (MCP preferred)
+## Agent steps (MCP preferred)
 
 | Phase | Action |
 |-------|--------|
@@ -15,18 +16,17 @@ Spawn **`generate-srs`** worker — brief: [../agents/generate-srs.md](../agents
 | 2 | Clarify gaps → context store |
 | 3 | Briefing + plan table → **wait for user yes** → `task_approve_plan` |
 | 4 | DAG waves → `task_record_wave` per wave → `index` |
-| 5 | Offer spec extraction → hand off to **`spec-queue`** worker if user wants |
+| 5 | Offer spec extraction → `spec_list` / `spec_approve` if user wants |
 
 ## Hard gate
 
-**No writes under `docs/srs/`** until `task_approve_plan`.
+No writes under `docs/` until **`task_approve_plan`**.
 
 ## Not this command
 
 | You mean | Use instead |
 |----------|-------------|
-| "add login with Google" | resolve-task worker |
-| Approve document | `/review` |
-| Approve SPEC-003 | spec-queue after extract |
+| Add one feature ("add login with Google") | `ai-spector-resolve-task` |
+| Approve SPEC-003 only | "approve SPEC-003" |
 
-References: [skills/ai-spector-generate-srs/references/runbook.md](../skills/ai-spector-generate-srs/references/runbook.md), [skills/ai-spector/references/generate-workflow.md](../skills/ai-spector/references/generate-workflow.md)
+Routing: [skills/_skill-router.md](../skills/_skill-router.md)

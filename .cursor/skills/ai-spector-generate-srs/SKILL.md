@@ -11,13 +11,6 @@ paths:
 ---
 
 # Generate SRS
-
-## Subagent worker
-
-**workflowId:** `generate-srs` · **Brief:** [../../agents/generate-srs.md](../../agents/generate-srs.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 ## Step 0 — HARD GATE (before anything else)
 
 **Do not** run `workspace_check`, read templates, or write under `docs/srs/` until task state exists.

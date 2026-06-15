@@ -9,10 +9,6 @@ description: >-
 
 # AI Spector — Generate (router)
 
-## Subagent note
-
-Orchestrator may spawn **`spec-queue`** worker for SPEC-NNN approval — brief: [../../agents/spec-queue.md](../../agents/spec-queue.md). Full generate → `generate-srs` / `generate-basic-design` workers.
-
 ## Step 0 — Incremental vs full generate
 
 | User intent | Route to |

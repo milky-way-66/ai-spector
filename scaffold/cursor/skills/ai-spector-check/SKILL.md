@@ -8,13 +8,6 @@ description: >-
 ---
 
 # Workspace check
-
-## Subagent worker
-
-**workflowId:** `setup-check` · **Brief:** [../../agents/setup-check.md](../../agents/setup-check.md)
-
-Orchestrator spawns this worker for workspace audit flows.
-
 ## Load at start
 1. [../ai-spector/references/workspace-check.md](../ai-spector/references/workspace-check.md)
 

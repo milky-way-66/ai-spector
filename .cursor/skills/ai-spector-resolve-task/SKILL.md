@@ -15,13 +15,6 @@ paths:
 ---
 
 # AI Spector — Resolve Task
-
-## Subagent worker
-
-**workflowId:** `resolve-task` · **Brief:** [../../agents/resolve-task.md](../../agents/resolve-task.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 **Read first:** [references/runbook.md](references/runbook.md) — follow every phase in order.
 
 ## You are in plan-first mode

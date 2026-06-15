@@ -1,6 +1,8 @@
 # Subagent Routing & Workflow Design
 
 > **Goal:** Specialized subagents that each own **one workflow**, are **optimized for that work**, and make **routing + understanding** reliable for both users and the parent agent.
+>
+> **Status (2026-06):** Rolled back in favor of **skill-based routing** — agents read `_skill-router.md` and skill runbooks directly in the main chat. This doc is kept for reference only.
 
 This design sits **on top of** the existing stack (skills, `ai-spector-routing.mdc`, `workflow_route`, session gates). Skills become **subagent briefs**; the parent agent becomes a thin **orchestrator**.
 

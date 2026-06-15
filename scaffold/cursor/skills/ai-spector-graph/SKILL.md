@@ -14,13 +14,6 @@ paths:
 ---
 
 # AI Spector — Graph
-
-## Subagent worker
-
-**workflowId:** `graph-ops` · **Brief:** [../../agents/graph-ops.md](../../agents/graph-ops.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 **Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md) · **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md)
 
 ## When this skill applies

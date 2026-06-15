@@ -2,11 +2,12 @@
 
 Formal **document sign-off** — not comment threads, extracted specs, or task plans.
 
-## Orchestrator
+## Start here
 
-Spawn **`doc-review`** worker — brief: [../agents/doc-review.md](../agents/doc-review.md). Skill runbook loads inside the worker only.
+1. Activate skill **`ai-spector-review`**
+2. Read `.cursor/skills/ai-spector-review/references/runbook.md`
 
-## Worker steps (MCP preferred)
+## Agent steps (MCP preferred)
 
 | Phase | Action |
 |-------|--------|

@@ -15,12 +15,6 @@ paths:
 
 # AI Spector — Document Review
 
-## Subagent worker
-
-**workflowId:** `doc-review` · **Brief:** [../../agents/doc-review.md](../../agents/doc-review.md)
-
-Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
-
 **Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
 ## Required reading

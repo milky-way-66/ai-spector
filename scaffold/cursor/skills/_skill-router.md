@@ -1,7 +1,5 @@
 # AI Spector skill router
 
-**Orchestrator** uses this for classification. **Workers** must not read this file — they follow `.cursor/agents/<workflowId>.md` only.
-
 Agents use this when intent is ambiguous.
 
 ## Priority
@@ -12,8 +10,8 @@ Agents use this when intent is ambiguous.
 2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
 3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
 4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
-5. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
-6. **Still unclear** — call MCP `workflow_route({ message })` → if `handoff` present, spawn worker from `.cursor/agents/`; if `askUser`, ask in parent chat first (see approve disambiguation below).
+5. **Natural language** — match skill `description`; then read that skill's `references/` runbook.
+6. **Still unclear** — call MCP `workflow_route({ message })` → read `handoff.readBrief` skill runbook; if `askUser`, ask in chat first (see approve disambiguation below).
 
 ## DISAMBIGUATION: "approve" means four different things
 
@@ -79,10 +77,10 @@ When in doubt: if the user names a document and asks about approval/status → `
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
 | comment threads, C-001, inbox, resolve comments, open threads | `ai-spector-resolve-comments` | `references/runbook.md` |
-| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed", custom review checklist | `ai-spector-review` | `references/runbook.md`, `references/custom-checklists.md` |
+| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed" | `ai-spector-review` | `references/runbook.md` |
 | translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
 | resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
-| “generate docs” (no layer named) | `ai-spector-generate` | `SKILL.md` |
+| "generate docs" (no layer named) | `ai-spector-generate` | `SKILL.md` |
 
 Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-failures.md), [generate-workflow.md](./ai-spector/references/generate-workflow.md), [generate-graph.md](./ai-spector/references/generate-graph.md).
 
