@@ -21,7 +21,13 @@ import {
 } from "@/core/operations/review.js";
 
 export async function toolReviewApprove(input: z.infer<typeof ReviewApproveSchema>) {
-  return runApprove({ root: input.root, logicalPath: input.logicalPath, by: input.by });
+  return runApprove({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+  });
 }
 
 export async function toolReviewStatus(input: z.infer<typeof ReviewStatusSchema>) {
@@ -44,7 +50,14 @@ export async function toolReviewCheck(input: z.infer<typeof ReviewCheckSchema>) 
 }
 
 export async function toolReviewReject(input: z.infer<typeof ReviewRejectSchema>) {
-  return runReviewReject({ root: input.root, logicalPath: input.logicalPath, reason: input.reason });
+  return runReviewReject({
+    root: input.root,
+    logicalPath: input.logicalPath,
+    reason: input.reason,
+    by: input.by,
+    username: input.username,
+    role: input.role,
+  });
 }
 
 export async function toolReviewList(input: z.infer<typeof ReviewListSchema>) {

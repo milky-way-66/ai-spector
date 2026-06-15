@@ -1,8 +1,25 @@
 # AI Spector workflow
 
-**You describe what you need in chat.** Cursor picks the right **skill**; the agent calls **MCP tools** (when `ai-spector` server is configured) or falls back to **`npx ai-spector`** CLI. You do not need to memorize command names.
+**You describe what you need in chat.** The **orchestrator** (parent agent) classifies intent, asks clarifying questions when needed, and **delegates** to a specialized **subagent worker** — one workflow per worker. Workers read briefs under [subagents/](./subagents/README.md); the parent does not inline heavy runbooks.
 
-Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
+Enable all skills under `.cursor/skills/` (see [skills/README.md](./skills/README.md)). Routing rule: [rules/ai-spector-routing.mdc](./rules/ai-spector-routing.mdc). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
+
+## Orchestrator vs worker
+
+| Layer | Role | Asks user? |
+|-------|------|------------|
+| **Orchestrator** | `workflow_route`, disambiguate approve, spawn worker | Yes — routing questions **before** spawn |
+| **Worker** | One runbook + MCP tools for one job | Returns `waiting_user` → orchestrator relays question in chat |
+
+After you answer a worker question, the orchestrator **resumes the same `workflowId`** (or respawns with state from disk).
+
+## Slash commands → worker
+
+| Command | workflowId |
+|---------|------------|
+| `/review` | `doc-review` |
+| `/resolve-comments` | `resolve-comments` |
+| `/generate-srs` | `generate-srs` |
 
 ## One-time setup
 
@@ -48,7 +65,9 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Add/update one feature or section | “I want to add login with Google”, “add requirement”, “update auth section” | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
 | Explore graph | “show the graph” | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
-Unsure? Say **"help me approve"** or call **`workflow_route`** — the agent uses [skills/_skill-router.md](./skills/_skill-router.md) or asks one clarifying question.
+Unsure? Say **"help me approve"** or call **`workflow_route`** — orchestrator uses [skills/_skill-router.md](./skills/_skill-router.md), may ask one question, then spawns a worker from [subagents/](./subagents/README.md).
+
+Design: [../../docs/subagent-routing-design.md](../../docs/subagent-routing-design.md)
 
 ### “Approve” disambiguation
 

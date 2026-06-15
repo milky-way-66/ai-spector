@@ -153,16 +153,40 @@ export type {
 } from "../../core/reviews/workflow-guidance.js";
 export { runWorkflowRoute } from "../../core/operations/workflow-route.js";
 export type { WorkflowRouteOptions } from "../../core/operations/workflow-route.js";
+export { runWorkflowStatusOp } from "../../core/operations/workflow-status.js";
+export type { WorkflowStatusOptions } from "../../core/operations/workflow-status.js";
+export {
+  loadWorkflowActive,
+  recordWorkflowActive,
+  clearWorkflowActive,
+  runWorkflowStatus,
+  buildStatusLine,
+  formatActiveWorkerLabel,
+} from "../../core/workflow/active-worker.js";
+export type {
+  WorkflowActiveFile,
+  WorkflowTransitionEntry,
+  WorkflowStatusResult,
+} from "../../core/workflow/active-worker.js";
 export { classifyWorkflowIntent } from "../../core/workflow/route-intent.js";
 export type {
   WorkflowRouteContext,
   WorkflowRouteResult,
   WorkflowRouteAskOption,
+  WorkflowRouteHandoff,
+  WorkflowId,
 } from "../../core/workflow/route-intent.js";
 export {
   buildTaskWorkflowGuidance,
+  buildTaskListWorkflowGuidance,
+  buildTaskApprovePlanWorkflowGuidance,
   buildSpecListWorkflowGuidance,
+  buildSpecActionWorkflowGuidance,
   buildCommentsInboxWorkflowGuidance,
+  buildCommentsPlanWorkflowGuidance,
+  buildCommentsResolveWorkflowGuidance,
+  buildResolveTaskResultWorkflowGuidance,
+  buildReviewSessionWorkflowGuidance,
 } from "../../core/workflow/guidance.js";
 export type { WorkflowToolGuidance } from "../../core/workflow/guidance.js";
 export {

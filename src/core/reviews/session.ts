@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { ReviewPreconditionError } from "./errors.js";
 import { reviewQueuePaths } from "./paths.js";
+import { recordWorkflowFromReviewSession } from "../workflow/active-worker.js";
 import type { ReviewSessionFile, ReviewSessionPhase } from "./types.js";
 
 function newSession(): ReviewSessionFile {
@@ -80,6 +81,7 @@ export async function setReviewSessionPhase(
     session.contentHashAtReview = patch.contentHashAtReview ?? null;
   }
   await saveReviewSession(projectRoot, session);
+  await recordWorkflowFromReviewSession(projectRoot, session);
   return session;
 }
 

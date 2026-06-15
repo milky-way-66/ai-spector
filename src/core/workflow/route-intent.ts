@@ -1,5 +1,18 @@
 import type { ReviewSessionFile, ReviewSessionPhase } from "../reviews/types.js";
 
+export type WorkflowId =
+  | "doc-review"
+  | "resolve-comments"
+  | "generate-srs"
+  | "generate-basic-design"
+  | "generate-prototype"
+  | "resolve-task"
+  | "task-router"
+  | "spec-queue"
+  | "graph-ops"
+  | "search"
+  | "setup-check";
+
 export interface WorkflowRouteActiveTask {
   id: string;
   kind: string;
@@ -15,17 +28,20 @@ export interface WorkflowRouteAskOption {
   id: string;
   label: string;
   skill: string;
+  workflowId?: WorkflowId;
   tool?: string;
 }
 
-export interface WorkflowRouteResult {
+export interface WorkflowRouteHandoff {
+  workflowId: WorkflowId;
   skill: string;
-  confidence: "high" | "medium" | "low";
-  matchedBy: string;
-  message: string;
-  nextTools?: string[];
-  avoidTools?: string[];
-  askUser?: { question: string; options: WorkflowRouteAskOption[] };
+  phase: string;
+  userGoal: string;
+  resumeFromState: boolean;
+  readBrief: string;
+  runInBackground: boolean;
+  allowedTools?: string[];
+  forbiddenTools?: string[];
   context?: {
     reviewSessionPhase?: ReviewSessionPhase;
     activeLogicalPath?: string | null;
@@ -34,29 +50,61 @@ export interface WorkflowRouteResult {
   };
 }
 
+export interface WorkflowRouteResult {
+  skill: string;
+  workflowId?: WorkflowId;
+  confidence: "high" | "medium" | "low";
+  matchedBy: string;
+  message: string;
+  handoff?: WorkflowRouteHandoff;
+  nextTools?: string[];
+  avoidTools?: string[];
+  askUser?: { question: string; options: WorkflowRouteAskOption[] };
+  context?: WorkflowRouteHandoff["context"];
+}
+
+const SKILL_TO_WORKFLOW: Record<string, WorkflowId> = {
+  "ai-spector-review": "doc-review",
+  "ai-spector-resolve-comments": "resolve-comments",
+  "ai-spector-generate-srs": "generate-srs",
+  "ai-spector-generate-basic-design": "generate-basic-design",
+  "ai-spector-generate-prototype": "generate-prototype",
+  "ai-spector-resolve-task": "resolve-task",
+  "ai-spector-task": "task-router",
+  "ai-spector-generate": "spec-queue",
+  "ai-spector-graph": "graph-ops",
+  "ai-spector-search": "search",
+  "ai-spector-setup": "setup-check",
+  "ai-spector-check": "setup-check",
+};
+
 const APPROVE_DISAMBIGUATION: WorkflowRouteAskOption[] = [
   {
     id: "doc_signoff",
     label: "Sign off a document (e.g. srs/01-overview)",
     skill: "ai-spector-review",
+    workflowId: "doc-review",
     tool: "review_approve",
   },
   {
     id: "spec",
     label: "Approve an extracted spec (e.g. SPEC-003)",
     skill: "ai-spector-generate",
+    workflowId: "spec-queue",
     tool: "spec_approve",
   },
   {
     id: "plan",
     label: "Go ahead with the plan we discussed",
     skill: "ai-spector-resolve-task",
+    workflowId: "resolve-task",
     tool: "task_approve_plan",
   },
   {
     id: "comment",
     label: "Mark a comment thread done (e.g. C-012)",
     skill: "ai-spector-resolve-comments",
+    workflowId: "resolve-comments",
     tool: "comments_resolve",
   },
 ];
@@ -84,6 +132,84 @@ function buildContext(ctx: WorkflowRouteContext): WorkflowRouteResult["context"]
   };
 }
 
+function skillToWorkflowId(skill: string): WorkflowId | undefined {
+  return SKILL_TO_WORKFLOW[skill];
+}
+
+function inferPhase(
+  skill: string,
+  ctx: WorkflowRouteContext,
+  matchedBy: string,
+): string {
+  if (skill === "ai-spector-review") {
+    return ctx.reviewSession?.phase ?? (matchedBy === "logical_path_signoff" ? "reviewing" : "detect");
+  }
+  if (skill === "ai-spector-resolve-comments") {
+    return "inbox";
+  }
+  if (skill === "ai-spector-resolve-task") {
+    if (ctx.activeTask?.planApproved) {
+      return "execute";
+    }
+    if (ctx.activeTask) {
+      return "awaiting_yes";
+    }
+    return "clarify";
+  }
+  if (skill === "ai-spector-generate-srs" || skill === "ai-spector-generate-basic-design") {
+    if (ctx.activeTask?.planApproved) {
+      return "approved";
+    }
+    if (ctx.activeTask) {
+      return "plan";
+    }
+    return "bootstrap";
+  }
+  if (skill === "ai-spector-generate-prototype") {
+    return "setup";
+  }
+  if (skill === "ai-spector-task") {
+    return "list";
+  }
+  if (skill === "ai-spector-generate") {
+    return "list";
+  }
+  if (skill === "ai-spector-graph" || skill === "ai-spector-search") {
+    return "execute";
+  }
+  if (skill === "ai-spector-setup" || skill === "ai-spector-check") {
+    return skill === "ai-spector-check" ? "check" : "setup";
+  }
+  return "start";
+}
+
+function buildHandoff(
+  workflowId: WorkflowId,
+  skill: string,
+  userGoal: string,
+  ctx: WorkflowRouteContext,
+  matchedBy: string,
+  allowedTools?: string[],
+  forbiddenTools?: string[],
+): WorkflowRouteHandoff {
+  const hasPersistedState =
+    !!ctx.reviewSession || !!ctx.activeTask;
+  const gated = !["graph-ops", "search"].includes(workflowId);
+
+  return {
+    workflowId,
+    skill,
+    phase: inferPhase(skill, ctx, matchedBy),
+    userGoal,
+    resumeFromState: hasPersistedState,
+    readBrief: `.cursor/subagents/${workflowId}.md`,
+    runInBackground: !gated,
+    ...(allowedTools?.length ? { allowedTools } : {}),
+    ...(forbiddenTools?.length ? { forbiddenTools } : {}),
+    context: buildContext(ctx),
+  };
+}
+
 function result(
   skill: string,
   confidence: WorkflowRouteResult["confidence"],
@@ -92,17 +218,33 @@ function result(
   ctx: WorkflowRouteContext,
   extra?: Pick<WorkflowRouteResult, "nextTools" | "avoidTools" | "askUser">,
 ): WorkflowRouteResult {
-  return {
+  const workflowId = skillToWorkflowId(skill);
+  const base: WorkflowRouteResult = {
     skill,
     confidence,
     matchedBy,
     message,
     context: buildContext(ctx),
     ...extra,
+    ...(workflowId ? { workflowId } : {}),
   };
+
+  if (workflowId && !extra?.askUser) {
+    base.handoff = buildHandoff(
+      workflowId,
+      skill,
+      message,
+      ctx,
+      matchedBy,
+      extra?.nextTools,
+      extra?.avoidTools,
+    );
+  }
+
+  return base;
 }
 
-function ambiguousApprove(ctx: WorkflowRouteContext): WorkflowRouteResult {
+function ambiguousApprove(message: string, ctx: WorkflowRouteContext): WorkflowRouteResult {
   if (ctx.activeTask && !ctx.activeTask.planApproved) {
     return result(
       ctx.activeTask.kind === "generate" ? "ai-spector-generate-srs" : "ai-spector-resolve-task",
@@ -294,7 +436,7 @@ export function classifyWorkflowIntent(
     /\b(approve|looks good|go ahead|yes)\b/.test(msg) &&
     !/\b(srs|bd|dd|spec|c-)\b/.test(msg)
   ) {
-    return ambiguousApprove(ctx);
+    return ambiguousApprove(message, ctx);
   }
 
   if (/\b(analyze|index|validate graph|graph impact|semantic search)\b/.test(msg)) {
@@ -319,10 +461,10 @@ export function classifyWorkflowIntent(
       askUser: {
         question: "What would you like to do?",
         options: [
-          { id: "review", label: "Review / sign off documents", skill: "ai-spector-review" },
-          { id: "generate", label: "Generate or update documentation", skill: "ai-spector-generate" },
-          { id: "comments", label: "Resolve comment threads", skill: "ai-spector-resolve-comments" },
-          { id: "graph", label: "Graph, index, or search", skill: "ai-spector-graph" },
+          { id: "review", label: "Review / sign off documents", skill: "ai-spector-review", workflowId: "doc-review" },
+          { id: "generate", label: "Generate or update documentation", skill: "ai-spector-generate", workflowId: "generate-srs" },
+          { id: "comments", label: "Resolve comment threads", skill: "ai-spector-resolve-comments", workflowId: "resolve-comments" },
+          { id: "graph", label: "Graph, index, or search", skill: "ai-spector-graph", workflowId: "graph-ops" },
         ],
       },
     },

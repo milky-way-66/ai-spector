@@ -22,6 +22,9 @@ describe("classifyWorkflowIntent", () => {
   it("routes /review to ai-spector-review", () => {
     const r = classifyWorkflowIntent("/review", emptyCtx);
     expect(r.skill).toBe("ai-spector-review");
+    expect(r.workflowId).toBe("doc-review");
+    expect(r.handoff?.readBrief).toBe(".cursor/subagents/doc-review.md");
+    expect(r.handoff?.runInBackground).toBe(false);
     expect(r.confidence).toBe("high");
     expect(r.avoidTools).toContain("spec_approve");
   });
@@ -76,12 +79,23 @@ describe("classifyWorkflowIntent", () => {
   it("asks user on ambiguous approve with no context", () => {
     const r = classifyWorkflowIntent("approve it", emptyCtx);
     expect(r.confidence).toBe("low");
+    expect(r.handoff).toBeUndefined();
     expect(r.askUser?.options).toHaveLength(4);
-    expect(r.askUser?.options.map((o) => o.id)).toEqual([
-      "doc_signoff",
-      "spec",
-      "plan",
-      "comment",
+    expect(r.askUser?.options.map((o) => o.workflowId)).toEqual([
+      "doc-review",
+      "spec-queue",
+      "resolve-task",
+      "resolve-comments",
     ]);
+  });
+
+  it("handoff includes phase from active review session", () => {
+    const r = classifyWorkflowIntent("continue", {
+      reviewSession: session("reviewing", "srs/02-scope"),
+      activeTask: null,
+    });
+    expect(r.workflowId).toBe("doc-review");
+    expect(r.handoff?.phase).toBe("reviewing");
+    expect(r.handoff?.resumeFromState).toBe(true);
   });
 });

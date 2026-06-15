@@ -1,25 +1,57 @@
 ---
 description: >-
-  Route ai-spector requests to the correct skill and MCP tools. Disambiguate approve/review
-  intent; enforce review, generate, and resolve-task gates. See _skill-router.md for full tables.
+  Orchestrator: route ai-spector requests, disambiguate approve/review, delegate to
+  specialized subagents. Do not inline worker runbooks in parent chat.
 alwaysApply: true
 ---
 
-# AI Spector routing
+# AI Spector orchestrator
 
-**Full router:** `.cursor/skills/_skill-router.md` · **User guide:** `.cursor/WORKFLOW.md`
+**Router:** `.cursor/skills/_skill-router.md` · **Subagents:** `.cursor/subagents/` · **Guide:** `.cursor/WORKFLOW.md`
+
+## You are the orchestrator (parent)
+
+1. **Classify** — priority table below, or `workflow_route({ message })` when ambiguous
+2. **Ask before spawn** — if `askUser` or low confidence, show question in main chat and **do not spawn** a worker yet
+3. **Delegate** — spawn one worker from `.cursor/subagents/<workflowId>.md` with `handoff` from `workflow_route` (or build from table below)
+4. **Relay gates** — workers return `waiting_user` + `askUser`; you show it in main chat. User reply → **resume same `workflowId`** (prefer `Task resume`) or fresh spawn with `resumeFromState: true`
+5. **Never inline runbooks** — do not load generate + review + resolve runbooks in parent chat
+
+Workers must **not** call `workflow_route` or read `_skill-router.md`.
 
 ## Priority (first match wins)
 
-0. **Document sign-off** — `/review`, approve doc, review queue, pending client, logical path (`srs/…`) → **`ai-spector-review`**
-0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
-1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
-2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`**
-3. **Full generation** — generate SRS/chapter/DAG → **`ai-spector-generate-*`**
+0. **Document sign-off** → `workflowId: doc-review` (`ai-spector-review`)
+0.5. **Active review session** — `.session.json` phase `queue`/`reviewing`/`awaiting_decision` → `doc-review` (overrides "continue" unless topic switch)
+1. **Resume task** → `task-router` (skip if sign-off cues or active review session)
+2. **Incremental change** → `resolve-task`
+3. **Full generation** → `generate-srs` / `generate-basic-design` / `generate-prototype`
+
+## skill → workflowId
+
+| Skill | workflowId |
+|-------|------------|
+| `ai-spector-review` | `doc-review` |
+| `ai-spector-resolve-comments` | `resolve-comments` |
+| `ai-spector-generate-srs` | `generate-srs` |
+| `ai-spector-generate-basic-design` | `generate-basic-design` |
+| `ai-spector-generate-prototype` | `generate-prototype` |
+| `ai-spector-resolve-task` | `resolve-task` |
+| `ai-spector-task` | `task-router` |
+| `ai-spector-generate` (spec) | `spec-queue` |
+| `ai-spector-graph` | `graph-ops` |
+| `ai-spector-search` | `search` |
+| `ai-spector-setup` / `ai-spector-check` | `setup-check` |
+
+Spawn: `Task({ prompt: handoff from workflow_route, run_in_background: false })` for gated workflows.
+
+## Active worker (observability)
+
+Call **`workflow_status({})`** at session start or after delegating — show `statusLine` to the user when `active` is set (e.g. `Active worker: doc-review (reviewing srs/01-overview)`). Details: [ACTIVE-WORKER.md](../ACTIVE-WORKER.md).
 
 ## Ambiguous "approve" or "looks good"
 
-Call **`workflow_route({ message })`** or ask **one** question — do **not** call any approve tool until answered:
+`workflow_route` or ask **one** question — **no worker, no approve tool** until answered:
 
 ```
 Which did you mean?
@@ -29,40 +61,25 @@ Which did you mean?
 4. Mark a comment thread done (e.g. C-012) — feedback addressed
 ```
 
-| Answer | Skill | Tool |
-|--------|-------|------|
-| 1 | `ai-spector-review` | `review_approve` (after runbook) |
-| 2 | generate + extract-specs | `spec_approve` |
-| 3 | resolve-task or generate | `task_approve_plan` |
-| 4 | `ai-spector-resolve-comments` | `comments_resolve` |
+| Answer | workflowId | Tool (in worker) |
+|--------|------------|------------------|
+| 1 | `doc-review` | `review_approve` (after runbook) |
+| 2 | `spec-queue` | `spec_approve` |
+| 3 | `resolve-task` or generate | `task_approve_plan` |
+| 4 | `resolve-comments` | `comments_resolve` |
 
-## Document review gate
+## Quick gates (workers enforce; you delegate)
 
-Triggers: review documents, approve doc, review queue, `/review`.
-
-1. Activate **`ai-spector-review`** — read `references/runbook.md`
-2. Phases: `review_check` → `review_queue` → `review_status` + read doc → `graph_impact` → **write review in chat** → `review_session_ack_review` → decision menu → `review_approve` only on user **Approve**
-3. **Forbidden:** `review_approve` without written review + ack; using `spec_approve` / `task_approve_plan` / `comments_resolve` for document sign-off
-
-## Generate gate (SRS / basic design)
-
-Triggers: generate SRS, write chapter, DAG wave.
-
-1. **`ai-spector-generate-srs`** or **`ai-spector-generate-basic-design`** — not resolve-task
-2. `task_list` → clarify → briefing → plan → **`task_approve_plan`** before any `docs/` write
-3. `task_approve_plan` is **plan** approval — not document sign-off (`review_approve`)
-
-## Resolve-task gate (incremental)
-
-Triggers: add/update/change feature, section, or prototype.
-
-1. **`ai-spector-resolve-task`** — not generate-srs for single-feature adds
-2. Clarify → GoalSpec + TaskPlan → wait for **yes** → then edit / `graph_impact` / `resolve_task`
-3. **Forbidden before plan approval:** edits under `docs/` or `prototype/`, `graph_impact`, `index`
+| Workflow | Spawn brief | Forbidden in parent |
+|----------|-------------|---------------------|
+| Document review | `subagents/doc-review.md` | `review_approve` without worker ack |
+| Generate SRS/BD | `subagents/generate-srs.md` | `docs/` writes before `task_approve_plan` |
+| Resolve task | `subagents/resolve-task.md` | edits before plan yes |
+| Comments | `subagents/resolve-comments.md` | `review_approve` for threads |
 
 ## Generate vs incremental
 
-| Request | Skill |
-|---------|-------|
-| "generate SRS", "write chapter 4" | generate-srs / generate-basic-design |
-| "add login with Google", "update auth section" | resolve-task |
+| Request | workflowId |
+|---------|------------|
+| "generate SRS", "write chapter 4" | `generate-srs` |
+| "add login with Google", "update auth section" | `resolve-task` |

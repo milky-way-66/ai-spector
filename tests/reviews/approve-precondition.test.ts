@@ -109,8 +109,14 @@ describe("runApprove preconditions", () => {
       await runReviewStatus({ root, logicalPath: "srs/03-draft", showDiff: false });
       await runReviewSessionAckReview({ root, logicalPath: "srs/03-draft" });
 
-      const result = await runApprove({ root, logicalPath: "srs/03-draft", by: "reviewer" });
-      expect(result.approvedBy).toBe("reviewer");
+      const result = await runApprove({
+        root,
+        logicalPath: "srs/03-draft",
+        by: "reviewer@example.com",
+      });
+      expect(result.approvedBy).toBe("reviewer@example.com");
+      expect(result.approvedByUsername).toBe("unknown");
+      expect(result.approvedByRole).toBe("user");
       expect(result.movedToClientQueue).toBe(true);
     });
   });

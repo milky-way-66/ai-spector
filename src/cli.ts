@@ -1072,10 +1072,18 @@ const review = program
 review
   .command("approve <logicalPath>")
   .description("Mark document as internally approved and move to client review queue")
-  .option("--by <reviewer>", "Reviewer name or id (default: local)")
+  .option("--by <email>", "Reviewer email override (default: git user.email)")
+  .option("--username <name>", "Reviewer name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
   .option("--json", "JSON output for agents")
   .action(async (logicalPath: string, opts, cmd) => {
-    const result = await runApprove({ root: projectRootOpt(cmd), logicalPath, by: opts.by });
+    const result = await runApprove({
+      root: projectRootOpt(cmd),
+      logicalPath,
+      by: opts.by,
+      username: opts.username,
+      role: opts.role,
+    });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatApproveResult(result));
   });

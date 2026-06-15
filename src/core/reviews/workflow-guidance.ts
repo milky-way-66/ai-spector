@@ -9,6 +9,7 @@ export type ReviewWorkflowPhase =
   | "stale_needs_rereview";
 
 export interface ReviewWorkflowGuidance {
+  workflowId: "doc-review";
   phase: ReviewWorkflowPhase;
   canReviewApprove: boolean;
   message: string;
@@ -31,17 +32,18 @@ export function buildReviewWorkflowGuidance(
     !!session.reviewWrittenAt;
 
   const applySessionGate = (guidance: ReviewWorkflowGuidance): ReviewWorkflowGuidance => {
+    const withWorker = { ...guidance, workflowId: "doc-review" as const };
     if (!canInternalApprove(approval) || guidance.canReviewApprove === false) {
-      return guidance;
+      return withWorker;
     }
     if (sessionReady) {
-      return { ...guidance, canReviewApprove: true };
+      return { ...withWorker, canReviewApprove: true };
     }
     const sessionNote = session
       ? ` Session phase "${session.phase}" — call review_session_ack_review after writing the review summary.`
       : " No review session — run review_check/review_status, write review, then review_session_ack_review.";
     return {
-      ...guidance,
+      ...withWorker,
       canReviewApprove: false,
       message: `${guidance.message}${sessionNote}`,
       nextTools: guidance.nextTools.includes("review_session_ack_review")
@@ -54,6 +56,7 @@ export function buildReviewWorkflowGuidance(
 
   if (stale && approval.internal.status === "needs_review") {
     return applySessionGate({
+      workflowId: "doc-review",
       phase: "stale_needs_rereview",
       canReviewApprove: canApprove,
       message:
@@ -71,6 +74,7 @@ export function buildReviewWorkflowGuidance(
 
   if (approval.overallStatus === "pending_internal" || canInternalApprove(approval)) {
     return applySessionGate({
+      workflowId: "doc-review",
       phase: "awaiting_internal_review",
       canReviewApprove: canApprove,
       message:
@@ -89,6 +93,7 @@ export function buildReviewWorkflowGuidance(
 
   if (approval.overallStatus === "pending_client") {
     return {
+      workflowId: "doc-review",
       phase: "awaiting_client",
       canReviewApprove: false,
       message:
@@ -100,6 +105,7 @@ export function buildReviewWorkflowGuidance(
 
   if (approval.overallStatus === "approved") {
     return {
+      workflowId: "doc-review",
       phase: "fully_approved",
       canReviewApprove: false,
       message: "Fully signed off. If content changes, review_check will invalidate and re-queue for internal review.",
@@ -109,6 +115,7 @@ export function buildReviewWorkflowGuidance(
   }
 
   return {
+    workflowId: "doc-review",
     phase: "client_rejected",
     canReviewApprove: false,
     message:

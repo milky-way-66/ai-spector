@@ -212,7 +212,22 @@ export const ResolveTaskSchema = RootSchema.extend({
 
 export const ReviewApproveSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path (e.g. srs/01-overview)"),
-  by: z.string().optional().describe("Reviewer name or id (default: local)"),
+  by: z
+    .string()
+    .optional()
+    .describe(
+      "Optional reviewer email override. Generic values like 'user' resolve to git user.email.",
+    ),
+  username: z
+    .string()
+    .optional()
+    .describe(
+      "Optional reviewer name override. Generic values resolve to git user.name.",
+    ),
+  role: z
+    .enum(["user", "client"])
+    .optional()
+    .describe("Actor role (default: user for internal sign-off via MCP/CLI)"),
 });
 
 export const ReviewStatusSchema = RootSchema.extend({
@@ -337,6 +352,15 @@ export const WorkspaceCheckSchema = RootSchema.extend({
 export const ReviewRejectSchema = RootSchema.extend({
   logicalPath: z.string().describe("Logical document path to dismiss from internal queue"),
   reason: z.string().optional().describe("Why the change does not require re-approval"),
+  by: z
+    .string()
+    .optional()
+    .describe("Optional actor email override; generic values resolve to git user.email"),
+  username: z
+    .string()
+    .optional()
+    .describe("Optional actor name override; generic values resolve to git user.name"),
+  role: z.enum(["user", "client"]).optional().describe("Actor role (default: user)"),
 });
 
 export const ReviewListSchema = RootSchema.extend({
@@ -637,3 +661,5 @@ export const WorkflowRouteSchema = RootSchema.extend({
     .string()
     .describe("User message or intent to classify (e.g. 'approve it', '/review', 'resolve C-012')"),
 });
+
+export const WorkflowStatusSchema = RootSchema;

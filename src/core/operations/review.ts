@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { resolveReviewActor } from "../util/git-user.js";
 import { pathExists } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { normalizeLogicalPath } from "../comments/paths.js";
@@ -41,6 +42,14 @@ import {
   buildReviewWorkflowGuidance,
   type ReviewWorkflowGuidance,
 } from "../reviews/workflow-guidance.js";
+import {
+  buildReviewSessionWorkflowGuidance,
+  type WorkflowToolGuidance,
+} from "../workflow/guidance.js";
+import {
+  clearWorkflowActive,
+  recordWorkflowFromReviewSession,
+} from "../workflow/active-worker.js";
 import type {
   ApprovalRecord,
   QueueEntry,
@@ -54,12 +63,18 @@ import type {
 export interface ReviewApproveOptions {
   root?: string;
   logicalPath: string;
+  /** Optional email override; generic values like "user" resolve to git user.email. */
   by?: string;
+  /** Optional name override; generic values resolve to git user.name. */
+  username?: string;
+  role?: "user" | "client";
 }
 
 export interface ReviewApproveResult {
   logicalPath: string;
   approvedBy: string;
+  approvedByUsername: string;
+  approvedByRole: "user" | "client";
   contentHash: string;
   movedToClientQueue: boolean;
   openThreadWarning: string | null;
@@ -98,6 +113,8 @@ export interface ReviewQueueResult {
   internal: { pending: QueueEntry[]; resolved: QueueEntry[]; rejected: QueueEntry[]; failed: QueueEntry[] };
   client: { pending: QueueEntry[]; resolved: QueueEntry[]; rejected: QueueEntry[] };
   diffs: Record<string, DiffFile | null>;
+  session?: ReviewSessionFile;
+  workflowGuidance?: WorkflowToolGuidance;
 }
 
 export interface ReviewCheckOptions {
@@ -110,17 +127,25 @@ export interface ReviewCheckResult {
   alreadyPending: number;
   errors: Array<{ logicalPath: string; error: string }>;
   migrated?: boolean;
+  session?: ReviewSessionFile;
+  workflowGuidance?: WorkflowToolGuidance;
 }
 
 export interface ReviewRejectOptions {
   root?: string;
   logicalPath: string;
   reason?: string;
+  by?: string;
+  username?: string;
+  role?: "user" | "client";
 }
 
 export interface ReviewRejectResult {
   logicalPath: string;
   rejected: boolean;
+  rejectedBy: string;
+  rejectedByUsername: string;
+  rejectedByRole: "user" | "client";
   message: string;
 }
 
@@ -168,6 +193,7 @@ export interface ReviewSessionStartOptions {
 export interface ReviewSessionStartResult {
   session: ReviewSessionFile;
   message: string;
+  workflowGuidance?: WorkflowToolGuidance;
 }
 
 export interface ReviewSessionAckReviewOptions {
@@ -179,6 +205,7 @@ export interface ReviewSessionAckReviewResult {
   logicalPath: string;
   session: ReviewSessionFile;
   canReviewApprove: boolean;
+  workflowGuidance?: WorkflowToolGuidance;
 }
 
 async function prepareReviewRoot(root?: string): Promise<string> {
@@ -192,7 +219,11 @@ async function prepareReviewRoot(root?: string): Promise<string> {
 export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewApproveResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
-  const approvedBy = opts.by ?? "local";
+  const actor = await resolveReviewActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? "user",
+  });
 
   const { absPath: absDocPath, docPath } = await resolveReviewDocPath(projectRoot, lp);
 
@@ -223,7 +254,7 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
   approval.internal = {
     status: "approved",
     approvedAt: now,
-    approvedBy,
+    approvedBy: actor.by,
     invalidatedAt: null,
   };
   approval.lastEventAt = now;
@@ -259,15 +290,20 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     event: "approved",
     track: "internal",
     at: now,
-    by: approvedBy,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
     hash: contentHash,
   });
 
   await clearReviewSession(projectRoot);
+  await clearWorkflowActive(projectRoot, "doc-review");
 
   return {
     logicalPath: lp,
-    approvedBy,
+    approvedBy: actor.by,
+    approvedByUsername: actor.username,
+    approvedByRole: actor.role,
     contentHash,
     movedToClientQueue: true,
     openThreadWarning,
@@ -352,7 +388,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
 
 export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQueueResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
-  await setReviewSessionPhase(projectRoot, "queue");
+  const session = await setReviewSessionPhase(projectRoot, "queue");
   const track = opts.track ?? "all";
 
   const [iPending, iResolved, iRejected, iFailed, cPending, cResolved, cRejected] =
@@ -393,6 +429,10 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
       rejected: cRejected.entries,
     },
     diffs,
+    session,
+    workflowGuidance: buildReviewSessionWorkflowGuidance(session, {
+      pendingCount: iPending.entries.length,
+    }),
   };
 }
 
@@ -442,24 +482,33 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
 
 export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCheckResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
-  await setReviewSessionPhase(projectRoot, "detect");
+  const session = await setReviewSessionPhase(projectRoot, "detect");
   const migration = await ensureReviewQueueMigrated(projectRoot);
   const result = await reconcileReviews(projectRoot);
+  const guidance = buildReviewSessionWorkflowGuidance(session);
   if (migration?.migrated) {
-    return { ...result, migrated: true };
+    return { ...result, migrated: true, session, workflowGuidance: guidance };
   }
-  return result;
+  return { ...result, session, workflowGuidance: guidance };
 }
 
 export async function runReviewReject(opts: ReviewRejectOptions): Promise<ReviewRejectResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
   const lp = normalizeLogicalPath(opts.logicalPath);
+  const actor = await resolveReviewActor(projectRoot, {
+    by: opts.by,
+    username: opts.username,
+    role: opts.role ?? "user",
+  });
 
   const entry = await removeFromQueue(projectRoot, "internal", lp);
   if (!entry) {
     return {
       logicalPath: lp,
       rejected: false,
+      rejectedBy: actor.by,
+      rejectedByUsername: actor.username,
+      rejectedByRole: actor.role,
       message: `${lp} is not in the internal review queue`,
     };
   }
@@ -481,14 +530,21 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
     event: "rejected",
     track: "internal",
     at: now,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
     reason: opts.reason ?? "dismissed",
   });
 
   await clearReviewSession(projectRoot);
+  await clearWorkflowActive(projectRoot, "doc-review");
 
   return {
     logicalPath: lp,
     rejected: true,
+    rejectedBy: actor.by,
+    rejectedByUsername: actor.username,
+    rejectedByRole: actor.role,
     message: opts.reason
       ? `Dismissed change for ${lp}: ${opts.reason}`
       : `Dismissed change for ${lp} (no re-approval required)`,
@@ -505,9 +561,12 @@ export async function runReviewSessionStart(
 ): Promise<ReviewSessionStartResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
   const session = await resetReviewSession(projectRoot);
+  await recordWorkflowFromReviewSession(projectRoot, session);
+  const guidance = buildReviewSessionWorkflowGuidance(session);
   return {
     session,
     message: "Review session started — phase detect. Run review_check next.",
+    workflowGuidance: guidance,
   };
 }
 
@@ -542,5 +601,6 @@ export async function runReviewSessionAckReview(
     logicalPath: lp,
     session: updated,
     canReviewApprove: true,
+    workflowGuidance: buildReviewSessionWorkflowGuidance(updated),
   };
 }

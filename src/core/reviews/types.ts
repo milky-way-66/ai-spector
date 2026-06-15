@@ -15,6 +15,7 @@ export type HistoryEvent =
   | "client_approved"
   | "client_rejected";
 export type ReviewTrack = "internal" | "client";
+export type ReviewActorRole = "user" | "client";
 
 export interface InternalTrack {
   status: TrackStatus;
@@ -104,7 +105,12 @@ export interface HistoryLine {
   logicalPath?: string;
   track?: ReviewTrack;
   at: string;
+  /** Actor email (typically from git user.email). */
   by?: string;
+  /** Actor display name (typically from git user.name). */
+  username?: string;
+  /** Whether the actor is an internal team member or external client reviewer. */
+  role?: ReviewActorRole;
   hash?: string;
   previousHash?: string;
   newHash?: string;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCommentsInboxWorkflowGuidance,
   buildSpecListWorkflowGuidance,
+  buildTaskListWorkflowGuidance,
   buildTaskWorkflowGuidance,
 } from "@/core/workflow/guidance.js";
 import type { SpecStore } from "@/core/operations/extracted.js";
@@ -77,8 +78,24 @@ describe("buildSpecListWorkflowGuidance", () => {
 describe("buildCommentsInboxWorkflowGuidance", () => {
   it("warns against review_approve when threads open", () => {
     const g = buildCommentsInboxWorkflowGuidance(3);
+    expect(g.workflowId).toBe("resolve-comments");
     expect(g.phase).toBe("threads_open");
     expect(g.nextTools).toContain("comments_resolve");
     expect(g.notTheseTools).toContain("review_approve");
+  });
+});
+
+describe("buildTaskListWorkflowGuidance", () => {
+  it("routes resume to task-router", () => {
+    const g = buildTaskListWorkflowGuidance({
+      activeForSlot: {
+        slot: "generate:srs",
+        taskId: "t1",
+        action: "resume",
+        task: minimalTask({ id: "t1", kind: "generate", workflow: "generate-srs" }),
+      },
+    });
+    expect(g.workflowId).toBe("task-router");
+    expect(g.nextTools).toContain("task_resume");
   });
 });

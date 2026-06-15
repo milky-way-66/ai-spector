@@ -11,10 +11,18 @@ import {
   getThread,
   listThreads,
   resolveThread,
+  type ResolveThreadResult,
 } from "../comments/storage.js";
 import type { ThreadSummary } from "../comments/types.js";
 import type { CommentInbox, CommentResolvePlan } from "../comments/inbox.js";
-import type { ResolveThreadResult } from "../comments/storage.js";
+import type { WorkflowToolGuidance } from "../workflow/guidance.js";
+import {
+  buildCommentsPlanWorkflowGuidance,
+  buildCommentsResolveWorkflowGuidance,
+} from "../workflow/guidance.js";
+export interface CommentResolvePlanWithGuidance extends CommentResolvePlan {
+  workflowGuidance: WorkflowToolGuidance;
+}
 
 export interface CommentsListOptions {
   root?: string;
@@ -75,7 +83,7 @@ export async function runCommentsInbox(opts: CommentsInboxOptions): Promise<Comm
   });
 }
 
-export async function runCommentsPlan(opts: CommentsPlanOptions): Promise<CommentResolvePlan> {
+export async function runCommentsPlan(opts: CommentsPlanOptions): Promise<CommentResolvePlanWithGuidance> {
   const paths = await resolveProjectPaths(opts.root);
 
   let threadId = opts.threadId;
@@ -101,7 +109,7 @@ export async function runCommentsPlan(opts: CommentsPlanOptions): Promise<Commen
     pickId = pickIdForThread(inbox, threadId);
   }
 
-  return buildCommentPlan({
+  const plan = await buildCommentPlan({
     projectRoot: paths.root,
     graphPath: paths.graph,
     rulesPath: paths.rulesImpact,
@@ -109,6 +117,10 @@ export async function runCommentsPlan(opts: CommentsPlanOptions): Promise<Commen
     filePath,
     pickId,
   });
+  return {
+    ...plan,
+    workflowGuidance: buildCommentsPlanWorkflowGuidance(threadId),
+  };
 }
 
 export async function runCommentsShow(opts: CommentsShowOptions): Promise<NonNullable<Awaited<ReturnType<typeof getThread>>>> {
@@ -126,9 +138,13 @@ export async function runCommentsShow(opts: CommentsShowOptions): Promise<NonNul
   return thread;
 }
 
-export async function runCommentsResolve(opts: CommentsResolveOptions): Promise<ResolveThreadResult> {
+export interface CommentsResolveResult extends ResolveThreadResult {
+  workflowGuidance: WorkflowToolGuidance;
+}
+
+export async function runCommentsResolve(opts: CommentsResolveOptions): Promise<CommentsResolveResult> {
   const paths = await resolveProjectPaths(opts.root);
-  return resolveThread({
+  const result = await resolveThread({
     projectRoot: paths.root,
     logicalPath: normalizeLogicalPath(opts.filePath),
     threadId: opts.threadId,
@@ -137,4 +153,8 @@ export async function runCommentsResolve(opts: CommentsResolveOptions): Promise<
     expectedVersion: opts.expectedVersion,
     dryRun: opts.dryRun,
   });
+  return {
+    ...result,
+    workflowGuidance: buildCommentsResolveWorkflowGuidance(opts.threadId),
+  };
 }

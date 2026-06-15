@@ -62,6 +62,7 @@ import {
   TaskAbandonSchema,
   TaskRecordWaveSchema,
   WorkflowRouteSchema,
+  WorkflowStatusSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -117,6 +118,7 @@ import {
   toolReviewSessionAckReview,
 } from "./tools/reviews.js";
 import { toolWorkflowRoute } from "./tools/workflow-route.js";
+import { toolWorkflowStatus } from "./tools/workflow-status.js";
 import {
   APPROVE_TOOL_DESCRIPTIONS,
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
@@ -663,6 +665,24 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "workflow_status",
+  {
+    description: [
+      "Current active subagent worker and recent phase transitions (.ai-spector/.docflow/workflow-active.json).",
+      "",
+      "WHEN: Orchestrator session start, after delegating a worker, or to show status line to the user.",
+      "NOT WHEN: Classifying new intent — use workflow_route instead.",
+      "Returns statusLine (e.g. 'Active worker: doc-review (reviewing srs/01-overview)').",
+    ].join("\n"),
+    inputSchema: WorkflowStatusSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkflowStatus(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
 // ── Workspace check ───────────────────────────────────────────────────────────
 
 server.registerTool(
@@ -926,7 +946,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
     "review_session_start", "review_session_ack_review",
-    "workflow_route",
+    "workflow_route", "workflow_status",
     "workspace_check",
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",

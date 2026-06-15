@@ -2,27 +2,30 @@
 
 Enable **every** folder under `.cursor/skills/` in Cursor (Settings → Rules → Agent Skills).
 
-**You do not need slash commands.** Describe what you want (“generate SRS”, “analyze data source”); Cursor matches the skill `description` and the agent reads that skill’s **runbook** under `references/`.
+**Orchestrator** routes and spawns **subagent workers** from [../subagents/README.md](../subagents/README.md). **You do not need slash commands** for most work — describe what you want; orchestrator delegates to the right worker.
 
 **Pipeline overview:** [../WORKFLOW.md](../WORKFLOW.md)  
-**Disambiguation:** [_skill-router.md](./_skill-router.md)
+**Disambiguation:** [_skill-router.md](./_skill-router.md)  
+**Subagent catalog:** [../subagents/README.md](../subagents/README.md)
 
 ## Quick pick
 
-| You want to… | Skill |
-|--------------|-------|
-| **Setup / bootstrap project** | `ai-spector-setup` |
-| Check workspace structure / stale clarifications | `ai-spector-check` |
-| Analyze, index, validate graph, impact, visualize | `ai-spector-graph` |
-| SRS / requirements | `ai-spector-generate-srs` |
-| Screens, APIs, DB basic design | `ai-spector-generate-basic-design` |
-| HTML prototype | `ai-spector-generate-prototype` |
-| Review comments | `ai-spector-resolve-comments` |
-| **Document sign-off / review queue** | `ai-spector-review` — or **`/review`** command |
-| Add/update feature or section (“I want to add…”) | `ai-spector-resolve-task` (plan-first) |
+| You want to… | Skill / worker |
+|--------------|----------------|
+| **Setup / bootstrap project** | `setup-check` |
+| Check workspace structure / stale clarifications | `setup-check` |
+| Analyze, index, validate graph, impact, visualize | `graph-ops` |
+| SRS / requirements | `generate-srs` — or **`/generate-srs`** |
+| Screens, APIs, DB basic design | `generate-basic-design` |
+| HTML prototype | `generate-prototype` |
+| Review comments | `resolve-comments` — or **`/resolve-comments`** |
+| **Document sign-off / review queue** | `doc-review` — or **`/review`** |
+| Add/update feature or section (“I want to add…”) | `resolve-task` (plan-first) |
+| Resume / active tasks | `task-router` |
+| Approve SPEC-NNN | `spec-queue` |
 | Translation status (read-only) | `ai-spector-lang-status` |
 | Resolve / sync translations | `ai-spector-resolve-translation` |
-| Unsure | `ai-spector` (core) |
+| Unsure | orchestrator + `workflow_route` |
 
 ## Shared references (core skill)
 

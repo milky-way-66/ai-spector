@@ -1,8 +1,11 @@
 import type { ExtractedSpec, SpecStore } from "../operations/extracted.js";
 import type { TaskState } from "../operations/task.js";
+import type { ReviewSessionFile } from "../reviews/types.js";
+import type { WorkflowId } from "./route-intent.js";
 
 /** Routing hints returned alongside tool results (same pattern as review_status). */
 export interface WorkflowToolGuidance {
+  workflowId?: WorkflowId;
   phase: string;
   message: string;
   nextTools: string[];
@@ -14,14 +17,25 @@ const REVIEW_APPROVE = "review_approve";
 const SPEC_APPROVE = "spec_approve";
 const TASK_APPROVE = "task_approve_plan";
 const COMMENTS_RESOLVE = "comments_resolve";
+const APPROVE_SIBLINGS = [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE] as const;
 
 export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance {
+  const workflowId: WorkflowId =
+    task.kind === "resolve"
+      ? "resolve-task"
+      : task.workflow === "generate-basic-design"
+        ? "generate-basic-design"
+        : task.workflow === "generate-prototype"
+          ? "generate-prototype"
+          : "generate-srs";
+
   if (task.planApprovedAt) {
     const executeTools =
       task.kind === "resolve"
         ? ["resolve_task", "graph_impact", "index", "task_complete"]
         : ["task_record_wave", "index", "spec_record", "task_complete"];
     return {
+      workflowId,
       phase: "plan_approved",
       message:
         "Plan approved — execute the task steps. Use task_approve_plan only once; this is not document sign-off (review_approve).",
@@ -33,6 +47,7 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
 
   if (task.plan) {
     return {
+      workflowId,
       phase: "awaiting_plan_approval",
       message:
         "Plan is drafted — show GoalSpec + TaskPlan to the user and wait for explicit yes, then task_approve_plan.",
@@ -43,11 +58,52 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
   }
 
   return {
+    workflowId,
     phase: "planning",
     message: "Clarify gaps → build GoalSpec + TaskPlan → wait for user yes → task_approve_plan before any doc writes.",
     nextTools: ["task_update", "context_list"],
     notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
     canProceed: false,
+  };
+}
+
+export function buildTaskListWorkflowGuidance(opts: {
+  activeForSlot?: { task: TaskState };
+  bootstrapped?: { task: TaskState };
+}): WorkflowToolGuidance {
+  const task = opts.activeForSlot?.task ?? opts.bootstrapped?.task;
+  if (task) {
+    const g = buildTaskWorkflowGuidance(task);
+    return {
+      ...g,
+      workflowId: opts.activeForSlot ? "task-router" : g.workflowId,
+      phase: opts.activeForSlot ? "resume" : g.phase,
+      message: opts.activeForSlot
+        ? `Active task ${task.id} — call task_resume then hand off to ${g.workflowId} worker.`
+        : g.message,
+      nextTools: opts.activeForSlot
+        ? ["task_resume", "task_get", ...g.nextTools]
+        : ["task_get", ...g.nextTools],
+    };
+  }
+
+  return {
+    workflowId: "task-router",
+    phase: "list",
+    message: "No active task in slot — use bootstrap on task_list or task_create to start a workflow.",
+    nextTools: ["task_create", "task_list"],
+    notTheseTools: [...APPROVE_SIBLINGS],
+    canProceed: false,
+  };
+}
+
+export function buildTaskApprovePlanWorkflowGuidance(task: TaskState): WorkflowToolGuidance {
+  const g = buildTaskWorkflowGuidance(task);
+  return {
+    ...g,
+    phase: "plan_approved",
+    message: "Plan approved — execute next steps. Do not call task_approve_plan again.",
+    canProceed: true,
   };
 }
 
@@ -59,6 +115,7 @@ export function buildSpecListWorkflowGuidance(stores: SpecStore[]): WorkflowTool
   const pending = pendingSpecs(stores);
   if (pending.length === 0) {
     return {
+      workflowId: "spec-queue",
       phase: "no_pending_specs",
       message:
         "No pending extracted specs in queue. Approve specs with spec_approve (SPEC-NNN) after generation stage 6 — not review_approve.",
@@ -74,6 +131,7 @@ export function buildSpecListWorkflowGuidance(stores: SpecStore[]): WorkflowTool
   const suffix = pending.length > 3 ? ` (+${pending.length - 3} more)` : "";
 
   return {
+    workflowId: "spec-queue",
     phase: "pending_specs",
     message: `${pending.length} spec(s) pending (${ids}${suffix}). User approves with spec_approve — not review_approve or task_approve_plan.`,
     nextTools: ["spec_approve", "spec_reject"],
@@ -82,9 +140,27 @@ export function buildSpecListWorkflowGuidance(stores: SpecStore[]): WorkflowTool
   };
 }
 
+export function buildSpecActionWorkflowGuidance(
+  action: "approve" | "reject",
+  specId: string,
+): WorkflowToolGuidance {
+  return {
+    workflowId: "spec-queue",
+    phase: action === "approve" ? "spec_approved" : "spec_rejected",
+    message:
+      action === "approve"
+        ? `${specId} approved and merged — not document sign-off (review_approve).`
+        : `${specId} rejected — remaining pending specs use spec_list.`,
+    nextTools: ["spec_list", "graph_validate", "index"],
+    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    canProceed: true,
+  };
+}
+
 export function buildCommentsInboxWorkflowGuidance(openCount: number): WorkflowToolGuidance {
   if (openCount === 0) {
     return {
+      workflowId: "resolve-comments",
       phase: "inbox_empty",
       message: "No open comment threads. Formal document sign-off uses review_* tools, not comments_resolve.",
       nextTools: ["comments_list"],
@@ -93,10 +169,113 @@ export function buildCommentsInboxWorkflowGuidance(openCount: number): WorkflowT
   }
 
   return {
+    workflowId: "resolve-comments",
     phase: "threads_open",
     message: `${openCount} open thread(s) — pick C-NNN, address feedback, then comments_resolve. Not formal document sign-off (review_approve).`,
     nextTools: ["comments_show", "comments_resolve"],
     notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE],
     canProceed: true,
   };
+}
+
+export function buildCommentsPlanWorkflowGuidance(threadId: string): WorkflowToolGuidance {
+  return {
+    workflowId: "resolve-comments",
+    phase: "plan",
+    message: `Plan for ${threadId} — propose doc edit, wait for user approval, commit doc + meta, then comments_resolve.`,
+    nextTools: ["comments_show"],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    canProceed: false,
+  };
+}
+
+export function buildCommentsResolveWorkflowGuidance(threadId: string): WorkflowToolGuidance {
+  return {
+    workflowId: "resolve-comments",
+    phase: "resolved",
+    message: `${threadId} resolved — not formal document sign-off (review_approve).`,
+    nextTools: ["comments_inbox", "comments_list"],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE],
+    canProceed: true,
+  };
+}
+
+export function buildResolveTaskResultWorkflowGuidance(
+  status: "complete" | "partial" | "blocked",
+): WorkflowToolGuidance {
+  return {
+    workflowId: "resolve-task",
+    phase: status === "complete" ? "workflow_complete" : status,
+    message:
+      status === "complete"
+        ? "Resolve task finished — call task_complete. Not document sign-off."
+        : "Resolve task blocked or partial — fix blockers before task_complete.",
+    nextTools: status === "complete" ? ["task_complete", "index"] : ["task_get", "task_update"],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
+    canProceed: status === "complete",
+  };
+}
+
+export function buildReviewSessionWorkflowGuidance(
+  session: ReviewSessionFile,
+  opts?: { pendingCount?: number },
+): WorkflowToolGuidance {
+  const base = {
+    workflowId: "doc-review" as const,
+    notTheseTools: [SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+  };
+
+  switch (session.phase) {
+    case "detect":
+      return {
+        ...base,
+        phase: "detect",
+        message: "Review session detect — run review_queue next; pick a document.",
+        nextTools: ["review_queue", "review_check"],
+        canProceed: false,
+      };
+    case "queue": {
+      const n = opts?.pendingCount;
+      const suffix = n != null ? ` (${n} pending)` : "";
+      return {
+        ...base,
+        phase: "queue",
+        message: `Review queue${suffix} — user picks logicalPath, then review_status.`,
+        nextTools: ["review_status"],
+        canProceed: false,
+      };
+    }
+    case "reviewing":
+      return {
+        ...base,
+        phase: "reviewing",
+        message: `Reviewing ${session.activeLogicalPath ?? "document"} — write review summary, then review_session_ack_review.`,
+        nextTools: ["review_status", "graph_impact", "review_session_ack_review"],
+        canProceed: false,
+      };
+    case "awaiting_decision":
+      return {
+        ...base,
+        phase: "awaiting_decision",
+        message: `Decision gate for ${session.activeLogicalPath ?? "document"} — user Approve → review_approve only now.`,
+        nextTools: ["review_approve", "review_reject"],
+        canProceed: true,
+      };
+    case "done":
+      return {
+        ...base,
+        phase: "done",
+        message: "Review session complete — start fresh with review_check or review_session_start.",
+        nextTools: ["review_check", "review_session_start"],
+        canProceed: false,
+      };
+    default:
+      return {
+        ...base,
+        phase: session.phase,
+        message: "Follow doc-review worker runbook phases in order.",
+        nextTools: ["review_check", "review_queue", "review_status"],
+        canProceed: false,
+      };
+  }
 }

@@ -12,6 +12,12 @@ paths:
 
 # Generate Basic Design
 
+## Subagent worker
+
+**workflowId:** `generate-basic-design` · **Brief:** [../../subagents/generate-basic-design.md](../../subagents/generate-basic-design.md)
+
+Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
+
 ## Step 0 — HARD GATE (before anything else)
 
 **Do not** run `workspace_check`, read templates, or write under `docs/basic-design/` until task state exists.

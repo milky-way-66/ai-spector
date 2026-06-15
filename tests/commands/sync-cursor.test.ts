@@ -33,5 +33,6 @@ describe("sync-cursor", () => {
       true,
     );
     expect(await pathExists(join(root, ".cursor/WORKFLOW.md"))).toBe(true);
+    expect(await pathExists(join(root, ".cursor/subagents/doc-review.md"))).toBe(true);
   });
 });

@@ -5,7 +5,7 @@ import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { runGraphMerge, type GraphMergeResult } from "./graph-merge.js";
 import type { ExtractPatch } from "../graph/knowledge.js";
 import type { WorkflowToolGuidance } from "../workflow/guidance.js";
-import { buildSpecListWorkflowGuidance } from "../workflow/guidance.js";
+import { buildSpecListWorkflowGuidance, buildSpecActionWorkflowGuidance } from "../workflow/guidance.js";
 
 export type SpecStatus = "pending" | "approved" | "rejected";
 
@@ -77,6 +77,7 @@ export interface SpecApproveResult {
   storePath: string;
   /** Present when the spec had a patch and merge ran. */
   merge?: GraphMergeResult;
+  workflowGuidance: WorkflowToolGuidance;
 }
 
 export interface SpecRejectOptions {
@@ -91,6 +92,7 @@ export interface SpecRejectResult {
   docType: string;
   spec: ExtractedSpec;
   storePath: string;
+  workflowGuidance: WorkflowToolGuidance;
 }
 
 // ── store IO ──────────────────────────────────────────────────────────────────
@@ -222,7 +224,13 @@ export async function runSpecApprove(opts: SpecApproveOptions): Promise<SpecAppr
   if (opts.note) spec.note = opts.note;
 
   const storePath = await saveStore(root, store);
-  return { docType: opts.docType, spec, storePath, ...(merge ? { merge } : {}) };
+  return {
+    docType: opts.docType,
+    spec,
+    storePath,
+    ...(merge ? { merge } : {}),
+    workflowGuidance: buildSpecActionWorkflowGuidance("approve", spec.id),
+  };
 }
 
 export async function runSpecReject(opts: SpecRejectOptions): Promise<SpecRejectResult> {
@@ -236,5 +244,10 @@ export async function runSpecReject(opts: SpecRejectOptions): Promise<SpecReject
   if (opts.note) spec.note = opts.note;
 
   const storePath = await saveStore(root, store);
-  return { docType: opts.docType, spec, storePath };
+  return {
+    docType: opts.docType,
+    spec,
+    storePath,
+    workflowGuidance: buildSpecActionWorkflowGuidance("reject", spec.id),
+  };
 }

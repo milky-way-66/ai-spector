@@ -4,6 +4,7 @@ import { pathExists, readJson } from "../util/fs.js";
 import { loadReviewSession } from "../reviews/session.js";
 import { classifyWorkflowIntent } from "../workflow/route-intent.js";
 import type { WorkflowRouteContext, WorkflowRouteResult } from "../workflow/route-intent.js";
+import { recordWorkflowFromHandoff } from "../workflow/active-worker.js";
 import { taskFilePath, taskIndexPath, type TaskIndex, type TaskState } from "./task.js";
 
 export interface WorkflowRouteOptions {
@@ -50,5 +51,9 @@ export async function runWorkflowRoute(opts: WorkflowRouteOptions): Promise<Work
     loadFirstActiveTask(root),
   ]);
 
-  return classifyWorkflowIntent(opts.message, { reviewSession, activeTask });
+  const result = classifyWorkflowIntent(opts.message, { reviewSession, activeTask });
+  if (result.handoff) {
+    await recordWorkflowFromHandoff(root, result.handoff);
+  }
+  return result;
 }

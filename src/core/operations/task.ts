@@ -13,8 +13,13 @@ import {
   type TaskKind,
   type WorkflowId,
 } from "./task-templates.js";
-import type { WorkflowToolGuidance } from "../workflow/guidance.js";
-import { buildTaskWorkflowGuidance } from "../workflow/guidance.js";
+import {
+  buildTaskWorkflowGuidance,
+  buildTaskApprovePlanWorkflowGuidance,
+  buildTaskListWorkflowGuidance,
+  type WorkflowToolGuidance,
+} from "../workflow/guidance.js";
+import { recordWorkflowFromTask } from "../workflow/active-worker.js";
 
 export type { TaskKind, WorkflowId };
 export type { GoalSpec, TaskPlan } from "./resolve-task.js";
@@ -419,6 +424,7 @@ export interface TaskListResult {
   bootstrapped?: TaskListBootstrapped;
   /** Existing in-flight task for the bootstrap slot — prefer task_resume. */
   activeForSlot?: TaskListActiveSlot;
+  workflowGuidance?: WorkflowToolGuidance;
 }
 
 async function maybeBootstrapFromList(
@@ -526,6 +532,7 @@ export async function runTaskList(opts: TaskListOptions = {}): Promise<TaskListR
     index,
     bootstrapped,
     activeForSlot,
+    workflowGuidance: buildTaskListWorkflowGuidance({ activeForSlot, bootstrapped }),
   };
 }
 
@@ -670,6 +677,7 @@ export interface TaskApprovePlanOptions {
 export interface TaskApprovePlanResult {
   task: TaskState;
   taskPath: string;
+  workflowGuidance: WorkflowToolGuidance;
 }
 
 export async function runTaskApprovePlan(
@@ -739,7 +747,12 @@ export async function runTaskApprovePlan(
 
   touchTask(task);
   const taskPath = await saveTask(root, task);
-  return { task, taskPath };
+  await recordWorkflowFromTask(root, task);
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskApprovePlanWorkflowGuidance(task),
+  };
 }
 
 async function writePlanAuditLog(

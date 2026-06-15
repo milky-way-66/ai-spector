@@ -35,7 +35,7 @@ function formatQueueEntry(entry: QueueEntry, diff: DiffFile | null | undefined):
 export function formatApproveResult(result: ReviewApproveResult): string {
   const lines: string[] = [];
   lines.push(`Approved: ${result.logicalPath}`);
-  lines.push(`  by: ${result.approvedBy}`);
+  lines.push(`  by: ${result.approvedByUsername} <${result.approvedBy}> (${result.approvedByRole})`);
   lines.push(`  hash: ${result.contentHash}`);
   if (result.movedToClientQueue) lines.push("  moved to client review queue");
   if (result.openThreadWarning) lines.push(`  warning: ${result.openThreadWarning}`);
@@ -70,7 +70,8 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
     for (const h of history) {
       const parts = [h.at.slice(0, 19), h.event];
       if (h.track) parts.push(`[${h.track}]`);
-      if (h.by) parts.push(`by ${h.by}`);
+      if (h.by) parts.push(`by ${h.username ?? "unknown"} <${h.by}>`);
+      if (h.role) parts.push(`role ${h.role}`);
       if (h.hash) parts.push(`hash ${h.hash}`);
       lines.push(`  ${parts.join(" ")}`);
     }

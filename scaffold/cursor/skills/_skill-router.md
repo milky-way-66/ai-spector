@@ -1,5 +1,7 @@
 # AI Spector skill router
 
+**Orchestrator** uses this for classification. **Workers** must not read this file — they follow `.cursor/subagents/<workflowId>.md` only.
+
 Agents use this when intent is ambiguous.
 
 ## Priority
@@ -11,7 +13,7 @@ Agents use this when intent is ambiguous.
 3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
 4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
 5. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
-6. **Still unclear** — call MCP `workflow_route({ message })` or `ai-spector` core + one question (see approve disambiguation below).
+6. **Still unclear** — call MCP `workflow_route({ message })` → if `handoff` present, spawn worker from `.cursor/subagents/`; if `askUser`, ask in parent chat first (see approve disambiguation below).
 
 ## DISAMBIGUATION: "approve" means four different things
 

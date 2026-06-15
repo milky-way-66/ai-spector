@@ -14,8 +14,9 @@ import { runIndex } from "../../../core/operations/index.js";
 import { runGraphImpact } from "../../../core/operations/graph-impact.js";
 import { runGraphMerge } from "../../../core/operations/graph-merge.js";
 import { runGraphReport } from "../../../core/operations/graph-report.js";
-import type { ResolveTaskSchema } from "../schemas.js";
+import { buildResolveTaskResultWorkflowGuidance } from "../../../core/workflow/guidance.js";
 import type { z } from "zod";
+import type { ResolveTaskSchema } from "../schemas.js";
 
 // Built-in executors available to the MCP resolve_task tool.
 // Each key matches the `tool` field a caller puts in a TaskStep.
@@ -108,5 +109,8 @@ export async function toolResolveTask(input: z.infer<typeof ResolveTaskSchema>) 
     onStepComplete,
   });
 
-  return result;
+  return {
+    ...result,
+    workflowGuidance: buildResolveTaskResultWorkflowGuidance(result.status),
+  };
 }

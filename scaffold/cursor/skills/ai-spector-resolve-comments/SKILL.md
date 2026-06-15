@@ -11,6 +11,12 @@ paths:
 
 # AI Spector — Resolve comments
 
+## Subagent worker
+
+**workflowId:** `resolve-comments` · **Brief:** [../../subagents/resolve-comments.md](../../subagents/resolve-comments.md)
+
+Orchestrator spawns this worker. Workers do not call `workflow_route` or read `_skill-router.md`.
+
 **Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
 ## Required reading
