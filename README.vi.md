@@ -145,8 +145,8 @@ Sau đó: **“generate prototype for all screens”**. Với SPA, chạy build 
 | Prototype (HTML hoặc SPA) | “generate prototype”, “generate prototype with Vue”, “prototype with stripe theme” |
 | Chọn theme | “help me pick a prototype theme”, “show me theme options” |
 | Vừa sửa tài liệu xong | “re-index the graph” |
-| Đồng bộ đa ngôn ngữ | “add language vi”, “resolve translations”, “translation status” — [Work 10](docs/course/10-multi-language.md) |
-| Template tùy chỉnh | “set up template pack”, “template list”, `generate <pack-name>` — [Work 17](docs/course/17-custom-template-packs.md) |
+| Đồng bộ đa ngôn ngữ | “add language vi”, “resolve translations” — [Translations](docs/course/05-prototype/01-translations.md) |
+| Template tùy chỉnh | “set up template pack”, `generate <pack-name>` — [Custom templates](docs/course/07-advanced/01-custom-templates.md) |
 | Xem phần nào bị ảnh hưởng | “what’s the impact of my changes” |
 | Xử lý comment | “resolve comments” |
 | Xem sơ đồ trực quan | “visualize the graph” |

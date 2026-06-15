@@ -24,6 +24,11 @@ export function themesBundleRoot(): string {
   return join(packageBundleRoot(), "assets", "themes");
 }
 
+/** Step-by-step user course shipped with the package (`docs/course/`). */
+export function courseBundleRoot(): string {
+  return join(packageBundleRoot(), "docs", "course");
+}
+
 
 /** Cursor commands/skills/MCP bundled under scaffold (not `.cursor/` — root gitignore). */
 export function scaffoldCursorBundleRoot(): string {

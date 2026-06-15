@@ -4,7 +4,7 @@ Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS
 
 **Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
 
-**Course (step-by-step):** [docs/course/README.md](docs/course/README.md)
+**Course (step-by-step):** run `npx ai-spector course serve --open` or see [docs/course/README.md](docs/course/README.md)
 
 **Tiếng Việt:** [README.vi.md](README.vi.md)
 
@@ -145,8 +145,8 @@ Then: **“generate prototype for all screens”**. For SPA, run the framework b
 | Prototype (HTML or SPA) | “generate prototype”, “generate prototype with Vue”, “prototype with stripe theme” |
 | Choose a theme | “help me pick a prototype theme”, “show me theme options” |
 | After doc edits | “re-index the graph” |
-| Multi-language sync | “add language vi”, “resolve translations”, “translation status” — [Work 10](docs/course/10-multi-language.md) |
-| Custom templates | “set up template pack”, “template list”, `generate <pack-name>` — [Work 17](docs/course/17-custom-template-packs.md) |
+| Multi-language sync | “add language vi”, “resolve translations” — [Translations](docs/course/05-prototype/01-translations.md) |
+| Custom templates | “set up template pack”, `generate <pack-name>` — [Custom templates](docs/course/07-advanced/01-custom-templates.md) |
 | What to redo | “what’s the impact of my changes” |
 | Review comments | “resolve comments” |
 | Explore graph | “visualize the graph” |

@@ -33,6 +33,7 @@
     "documents-basic-design.json",
     "scaffold",
     "assets",
+    "docs/course",
     "README.md",
     "README.vi.md",
     "LICENSE"
@@ -90,8 +91,10 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",
+    "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.4.3"

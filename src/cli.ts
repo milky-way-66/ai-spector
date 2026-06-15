@@ -155,6 +155,7 @@ import {
   runPrototypeValidate,
   runPrototypeAuth,
 } from "./core/operations/prototype.js";
+import { runCourseServe, formatCourseServeStarted } from "./core/operations/course.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -1384,6 +1385,29 @@ graph
 
 registerTemplateCommand(program);
 registerReadinessCommand(program);
+
+const course = program
+  .command("course")
+  .description("Browse the step-by-step AI Spector course in your browser");
+
+course
+  .command("serve")
+  .description("Start a local web server for the interactive course")
+  .option("--port <number>", "Port (default: 4177)", (v) => Number(v), 4177)
+  .option("--host <host>", "Host (default: 127.0.0.1)", "127.0.0.1")
+  .option("--open", "Open the course in your default browser")
+  .action(async (opts, cmd) => {
+    const result = await runCourseServe({
+      projectRoot: projectRootOpt(cmd),
+      host: opts.host,
+      port: opts.port,
+      open: opts.open,
+    });
+    console.log(formatCourseServeStarted(result));
+    await new Promise<void>(() => {
+      /* keep process alive until Ctrl+C */
+    });
+  });
 
 // ── CocoIndex ──────────────────────────────────────────────────────────────────
 

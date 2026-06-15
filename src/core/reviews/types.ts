@@ -15,7 +15,8 @@ export type HistoryEvent =
   | "client_approved"
   | "client_rejected";
 export type ReviewTrack = "internal" | "client";
-export type { AuditActorRole as ReviewActorRole } from "../util/audit-actor.js";
+import type { AuditActorRole } from "../util/audit-actor.js";
+export type ReviewActorRole = AuditActorRole;
 
 export interface InternalTrack {
   status: TrackStatus;
