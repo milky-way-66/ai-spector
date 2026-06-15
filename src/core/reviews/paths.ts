@@ -21,6 +21,7 @@ export interface ReviewQueuePaths {
   history: string;
   snapshots: string;
   changes: string;
+  session: string;
   internalResolved: string;
   internalRejected: string;
   internalFailed: string;
@@ -38,6 +39,7 @@ export function reviewQueuePaths(projectRoot: string): ReviewQueuePaths {
     history: join(dir, "history.jsonl").replace(/\\/g, "/"),
     snapshots: join(dir, "snapshots").replace(/\\/g, "/"),
     changes: join(dir, "changes").replace(/\\/g, "/"),
+    session: join(dir, ".session.json").replace(/\\/g, "/"),
     internalResolved: join(dir, "internal-resolved.json").replace(/\\/g, "/"),
     internalRejected: join(dir, "internal-rejected.json").replace(/\\/g, "/"),
     internalFailed: join(dir, "internal-failed.json").replace(/\\/g, "/"),

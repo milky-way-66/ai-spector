@@ -40,6 +40,8 @@ import {
   ReviewCheckSchema,
   ReviewRejectSchema,
   ReviewListSchema,
+  ReviewSessionStartSchema,
+  ReviewSessionAckReviewSchema,
   WorkspaceCheckSchema,
   ContextListSchema,
   ContextRecordSchema,
@@ -59,6 +61,7 @@ import {
   TaskCompleteSchema,
   TaskAbandonSchema,
   TaskRecordWaveSchema,
+  WorkflowRouteSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -110,7 +113,15 @@ import {
   toolReviewCheck,
   toolReviewReject,
   toolReviewList,
+  toolReviewSessionStart,
+  toolReviewSessionAckReview,
 } from "./tools/reviews.js";
+import { toolWorkflowRoute } from "./tools/workflow-route.js";
+import {
+  APPROVE_TOOL_DESCRIPTIONS,
+  REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
+} from "./tool-descriptions.js";
+import { mcpToolErrorContent } from "./format-tool-error.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -259,7 +270,7 @@ server.registerTool(
 server.registerTool(
   "comments_list",
   {
-    description: "List review comment threads, optionally filtered by file or status",
+    description: "List inline comment/feedback threads left on documents (notes, questions, annotations). These are NOT approval actions — use review_* tools for formal sign-off.",
     inputSchema: CommentsListSchema.shape,
   },
   async (input) => {
@@ -271,7 +282,7 @@ server.registerTool(
 server.registerTool(
   "comments_inbox",
   {
-    description: "Get the structured comment inbox with priority ordering and IDE presentation hints",
+    description: "Get the structured inbox of inline comment/feedback threads (notes, questions, annotations on documents), with priority ordering. NOT related to the approval workflow — use review_* for formal sign-off.",
     inputSchema: CommentsInboxSchema.shape,
   },
   async (input) => {
@@ -283,7 +294,7 @@ server.registerTool(
 server.registerTool(
   "comments_show",
   {
-    description: "Get full detail of a single comment thread by id",
+    description: "Get full detail of a single inline comment/feedback thread by id. Comments are annotations on documents, not approval decisions.",
     inputSchema: CommentsShowSchema.shape,
   },
   async (input) => {
@@ -295,7 +306,7 @@ server.registerTool(
 server.registerTool(
   "comments_resolve",
   {
-    description: "Resolve a comment thread",
+    description: APPROVE_TOOL_DESCRIPTIONS.comments_resolve,
     inputSchema: CommentsResolveSchema.shape,
   },
   async (input) => {
@@ -523,31 +534,39 @@ server.registerTool(
 server.registerTool(
   "review_approve",
   {
-    description: "Approve a document for internal review and move it to the client review queue",
+    description: APPROVE_TOOL_DESCRIPTIONS.review_approve,
     inputSchema: ReviewApproveSchema.shape,
   },
   async (input) => {
-    const result = await toolReviewApprove(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolReviewApprove(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
 server.registerTool(
   "review_status",
   {
-    description: "Get the review approval status of a document including both internal and client tracks, and the diff since last approval",
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_status,
     inputSchema: ReviewStatusSchema.shape,
   },
   async (input) => {
-    const result = await toolReviewStatus(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolReviewStatus(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
 server.registerTool(
   "review_queue",
   {
-    description: "List documents pending review in internal and/or client queues",
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_queue,
     inputSchema: ReviewQueueSchema.shape,
   },
   async (input) => {
@@ -559,7 +578,7 @@ server.registerTool(
 server.registerTool(
   "review_check",
   {
-    description: "Scan all approved documents for content changes and invalidate stale approvals",
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_check,
     inputSchema: ReviewCheckSchema.shape,
   },
   async (input) => {
@@ -571,20 +590,23 @@ server.registerTool(
 server.registerTool(
   "review_reject",
   {
-    description: "Dismiss a document from the internal review queue without requiring re-approval (e.g. for trivial changes)",
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_reject,
     inputSchema: ReviewRejectSchema.shape,
   },
   async (input) => {
-    const result = await toolReviewReject(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolReviewReject(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
 server.registerTool(
   "review_list",
   {
-    description:
-      "List all documents that have an approval record, with their review status (approved / pending_internal / pending_client / rejected). Use to answer questions like 'which SRS docs have been reviewed?', 'show all approved documents', or 'what is the review status of all documents'. Filter by status or logical path prefix.",
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_list,
     inputSchema: ReviewListSchema.shape,
   },
   async (input) => {
@@ -592,6 +614,56 @@ server.registerTool(
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
+
+server.registerTool(
+  "review_session_start",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_session_start,
+    inputSchema: ReviewSessionStartSchema.shape,
+  },
+  async (input) => {
+    const result = await toolReviewSessionStart(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "review_session_ack_review",
+  {
+    description: REVIEW_WORKFLOW_TOOL_DESCRIPTIONS.review_session_ack_review,
+    inputSchema: ReviewSessionAckReviewSchema.shape,
+  },
+  async (input) => {
+    try {
+      const result = await toolReviewSessionAckReview(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+// ── Workflow routing ──────────────────────────────────────────────────────────
+
+server.registerTool(
+  "workflow_route",
+  {
+    description: [
+      "Classify user intent to the correct ai-spector skill and MCP tools before loading runbooks.",
+      "",
+      "WHEN: Ambiguous approve/review/continue message; unsure which skill to activate; after user says 'help me approve'.",
+      "NOT WHEN: Intent is already clear (use the target tool directly).",
+      "Reads review session (.session.json) and active task context. Returns skill, confidence, nextTools, avoidTools, or askUser with four approve options.",
+    ].join("\n"),
+    inputSchema: WorkflowRouteSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkflowRoute(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Workspace check ───────────────────────────────────────────────────────────
 
 server.registerTool(
   "workspace_check",
@@ -674,8 +746,7 @@ server.registerTool(
 server.registerTool(
   "spec_approve",
   {
-    description:
-      "Approve a pending extracted spec by id (e.g. SPEC-001). If the spec carries a graph patch, it is merged into the traceability graph (with validation) as part of approval.",
+    description: APPROVE_TOOL_DESCRIPTIONS.spec_approve,
     inputSchema: SpecApproveSchema.shape,
   },
   async (input) => {
@@ -764,8 +835,7 @@ server.registerTool(
 server.registerTool(
   "task_approve_plan",
   {
-    description:
-      "Mark the task plan as approved (sets planApprovedAt and advances to the next step). Required before execute/generate steps run.",
+    description: APPROVE_TOOL_DESCRIPTIONS.task_approve_plan,
     inputSchema: TaskApprovePlanSchema.shape,
   },
   async (input) => {
@@ -855,6 +925,8 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_status", "review_queue", "review_check", "review_reject", "review_list",
+    "review_session_start", "review_session_ack_review",
+    "workflow_route",
     "workspace_check",
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",

@@ -125,3 +125,22 @@ export function jobToQueueEntry(job: ReviewJob): QueueEntry {
 export function reviewJobId(logicalPath: string, track: ReviewTrack): string {
   return `${logicalPath}:${track}`;
 }
+
+/** Agent review workflow phase persisted in `.session.json` (local gate for review_approve). */
+export type ReviewSessionPhase =
+  | "detect"
+  | "queue"
+  | "reviewing"
+  | "awaiting_decision"
+  | "done";
+
+export interface ReviewSessionFile {
+  version: 1;
+  startedAt: string;
+  updatedAt: string;
+  phase: ReviewSessionPhase;
+  activeLogicalPath: string | null;
+  reviewStatusAt: string | null;
+  reviewWrittenAt: string | null;
+  contentHashAtReview: string | null;
+}

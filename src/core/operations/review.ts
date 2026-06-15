@@ -29,7 +29,25 @@ import {
 import { reconcileReviews } from "../reviews/reconcile.js";
 import { computeLiveStaleness } from "../reviews/staleness.js";
 import { ensureReviewQueueMigrated, migrateLegacyReviews } from "../reviews/migrate.js";
-import type { ApprovalRecord, QueueEntry, DiffFile, HistoryLine } from "../reviews/types.js";
+import { assertCanInternalApprove } from "../reviews/errors.js";
+import {
+  assertReviewSessionAllowsApprove,
+  clearReviewSession,
+  loadReviewSession,
+  resetReviewSession,
+  setReviewSessionPhase,
+} from "../reviews/session.js";
+import {
+  buildReviewWorkflowGuidance,
+  type ReviewWorkflowGuidance,
+} from "../reviews/workflow-guidance.js";
+import type {
+  ApprovalRecord,
+  QueueEntry,
+  DiffFile,
+  HistoryLine,
+  ReviewSessionFile,
+} from "../reviews/types.js";
 
 // ── Options / Results ─────────────────────────────────────────────────────────
 
@@ -64,6 +82,10 @@ export interface ReviewStatusResult {
   /** Hash of the approved snapshot when stale is true. */
   approvedContentHash?: string;
   history?: HistoryLine[];
+  /** Agent routing: recommended next MCP tools and whether review_approve is allowed now. */
+  workflowGuidance?: ReviewWorkflowGuidance;
+  /** Persisted review session gate state (`.session.json`). */
+  session?: ReviewSessionFile | null;
 }
 
 export interface ReviewQueueOptions {
@@ -139,6 +161,26 @@ export interface ReviewMigrateResult {
   message: string;
 }
 
+export interface ReviewSessionStartOptions {
+  root?: string;
+}
+
+export interface ReviewSessionStartResult {
+  session: ReviewSessionFile;
+  message: string;
+}
+
+export interface ReviewSessionAckReviewOptions {
+  root?: string;
+  logicalPath: string;
+}
+
+export interface ReviewSessionAckReviewResult {
+  logicalPath: string;
+  session: ReviewSessionFile;
+  canReviewApprove: boolean;
+}
+
 async function prepareReviewRoot(root?: string): Promise<string> {
   const paths = await resolveProjectPaths(root);
   await ensureReviewQueueMigrated(paths.root);
@@ -172,12 +214,9 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
   }
 
   // Only internal can approve via this tool
-  if (approval.overallStatus !== "pending_internal" && approval.internal.status !== "needs_review") {
-    throw new Error(
-      `Cannot approve: document is in state "${approval.overallStatus}". ` +
-        `Run 'review check' first if the document has changed.`,
-    );
-  }
+  assertCanInternalApprove(approval, lp);
+  const session = await loadReviewSession(projectRoot);
+  assertReviewSessionAllowsApprove(session, lp, contentHash);
 
   approval.docPath = docPath;
   approval.contentHash = contentHash;
@@ -223,6 +262,8 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
     by: approvedBy,
     hash: contentHash,
   });
+
+  await clearReviewSession(projectRoot);
 
   return {
     logicalPath: lp,
@@ -281,9 +322,21 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
     }
   }
 
+  const session = await setReviewSessionPhase(projectRoot, "reviewing", {
+    activeLogicalPath: lp,
+    reviewStatusAt: new Date().toISOString(),
+    contentHashAtReview: approval.contentHash,
+    reviewWrittenAt: null,
+  });
+
   const result: ReviewStatusResult = {
     approval,
     diff,
+    session,
+    workflowGuidance: buildReviewWorkflowGuidance(approval, {
+      stale: live.stale,
+      session,
+    }),
     ...(live.stale ? { stale: true, approvedContentHash } : {}),
   };
 
@@ -299,6 +352,7 @@ export async function runReviewStatus(opts: ReviewStatusOptions): Promise<Review
 
 export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQueueResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
+  await setReviewSessionPhase(projectRoot, "queue");
   const track = opts.track ?? "all";
 
   const [iPending, iResolved, iRejected, iFailed, cPending, cResolved, cRejected] =
@@ -388,6 +442,7 @@ export async function runReviewList(opts: ReviewListOptions): Promise<ReviewList
 
 export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCheckResult> {
   const projectRoot = await prepareReviewRoot(opts.root);
+  await setReviewSessionPhase(projectRoot, "detect");
   const migration = await ensureReviewQueueMigrated(projectRoot);
   const result = await reconcileReviews(projectRoot);
   if (migration?.migrated) {
@@ -429,6 +484,8 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
     reason: opts.reason ?? "dismissed",
   });
 
+  await clearReviewSession(projectRoot);
+
   return {
     logicalPath: lp,
     rejected: true,
@@ -441,4 +498,49 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
 export async function runReviewMigrate(opts: ReviewMigrateOptions): Promise<ReviewMigrateResult> {
   const paths = await resolveProjectPaths(opts.root);
   return migrateLegacyReviews(paths.root);
+}
+
+export async function runReviewSessionStart(
+  opts: ReviewSessionStartOptions = {},
+): Promise<ReviewSessionStartResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const session = await resetReviewSession(projectRoot);
+  return {
+    session,
+    message: "Review session started — phase detect. Run review_check next.",
+  };
+}
+
+export async function runReviewSessionAckReview(
+  opts: ReviewSessionAckReviewOptions,
+): Promise<ReviewSessionAckReviewResult> {
+  const projectRoot = await prepareReviewRoot(opts.root);
+  const lp = normalizeLogicalPath(opts.logicalPath);
+  const session = await loadReviewSession(projectRoot);
+
+  if (!session) {
+    throw new Error(
+      `No review session for ${lp}. Run review_session_start or review_check, then review_status.`,
+    );
+  }
+  if (session.activeLogicalPath !== lp) {
+    throw new Error(
+      `Session tracks ${session.activeLogicalPath ?? "(none)"}, not ${lp}. Call review_status for ${lp} first.`,
+    );
+  }
+  if (session.phase !== "reviewing" && session.phase !== "awaiting_decision") {
+    throw new Error(
+      `Cannot acknowledge review in session phase "${session.phase}". Call review_status for ${lp} first.`,
+    );
+  }
+
+  const updated = await setReviewSessionPhase(projectRoot, "awaiting_decision", {
+    reviewWrittenAt: new Date().toISOString(),
+  });
+
+  return {
+    logicalPath: lp,
+    session: updated,
+    canReviewApprove: true,
+  };
 }

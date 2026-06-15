@@ -4,12 +4,41 @@ Agents use this when intent is ambiguous.
 
 ## Priority
 
-0. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** first (`task_list` → `task_resume`).
-1. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
-2. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
-3. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
-4. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
-5. **Still unclear** — `ai-spector` core + one question (incremental change vs full generate vs graph vs comments).
+0. **Document sign-off** — `/review`, *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-review`** first. **Not** resolve-task, generate, or comments unless user explicitly switches topic after disambiguation.
+0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` exists and `phase` is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic). Check session via last `review_status` response or `review_check`.
+1. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** (`task_list` → `task_resume`). Skip if message is clearly document sign-off (priority 0) or an active review session exists (priority 0.5).
+2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
+3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
+4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
+5. **Natural language** — match skill `description`; then read that skill’s `references/` runbook.
+6. **Still unclear** — call MCP `workflow_route({ message })` or `ai-spector` core + one question (see approve disambiguation below).
+
+## DISAMBIGUATION: "approve" means four different things
+
+| User context | Skill | MCP tool | NOT this |
+|---|---|---|---|
+| **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`), "what changed since approval" | `ai-spector-review` | `review_approve` | `spec_approve`, `task_approve_plan`, `comments_resolve` |
+| **Extracted spec** — SPEC-001, spec queue, graph patch from generate stage 6 | generate skills + [extract-specs.md](./ai-spector/references/extract-specs.md) | `spec_approve` | `review_approve` |
+| **Task plan** — user said yes to GoalSpec + TaskPlan table, "go ahead execute", plan approval | `ai-spector-resolve-task` or generate skills | `task_approve_plan` | `review_approve` |
+| **Comment thread done** — C-001, resolve thread, feedback addressed | `ai-spector-resolve-comments` | `comments_resolve` | `review_approve` |
+
+**Routing rules:**
+
+- Logical path (`srs/01-overview`, `bd/api-design`) + *approve* → **`ai-spector-review`** (run full runbook phases before `review_approve`).
+- `SPEC-NNN` or "spec queue" + *approve* → **`spec_approve`**.
+- User just approved a **plan table** in chat → **`task_approve_plan`** only.
+- `C-NNN` or "comment thread" → **`ai-spector-resolve-comments`**.
+- **Ambiguous** ("approve it", "looks good", "help me approve") → ask **one** question (user-facing, four options):
+
+  ```
+  Which did you mean?
+  1. Sign off a document (e.g. srs/01-overview) — formal approval
+  2. Approve an extracted spec (e.g. SPEC-003) — after generation
+  3. Go ahead with the plan we discussed — start making changes
+  4. Mark a comment thread done (e.g. C-012) — feedback addressed
+  ```
+
+  Do not call any approve tool until answered. If chat context makes one option obvious (plan table just shown, spec list open, review summary written), pick that — no question needed.
 
 ## DISAMBIGUATION: "review" means two different things
 
@@ -18,7 +47,7 @@ Agents use this when intent is ambiguous.
 | Document **approval** — approve, status, queue, "which docs reviewed", "has this been approved", "pending client review" | `ai-spector-review` |
 | Comment **threads** — C-001, inbox, resolve, open threads, feedback on content | `ai-spector-resolve-comments` |
 
-When in doubt: if the user names a document and asks about approval/status → `ai-spector-review`. If the user mentions threads, comments, or C-00N → `ai-spector-resolve-comments`.
+When in doubt: if the user names a document and asks about approval/status → `ai-spector-review`. If the user mentions threads, comments, or C-00N → `ai-spector-resolve-comments`. Graph impact **review** bucket is informational only — not this skill.
 
 ## Task → skill → runbook
 

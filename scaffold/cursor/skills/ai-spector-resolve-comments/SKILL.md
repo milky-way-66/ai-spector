@@ -1,10 +1,10 @@
 ---
 name: ai-spector-resolve-comments
 description: >-
-  Resolves git-backed review comment threads under comments/: inbox listing, impact plan, doc edits,
-  and meta_data.json updates with amend commits. Use when the user asks to resolve comments, address
-  review feedback, open threads, C-001 picks, or meta_data.json on SRS/basic design. Do not use for
-  greenfield generation without review threads.
+  Resolves git-backed comment threads under comments/ (comments_resolve). NOT formal
+  document sign-off — use ai-spector-review and review_approve for that. Use when
+  the user asks to resolve comments, address feedback, open threads, C-001 picks,
+  or meta_data.json on SRS/basic design. Do not use for approve doc / review queue.
 paths:
   - "comments/**"
 ---
@@ -28,4 +28,6 @@ paths:
 
 ## Natural language
 
-“resolve comments”, “address C-001”, “review thread on srs” → this skill.
+“resolve comments”, “address C-001”, “resolve thread C-012”, “comment inbox”, “feedback on srs/01” → this skill.
+
+**Not** formal document sign-off — “approve srs/01-overview”, “review queue”, “pending client approval” → `ai-spector-review`.

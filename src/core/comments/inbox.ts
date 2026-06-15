@@ -1,5 +1,7 @@
 import type { ImpactResult } from "../graph/impact.js";
 import { previewCommentBody } from "./anchor.js";
+import type { WorkflowToolGuidance } from "../workflow/guidance.js";
+import { buildCommentsInboxWorkflowGuidance } from "../workflow/guidance.js";
 import type { ThreadSummary } from "./types.js";
 
 export interface CommentInboxItem {
@@ -26,6 +28,7 @@ export interface CommentInbox {
   count: number;
   openCount: number;
   prompt: string;
+  workflowGuidance: WorkflowToolGuidance;
   /** Pre-rendered pick list for IDE chat — agent should show this, not raw JSON or thread uuids */
   idePresentation: {
     mode: "thread_pick_list";
@@ -52,14 +55,17 @@ export function buildCommentInbox(threads: ThreadSummary[]): CommentInbox {
     version: t.version,
   }));
 
+  const openCount = inbox.filter((i) => i.status === "open").length;
+
   return {
     inbox,
     count: inbox.length,
-    openCount: inbox.filter((i) => i.status === "open").length,
+    openCount,
     prompt:
       inbox.length === 0
         ? "No open comment threads. Run git pull or check comments/."
         : "Reply with a pick id (e.g. C-001) to start the resolve workflow.",
+    workflowGuidance: buildCommentsInboxWorkflowGuidance(openCount),
     idePresentation: buildIdePresentation(inbox),
   };
 }

@@ -1,16 +1,15 @@
 ---
 name: ai-spector-review
 description: >-
-  Document review and approval workflow: the agent reads changed documents,
-  understands what changed, checks graph impact, gives a written review
-  summary with a recommendation, then asks the user to approve, request
-  changes, or dismiss. Use when the user asks to review documents, approve
-  a document, check what changed since last approval, view the review queue,
-  or mentions "pending review", "needs review", "client approval", or
-  "what changed". Do not use for comment threads — use
-  ai-spector-resolve-comments for those.
+  Formal document sign-off workflow (MCP review_approve). NOT for comment threads
+  (comments_resolve / ai-spector-resolve-comments), extracted specs (spec_approve /
+  SPEC-NNN), or task plans (task_approve_plan). Use for /review, review queue,
+  approve doc by logical path (srs/01-overview), pending client approval, what
+  changed since last sign-off. Agent must read the doc, check graph impact, write
+  a review summary, then wait for user decision before review_approve.
 paths:
   - ".ai-spector/.docflow/review-queue/**"
+  - "docs/**"
 ---
 
 # AI Spector — Document Review
@@ -34,6 +33,7 @@ It **reads the document**, **understands the change in context**, **checks graph
 - [ ] read document        → understand current content, not just diff
 - [ ] graph_impact         → check downstream blast radius
 - [ ] write review summary → what changed, why it matters, concerns, recommendation
+- [ ] review_session_ack_review → unlock approve gate
 - [ ] wait for user        → approve / request changes / dismiss
 - [ ] review approve / reject (if approved)
 - [ ] git commit .ai-spector/.docflow/review-queue/ (if team-shared)

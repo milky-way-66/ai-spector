@@ -19,7 +19,9 @@ import {
   runApprove,
   runReviewStatus,
   runReviewList,
+  runReviewSessionAckReview,
 } from "@/core/operations/review.js";
+import { contentHash } from "@/core/reviews/staleness.js";
 
 async function setupProject(root: string): Promise<void> {
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {
@@ -28,7 +30,32 @@ async function setupProject(root: string): Promise<void> {
     paths: {},
   });
   await mkdir(join(root, "docs/srs"), { recursive: true });
-  await writeFile(join(root, "docs/srs/1-introduction.md"), "# Introduction\n\nContent.", "utf8");
+  await mkdir(join(root, ".ai-spector/.docflow/review-queue/snapshots"), { recursive: true });
+}
+
+async function seedPendingDoc(
+  root: string,
+  logicalPath: string,
+  content: string,
+): Promise<void> {
+  const fileName = `${logicalPath.split("/").pop()}.md`;
+  const docRel = `docs/srs/${fileName}`;
+  await writeFile(join(root, docRel), content, "utf8");
+  const hash = contentHash(content);
+  const approval = makeApproval(logicalPath, hash, docRel);
+  approval.overallStatus = "pending_internal";
+  await writeSnapshot(root, logicalPath, content);
+  await saveApproval(root, approval);
+}
+
+async function approveWithSession(
+  root: string,
+  logicalPath: string,
+  by: string,
+) {
+  await runReviewStatus({ root, logicalPath, showDiff: false });
+  await runReviewSessionAckReview({ root, logicalPath });
+  return runApprove({ root, logicalPath, by });
 }
 
 describe.sequential("review queue storage", () => {
@@ -92,8 +119,9 @@ describe.sequential("review operations", () => {
   it("approve writes to review-queue and returns history via status", async () => {
     await withTempProject(async (root) => {
       await setupProject(root);
+      await seedPendingDoc(root, "srs/1-introduction", "# Introduction\n\nContent.");
 
-      const approved = await runApprove({ root, logicalPath: "srs/1-introduction", by: "alice" });
+      const approved = await approveWithSession(root, "srs/1-introduction", "alice");
       expect(approved.movedToClientQueue).toBe(true);
 
       const paths = reviewQueuePaths(root);
@@ -117,9 +145,8 @@ describe.sequential("review operations", () => {
   it("list returns all documents with approval records", async () => {
     await withTempProject(async (root) => {
       await setupProject(root);
-      await mkdir(join(root, "docs/srs"), { recursive: true });
-      await writeFile(join(root, "docs/srs/2-overall-description.md"), "# Scope\n", "utf8");
-      await runApprove({ root, logicalPath: "srs/2-overall-description", by: "alice" });
+      await seedPendingDoc(root, "srs/2-overall-description", "# Scope\n");
+      await approveWithSession(root, "srs/2-overall-description", "alice");
 
       const list = await runReviewList({ root, prefix: "srs/2-overall" });
       expect(list.total).toBe(1);

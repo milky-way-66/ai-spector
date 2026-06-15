@@ -6,6 +6,8 @@ import type {
   ReviewRejectResult,
   ReviewListResult,
   ReviewMigrateResult,
+  ReviewSessionStartResult,
+  ReviewSessionAckReviewResult,
 } from "@/core/operations/review.js";
 import type { DiffFile, QueueEntry } from "@/core/reviews/types.js";
 
@@ -72,6 +74,13 @@ export function formatReviewStatus(result: ReviewStatusResult): string {
       if (h.hash) parts.push(`hash ${h.hash}`);
       lines.push(`  ${parts.join(" ")}`);
     }
+  }
+  if (result.session) {
+    lines.push("");
+    lines.push(
+      `Session: phase ${result.session.phase}` +
+        (result.session.activeLogicalPath ? ` → ${result.session.activeLogicalPath}` : ""),
+    );
   }
   return lines.join("\n");
 }
@@ -150,4 +159,16 @@ export function formatReviewList(result: ReviewListResult): string {
 
 export function formatReviewMigrate(result: ReviewMigrateResult): string {
   return result.message;
+}
+
+export function formatReviewSessionStart(result: ReviewSessionStartResult): string {
+  return `${result.message}\n  phase: ${result.session.phase}`;
+}
+
+export function formatReviewSessionAckReview(result: ReviewSessionAckReviewResult): string {
+  return (
+    `Review acknowledged: ${result.logicalPath}\n` +
+    `  session phase: ${result.session.phase}\n` +
+    `  review_approve unlocked: ${result.canReviewApprove ? "yes" : "no"}`
+  );
 }

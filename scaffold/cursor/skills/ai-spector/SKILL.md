@@ -19,6 +19,7 @@ When the `ai-spector` MCP server is enabled (`.cursor/mcp.json` or `.mcp.json` l
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
+| **Route ambiguous intent** | `workflow_route({ message })` | *(no CLI equivalent)* |
 | Prepare graph scaffold | `index({})` | `npx ai-spector index` |
 | Check knowledge.json entity counts | `knowledge_status({})` | *(no CLI equivalent)* |
 | Validate knowledge.json schema | `knowledge_validate({})` | *(no CLI equivalent)* |
@@ -91,7 +92,9 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Generate basic design (full wave) | `ai-spector-generate-basic-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
-| Review / approve documents, review queue | `ai-spector-review` |
+| Review / approve documents (`review_approve`), `/review`, review queue | `ai-spector-review` |
+| Approve extracted spec (`SPEC-NNN`, `spec_approve`) | generate stage 6 — [extract-specs.md](references/extract-specs.md) |
+| Approve plan to execute (`task_approve_plan`) | `ai-spector-resolve-task` or generate skills |
 | Translation status / stale languages | `ai-spector-lang-status` |
 | Resolve / sync translations | `ai-spector-resolve-translation` |
 | Create task, open-ended doc/graph change | `ai-spector-resolve-task` |

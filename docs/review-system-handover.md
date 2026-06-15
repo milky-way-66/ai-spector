@@ -120,7 +120,12 @@ All review state lives under `.ai-spector/.docflow/review-queue/`:
   fingerprints.json      ← read-only (ignore on web)
   snapshots/             ← read-only (optional display)
   changes/               ← read-only (optional diff display)
+  .session.json          ← agent-only session gate (do not commit; local IDE review state)
 ```
+
+`.session.json` tracks the agent review workflow (`detect` → `queue` → `reviewing` → `awaiting_decision`).
+It gates `review_approve` in the CLI/MCP. The web app ignores it. Teams should add it to `.gitignore`
+if agents run locally; omit from release branches shipped to the web.
 
 The pipeline must ship a complete `registry.json` and `pending.json` before the web app goes live. Web never creates these files from scratch.
 

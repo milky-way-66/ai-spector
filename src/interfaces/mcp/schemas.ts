@@ -233,6 +233,12 @@ export const ReviewQueueSchema = RootSchema.extend({
 
 export const ReviewCheckSchema = RootSchema;
 
+export const ReviewSessionStartSchema = RootSchema;
+
+export const ReviewSessionAckReviewSchema = RootSchema.extend({
+  logicalPath: z.string().describe("Logical document path that was reviewed in chat"),
+});
+
 export const ReviewMigrateSchema = RootSchema;
 
 // ── Context store ───────────────────────────────────────────────────────────
@@ -622,4 +628,12 @@ export const ReadinessOutputChecklistSchema = RootSchema.extend({
   paths: z
     .array(z.string())
     .describe("Generated doc paths just written — agent scores checklist items semantically"),
+});
+
+// ── Workflow routing ──────────────────────────────────────────────────────────
+
+export const WorkflowRouteSchema = RootSchema.extend({
+  message: z
+    .string()
+    .describe("User message or intent to classify (e.g. 'approve it', '/review', 'resolve C-012')"),
 });

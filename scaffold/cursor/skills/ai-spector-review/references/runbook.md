@@ -4,7 +4,13 @@ The agent's job is not just to show a diff — it is to **read the document, und
 
 Two-track flow: **internal (you)** → **client (web app)**. This runbook covers internal review only.
 
-Storage lives under `.ai-spector/.docflow/review-queue/` (registry, pending jobs, snapshots, history). Legacy `reviews/` is migrated automatically on first review command, or via `npx ai-spector review migrate`.
+**Routing:** Formal sign-off uses `review_approve` only — not `spec_approve` (SPEC-NNN),
+`task_approve_plan` (execution plan), or `comments_resolve` (C-NNN threads). See
+[_skill-router.md](../../_skill-router.md) and rule `ai-spector-routing.mdc`.
+
+Storage lives under `.ai-spector/.docflow/review-queue/` (registry, pending jobs, snapshots, history).
+Agent session gate: `.session.json` (local — **do not commit**; tracks review phases before `review_approve`).
+Legacy `reviews/` is migrated automatically on first review command, or via `npx ai-spector review migrate`.
 
 ---
 
@@ -12,9 +18,11 @@ Storage lives under `.ai-spector/.docflow/review-queue/` (registry, pending jobs
 
 | Operation | MCP tool | CLI fallback |
 |-----------|----------|--------------|
+| Start / reset session | `review_session_start({})` | `npx ai-spector review session start --json` |
 | Detect changed documents | `review_check({})` | `npx ai-spector review check --json` |
 | Show review queue | `review_queue({ track: "internal", showDiff: true })` | `npx ai-spector review queue --track internal --json` |
-| Load status + diff + history | `review_status({ logicalPath, showDiff: true, includeHistory: true })` | `npx ai-spector review status <path> --json --history` |
+| Load status + diff + history | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json --history` |
+| Ack review summary written | `review_session_ack_review({ logicalPath })` | `npx ai-spector review session ack <path> --json` |
 | List all docs with review status | `review_list({ prefix?, status? })` | `npx ai-spector review list --json` |
 | Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
 | Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
@@ -79,6 +87,8 @@ review_status({ logicalPath: "<picked>", showDiff: true })
 
 Then read the actual document file (get `docPath` from `logicalPathToDocPath` — typically `docs/srs/en/<file>.md` or `docs/basic-design/en/<file>.md`).
 
+Use `workflowGuidance` from `review_status` — it lists `nextTools`, `notTheseTools`, and whether `canReviewApprove` is true for the current state.
+
 **Read the document to understand context.** The diff alone is not enough — you need to see what the changed sections mean in the full document.
 
 ---
@@ -138,6 +148,15 @@ contradicts an earlier section.>
 - **Flag traceability breaks** — if a requirement ID or section anchor was removed or renamed, call it out explicitly.
 - **Note missing content** — if lines were deleted without replacement and the section now reads incomplete, say so.
 - **Be honest about concerns** — recommend "Request changes" when something looks wrong. Do not approve to be helpful.
+
+After Phase 4, **before** asking the user to decide:
+
+```
+review_session_ack_review({ logicalPath: "<picked>" })
+```
+
+This persists the session gate (`awaiting_decision`). `review_approve` will fail without it.
+Check `workflowGuidance.canReviewApprove` from the last `review_status` — it stays false until ack.
 
 ---
 
@@ -221,7 +240,8 @@ git push
 ## Guardrails
 
 - **Never skip the review write (Phase 4).** Even for a one-line change, write a brief summary.
-- **Never approve without showing the full review first.** Even if the user says "just approve it", still write the review — then approve.
+- **Never skip `review_session_ack_review` after Phase 4.** `review_approve` is blocked without it.
+- **Never approve without showing the full review first.** Even if the user says "just approve it", still write the review — then ack — then approve.
 - **Never approve if `overallStatus` is already `pending_client` or `approved`.** Tell the user the current state.
 - **Recommend "Request changes" honestly.** Do not approve to avoid friction.
 - **Never touch `internal_queue/` files directly.** Always go through MCP tools / CLI.

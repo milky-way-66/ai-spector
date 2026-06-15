@@ -121,6 +121,8 @@ import {
   runReviewReject,
   runReviewList,
   runReviewMigrate,
+  runReviewSessionStart,
+  runReviewSessionAckReview,
 } from "./core/operations/review.js";
 import {
   formatApproveResult,
@@ -130,6 +132,8 @@ import {
   formatReviewReject,
   formatReviewList,
   formatReviewMigrate,
+  formatReviewSessionStart,
+  formatReviewSessionAckReview,
 } from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { registerReadinessCommand } from "./core/operations/readiness.js";
@@ -1161,6 +1165,31 @@ review
     const result = await runReviewMigrate({ root: projectRootOpt(cmd) });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewMigrate(result));
+  });
+
+const reviewSession = review.command("session").description("Persisted review session gate for sign-off");
+
+reviewSession
+  .command("start")
+  .description("Start or reset the review session (.session.json)")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runReviewSessionStart({ root: projectRootOpt(cmd) });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewSessionStart(result));
+  });
+
+reviewSession
+  .command("ack <logicalPath>")
+  .description("Acknowledge review summary written — unlocks review approve")
+  .option("--json", "JSON output for agents")
+  .action(async (logicalPath: string, opts, cmd) => {
+    const result = await runReviewSessionAckReview({
+      root: projectRootOpt(cmd),
+      logicalPath,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatReviewSessionAckReview(result));
   });
 
 const prototype = program

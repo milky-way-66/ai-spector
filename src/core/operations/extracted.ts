@@ -4,6 +4,8 @@ import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { runGraphMerge, type GraphMergeResult } from "./graph-merge.js";
 import type { ExtractPatch } from "../graph/knowledge.js";
+import type { WorkflowToolGuidance } from "../workflow/guidance.js";
+import { buildSpecListWorkflowGuidance } from "../workflow/guidance.js";
 
 export type SpecStatus = "pending" | "approved" | "rejected";
 
@@ -40,6 +42,7 @@ export interface SpecListOptions {
 export interface SpecListResult {
   stores: SpecStore[];
   total: number;
+  workflowGuidance: WorkflowToolGuidance;
 }
 
 export interface SpecRecordOptions {
@@ -161,7 +164,11 @@ export async function runSpecList(opts: SpecListOptions = {}): Promise<SpecListR
       stores.push({ ...store, specs });
     }
   }
-  return { stores, total: stores.reduce((n, s) => n + s.specs.length, 0) };
+  return {
+    stores,
+    total: stores.reduce((n, s) => n + s.specs.length, 0),
+    workflowGuidance: buildSpecListWorkflowGuidance(stores),
+  };
 }
 
 export async function runSpecRecord(opts: SpecRecordOptions): Promise<SpecRecordResult> {

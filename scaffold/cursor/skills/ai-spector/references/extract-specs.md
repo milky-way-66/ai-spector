@@ -26,6 +26,9 @@ merge to the graph; `docs/data-source/` stays purely human-authored —
 | Approve (merges patch, validated) | `spec_approve({ docType, id, by? })` | `npx ai-spector spec approve <docType> <id>` |
 | Reject (kept for audit, never merged) | `spec_reject({ docType, id, note? })` | `npx ai-spector spec reject <docType> <id> [--note …]` |
 
+**Not** document sign-off (`review_approve` / `ai-spector-review`) — specs are extracted
+decisions from generated docs; formal doc approval is a separate two-track workflow.
+
 On approval the patch is also written beside the store
 (`extracted/<docType>.<id>.patch.json`) as an audit trail, then merged with
 `graph merge --validate`. Re-approving an approved spec is an error.

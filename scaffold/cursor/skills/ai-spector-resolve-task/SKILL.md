@@ -3,9 +3,11 @@ name: ai-spector-resolve-task
 description: >-
   FIRST CHOICE for incremental doc/graph changes: add feature, add requirement, update
   section, change prototype, "I want to…", "we need to…", create task. Mandatory
-  workflow: clarify → show GoalSpec + TaskPlan → wait for explicit yes → then execute.
-  Do NOT jump to edits or graph_impact before approval. Do NOT use generate-srs or
-  generate-basic-design for single-feature additions — use this skill instead.
+  workflow: clarify → show GoalSpec + TaskPlan → wait for explicit yes →
+  task_approve_plan → then execute. Plan approval is task_approve_plan — NOT
+  review_approve (document sign-off; use ai-spector-review) or spec_approve (SPEC-NNN).
+  Do NOT jump to edits or graph_impact before plan approval. Do NOT use generate-srs
+  for single-feature additions.
 paths:
   - "docs/**"
   - "prototype/**"

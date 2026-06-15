@@ -13,6 +13,8 @@ import {
   type TaskKind,
   type WorkflowId,
 } from "./task-templates.js";
+import type { WorkflowToolGuidance } from "../workflow/guidance.js";
+import { buildTaskWorkflowGuidance } from "../workflow/guidance.js";
 
 export type { TaskKind, WorkflowId };
 export type { GoalSpec, TaskPlan } from "./resolve-task.js";
@@ -360,12 +362,17 @@ export interface TaskGetOptions {
 export interface TaskGetResult {
   task: TaskState;
   taskPath: string;
+  workflowGuidance: WorkflowToolGuidance;
 }
 
 export async function runTaskGet(opts: TaskGetOptions): Promise<TaskGetResult> {
   const root = await resolveRoot(opts.root);
   const task = parseTask(await loadTask(root, opts.taskId));
-  return { task, taskPath: taskFilePath(root, opts.taskId) };
+  return {
+    task,
+    taskPath: taskFilePath(root, opts.taskId),
+    workflowGuidance: buildTaskWorkflowGuidance(task),
+  };
 }
 
 export interface TaskListBootstrap {

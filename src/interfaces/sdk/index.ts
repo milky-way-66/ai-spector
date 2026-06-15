@@ -135,7 +135,42 @@ export {
   runReviewReject,
   runReviewList,
   runReviewMigrate,
+  runReviewSessionStart,
+  runReviewSessionAckReview,
 } from "../../core/operations/review.js";
+export {
+  ReviewPreconditionError,
+  canInternalApprove,
+} from "../../core/reviews/errors.js";
+export type {
+  ReviewApproveBlockReason,
+  ReviewPreconditionPayload,
+} from "../../core/reviews/errors.js";
+export { buildReviewWorkflowGuidance } from "../../core/reviews/workflow-guidance.js";
+export type {
+  ReviewWorkflowGuidance,
+  ReviewWorkflowPhase,
+} from "../../core/reviews/workflow-guidance.js";
+export { runWorkflowRoute } from "../../core/operations/workflow-route.js";
+export type { WorkflowRouteOptions } from "../../core/operations/workflow-route.js";
+export { classifyWorkflowIntent } from "../../core/workflow/route-intent.js";
+export type {
+  WorkflowRouteContext,
+  WorkflowRouteResult,
+  WorkflowRouteAskOption,
+} from "../../core/workflow/route-intent.js";
+export {
+  buildTaskWorkflowGuidance,
+  buildSpecListWorkflowGuidance,
+  buildCommentsInboxWorkflowGuidance,
+} from "../../core/workflow/guidance.js";
+export type { WorkflowToolGuidance } from "../../core/workflow/guidance.js";
+export {
+  loadReviewSession,
+  setReviewSessionPhase,
+  clearReviewSession,
+} from "../../core/reviews/session.js";
+export type { ReviewSessionFile, ReviewSessionPhase } from "../../core/reviews/types.js";
 export type {
   ReviewApproveOptions,
   ReviewApproveResult,
@@ -152,6 +187,10 @@ export type {
   ReviewListEntry,
   ReviewMigrateOptions,
   ReviewMigrateResult,
+  ReviewSessionStartOptions,
+  ReviewSessionStartResult,
+  ReviewSessionAckReviewOptions,
+  ReviewSessionAckReviewResult,
 } from "../../core/operations/review.js";
 
 // Readiness assessment
