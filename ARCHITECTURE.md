@@ -60,6 +60,7 @@ src/
       hooks.ts                    # → HooksInstallResult / PreCommitReport
       setup.ts                    # → SetupAudit
       sync-cursor.ts              # → SyncCursorResult
+      sync-claude.ts              # → SyncClaudeResult
       init.ts                     # project initialisation
       bootstrap.ts                # graph bootstrap from registry
       prototype.ts                # prototype preview/deploy

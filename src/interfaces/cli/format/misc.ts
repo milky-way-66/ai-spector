@@ -1,3 +1,4 @@
+import type { SyncClaudeResult } from "@/core/operations/sync-claude.js";
 import type { SyncCursorResult } from "@/core/operations/sync-cursor.js";
 import type { HooksInstallResult } from "@/core/operations/hooks.js";
 import type { PreCommitReport } from "@/core/operations/hooks.js";
@@ -12,6 +13,16 @@ export function formatSyncCursor(result: SyncCursorResult): string {
     `  source → ${result.sourceDir}`,
     "",
     "Reload Cursor skills if needed; see .cursor/WORKFLOW.md",
+  ].join("\n");
+}
+
+export function formatSyncClaude(result: SyncClaudeResult): string {
+  return [
+    `Synced Claude bundle at ${result.claudeSkillsDir}`,
+    `  CLAUDE.md → ${result.claudeMd}`,
+    `  source → ${result.sourceDir}`,
+    "",
+    "Reload MCP if needed; skills load from .claude/skills/ — see WORKFLOW.md",
   ].join("\n");
 }
 

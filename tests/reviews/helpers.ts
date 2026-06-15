@@ -14,8 +14,8 @@ export function internalApprovedTrack(by: string, at: string, note?: string): In
       },
     ],
     quorumMetAt: at,
-    closedAt: null,
-    closedBy: null,
+    closedAt: at,
+    closedBy: by,
     invalidatedAt: null,
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.8.60",
+  "version": "0.8.61",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",
@@ -69,6 +69,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc && tsc-alias -p tsconfig.json",
+    "build:claude-scaffold": "npm run build && node dist/cli.js build-claude-scaffold",
     "prepack": "npm run build",
     "prepublish:check-deps": "node --input-type=module -e \"import { readFileSync } from 'node:fs'; const p = JSON.parse(readFileSync('package.json','utf8')); for (const [name, range] of Object.entries({ ...p.dependencies, ...p.optionalDependencies, ...p.peerDependencies })) { if (String(range).startsWith('workspace:')) { console.error('Cannot publish: ' + name + ' uses ' + range); process.exit(1); } }\"",
     "prepublishOnly": "npm run build && npm run prepublish:check-deps",

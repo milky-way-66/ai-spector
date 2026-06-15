@@ -1,62 +1,32 @@
 ---
 name: ai-spector-generate-prototype
-description: "Generates HTML prototype screens. Use when the user asks for HTML mockups, prototypes, or UI previews. Handles theme selection, auth picker, and screen generation."
+description: >-
+  Generates static HTML/CSS/JS screen prototypes from basic-design screen specs and bundled UI themes.
+  Use when the user asks for HTML prototype, screen mockups, or prototype/src files. When no theme is
+  stored, recommends 3 best-fit themes from project context, opens preview samples in the browser,
+  and waits for the user to choose before setup. Uses stored preference on subsequent runs. Do not use
+  for markdown SRS/basic design only, or graph operations without HTML output.
 ---
 
-# AI Spector — Generate Prototype
+# Generate Prototype
+## Load at start
+1. [references/runbook.md](references/runbook.md)
 
-## When to use
+## Load when needed
 
-- "HTML mockup", "prototype", "generate UI screens"
-- "help me pick a theme", "what themes are available"
+| Situation | Load |
+|---|---|
+| No tech stack stored — **must confirm before setup** | [references/stack-picker.md](references/stack-picker.md) |
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| No theme stored — **must confirm before setup** | [references/theme-picker.md](references/theme-picker.md) |
+| No basic auth stored | [references/auth-picker.md](references/auth-picker.md) |
+| Before writing each screen HTML | [references/prototype-graph-context.md](references/prototype-graph-context.md) |
+| SPA buildMode (vue, react, nuxt, …) | [references/spa-prototype.md](references/spa-prototype.md) |
+| Run of 5+ screens | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
+| CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
 
-## Workflow
+## On CLI failure
+Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-### 1. Setup (first time)
-
-```bash
-npx ai-spector prototype setup --theme <theme>
-```
-
-If no theme specified, ask the user to choose from available themes or describe their app — then recommend 3 options. Preview with:
-
-```bash
-npx ai-spector prototype preview --theme <theme>
-```
-
-### 2. Auth (if needed)
-
-Check `.ai-spector/docflow.config.json` for auth requirements. If auth screens are needed, handle auth picker before generating screens.
-
-### 3. Generate screens
-
-```bash
-npx ai-spector prototype generate --screen <screen-name>
-```
-
-Or generate all:
-
-```bash
-npx ai-spector prototype generate
-```
-
-### 4. Validate
-
-```bash
-npx ai-spector prototype validate
-```
-
-## Checklist
-
-```
-- [ ] Theme selected (asked user if not specified)
-- [ ] prototype setup run
-- [ ] Auth handled if required
-- [ ] Screens generated
-- [ ] Prototype validate passed
-```
-
-## Rules
-
-- Ask for theme before defaulting — user preference matters
-- Do not generate screens before setup completes
+"HTML prototype", "mockup screens", "prototype with stripe theme" → this skill.
+"Help me pick a theme" → load theme-picker.md directly.

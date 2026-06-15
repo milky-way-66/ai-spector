@@ -2,7 +2,7 @@
 
 > **Audience:** Web team implementing the review UI on the **release branch**.
 > **Source of truth (schemas):** `src/core/reviews/` and `src/core/operations/review.ts` in this repository.
-> **Package version:** ai-spector ≥ 0.8.60
+> **Package version:** ai-spector ≥ 0.8.61
 > **Design spec:** `docs/superpowers/specs/2026-06-15-multi-reviewer-review-design.md`
 
 ---
@@ -55,7 +55,7 @@ The web app is a **thin vote layer**. Implement only:
 |---------|--------|
 | List documents + review status | Read `registry.json`, `pending.json` |
 | Show document content | Read markdown from `docPath` on release branch (read-only) |
-| Show vote list + quorum progress | Read `internal.votes` / `client.votes`; compute quorum (§6.4) |
+| Show vote list + quorum progress | Read `internal.votes` / `client.votes`; compute quorum (§6.3) |
 | Internal approve / decline vote | Upsert vote in `registry.json`; on internal quorum met → move job to client track |
 | Internal close review | Set `internal.status: rejected` when quorum cannot be reached |
 | Client approve / decline vote | Upsert vote in `registry.json`; on client quorum met → fully approved |
@@ -103,8 +103,8 @@ Each document has an `overallStatus` in `registry.json` (derived from both track
 | Track `status` | Meaning |
 |----------------|---------|
 | `pending` | Accepting votes; quorum not yet met |
-| `approved` | Quorum met (`quorumMetAt` set) |
-| `rejected` | Manually closed (`closedAt`, `closedBy`, `closeReason` set) |
+| `approved` | Quorum met (`quorumMetAt`, `closedAt`, `closedBy` set; `votes[]` retained) |
+| `rejected` | Manually closed (`closedAt`, `closedBy`, `closeReason` set; `votes[]` retained) |
 | `needs_review` | Content changed on authoring — web ignores on release branch |
 
 ### Transitions (web actions)
@@ -121,7 +121,7 @@ stateDiagram-v2
     rejected --> pending_internal: new release after fixes (pipeline)
 ```
 
-**Internal quorum met:** `internal.status → approved`, remove `{path}:internal` job, add `{path}:client` job, archive internal job.
+**Internal quorum met:** `internal.status → approved`, set `quorumMetAt` + `closedAt` + `closedBy` (actor who cast the tipping vote), **keep `votes[]` unchanged**, remove `{path}:internal` job, add `{path}:client` job, archive internal job.
 
 **Client quorum met:** `client.status → approved`, remove `{path}:client` job, archive client job.
 
@@ -160,6 +160,12 @@ The pipeline must ship a complete `registry.json` (version **3**) and `pending.j
 ## 6. File Schemas
 
 ### 6.1 `registry.json` (version 3)
+
+**Schema invariant:** Internal and client tracks share the **same vote-bearing shape** for every status (`pending`, `approved`, `rejected`). The `votes[]` array is never collapsed or replaced on quorum — it is the canonical audit trail for who voted and how.
+
+**Deprecated (do not read or write):** `internal.approvedBy`, `internal.approvedAt`, `client.approvedAt`, `client.comment`. These were v1/v2 single-approver fields. ai-spector migrates them to `votes[]` on load (`src/core/reviews/normalize.ts`). The web app must **only** use `votes[]`.
+
+#### Pending internal (quorum not yet met)
 
 ```json
 {
@@ -210,6 +216,47 @@ The pipeline must ship a complete `registry.json` (version **3**) and `pending.j
 }
 ```
 
+#### Approved internal (quorum met — same shape, votes retained)
+
+After internal quorum, `overallStatus` becomes `pending_client`. The internal track keeps the full vote list:
+
+```json
+"internal": {
+  "status": "approved",
+  "votes": [
+    {
+      "by": "alice@company.com",
+      "username": "Alice",
+      "role": "user",
+      "decision": "approve",
+      "at": "2026-06-15T10:00:00.000Z",
+      "note": "LGTM"
+    },
+    {
+      "by": "bob@company.com",
+      "username": "Bob",
+      "role": "user",
+      "decision": "decline",
+      "at": "2026-06-15T10:30:00.000Z",
+      "note": "Section 2 unclear"
+    },
+    {
+      "by": "carol@company.com",
+      "username": "Carol",
+      "role": "user",
+      "decision": "approve",
+      "at": "2026-06-15T11:00:00.000Z"
+    }
+  ],
+  "quorumMetAt": "2026-06-15T11:00:00.000Z",
+  "closedAt": "2026-06-15T11:00:00.000Z",
+  "closedBy": "carol@company.com",
+  "invalidatedAt": null
+}
+```
+
+`closedBy` is the email of the voter whose action **met quorum** (typically the last approve when quorum tips). `quorumMetAt` and `closedAt` are the same timestamp on quorum pass.
+
 | Field | Web reads | Web writes |
 |-------|-----------|------------|
 | `overallStatus` | ✓ | ✓ (derived from track updates) |
@@ -228,6 +275,8 @@ Enum values:
 | `client.status` | `pending` \| `approved` \| `rejected` |
 | `vote.decision` | `approve` \| `decline` |
 | `vote.role` | `user` (internal) \| `client` |
+
+**Never emit** `approvedBy` or `approvedAt` on either track. If you encounter them in an old release branch, treat as a pipeline bug or run ai-spector `review migrate` on authoring before re-shipping.
 
 ### 6.2 Vote record
 
@@ -353,7 +402,7 @@ Shared vote algorithm:
 4. Recompute quorum (§6.3).
 5. Append `internal_vote` or `client_vote` to `history.jsonl`.
 6. If quorum **not** met: update `lastEventAt`, save — done.
-7. If quorum **met**: set `track.status = "approved"`, `quorumMetAt = now`, derive `overallStatus`, run track completion steps below.
+7. If quorum **met**: set `track.status = "approved"`, `quorumMetAt = now`, `closedAt = now`, `closedBy = current voter email`, derive `overallStatus`, run track completion steps below. **Do not remove or replace `votes[]`.**
 
 ---
 
@@ -368,16 +417,23 @@ Shared vote algorithm:
 
 **When quorum met (additional steps):**
 
-Update `registry.json`:
+Update `registry.json` (example — `votes[]` is the full list at quorum time, not truncated):
 
 ```json
 {
   "internal": {
     "status": "approved",
+    "votes": [
+      { "by": "alice@company.com", "role": "user", "decision": "approve", "at": "..." },
+      { "by": "bob@company.com", "role": "user", "decision": "decline", "at": "...", "note": "..." },
+      { "by": "carol@company.com", "role": "user", "decision": "approve", "at": "..." }
+    ],
     "quorumMetAt": "<ISO-8601>",
-    "...votes unchanged..."
+    "closedAt": "<ISO-8601>",
+    "closedBy": "carol@company.com",
+    "invalidatedAt": null
   },
-  "client": { "status": "pending", "votes": [], "...": "..." },
+  "client": { "status": "pending", "votes": [], "quorumMetAt": null, "closedAt": null, "closedBy": null },
   "overallStatus": "pending_client",
   "lastEventAt": "<ISO-8601>"
 }
@@ -420,7 +476,12 @@ Same vote algorithm as §7.1, but on `client` track with `role: "client"` and `c
 {
   "client": {
     "status": "approved",
-    "quorumMetAt": "<ISO-8601>"
+    "votes": [
+      { "by": "client@client.com", "role": "client", "decision": "approve", "at": "..." }
+    ],
+    "quorumMetAt": "<ISO-8601>",
+    "closedAt": "<ISO-8601>",
+    "closedBy": "client@client.com"
   },
   "overallStatus": "approved",
   "lastEventAt": "<ISO-8601>"
@@ -461,6 +522,8 @@ Client:   1 / 2 required (2 voters)     [████░░░░░░]
 Compute from `track.votes` using §6.3.
 
 ### Vote list
+
+Read from `track.votes[]` for **both pending and approved** tracks — do not use `approvedBy` or parse `history.jsonl` for the current voter list.
 
 Show each voter with decision badge, name, email, timestamp, and note:
 
@@ -519,7 +582,7 @@ Before deploying the web app for a release, the pipeline must:
 
 1. Merge final document content into the **release branch**
 2. Run ai-spector review workflow on authoring (or CI) to produce a consistent `review-queue/`
-3. Ship `registry.json` at **version 3** with `votes: []` on new documents
+3. Ship `registry.json` at **version 3** with `votes: []` on new documents and **no** `approvedBy` / `approvedAt` fields
 4. Copy/commit `registry.json`, `pending.json`, and related files to the release branch
 5. Ensure every published document has a `registry.json` entry and correct `docPath`
 
@@ -547,6 +610,7 @@ Declines alone never reject a track. Show **Close review** when stakeholders agr
 |-----------|--------------|
 | Document not in `registry.json` | Error — contact ops / pipeline |
 | `registry.version` ≠ 3 | Error — pipeline must ship v3 |
+| `internal.approvedBy` or `approvedAt` present | Legacy v1/v2 entry — re-run authoring `review migrate` or normalize before release; web may map to a one-element `votes[]` for display only |
 | `pending.json` missing | Treat as empty queue; status still readable from registry |
 | `docPath` file missing | Error — broken release |
 | `history.jsonl` missing | Create on first append |
@@ -587,7 +651,7 @@ Old release branch keeps `rejected` state. New release ships updated docs and a 
 | `review_session_ack_review` | Agent acknowledges written review; unlocks `review_approve` |
 | `review migrate` / `review_migrate` | Migrate legacy `reviews/` layout |
 
-Schema: `src/core/reviews/types.ts` (v3). Quorum: `src/core/reviews/quorum.ts`. Operations: `src/core/operations/review.ts`.
+Schema: `src/core/reviews/types.ts` (v3). Quorum: `src/core/reviews/quorum.ts`. Legacy normalization: `src/core/reviews/normalize.ts`. Operations: `src/core/operations/review.ts`.
 
 ---
 
@@ -597,7 +661,7 @@ Schema: `src/core/reviews/types.ts` (v3). Quorum: `src/core/reviews/quorum.ts`. 
 
 1. **Bob declines** → 1 voter, 0 approves, need 1 — still pending
 2. **Alice approves** → 2 voters, 1 approve, need 2 — still pending
-3. **Carol approves** → 3 voters, 2 approves, need 2 — **internal quorum met** → `pending_client`, client job added
+3. **Carol approves** → 3 voters, 2 approves, need 2 — **internal quorum met** → `internal.status: approved` with all 3 votes retained, `closedBy: carol@…`, `pending_client`, client job added
 4. **Client A approves** → 1 voter, 1 approve, need 1 — **client quorum met** → `approved`
 
 No hash computation on any web step — `contentHash` was set by ai-spector before release and stays unchanged on the release branch.

@@ -45,7 +45,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Translation status | "what's stale in JP", "pending translations" | `ai-spector-lang-status` | `lang_queue({})` MCP |
 | Sync translations | "resolve translations", "update JP from EN" | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | "resolve comments", "fix C-001" | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
-| **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_reject` |
+| **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + quorum + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_decline` / `review_close` / `review_reject` |
 | Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
 | Explore graph | "show the graph" | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 

@@ -59,6 +59,8 @@ describe("migrateLegacyReviews", () => {
 
       const approval = await getApproval(root, "srs/1-introduction");
       expect(approval?.overallStatus).toBe("pending_client");
+      expect(approval?.internal.votes).toHaveLength(1);
+      expect(approval?.internal.votes[0]?.by).toBe("local");
       expect(approval?.snapshotRef).toContain("review-queue/snapshots/");
 
       const clientPending = await loadQueueIndex(root, "client", "pending");

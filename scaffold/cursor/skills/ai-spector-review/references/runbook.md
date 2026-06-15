@@ -24,8 +24,10 @@ Legacy `reviews/` is migrated automatically on first review command, or via `npx
 | Load status + diff + history | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json --history` |
 | Ack review summary written | `review_session_ack_review({ logicalPath })` | `npx ai-spector review session ack <path> --json` |
 | List all docs with review status | `review_list({ prefix?, status? })` | `npx ai-spector review list --json` |
-| Approve document | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
-| Dismiss trivial change | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
+| Approve document (cast vote) | `review_approve({ logicalPath, by })` | `npx ai-spector review approve <path> --by <name>` |
+| Decline vote (internal track) | `review_decline({ logicalPath, by, note? })` | `npx ai-spector review decline <path> --by <name>` |
+| Close review without quorum | `review_close({ logicalPath, by, reason })` | `npx ai-spector review close <path> --by <name> --reason "..."` |
+| Dismiss trivial re-review job | `review_reject({ logicalPath, reason })` | `npx ai-spector review reject <path> --reason "..."` |
 | Check downstream impact | `graph_impact({ file: "<docPath>", change: "content updated" })` | `npx ai-spector graph impact --file <path> --json` |
 | Structural + semantic rubric | Included in `review_status` → `readiness` block; or `readiness_scan` + `readiness_output_checklist` | `npx ai-spector readiness scan --paths <path> --json` |
 
@@ -99,6 +101,8 @@ Use `reviewKind` / `reviewTemplate` from the response (`first` | `re_review` | `
 Then read the **full** document file (`docPath` in the response — e.g. `docs/srs/en/1-introduction.md`).
 
 Use `workflowGuidance` from `review_status` — it lists `nextTools`, `notTheseTools`, and whether `canReviewApprove` is true for the current state.
+
+**Multi-reviewer quorum (internal track):** `review_approve` casts an **approve vote**, not instant sign-off. A track passes when **≥ ⌈2/3 × voters⌉** cast approve. Reviewers are added when they first vote. Declines do **not** auto-reject — the track stays `pending_internal` until quorum is met or someone calls `review_close`. Show quorum progress from `review_status` (`quorum` block: `voterCount`, `approveCount`, `declineCount`, `required`, `met`). When quorum is met, the doc moves to `pending_client` (client track on web app).
 
 **Readiness:** `review_status` returns `readiness` when the logical path maps to a doc type:
 - `readiness.structuralScan` — automated structural findings
@@ -267,15 +271,23 @@ Wait for the user's reply. Do not auto-approve.
 
 ## Phase 6 — Execute decision
 
-### 1 — Approve
+### 1 — Approve (cast vote)
 
 ```
 review_approve({ logicalPath: "<path>", by: "<reviewer name>", note: "<optional note>" })
 ```
 
-Confirm in chat:
+Check `quorum` in the response. Confirm in chat:
+
+**If quorum not yet met:**
 ```
-✅ <logicalPath> approved — moved to client review queue.
+✅ Approve vote recorded for <logicalPath> — quorum <approveCount>/<required> (<voterCount> voter(s)).
+   Track stays pending_internal until quorum is met.
+```
+
+**If internal quorum just met:**
+```
+✅ <logicalPath> — internal quorum met — moved to client review queue.
    Hash: <contentHash>
 ```
 
@@ -286,7 +298,25 @@ If `openThreadWarning` was returned:
 
 ### 2 — Request changes
 
-Do **not** call `review_approve`. Tell the user what needs to be fixed. Optionally open the relevant comment thread workflow (`ai-spector-resolve-comments`).
+Do **not** call `review_approve`. Tell the user what needs to be fixed. Optionally cast `review_decline` if recording a formal decline vote, or open comment threads (`ai-spector-resolve-comments`).
+
+### 2b — Decline vote (optional)
+
+When the user wants a formal decline on record without closing the review:
+
+```
+review_decline({ logicalPath: "<path>", by: "<name>", note: "<optional>" })
+```
+
+Declines alone do not reject the track — report quorum progress.
+
+### 2c — Close review (quorum unreachable)
+
+When stakeholders agree internal quorum cannot be reached:
+
+```
+review_close({ logicalPath: "<path>", by: "<name>", reason: "<why closing>" })
+```
 
 ### 3 — Dismiss
 

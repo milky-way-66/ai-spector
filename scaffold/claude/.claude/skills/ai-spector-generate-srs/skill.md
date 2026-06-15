@@ -1,89 +1,75 @@
 ---
 name: ai-spector-generate-srs
-description: "Generates SRS documents from the knowledge graph using DAG waves. Use when the user asks to write SRS, generate use cases, or produce requirements docs."
+description: >-
+  Generates SRS chapters from the traceability graph in DAG order (full waves, "generate SRS",
+  "write chapter 4", use case list from graph). Do NOT use for incremental adds like "add a feature",
+  "I want to add login" — use ai-spector-resolve-task instead. Do not use for basic design,
+  HTML prototype, or graph-only analyze/index tasks.
 ---
 
-# AI Spector — Generate SRS
+# Generate SRS
+## Step 0 — HARD GATE (before anything else)
 
-## When to use
-
-- "generate SRS", "write use cases", "requirements doc"
-
-## Prerequisites
-
-- `npx ai-spector graph validate` passes
-- Data source analyzed (`npx ai-spector index`)
-
-> **Scope:** This skill is for the **builtin SRS template** only. If a custom pack is active,
-> use `ai-spector-generate-<packname>` instead (installed when the pack was activated).
-> Check `CLAUDE.md` skill table if unsure which skill to use.
-
-## Step 0 — HARD GATE
-
-Do **not** run `workspace_check` or write under `docs/srs/` until `task_create` or `task_resume` is done.
-Empty `tasks/index.json` (`active: {}`) still requires `task_create`.
-`workspace_check({ paths })` reports **TASK-003** (warning) without an approved generate task.
-Use `task_list({ bootstrap: … })` for single-call task setup; `task_status` for active slots.
-
-## Workflow (gated — stages 1–4 before any write)
+**Do not** run `workspace_check`, read templates, or write under `docs/srs/` until task state exists.
 
 ```
-0. TASK      task_list → task_create(generate-srs) or task_resume
-1. CHECK     workspace_check({}) — fix errors before continuing (CLI: npx ai-spector check)
-2. CLARIFY   readiness_config + readiness_assess → present FULL criteria table
-             (ID, ISO ref, status) → snapshot.readinessReportShown → optional
-             web search → FULL gap set → context_record every blocking gap.
-             task_update: clarify in-progress → done (blocked until report shown).
-3. BRIEFING  state per document: graph nodes pulled (and which are empty),
-             data-source files used, applied Q-xxx answers, open assumptions,
-             template, and notable context NOT used → user confirms
-4. PLAN      plan table (output × DAG × criteria IDs × ISO refs × sources × key
-             points, wave order from doc-types/srs/dag.json) → wait for explicit "yes".
-             Never write before it.
-5. GENERATE  per DAG wave; after each wave: readiness_scan →
-             readiness_output_checklist → agent output compliance table →
-             index → task_record_wave (see output-compliance.md)
-6. EXTRACT   pull key specs → offer spec_record → set snapshot.extractOffered
-             → user reviews with spec_list / spec_approve / spec_reject.
-             Approved specs merge to the graph; NEVER write to docs/data-source/.
+task_list({
+  status: ["active", "paused"],
+  bootstrap: {
+    kind: "generate",
+    workflow: "generate-srs",
+    docType: "srs",
+    trigger: "<user request>"
+  }
+})
+  → activeForSlot → task_resume(taskId)
+  → bootstrapped   → continue with new task id
 ```
 
-Always set `sourceRefs` on recorded answers — `index` flips entries to stale
-when those files change, and the next run re-asks only the stale questions.
+An empty `tasks/index.json` (`active: {}`) is **not** “ready” — `bootstrap` creates the task in the same call.
 
-Read the DAG config for wave order:
-`.ai-spector/.docflow/config/doc-types/srs/dag.json`
+### Forbidden before `task_approve_plan`
 
-Generate one section at a time following the DAG. After each section or wave:
+- Edit / Write under `docs/srs/`
+- `index`, `graph_merge`, spec extraction
+- Proceeding because briefing/plan was shown in chat without MCP task calls
 
-```bash
-npx ai-spector index
-```
+After plan approval: each DAG wave ends with `readiness_scan` → `workspace_check` → `task_record_wave`.
+Mark check done only after `snapshot.workspaceCheckAt`. Mark clarify done only after `snapshot.readinessReportShown`.
+Mark briefing done only after `snapshot.briefingConfirmedAt`. Set `snapshot.planPresentedAt` when plan table is shown.
+Mark complete only after `snapshot.extractOffered`.
 
-## After generation
+## Load at start
+1. Step 0 above (task_list → create or resume)
+2. [references/runbook.md](references/runbook.md)
+3. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — gated flow + task state
+4. Run `workspace_check` and `context_list({ docType: "srs" })` before planning
 
-```bash
-npx ai-spector graph impact --git --change content_change --json
-npx ai-spector index
-```
+## Load when needed
 
-Report impact table to user.
+| Situation | Load |
+|---|---|
+| Readiness assessment (before clarify) | [../ai-spector/references/context-readiness.md](../ai-spector/references/context-readiness.md) |
+| Clarify gaps / stale Q-ids | [../ai-spector/references/clarify.md](../ai-spector/references/clarify.md), [../ai-spector/references/context-store.md](../ai-spector/references/context-store.md) |
+| User adds chapters mid-session | [../ai-spector/references/incremental-continuation.md](../ai-spector/references/incremental-continuation.md) |
+| Briefing + plan gate | [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md) |
+| Output compliance (after each wave) | [../ai-spector/references/output-compliance.md](../ai-spector/references/output-compliance.md) |
+| After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| Writing §1 Introduction | [references/srs-context/introduction.md](references/srs-context/introduction.md) |
+| Writing §2 Overall Description | [references/srs-context/overall-description.md](references/srs-context/overall-description.md) |
+| Writing §3 UC list or UC-xx detail | [references/srs-context/use-case-detail.md](references/srs-context/use-case-detail.md) |
+| Writing §4 feature list or F-xx detail | [references/srs-context/feature-detail.md](references/srs-context/feature-detail.md) |
+| Writing §5 Data Requirements | [references/srs-context/data-requirements.md](references/srs-context/data-requirements.md) |
+| Writing §6 External Interfaces | [references/srs-context/external-interfaces.md](references/srs-context/external-interfaces.md) |
+| Writing §7 Quality Attributes | [references/srs-context/quality-attributes.md](references/srs-context/quality-attributes.md) |
+| Graph queries / merge | [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) |
+| CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
+| Run of 5+ files | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 
-## Checklist
+## On CLI failure
+Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
 
-```
-- [ ] workspace_check passed (no errors)
-- [ ] readiness_config called; FULL readiness table shown (ID + ISO + status); snapshot.readinessReportShown
-- [ ] All blocking gaps answered or accepted (context store)
-- [ ] task_update: check, clarify, briefing, plan steps marked done
-- [ ] Context briefing confirmed by user
-- [ ] Plan table includes criteria IDs + ISO refs; approved with explicit "yes"
-- [ ] graph validate passes before starting
-- [ ] Generated sections per DAG wave order
-- [ ] readiness_scan + readiness_output_checklist; output compliance table shown to user
-- [ ] Ran npx ai-spector index after each wave
-- [ ] Ran graph impact after finishing
-- [ ] Offered extracted key specs (spec_record); snapshot.extractOffered set
-- [ ] task_complete or task_pause offered at session end
-- [ ] Ran npx ai-spector index to refresh translation queue
-```
+"generate SRS", "write chapter 3", "feature list from graph", "all UC details" → this skill.
+
+"add feature", "I want to add …", "update auth section" → **ai-spector-resolve-task** (plan-first).

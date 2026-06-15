@@ -1,34 +1,30 @@
 ---
 name: ai-spector-resolve-comments
-description: "Processes review comments from the inbox. Use when the user asks to resolve comments, fix C-001, or address review feedback."
+description: >-
+  Resolves git-backed comment threads under comments/ (comments_resolve). NOT formal
+  document sign-off — use ai-spector-review and review_approve for that. Use when
+  the user asks to resolve comments, address feedback, open threads, C-001 picks,
+  or meta_data.json on SRS/basic design. Do not use for approve doc / review queue.
 ---
 
-# AI Spector — Resolve Comments
+# AI Spector — Resolve comments
+**Core:** [../ai-spector/skill.md](../ai-spector/skill.md)
 
-## When to use
+## Required reading
 
-- "resolve comments", "fix C-001", "address review feedback"
-
-## Workflow
-
-```
-1. Read comment inbox
-2. Plan edits per comment
-3. Apply edits to doc files
-4. Commit (doc + comments/ meta together)
-5. npx ai-spector graph impact + index
-```
-
-Read inbox:
-`.ai-spector/.docflow/extract/` or via `npx ai-spector comments inbox`
+[references/runbook.md](references/runbook.md) — follow phases in order.
 
 ## Checklist
 
 ```
-- [ ] Read inbox
-- [ ] Planned edits per comment
-- [ ] Applied edits
-- [ ] Committed doc + comments/ meta together
-- [ ] Ran graph impact
-- [ ] Ran index
+- [ ] git pull
+- [ ] comments inbox --json → show idePresentation.markdown only
+- [ ] user picks C-00N → comments plan
+- [ ] edit docs → commit doc + resolve meta (amend)
 ```
+
+## Natural language
+
+“resolve comments”, “address C-001”, “resolve thread C-012”, “comment inbox”, “feedback on srs/01” → this skill.
+
+**Not** formal document sign-off — “approve srs/01-overview”, “review queue”, “pending client approval” → `ai-spector-review`.

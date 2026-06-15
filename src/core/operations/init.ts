@@ -356,6 +356,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   process.stdout.write("  Add a language:       npx ai-spector lang add <code>\n");
   process.stdout.write("  Add Cursor support:   npx ai-spector sync-cursor\n");
   process.stdout.write("  Add Claude support:   npx ai-spector init --target claude --force\n");
+  process.stdout.write("  Refresh Claude skills: npx ai-spector sync-claude\n");
   process.stdout.write("  Install git hook:     npx ai-spector hooks install\n");
   process.stdout.write("  Re-audit setup:       npx ai-spector setup --check\n");
   process.stdout.write("\n");
@@ -371,9 +372,10 @@ export async function runInit(opts: InitOptions): Promise<void> {
   if (target === "claude" || target === "both") {
     process.stdout.write("Claude Code — next steps:\n");
     process.stdout.write("  1. Open this folder in Claude Code\n");
-    process.stdout.write("  2. Skills load automatically from .claude/skills/\n");
-    process.stdout.write("  3. Add files under docs/data-source/\n");
-    process.stdout.write('  4. Ask: "analyze data source"  →  "generate SRS"\n');
+    process.stdout.write("  2. Skills load from .claude/skills/ (see WORKFLOW.md + CLAUDE.md)\n");
+    process.stdout.write("  3. Rules in .claude/rules/ mirror Cursor routing gates\n");
+    process.stdout.write("  4. Add files under docs/data-source/\n");
+    process.stdout.write('  5. Ask: "analyze data source"  →  "generate SRS"\n');
     process.stdout.write("\n");
   }
 }

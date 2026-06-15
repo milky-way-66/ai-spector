@@ -32,6 +32,7 @@ import type {
   ReviewJob,
 } from "./types.js";
 import { reviewJobId } from "./types.js";
+import { normalizeApprovalRecord } from "./normalize.js";
 import { readdir } from "node:fs/promises";
 
 export interface MigrateReviewsResult {
@@ -83,8 +84,8 @@ export async function migrateLegacyReviews(projectRoot: string): Promise<Migrate
   const logicalPaths = await discoverLegacyApprovals(projectRoot);
   for (const logicalPath of logicalPaths) {
     const legacyApproval = join(projectRoot, legacyApprovalJsonPath(logicalPath));
-    const record = await readJson<ApprovalRecord>(legacyApproval);
-    record.version = 3;
+    const raw = await readJson<ApprovalRecord>(legacyApproval);
+    const record = normalizeApprovalRecord({ ...raw, logicalPath });
 
     // Migrate snapshot
     const legacySnap = join(projectRoot, legacyApprovalSnapshotPath(logicalPath));

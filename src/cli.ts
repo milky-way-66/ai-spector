@@ -72,6 +72,8 @@ import {
   formatTaskSimple,
   formatTaskUpdate,
 } from "./interfaces/cli/format/task.js";
+import { buildClaudeScaffoldFromCursor } from "./core/scaffold/claude-from-cursor.js";
+import { runSyncClaude } from "./core/operations/sync-claude.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
 import { runGraphQuery } from "./core/operations/graph-query.js";
 import { runGraphImpact } from "./core/operations/graph-impact.js";
@@ -93,6 +95,7 @@ import {
   formatCommentsResolve,
 } from "./interfaces/cli/format/comments.js";
 import {
+  formatSyncClaude,
   formatSyncCursor,
   formatHooksInstall,
   formatSetupAudit,
@@ -745,6 +748,29 @@ program
   .action(async (opts) => {
     const result = await runSyncCursor({ targetDir: resolve(opts.cwd ?? process.cwd()) });
     console.log(formatSyncCursor(result));
+  });
+
+program
+  .command("sync-claude")
+  .description("Refresh CLAUDE.md and .claude/skills from scaffold/claude/ (no full re-init)")
+  .option("-C, --cwd <path>", "Target directory", process.cwd())
+  .action(async (opts) => {
+    const result = await runSyncClaude({ targetDir: resolve(opts.cwd ?? process.cwd()) });
+    console.log(formatSyncClaude(result));
+  });
+
+program
+  .command("build-claude-scaffold")
+  .description("Regenerate scaffold/claude/ from scaffold/cursor/ (maintainers)")
+  .action(async () => {
+    const result = await buildClaudeScaffoldFromCursor();
+    console.log(
+      [
+        `Built Claude scaffold from ${result.cursorRoot}`,
+        `  → ${result.claudeRoot}`,
+        `  skills: ${result.skillCount}`,
+      ].join("\n"),
+    );
   });
 
 const hooks = program.command("hooks").description("Git hooks for local doc workflow checks");

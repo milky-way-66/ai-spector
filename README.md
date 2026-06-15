@@ -181,7 +181,7 @@ Full list: `npx ai-spector --help`.
 | Pre-commit hook missing | **“install ai-spector git hook”** |
 | Agent stuck on CLI error | `.cursor/skills/ai-spector/references/cli-failures.md` |
 
-After upgrading: reload MCP; in chat **“sync ai-spector cursor skills”** if scaffold skills changed.
+After upgrading: reload MCP; run **`npx ai-spector sync-cursor`** (Cursor) or **`npx ai-spector sync-claude`** (Claude Code) if scaffold skills changed.
 
 ---
 

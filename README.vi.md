@@ -118,9 +118,12 @@ Trong chat:
 ```text
 add Claude Code support to ai-spector
 sync ai-spector cursor skills
+sync ai-spector claude skills
 ```
 
-Sau khi nâng cấp ai-spector, gõ **"sync ai-spector cursor skills"** trong chat.
+Sau khi nâng cấp ai-spector:
+- **Cursor:** `npx ai-spector sync-cursor` hoặc gõ **"sync ai-spector cursor skills"** trong chat
+- **Claude Code:** `npx ai-spector sync-claude` hoặc gõ **"sync ai-spector claude skills"** trong chat
 
 ---
 

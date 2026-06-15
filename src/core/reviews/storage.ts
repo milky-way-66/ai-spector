@@ -25,6 +25,10 @@ import type {
 import { jobToQueueEntry, reviewJobId } from "./types.js";
 
 import { emptyClientTrack, emptyInternalTrack } from "./votes.js";
+import {
+  approvalNeedsNormalization,
+  normalizeApprovalRecord,
+} from "./normalize.js";
 
 const EMPTY_REGISTRY: RegistryFile = { version: 3, documents: {} };
 const EMPTY_FINGERPRINTS: FingerprintsFile = { version: 1, files: {} };
@@ -51,7 +55,19 @@ export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
   const paths = reviewQueuePaths(projectRoot);
   if (!(await pathExists(paths.registry))) return { ...EMPTY_REGISTRY };
   const raw = await readJson<Partial<RegistryFile>>(paths.registry).catch(() => EMPTY_REGISTRY);
-  return { version: 3, documents: raw.documents ?? {} };
+  const documents: Record<string, ApprovalRecord> = {};
+  let dirty = false;
+
+  for (const [logicalPath, record] of Object.entries(raw.documents ?? {})) {
+    if (approvalNeedsNormalization(record)) dirty = true;
+    documents[logicalPath] = normalizeApprovalRecord({ ...record, logicalPath });
+  }
+
+  const registry: RegistryFile = { version: 3, documents };
+  if (dirty) {
+    await saveRegistry(projectRoot, registry);
+  }
+  return registry;
 }
 
 export async function saveRegistry(projectRoot: string, registry: RegistryFile): Promise<void> {
@@ -107,7 +123,7 @@ export async function getApproval(
   const legacyPath = join(projectRoot, legacyApprovalJsonPath(logicalPath));
   if (await pathExists(legacyPath)) {
     const record = await readJson<ApprovalRecord>(legacyPath).catch(() => null);
-    if (record) return { ...record, version: 3 };
+    if (record) return normalizeApprovalRecord({ ...record, logicalPath, version: 3 });
   }
   return null;
 }
@@ -117,7 +133,7 @@ export async function saveApproval(
   record: ApprovalRecord,
 ): Promise<void> {
   const registry = await loadRegistry(projectRoot);
-  registry.documents[record.logicalPath] = { ...record, version: 3 };
+  registry.documents[record.logicalPath] = normalizeApprovalRecord(record);
   await saveRegistry(projectRoot, registry);
 }
 

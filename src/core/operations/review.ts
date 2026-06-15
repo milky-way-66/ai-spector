@@ -454,6 +454,8 @@ export async function runApprove(opts: ReviewApproveOptions): Promise<ReviewAppr
   if (quorum.met) {
     approval.internal.status = "approved";
     approval.internal.quorumMetAt = now;
+    approval.internal.closedAt = now;
+    approval.internal.closedBy = actor.by;
     await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
     movedToClientQueue = true;
   }
@@ -514,6 +516,8 @@ export async function runDecline(opts: ReviewDeclineOptions): Promise<ReviewDecl
   if (quorum.met) {
     approval.internal.status = "approved";
     approval.internal.quorumMetAt = now;
+    approval.internal.closedAt = now;
+    approval.internal.closedBy = actor.by;
     const { content } = await loadDocContentHash(projectRoot, lp);
     await finalizeInternalQuorum(projectRoot, lp, approval, content, contentHash, docPath, now, actor, quorum);
   }
