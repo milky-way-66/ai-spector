@@ -210,8 +210,6 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
       "README.md",
       "CLAUDE.md",
       "route-defaults.example.json",
-      "path-map.example.json",
-      "path-map.example-flat.json",
     ]) {
       const dest = join(prototypeRoot, name);
       const src = join(scaffoldProto, name);
@@ -408,7 +406,7 @@ export async function runPrototypeMap(opts: PrototypeMapOptions = {}): Promise<v
   const fromAbs = join(projectRoot, fromRel);
   if (!(await pathExists(fromAbs))) {
     throw new Error(
-      `Missing ${fromRel}. Copy prototype/path-map.example.json → prototype/path-map.json and fill deploy paths.`,
+      `Missing ${fromRel}. Create prototype/path-map.json — see docs/prototype/external-prototype-map.md.`,
     );
   }
 

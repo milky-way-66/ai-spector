@@ -100,7 +100,7 @@ Paths must match [nginx deploy layout](./nginx-poc.conf) when using the versione
 | `prototypePath` | No leading slash; no trailing slash on SPA routes |
 | `projectId`, `deployVersion` | Optional — omit when URLs have no those segments |
 
-Copy from `prototype/path-map.example.json` (versioned) or `path-map.example-flat.json` (no project/version) if missing.
+Use the versioned or flat POC templates above when creating `prototype/path-map.json`.
 
 **Direct URL mode** — prototype on another host:
 

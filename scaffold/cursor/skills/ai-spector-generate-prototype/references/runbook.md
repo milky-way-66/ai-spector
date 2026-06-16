@@ -328,7 +328,7 @@ Use when the prototype **already runs on the server** (another repo or legacy de
 1. Read Screen Index from `list-screens.md` (screen ids + display names).
 2. Ask the user for **URL layout**: `reviewHost` (required), optional `projectId` / `deployVersion`, or `directReviewUrl: true` for full URLs on another host.
 3. Ask for **deploy path per screen** — e.g. `dist/login`, `login` (flat POC), `src/home.html`, or `https://legacy.example.com/…`.
-4. Draft `prototype/path-map.json` with `"hosted": true` (see `path-map.example.json` or `path-map.example-flat.json`).
+4. Draft `prototype/path-map.json` with `"hosted": true` (see [external-prototype-map.md](../../../../docs/prototype/external-prototype-map.md)).
 5. Show confirmation table (screenId → prototypePath → **reviewUrl**). **Wait for explicit yes.**
 6. Write path-map if needed, then:
 
