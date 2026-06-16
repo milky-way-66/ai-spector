@@ -28,6 +28,13 @@ import {
   ReadinessProfilesListSchema,
   ReadinessCriteriaSchema,
   ReadinessOutputChecklistSchema,
+  AdoptScanSchema,
+  AdoptPlanSchema,
+  AdoptApplySchema,
+  AdoptBootstrapSchema,
+  AdoptValidateSchema,
+  AdoptSetupMarkSchema,
+  AdoptContextRecordSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -95,6 +102,15 @@ import {
   toolReadinessGetCriteria,
   toolReadinessOutputChecklist,
 } from "./tools/readiness.js";
+import {
+  toolAdoptScan,
+  toolAdoptPlan,
+  toolAdoptApply,
+  toolAdoptBootstrap,
+  toolAdoptValidate,
+  toolAdoptSetupMark,
+  toolAdoptContextRecord,
+} from "./tools/adopt.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
@@ -134,6 +150,7 @@ import { toolWorkflowStatus } from "./tools/workflow-status.js";
 import {
   APPROVE_TOOL_DESCRIPTIONS,
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
+  ADOPT_TOOL_DESCRIPTIONS,
 } from "./tool-descriptions.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
 
@@ -457,6 +474,92 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolReadinessOutputChecklist(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Project adopt ─────────────────────────────────────────────────────────────
+
+server.registerTool(
+  "adopt_scan",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_scan,
+    inputSchema: AdoptScanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptScan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_plan",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_plan,
+    inputSchema: AdoptPlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptPlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_apply",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_apply,
+    inputSchema: AdoptApplySchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptApply(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_bootstrap",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_bootstrap,
+    inputSchema: AdoptBootstrapSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptBootstrap(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_validate",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_validate,
+    inputSchema: AdoptValidateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptValidate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_setup_mark",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_setup_mark,
+    inputSchema: AdoptSetupMarkSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptSetupMark(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "adopt_context_record",
+  {
+    description: ADOPT_TOOL_DESCRIPTIONS.adopt_context_record,
+    inputSchema: AdoptContextRecordSchema.shape,
+  },
+  async (input) => {
+    const result = await toolAdoptContextRecord(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1042,6 +1145,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "template_list", "template_inspect", "template_validate", "template_setup_mark",
     "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
     "readiness_assess", "readiness_scan", "readiness_output_checklist",
+    "adopt_scan", "adopt_plan", "adopt_apply", "adopt_bootstrap", "adopt_validate", "adopt_setup_mark", "adopt_context_record",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_decline", "review_close", "review_withdraw", "review_reopen", "review_config", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",

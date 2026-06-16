@@ -152,6 +152,7 @@ import {
 } from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { registerReadinessCommand } from "./core/operations/readiness.js";
+import { registerAdoptCommand } from "./core/operations/adopt.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
   formatCocoindexSetup,
@@ -1538,6 +1539,7 @@ graph
   });
 
 registerTemplateCommand(program);
+registerAdoptCommand(program);
 registerReadinessCommand(program);
 
 const course = program

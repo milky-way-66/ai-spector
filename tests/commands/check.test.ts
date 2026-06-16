@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { createAdoptCompletedTasks } from "@/core/adopt/tasks.js";
 import { runCheck } from "@/core/operations/check.js";
 import {
   buildGeneratePlan,
@@ -173,6 +174,34 @@ describe("runCheck", () => {
       await writeFile(join(root, rel), "# Introduction\n", "utf8");
       const result = await runCheck({ root, paths: [rel] });
       expect(result.findings.some((f) => f.ruleId === "TASK-003")).toBe(false);
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  it("warns ADOPT-001 when flat SRS exists and migration not complete", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      await writeFile(join(root, "docs/srs/3-use-cases.md"), "# Use cases\n", "utf8");
+      const result = await runCheck({ root });
+      const adopt = result.findings.find((f) => f.ruleId === "ADOPT-001");
+      expect(adopt?.severity).toBe("warning");
+      expect(adopt?.message).toContain("npx ai-spector adopt scan");
+      expect(adopt?.fix).toBe("npx ai-spector adopt scan");
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  it("suppresses TASK-002 when adopt completed task exists in recent", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldMinimal(root);
+      await writeFile(
+        join(root, "docs/srs/en/1-introduction.md"),
+        "# Introduction\n",
+        "utf8",
+      );
+      await createAdoptCompletedTasks({ root });
+      const result = await runCheck({ root });
+      expect(result.findings.some((f) => f.ruleId === "TASK-002")).toBe(false);
       expect(result.ok).toBe(true);
     });
   });

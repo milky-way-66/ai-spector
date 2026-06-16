@@ -714,6 +714,48 @@ export const ReadinessOutputChecklistSchema = RootSchema.extend({
     .describe("Generated doc paths just written — agent scores checklist items semantically"),
 });
 
+// ── Project adopt ─────────────────────────────────────────────────────────────
+
+export const AdoptScanSchema = RootSchema;
+
+export const AdoptPlanSchema = RootSchema.extend({
+  approve: z
+    .boolean()
+    .optional()
+    .describe("Approve plan after generation (Gate 2); equivalent to adopt plan --approve"),
+  sync: z
+    .boolean()
+    .optional()
+    .describe("Refresh heuristics from scan (overwrite draft plan)"),
+  by: z.string().optional().describe("Approver identity when approve is true"),
+});
+
+export const AdoptApplySchema = RootSchema.extend({
+  dryRun: z.boolean().optional().describe("Preview moves without changing files"),
+});
+
+export const AdoptBootstrapSchema = RootSchema.extend({
+  skipAnalyze: z.boolean().optional().describe("Skip optional analyze step"),
+});
+
+export const AdoptValidateSchema = RootSchema.extend({
+  sync: z
+    .boolean()
+    .optional()
+    .describe("Update adopt-setup.json from plan status"),
+});
+
+export const AdoptSetupMarkSchema = RootSchema.extend({
+  itemId: z
+    .string()
+    .describe('Adopt setup item id, e.g. "plan.approved", "migration.complete"'),
+});
+
+export const AdoptContextRecordSchema = RootSchema.extend({
+  id: z.string().describe("Context question id from scan (e.g. lang-primary)"),
+  answer: z.string().describe("Human answer to store in adopt context.json"),
+});
+
 // ── Workflow routing ──────────────────────────────────────────────────────────
 
 export const WorkflowRouteSchema = RootSchema.extend({

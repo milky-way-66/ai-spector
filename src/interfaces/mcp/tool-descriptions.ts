@@ -147,3 +147,63 @@ export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
     "REQUIRES: review_status for the same logicalPath in this session.",
   ].join("\n"),
 } as const;
+
+export type ReviewWorkflowToolName = keyof typeof REVIEW_WORKFLOW_TOOL_DESCRIPTIONS;
+
+export const ADOPT_TOOL_DESCRIPTIONS = {
+  adopt_scan: [
+    "Classify existing project docs (SRS, basic design, prototype) and inventory files for migration.",
+    "",
+    "WHEN: Project was initialized but docs are in legacy/wrong layout — start of ai-spector-adopt Gate 1.",
+    "NOT WHEN: Full greenfield init (ai-spector init); template pack import (template_*); generate workflow (task_*).",
+    "Returns classification, inventory, and questionsForUser (blocking questions need adopt_context_record before plan).",
+  ].join("\n"),
+
+  adopt_plan: [
+    "Build migration plan from scan-result.json and adopt context answers; optionally approve (Gate 2).",
+    "",
+    "WHEN: Scan complete and blocking Gate 1 questions answered; user reviews mapping table.",
+    "NOT WHEN: User approved a generate/resolve TaskPlan (use task_approve_plan); document sign-off (review_approve).",
+    "Set approve:true only after explicit user yes on the mapping table — equivalent to adopt plan --approve.",
+    "Use sync:true to refresh heuristics after manual plan.json edits.",
+  ].join("\n"),
+
+  adopt_apply: [
+    "Execute approved migration plan — moves files (git mv when in a git repo).",
+    "",
+    "WHEN: Plan status is approved and user confirmed apply (Gate 3).",
+    "NOT WHEN: Plan is still draft — run adopt_plan with approve first.",
+    "Use dryRun:true to preview moves without changing files.",
+  ].join("\n"),
+
+  adopt_bootstrap: [
+    "Post-move bootstrap: config patches, index, optional analyze, prototype, review registry, adopt tasks.",
+    "",
+    "WHEN: After adopt_apply succeeded (plan status applied); user confirmed bootstrap (Gate 3).",
+    "NOT WHEN: Plan not yet applied; use adopt_apply first.",
+  ].join("\n"),
+
+  adopt_validate: [
+    "Readiness gate after migration — workspace check + graph validate; like template verify for adopt.",
+    "",
+    "WHEN: After adopt_bootstrap; before marking migration.complete.",
+    "Returns ready flag and blocking gaps. Use sync:true to refresh adopt-setup.json from plan status.",
+  ].join("\n"),
+
+  adopt_setup_mark: [
+    "Mark a human-confirmed adopt setup item done in adopt-setup.json.",
+    "",
+    "WHEN: User confirmed a gate item (plan.approved, apply.done, bootstrap.done, migration.complete).",
+    "NOT WHEN: Template pack setup (template_setup_mark); task plan approval (task_approve_plan).",
+    'itemId "migration.complete" requires adopt_validate ready:true.',
+  ].join("\n"),
+
+  adopt_context_record: [
+    "Record a Gate 1 answer in adopt context.json (e.g. lang-primary for flat SRS layout).",
+    "",
+    "WHEN: adopt_scan returned a blocking question; ask user one at a time, then record and re-scan.",
+    "NOT WHEN: Generation clarifications (context_record for doc types); comment threads.",
+  ].join("\n"),
+} as const;
+
+export type AdoptToolName = keyof typeof ADOPT_TOOL_DESCRIPTIONS;

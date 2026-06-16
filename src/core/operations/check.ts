@@ -22,6 +22,8 @@ import { resolveReadinessConfigStatus } from "../readiness/config.js";
 import { validateCustomPack } from "../template/pack-validate.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
+import { hasAdoptTaskCoverage } from "../adopt/tasks.js";
+import { loadAdoptSetup } from "../adopt/setup.js";
 import { listApprovedTaskGateViolations } from "./task-gates.js";
 import type { TaskState } from "./task.js";
 
@@ -85,20 +87,44 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "PACK-001", severity: "warning" },
   { id: "READY-001", severity: "warning" },
   { id: "READY-002", severity: "warning" },
+  { id: "ADOPT-001", severity: "warning" },
 ];
 
 interface TaskIndexForCheck {
   active?: Record<string, string>;
+  recent?: string[];
 }
 
 interface TaskForCheck {
   planApprovedAt?: string | null;
   status?: string;
   kind?: string;
+  workflow?: string;
   snapshot?: TaskState["snapshot"];
+  contextRefs?: TaskState["contextRefs"];
   steps?: TaskState["steps"];
   goal?: TaskState["goal"];
   plan?: TaskState["plan"];
+}
+
+async function hasFlatOrMisplacedSrsBdDocs(
+  root: string,
+  config: DocflowConfig,
+): Promise<boolean> {
+  const langCodes = config.languages.map((l) => l.code);
+  for (const docType of ["srs", "basic-design"] as const) {
+    const sourceRoot = `docs/${docType}`;
+    if (!(await pathExists(join(root, sourceRoot)))) continue;
+    const files = await discoverMarkdownFiles(root, sourceRoot);
+    for (const file of files) {
+      const name = file.relativePath.split("/").pop() ?? "";
+      if (name.toLowerCase() === "readme.md") continue;
+      if (isMisplacedBuiltinDocPath(file.relativePath, langCodes)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 async function loadTaskIndexForCheck(root: string): Promise<TaskIndexForCheck> {
@@ -175,6 +201,10 @@ async function checkGenerateTaskGate(
   path: string,
   activePack?: string,
 ): Promise<void> {
+  if (await hasAdoptTaskCoverage(root, slot)) {
+    return;
+  }
+
   const activeId = index.active?.[slot];
   if (!activeId) {
     addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing", undefined, activePack);
@@ -417,6 +447,22 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
             reportMisplaced(file.relativePath);
           }
         }
+      }
+    }
+  }
+
+  // ADOPT-001 — legacy SRS/BD layout may need adopt migration.
+  if (enabled(rules, "ADOPT-001") && configReadable && config) {
+    const setup = await loadAdoptSetup(root);
+    if (!setup.items["migration.complete"]?.done) {
+      const needsAdopt = await hasFlatOrMisplacedSrsBdDocs(root, config);
+      if (needsAdopt) {
+        add({
+          ruleId: "ADOPT-001",
+          severity: severityOf(rules, "ADOPT-001", "warning"),
+          message: "Existing docs may need adopt migration — run: npx ai-spector adopt scan",
+          fix: "npx ai-spector adopt scan",
+        });
       }
     }
   }

@@ -15,6 +15,7 @@
     { "id": "GRAPH-001", "severity": "warning" },
     { "id": "PACK-001", "severity": "warning" },
     { "id": "READY-001", "severity": "warning" },
-    { "id": "READY-002", "severity": "warning" }
+    { "id": "READY-002", "severity": "warning" },
+    { "id": "ADOPT-001", "severity": "warning" }
   ]
 }

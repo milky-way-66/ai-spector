@@ -104,6 +104,7 @@ Without MCP: follow priority table below and `_skill-router.md` (same rules, no 
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
 1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
 2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`**
+2.5. **Migrate / adopt existing docs** — migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt → **`ai-spector-adopt`**
 3. **Full generation** — generate SRS/chapter/DAG → **`ai-spector-generate-*`**
 
 ## Ambiguous "approve" or "looks good"
@@ -148,6 +149,14 @@ Triggers: add/update/change feature, section, or prototype.
 1. **`ai-spector-resolve-task`** — not generate-srs for single-feature adds
 2. Clarify → GoalSpec + TaskPlan → wait for **yes** → then edit / `graph_impact` / `resolve_task`
 3. **Forbidden before plan approval:** edits under `docs/` or `prototype/`, `graph_impact`, `index`
+
+## Adopt gate (migrate existing docs)
+
+Triggers: migrate project, adopt existing docs, wrong SRS folder, legacy layout, continue adopt.
+
+1. Activate **`ai-spector-adopt`** — read `references/runbook.md`
+2. Phases: `workspace_check` → `adopt_scan` (Gate 1) → `adopt_plan` → user **approve plan** (Gate 2) → `adopt_apply` → user confirms bootstrap (Gate 3) → `adopt_bootstrap` → `adopt_validate` → user **migration complete** → `adopt_setup_mark migration.complete` (Gate 4)
+3. **Forbidden:** `adopt_apply` before plan approved; `adopt_setup_mark migration.complete` while validate has blocking gaps; using `task_approve_plan` for adopt plan approval
 
 ## Generate vs incremental
 

@@ -165,6 +165,8 @@ export interface TaskSnapshot {
   planPresentedAt?: string;
   /** Set when extract stage offered spec_record to the user (extract gate before task_complete). */
   extractOffered?: boolean;
+  /** Set when docs were migrated via adopt workflow (not generate). */
+  adoptedAt?: string;
 }
 
 export interface TaskState {

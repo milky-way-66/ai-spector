@@ -252,6 +252,27 @@ export type {
   ResolvedReadinessCriteria,
 } from "../../core/operations/readiness.js";
 
+// Project adopt (migrate existing docs)
+export {
+  runAdoptScan,
+  runAdoptPlan,
+  approveAdoptPlan,
+  runAdoptApply,
+  runAdoptBootstrap,
+  validateAdopt,
+  markAdoptSetupItem,
+  recordAdoptAnswer,
+} from "../../core/operations/adopt.js";
+export type {
+  AdoptScanResult,
+  AdoptPlan,
+  AdoptSetupState,
+  AdoptQuestion,
+  AdoptInventoryItem,
+  AdoptValidationResult,
+  AdoptValidationGap,
+} from "../../core/operations/adopt.js";
+
 // Workspace check
 export { runCheck } from "../../core/operations/check.js";
 export type {
