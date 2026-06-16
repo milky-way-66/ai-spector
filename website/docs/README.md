@@ -14,7 +14,7 @@ Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS
 
 ## Structure
 
-**7 sections, 15 lessons** — each lesson ~10–15 min, one coherent task.
+**7 sections, 16 lessons** — each lesson ~10–15 min, one coherent task.
 
 | Section | Lessons | Covers |
 |---------|---------|--------|
@@ -22,8 +22,8 @@ Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS
 | [Chat basics](02-chat-basics/README.md) | 3 | Routing, workspace, incremental changes |
 | [Graph & sources](03-graph/README.md) | 2 | Analyze, validate, index |
 | [Generate documents](04-generate/README.md) | 2 | SRS (gated) + basic design |
-| [Design & prototype](05-prototype/README.md) | 2 | Translations, UI mockup |
-| [Review & changes](06-review/README.md) | 2 | Sign-off + comment threads |
+| [Design & prototype](05-prototype/README.md) | 3 | Translations, UI mockup, hosted URL map |
+| [Review & changes](06-review/README.md) | 2 | Quorum sign-off + comment threads |
 | [Advanced](07-advanced/README.md) | 2 | Templates, search, editors |
 
 ---

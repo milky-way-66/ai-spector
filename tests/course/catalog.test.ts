@@ -32,10 +32,10 @@ describe("course catalog", () => {
     vi.restoreAllMocks();
   });
 
-  it("loads composed lessons (15 + section READMEs)", async () => {
+  it("loads composed lessons (16 + section READMEs)", async () => {
     const pages = await loadCoursePages(configLoad.courseBundleRoot());
     const lessons = pages.filter((p) => /\/\d{2}-.+\.md$/.test(p.relPath));
-    expect(lessons.length).toBe(15);
+    expect(lessons.length).toBe(16);
     expect(pages.some((p) => p.slug === "04-generate/01-generate-srs")).toBe(true);
     expect(pages.some((p) => p.slug === "06-review/01-document-review")).toBe(true);
     expect(pages.some((p) => p.slug === "02-chat-basics/03-incremental-changes")).toBe(true);
@@ -102,7 +102,7 @@ describe("course render", () => {
       activePage: page,
     });
     expect(html).toContain("Chat basics");
-    expect(html).toContain("Lesson 3 of 15");
+    expect(html).toContain("Lesson 3 of 16");
     expect(html).toContain("Try in chat");
     expect(html).toContain("has-toc");
   });

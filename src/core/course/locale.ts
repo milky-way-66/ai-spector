@@ -27,7 +27,7 @@ export interface CourseUiStrings {
 const UI: CourseUiStrings = {
   course: "Course",
   courseTitle: "AI Spector Course",
-  brandSub: "15 lessons · ~10 min each",
+  brandSub: "16 lessons · ~10 min each",
   searchPlaceholder: "Search lessons…",
   searchAria: "Search lessons",
   onThisPage: "On this page",
@@ -59,7 +59,8 @@ const CHAT_HINTS: Record<string, string> = {
   "02-chat-basics": "Try in chat: <code>help me approve</code> or <code>active tasks</code>",
   "03-graph": "Try in chat: <code>analyze my data source</code> or <code>validate the graph</code>",
   "04-generate": "Try in chat: <code>generate the SRS</code> or <code>generate basic design</code>",
-  "05-prototype": "Try in chat: <code>generate prototype</code> or <code>help me pick a theme</code>",
+  "05-prototype":
+    "Try in chat: <code>generate prototype</code>, <code>help me pick a theme</code>, or <code>map external prototype URLs</code>",
   "06-review": "Try in chat: <code>review documents</code> or <code>resolve comments</code>",
   "07-advanced": "Try in chat: <code>set up template pack</code> or <code>find mentions of rate limiting</code>",
   default:
