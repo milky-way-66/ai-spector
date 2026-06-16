@@ -13,7 +13,7 @@
 3. **Link** each row using `reviewUrl` when present (recommended). Otherwise build the URL from top-level fields (section 2).
 4. **Label** with `displayName`.
 5. **Disable or badge** rows where `route_exists === false` (“Prototype not ready”).
-6. **Default screen:** find the row where `screenId === defaultScreenId` and use it for the landing / “Open prototype” button.
+6. **Default / landing screen:** use top-level **`defaultScreen`** — open `defaultScreen.reviewUrl` (or resolve href from `defaultScreen` like any row). `defaultScreenId` is the same screen’s id for reference.
 
 You do **not** need `path-map.json`, `manifest.json`, or nginx config to build the UI — only `screen-map.json`.
 
@@ -30,6 +30,8 @@ interface ScreenMap {
   deployVersion?: string;
   directReviewUrl?: boolean;
   defaultScreenId?: string;
+  /** Landing screen — use for primary CTA / “Open prototype” button. */
+  defaultScreen?: Screen;
   buildMode: "static" | "spa";
   screens: Screen[];
 }
@@ -66,6 +68,16 @@ function resolvePrototypeHref(map: ScreenMap, screen: Screen): string | null {
     .map((s) => encodeURIComponent(s!.trim()));
   segments.push(path);
   return `${base}/${segments.join("/")}`;
+}
+
+/** Primary prototype entry — use on landing page and “Open prototype” CTA. */
+function resolveDefaultPrototypeHref(map: ScreenMap): string | null {
+  if (map.defaultScreen) {
+    return resolvePrototypeHref(map, map.defaultScreen);
+  }
+  if (!map.defaultScreenId) return null;
+  const screen = map.screens.find((s) => s.screenId === map.defaultScreenId);
+  return screen ? resolvePrototypeHref(map, screen) : null;
 }
 ```
 
@@ -118,7 +130,8 @@ function resolvePrototypeHref(map, screen) {
 | Screen name | `displayName` | Primary label |
 | Open prototype | `resolvePrototypeHref(…)` | `<a href="…" target="_blank" rel="noopener">` |
 | Pending state | `route_exists === false` | Disable link; show badge “Pending” |
-| Default / home | `defaultScreenId` | Highlight or use for main CTA |
+| Default / home | `defaultScreen` | **Primary CTA** — use `defaultScreen.reviewUrl` or `resolvePrototypeHref(map, defaultScreen)` |
+| Default id (reference) | `defaultScreenId` | Same as `defaultScreen.screenId` |
 
 ### Optional UI
 
@@ -164,7 +177,8 @@ Some SPA screens use demo IDs in the path, e.g. `dist/orders/demo-001`. Use `rev
 | `buildMode` | `"static"` \| `"spa"` | Optional | How prototype opens |
 | `themeName` | string | Display only | Theme name |
 | `generatedAt` | string (ISO) | Optional | When map was generated |
-| `defaultScreenId` | string? | **Yes** | Landing screen id |
+| `defaultScreenId` | string? | Reference | Id of landing screen; equals `defaultScreen.screenId` |
+| **`defaultScreen`** | object? | **Yes** | **Landing screen** — full row with `reviewUrl`, `displayName`, etc. |
 | `buildDest` | string? | Rarely | SPA output dir, usually `"dist"` |
 | `prototypeBypassAuth` | boolean? | No | Dev/router hint only |
 | `reviewHost` | string? | Fallback URLs | e.g. `https://poc.dev.kaopiz.com` |
@@ -202,6 +216,14 @@ Fields not listed above may appear in future schema versions — ignore unknown 
   "projectId": "acme-crm",
   "deployVersion": "1.4",
   "defaultScreenId": "login",
+  "defaultScreen": {
+    "screenId": "login",
+    "displayName": "Login",
+    "screenDocPath": "basic-design/screens/login.md",
+    "prototypePath": "dist/login",
+    "route_exists": true,
+    "reviewUrl": "https://poc.dev.kaopiz.com/acme-crm/1.4/dist/login"
+  },
   "generatedAt": "2026-06-16T00:00:00.000Z",
   "screens": [
     {
@@ -232,6 +254,14 @@ Fields not listed above may appear in future schema versions — ignore unknown 
   "buildMode": "spa",
   "reviewHost": "https://poc.dev.kaopiz.com",
   "defaultScreenId": "login",
+  "defaultScreen": {
+    "screenId": "login",
+    "displayName": "Login",
+    "screenDocPath": "basic-design/screens/login.md",
+    "prototypePath": "login",
+    "route_exists": true,
+    "reviewUrl": "https://poc.dev.kaopiz.com/login"
+  },
   "screens": [
     {
       "screenId": "login",
@@ -255,6 +285,18 @@ Fields not listed above may appear in future schema versions — ignore unknown 
   "projectId": "acme-crm",
   "deployVersion": "1.4",
   "defaultScreenId": "login",
+  "defaultScreen": {
+    "screenId": "login",
+    "displayName": "Login",
+    "screenDocPath": "basic-design/screens/login.md",
+    "screenDocs": {
+      "en": "docs/basic-design/en/screens/login.md",
+      "vi": "docs/basic-design/vi/screens/login.md"
+    },
+    "prototypePath": "src/login.html",
+    "route_exists": true,
+    "reviewUrl": "https://poc.dev.kaopiz.com/acme-crm/1.4/src/login.html"
+  },
   "screens": [
     {
       "screenId": "login",
@@ -280,6 +322,14 @@ Fields not listed above may appear in future schema versions — ignore unknown 
   "buildMode": "spa",
   "directReviewUrl": true,
   "defaultScreenId": "login",
+  "defaultScreen": {
+    "screenId": "login",
+    "displayName": "Login",
+    "screenDocPath": "basic-design/screens/login.md",
+    "prototypePath": "https://legacy.example.com/prototypes/login",
+    "route_exists": true,
+    "reviewUrl": "https://legacy.example.com/prototypes/login"
+  },
   "screens": [
     {
       "screenId": "login",
@@ -316,7 +366,7 @@ Show in the list but disable the link until ops regenerates the map with `route_
 - [ ] Render `screens[]` sorted by `displayName` (or your product order)
 - [ ] Use `reviewUrl` when present; fallback only when missing
 - [ ] Respect `route_exists === false` (pending badge, no link)
-- [ ] Default CTA from `defaultScreenId`
+- [ ] Landing / “Open prototype” CTA from **`defaultScreen`** (or `resolveDefaultPrototypeHref()`)
 - [ ] Open prototype links in new tab; rely on browser basic auth
 - [ ] Optional: link `screenDocs[userLocale]` to design docs
 - [ ] Do not rewrite SPA paths or strip `.html` on static paths
@@ -324,6 +374,9 @@ Show in the list but disable the link until ops regenerates the map with `route_
 ---
 
 ## 6. FAQ
+
+**How do I get the landing / default prototype URL?**  
+Use **`defaultScreen.reviewUrl`** when present, or `resolveDefaultPrototypeHref(map)` (section 1). `defaultScreen` is the same row as in `screens[]` — you do not need to search by id unless `defaultScreen` is missing (legacy file).
 
 **Is there a `link` field?**  
 No. Use `reviewUrl`, or build from `reviewHost` + optional segments + `prototypePath`.

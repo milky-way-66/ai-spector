@@ -67,6 +67,10 @@ describe("buildScreenMapFromPathMap", () => {
       );
       expect(result.screenMap.screens.every((s) => s.route_exists)).toBe(true);
       expect(result.screenMap.defaultScreenId).toBe("login");
+      expect(result.screenMap.defaultScreen?.screenId).toBe("login");
+      expect(result.screenMap.defaultScreen?.reviewUrl).toBe(
+        "https://poc.dev.kaopiz.com/demo/2.0/dist/login",
+      );
     });
   });
 

@@ -364,14 +364,11 @@ export async function runPrototypeManifest(
   if (built.screenMap.buildMode === "spa" && built.screenMap.buildDest) {
     console.log(`  buildDest: ${built.screenMap.buildDest}`);
   }
-  if (built.screenMap.defaultScreenId) {
-    const entry = built.screenMap.screens.find(
-      (s) => s.screenId === built.screenMap.defaultScreenId,
-    );
-    const entryLabel = entry
-      ? `${entry.displayName} (${entry.prototypePath})`
-      : built.screenMap.defaultScreenId;
-    console.log(`  default screen: ${entryLabel}`);
+  if (built.screenMap.defaultScreen) {
+    const entry = built.screenMap.defaultScreen;
+    console.log(`  default screen: ${entry.displayName} (${entry.prototypePath})`);
+  } else if (built.screenMap.defaultScreenId) {
+    console.log(`  default screen: ${built.screenMap.defaultScreenId}`);
   }
   if (built.screenMap.screens.some((s) => s.reviewUrl)) {
     console.log("");
@@ -464,7 +461,10 @@ export async function runPrototypeMap(opts: PrototypeMapOptions = {}): Promise<v
     console.log("  hosted: true — route_exists defaults to true (prototype on server, not in repo)");
   }
   console.log(`  buildMode: ${built.screenMap.buildMode}`);
-  if (built.screenMap.defaultScreenId) {
+  if (built.screenMap.defaultScreen) {
+    const entry = built.screenMap.defaultScreen;
+    console.log(`  default screen: ${entry.displayName} (${entry.prototypePath})`);
+  } else if (built.screenMap.defaultScreenId) {
     console.log(`  default screen: ${built.screenMap.defaultScreenId}`);
   }
   console.log("");

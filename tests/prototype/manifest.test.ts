@@ -54,6 +54,8 @@ describe("buildPrototypeManifest", () => {
       expect(result.screenMap.screens[0]!.prototypePath).toBe("src/home.html");
       expect(result.screenMap.screens[0]!.route_exists).toBe(true);
       expect(result.screenMap.defaultScreenId).toBe("home");
+      expect(result.screenMap.defaultScreen?.screenId).toBe("home");
+      expect(result.screenMap.defaultScreen?.reviewUrl).toBeUndefined();
     });
   });
 
@@ -72,6 +74,8 @@ describe("buildPrototypeManifest", () => {
       });
 
       expect(result.screenMap.defaultScreenId).toBe("home");
+      expect(result.screenMap.defaultScreen?.screenId).toBe("home");
+      expect(result.screenMap.defaultScreen?.reviewUrl).toBeUndefined();
     });
   });
 
@@ -89,6 +93,7 @@ describe("buildPrototypeManifest", () => {
       });
 
       expect(result.screenMap.defaultScreenId).toBe("login");
+      expect(result.screenMap.defaultScreen?.screenId).toBe("login");
     });
   });
 
@@ -108,6 +113,7 @@ describe("buildPrototypeManifest", () => {
       });
 
       expect(result.screenMap.defaultScreenId).toBe("login");
+      expect(result.screenMap.defaultScreen?.screenId).toBe("login");
     });
   });
 });

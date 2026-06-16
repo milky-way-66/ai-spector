@@ -9,6 +9,7 @@ import type {
 import { parseScreenIndexFromList } from "./parse-screen-index.js";
 import {
   assertDefaultScreenInPool,
+  finalizeScreenMap,
   resolveDefaultScreenId,
 } from "./resolve-default-screen.js";
 import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
@@ -208,19 +209,21 @@ export async function buildPrototypeManifest(
     previousBypassAuth ??
     (buildMode === "spa" ? opts.config.prototypeBypassAuth ?? true : undefined);
 
-  const screenMap = enrichScreenMapWithReviewUrls(
-    {
-      schemaVersion: 1,
-      themeName: opts.themeName,
-      buildMode,
-      generatedAt,
-      ...(defaultScreenId ? { defaultScreenId } : {}),
-      ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
-      ...(deployBuildDest ? { buildDest: deployBuildDest } : {}),
-      ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
-      screens: mapScreens,
-    },
-    [opts.reviewUrl, previousReview, opts.config],
+  const screenMap = finalizeScreenMap(
+    enrichScreenMapWithReviewUrls(
+      {
+        schemaVersion: 1,
+        themeName: opts.themeName,
+        buildMode,
+        generatedAt,
+        ...(defaultScreenId ? { defaultScreenId } : {}),
+        ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
+        ...(deployBuildDest ? { buildDest: deployBuildDest } : {}),
+        ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
+        screens: mapScreens,
+      },
+      [opts.reviewUrl, previousReview, opts.config],
+    ),
   );
 
   return {

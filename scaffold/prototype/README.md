@@ -69,14 +69,13 @@ Each `screen-map.json` screen entry:
   "screenId": "login",
   "displayName": "Login",
   "screenDocPath": "basic-design/screens/login.md",
-  "screenDocs": {
-    "en": "docs/basic-design/en/screens/login.md",
-    "vi": "docs/basic-design/vi/screens/login.md"
-  },
   "prototypePath": "dist/login",
-  "route_exists": true
+  "route_exists": true,
+  "reviewUrl": "https://poc.dev.kaopiz.com/acme-crm/1.4/dist/login"
 }
 ```
+
+Top-level **`defaultScreen`** is the landing entry (same shape). Web team uses `defaultScreen.reviewUrl` for the primary CTA.
 
 Static HTML uses a deploy-relative file path (e.g. `src/login.html`). Route patterns and param defaults live in `route-defaults.json`.
 

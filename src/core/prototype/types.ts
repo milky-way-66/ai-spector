@@ -142,8 +142,13 @@ export interface PrototypeScreenMap {
   themeName: string;
   buildMode: PrototypeBuildMode;
   generatedAt: string;
-  /** Entry screen at generation time (from screens with HTML when any exist). */
+  /** Entry screen id — matches `defaultScreen.screenId`. */
   defaultScreenId?: string;
+  /**
+   * Denormalized default entry screen for the web UI (landing / primary CTA).
+   * Same object as the matching row in `screens[]`; includes `reviewUrl` when set.
+   */
+  defaultScreen?: PrototypeScreenMapEntry;
   /**
    * SPA only: when true, generated router must not redirect unauthenticated users to login
    * when opening a deep-linked route (prototype review mode).

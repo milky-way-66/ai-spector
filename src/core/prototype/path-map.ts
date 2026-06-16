@@ -10,7 +10,7 @@ import { parseScreenIndexFromList } from "./parse-screen-index.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { pathExists, readJson } from "../util/fs.js";
-import { resolveDefaultScreenId } from "./resolve-default-screen.js";
+import { finalizeScreenMap, resolveDefaultScreenId } from "./resolve-default-screen.js";
 import {
   enrichScreenMapWithReviewUrls,
   type ReviewUrlContext,
@@ -179,22 +179,20 @@ export async function buildScreenMapFromPathMap(
     opts.pathMap.prototypeBypassAuth ??
     (buildMode === "spa" ? opts.config.prototypeBypassAuth ?? true : undefined);
 
-  const screenMap = enrichScreenMapWithReviewUrls(
-    {
-      schemaVersion: 1,
-      themeName: opts.themeName?.trim() || opts.config.defaultTheme || "external",
-      buildMode,
-      generatedAt: new Date().toISOString(),
-      ...(defaultScreenId ? { defaultScreenId } : {}),
-      ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
-      ...(opts.pathMap.buildDest ? { buildDest: opts.pathMap.buildDest } : {}),
-      screens: mapScreens,
-    },
-    [
-      opts.reviewUrl,
-      opts.pathMap,
-      opts.config,
-    ],
+  const screenMap = finalizeScreenMap(
+    enrichScreenMapWithReviewUrls(
+      {
+        schemaVersion: 1,
+        themeName: opts.themeName?.trim() || opts.config.defaultTheme || "external",
+        buildMode,
+        generatedAt: new Date().toISOString(),
+        ...(defaultScreenId ? { defaultScreenId } : {}),
+        ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
+        ...(opts.pathMap.buildDest ? { buildDest: opts.pathMap.buildDest } : {}),
+        screens: mapScreens,
+      },
+      [opts.reviewUrl, opts.pathMap, opts.config],
+    ),
   );
 
   return { screenMap, warnings, missingScreenIds };

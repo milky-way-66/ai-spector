@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveDefaultScreenId } from "@/core/prototype/resolve-default-screen.js";
+import { finalizeScreenMap, resolveDefaultScreenId } from "@/core/prototype/resolve-default-screen.js";
 import type { PrototypeScreenMapEntry } from "@/core/prototype/types.js";
 
 function entry(
@@ -36,5 +36,30 @@ describe("resolveDefaultScreenId", () => {
     const pending = screens.map((s) => ({ ...s, route_exists: false }));
     expect(resolveDefaultScreenId(pending, { previous: "login" })).toBe("login");
     expect(resolveDefaultScreenId(pending)).toBe("home");
+  });
+});
+
+describe("finalizeScreenMap", () => {
+  it("attaches defaultScreen with reviewUrl for web landing", () => {
+    const screens = [
+      entry({
+        screenId: "login",
+        displayName: "Login",
+        route_exists: true,
+        reviewUrl: "https://poc.dev.kaopiz.com/login",
+      }),
+      entry({ screenId: "home", displayName: "Home", route_exists: true }),
+    ];
+    const result = finalizeScreenMap({
+      schemaVersion: 1,
+      themeName: "stripe",
+      buildMode: "spa",
+      generatedAt: "2020-01-01T00:00:00.000Z",
+      defaultScreenId: "login",
+      screens,
+    });
+    expect(result.defaultScreenId).toBe("login");
+    expect(result.defaultScreen?.screenId).toBe("login");
+    expect(result.defaultScreen?.reviewUrl).toBe("https://poc.dev.kaopiz.com/login");
   });
 });

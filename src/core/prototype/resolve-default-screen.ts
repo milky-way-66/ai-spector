@@ -1,4 +1,4 @@
-import type { PrototypeScreenMapEntry } from "./types.js";
+import type { PrototypeScreenMapEntry, PrototypeScreenMap } from "./types.js";
 
 export interface ResolveDefaultScreenOptions {
   /** CLI or persisted config override. */
@@ -34,6 +34,26 @@ export function resolveDefaultScreenId(
     pick(opts.configDefault) ??
     pool[0]!.screenId
   );
+}
+
+/** Attach `defaultScreenId` and denormalized `defaultScreen` for web UI consumption. */
+export function finalizeScreenMap(screenMap: PrototypeScreenMap): PrototypeScreenMap {
+  if (screenMap.screens.length === 0) {
+    return screenMap;
+  }
+
+  const defaultScreenId =
+    screenMap.defaultScreenId ?? resolveDefaultScreenId(screenMap.screens);
+  if (!defaultScreenId) {
+    return screenMap;
+  }
+
+  const defaultScreen = screenMap.screens.find((s) => s.screenId === defaultScreenId);
+  if (!defaultScreen) {
+    return { ...screenMap, defaultScreenId };
+  }
+
+  return { ...screenMap, defaultScreenId, defaultScreen };
 }
 
 export function formatDefaultScreenChoices(
