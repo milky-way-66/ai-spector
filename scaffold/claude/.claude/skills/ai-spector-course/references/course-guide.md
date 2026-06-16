@@ -28,6 +28,7 @@ If port 4177 is busy, the command may fail — retry or suggest the user close t
 | Basic design | `04-generate/02-basic-design` | `generate basic design` |
 | Translations / multi-language | `05-prototype/01-translations` | `add language vi` |
 | HTML / SPA prototype | `05-prototype/02-build-prototype` | `generate prototype` |
+| Hosted prototype URL map | `05-prototype/03-external-prototype-map` | `map external prototype URLs` |
 | Document sign-off / review | `06-review/01-document-review` | `review documents` |
 | Comment threads | `06-review/02-comment-threads` | `resolve comments` |
 | Custom templates | `07-advanced/01-custom-templates` | `set up template pack` |
@@ -42,8 +43,8 @@ If port 4177 is busy, the command may fail — retry or suggest the user close t
 | Chat basics | `02-chat-basics` | how chat works, workspace & tasks, incremental changes |
 | Graph & sources | `03-graph` | sources & analyze, validate & explore |
 | Generate documents | `04-generate` | SRS, basic design |
-| Design & prototype | `05-prototype` | translations, build prototype |
-| Review & changes | `06-review` | document review, comment threads |
+| Design & prototype | `05-prototype` | translations, build prototype, external URL map |
+| Review & changes | `06-review` | quorum document review, comment threads |
 | Advanced | `07-advanced` | custom templates, search & editors |
 
 ## Agent response template
