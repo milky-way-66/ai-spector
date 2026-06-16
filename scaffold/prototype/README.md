@@ -80,4 +80,20 @@ Each `screen-map.json` screen entry:
 
 Static HTML uses a deploy-relative file path (e.g. `src/login.html`). Route patterns and param defaults live in `route-defaults.json`.
 
-**Web team:** see `prototype/deploy/url-mapping-handover.md` and `prototype/deploy/nginx-poc.conf`.
+**Already hosted elsewhere:** fill `prototype/path-map.json` with server paths, confirm with user, then `npx ai-spector prototype map` — see [external-prototype-map.md](deploy/external-prototype-map.md).
+
+**Web team:** [url-mapping-handover.md](deploy/url-mapping-handover.md) · [nginx-poc.conf](deploy/nginx-poc.conf)
+
+### Review URL (web team)
+
+Each screen may include a pre-built **`reviewUrl`**. Use it directly as the link `href`.
+
+If `reviewUrl` is missing, build:
+
+```text
+{reviewHost}/{projectId?}/{deployVersion?}/{prototypePath}
+```
+
+`projectId` and `deployVersion` are optional. Example flat URL: `https://poc.dev.kaopiz.com/login`.
+
+Full implementation guide: [url-mapping-handover.md](deploy/url-mapping-handover.md)

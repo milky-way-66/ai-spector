@@ -31,10 +31,64 @@ import {
 import { openInBrowser } from "../util/open-browser.js";
 import { rewriteBuildAssetRefs } from "../prototype/rewrite-build-assets.js";
 import {
+  buildScreenMapFromPathMap,
+  loadPathMapFile,
+  PATH_MAP_FILE,
+} from "../prototype/path-map.js";
+import {
   formatPrototypeIssues,
   validatePrototype,
 } from "../prototype/validate.js";
-import type { PrototypeConfig } from "../prototype/types.js";
+import type { PrototypeConfig, PrototypeScreenMap } from "../prototype/types.js";
+import type { ReviewUrlContext } from "../prototype/review-url.js";
+
+function reviewUrlOpts(opts: {
+  reviewHost?: string;
+  projectId?: string;
+  deployVersion?: string;
+  directReviewUrl?: boolean;
+  /** CLI alias for deployVersion */
+  version?: string;
+}): ReviewUrlContext | undefined {
+  const deployVersion = opts.deployVersion?.trim() || opts.version?.trim();
+  if (
+    !opts.reviewHost?.trim() &&
+    !opts.projectId?.trim() &&
+    !deployVersion &&
+    opts.directReviewUrl === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    reviewHost: opts.reviewHost?.trim(),
+    projectId: opts.projectId?.trim(),
+    deployVersion,
+    directReviewUrl: opts.directReviewUrl,
+  };
+}
+
+function logScreenMapEntries(screenMap: PrototypeScreenMap): void {
+  if (screenMap.directReviewUrl) {
+    console.log("  directReviewUrl: true — reviewUrl copied from prototypePath (full URL)");
+  } else if (screenMap.reviewHost) {
+    const parts = [screenMap.projectId, screenMap.deployVersion].filter(Boolean).join("/");
+    console.log(`  review base: ${screenMap.reviewHost}${parts ? `/${parts}` : ""}`);
+  } else {
+    console.log("Review URL pattern:");
+    console.log("  https://{host}/{projectId?}/{deployVersion?}/{prototypePath}");
+    console.log("  Set reviewHost in path-map.json or prototype config (projectId and deployVersion optional).");
+  }
+  console.log("");
+  console.log("Screen mapping:");
+  for (const s of screenMap.screens) {
+    const status = s.route_exists ? "ready" : "pending";
+    if (s.reviewUrl) {
+      console.log(`  ${s.displayName.padEnd(24)} ${s.reviewUrl} (${status})`);
+    } else {
+      console.log(`  ${s.screenDocPath.padEnd(40)} → ${s.prototypePath} (${status})`);
+    }
+  }
+}
 
 export interface PrototypeThemesOptions {
   json?: boolean;
@@ -152,7 +206,13 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
 
   const scaffoldProto = join(scaffoldBundleRoot(), "prototype");
   if (await pathExists(scaffoldProto)) {
-    for (const name of ["README.md", "CLAUDE.md", "route-defaults.example.json"]) {
+    for (const name of [
+      "README.md",
+      "CLAUDE.md",
+      "route-defaults.example.json",
+      "path-map.example.json",
+      "path-map.example-flat.json",
+    ]) {
       const dest = join(prototypeRoot, name);
       const src = join(scaffoldProto, name);
       if (await pathExists(src) && !(await pathExists(dest))) {
@@ -229,6 +289,10 @@ export interface PrototypeManifestOptions {
   root?: string;
   theme?: string;
   defaultScreen?: string;
+  reviewHost?: string;
+  projectId?: string;
+  version?: string;
+  directReviewUrl?: boolean;
   dryRun?: boolean;
   json?: boolean;
   /** Treat validation warnings as errors (same as validate --strict). */
@@ -256,6 +320,7 @@ export async function runPrototypeManifest(
     config: configAfterDefault,
     themeName: theme,
     defaultScreenId: defaultScreen,
+    reviewUrl: reviewUrlOpts(opts),
   });
 
   if (opts.dryRun) {
@@ -308,6 +373,10 @@ export async function runPrototypeManifest(
       : built.screenMap.defaultScreenId;
     console.log(`  default screen: ${entryLabel}`);
   }
+  if (built.screenMap.screens.some((s) => s.reviewUrl)) {
+    console.log("");
+    logScreenMapEntries(built.screenMap);
+  }
 
   if (opts.strict) {
     const issues = await validatePrototype({
@@ -323,6 +392,90 @@ export async function runPrototypeManifest(
     if (errors.length > 0) {
       throw new Error(`Prototype manifest validation failed (${errors.length} error(s))`);
     }
+  }
+}
+
+export interface PrototypeMapOptions {
+  root?: string;
+  /** Input file (default: prototype/path-map.json). */
+  from?: string;
+  theme?: string;
+  reviewHost?: string;
+  projectId?: string;
+  version?: string;
+  directReviewUrl?: boolean;
+  dryRun?: boolean;
+  strict?: boolean;
+  json?: boolean;
+}
+
+export async function runPrototypeMap(opts: PrototypeMapOptions = {}): Promise<void> {
+  const { projectRoot, config } = await loadPrototypeConfig(opts.root);
+  const fromRel =
+    opts.from?.trim() || join(config.prototypeDir, PATH_MAP_FILE).replace(/\\/g, "/");
+  const fromAbs = join(projectRoot, fromRel);
+  if (!(await pathExists(fromAbs))) {
+    throw new Error(
+      `Missing ${fromRel}. Copy prototype/path-map.example.json → prototype/path-map.json and fill deploy paths.`,
+    );
+  }
+
+  const pathMap = await loadPathMapFile(projectRoot, fromRel);
+  if (!pathMap) {
+    throw new Error(`Could not read ${fromRel}`);
+  }
+
+  const theme =
+    opts.theme?.trim() ||
+    (await readPrototypeThemeName(projectRoot, config)) ||
+    config.defaultTheme;
+
+  const built = await buildScreenMapFromPathMap({
+    projectRoot,
+    config,
+    pathMap,
+    themeName: theme,
+    strict: opts.strict,
+    reviewUrl: reviewUrlOpts(opts),
+  });
+
+  const screenMapPath = join(projectRoot, config.prototypeDir, "screen-map.json");
+
+  if (opts.dryRun || opts.json) {
+    const payload = {
+      screenMapPath,
+      source: fromRel,
+      hosted: pathMap.hosted ?? false,
+      screenCount: built.screenMap.screens.length,
+      missingScreenIds: built.missingScreenIds,
+      warnings: built.warnings,
+      screenMap: built.screenMap,
+    };
+    console.log(JSON.stringify(payload, null, 2));
+    if (opts.dryRun) {
+      return;
+    }
+  }
+
+  await writeJson(screenMapPath, built.screenMap);
+
+  console.log(`Wrote ${screenMapPath} from ${fromRel} (${built.screenMap.screens.length} screen(s))`);
+  if (pathMap.hosted) {
+    console.log("  hosted: true — route_exists defaults to true (prototype on server, not in repo)");
+  }
+  console.log(`  buildMode: ${built.screenMap.buildMode}`);
+  if (built.screenMap.defaultScreenId) {
+    console.log(`  default screen: ${built.screenMap.defaultScreenId}`);
+  }
+  console.log("");
+  logScreenMapEntries(built.screenMap);
+  for (const warning of built.warnings) {
+    console.warn(`Warning: ${warning}`);
+  }
+  if (built.missingScreenIds.length > 0 && !opts.strict) {
+    console.warn(
+      `Skipped ${built.missingScreenIds.length} screen(s) without prototypePath in ${PATH_MAP_FILE}`,
+    );
   }
 }
 

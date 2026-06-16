@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "buildMode": "spa",
+  "hosted": true,
+  "reviewHost": "https://poc.dev.kaopiz.com",
+  "projectId": "acme-crm",
+  "deployVersion": "1.4",
+  "defaultScreenId": "login",
+  "prototypeBypassAuth": true,
+  "buildDest": "dist",
+  "screens": {
+    "login": {
+      "prototypePath": "dist/login"
+    },
+    "order-detail": {
+      "prototypePath": "dist/orders/demo-001"
+    }
+  }
+}

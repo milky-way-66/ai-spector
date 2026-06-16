@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "buildMode": "spa",
+  "hosted": true,
+  "reviewHost": "https://poc.dev.kaopiz.com",
+  "defaultScreenId": "login",
+  "screens": {
+    "login": {
+      "prototypePath": "login"
+    }
+  }
+}

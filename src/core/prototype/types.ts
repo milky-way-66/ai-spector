@@ -68,6 +68,17 @@ export interface PrototypeConfig {
    * to any screen without forcing login first. Set false to test real auth flows.
    */
   prototypeBypassAuth?: boolean;
+  /** POC host for review links, e.g. `https://poc.dev.kaopiz.com`. */
+  reviewHost?: string;
+  /** Deploy project slug in review URLs (optional). */
+  projectId?: string;
+  /** Deploy version slug in review URLs (optional; omit when URL has no version segment). */
+  deployVersion?: string;
+  /**
+   * When true, each screen's `reviewUrl` equals `prototypePath` (full URL).
+   * Skips `{reviewHost}/{projectId}/{deployVersion}/…` construction.
+   */
+  directReviewUrl?: boolean;
 }
 
 export interface ScreenIndexRow {
@@ -122,6 +133,8 @@ export interface PrototypeScreenMapEntry {
   prototypePath: string;
   /** Whether the screen route (SPA) or HTML file (static) exists in the workspace. */
   route_exists: boolean;
+  /** Full review URL — constructed from host/project/version, or copied from prototypePath when directReviewUrl is true. */
+  reviewUrl?: string;
 }
 
 export interface PrototypeScreenMap {
@@ -146,5 +159,16 @@ export interface PrototypeScreenMap {
    * Informational — documents where buildDest was synced from.
    */
   buildSrc?: string;
+  /** POC host for review links, e.g. `https://poc.dev.kaopiz.com`. */
+  reviewHost?: string;
+  /** Deploy project slug in review URLs. */
+  projectId?: string;
+  /** Deploy version slug in review URLs. */
+  deployVersion?: string;
+  /**
+   * When true, each screen's `reviewUrl` equals `prototypePath` (full URL).
+   * Skips `{reviewHost}/{projectId}/{deployVersion}/…` construction.
+   */
+  directReviewUrl?: boolean;
   screens: PrototypeScreenMapEntry[];
 }

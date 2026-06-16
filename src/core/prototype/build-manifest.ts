@@ -16,6 +16,10 @@ import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
 import { toDeployBasePath, toDeployPrototypePath, toSpaScreenPrototypePath } from "./deploy-path.js";
+import {
+  enrichScreenMapWithReviewUrls,
+  type ReviewUrlContext,
+} from "./review-url.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -32,6 +36,7 @@ export interface BuildPrototypeManifestOptions {
   themeName: string;
   /** Override default entry screen (Screen Index id). */
   defaultScreenId?: string;
+  reviewUrl?: ReviewUrlContext;
 }
 
 export interface BuildPrototypeManifestResult {
@@ -107,10 +112,17 @@ export async function buildPrototypeManifest(
   );
   let previousDefault: string | undefined;
   let previousBypassAuth: boolean | undefined;
+  let previousReview: ReviewUrlContext | undefined;
   if (await pathExists(screenMapPath)) {
     const prior = await readJson<PrototypeScreenMap>(screenMapPath);
     previousDefault = prior.defaultScreenId;
     previousBypassAuth = prior.prototypeBypassAuth;
+    previousReview = {
+      reviewHost: prior.reviewHost,
+      projectId: prior.projectId,
+      deployVersion: prior.deployVersion,
+      directReviewUrl: prior.directReviewUrl,
+    };
   }
 
   // For SPA mode, htmlExists is shared across all screens — check once.
@@ -196,17 +208,20 @@ export async function buildPrototypeManifest(
     previousBypassAuth ??
     (buildMode === "spa" ? opts.config.prototypeBypassAuth ?? true : undefined);
 
-  const screenMap: PrototypeScreenMap = {
-    schemaVersion: 1,
-    themeName: opts.themeName,
-    buildMode,
-    generatedAt,
-    ...(defaultScreenId ? { defaultScreenId } : {}),
-    ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
-    ...(deployBuildDest ? { buildDest: deployBuildDest } : {}),
-    ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
-    screens: mapScreens,
-  };
+  const screenMap = enrichScreenMapWithReviewUrls(
+    {
+      schemaVersion: 1,
+      themeName: opts.themeName,
+      buildMode,
+      generatedAt,
+      ...(defaultScreenId ? { defaultScreenId } : {}),
+      ...(prototypeBypassAuth !== undefined ? { prototypeBypassAuth } : {}),
+      ...(deployBuildDest ? { buildDest: deployBuildDest } : {}),
+      ...(buildMode === "spa" && opts.config.buildSrc ? { buildSrc: opts.config.buildSrc } : {}),
+      screens: mapScreens,
+    },
+    [opts.reviewUrl, previousReview, opts.config],
+  );
 
   return {
     manifest,

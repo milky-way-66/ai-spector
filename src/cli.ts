@@ -163,6 +163,7 @@ import {
 import {
   runPrototypeInstallPreviews,
   runPrototypeManifest,
+  runPrototypeMap,
   runPrototypePreview,
   runPrototypeSetup,
   runPrototypeStack,
@@ -1466,6 +1467,13 @@ prototype
     "--default-screen <id>",
     "Default entry screen (Screen Index id); picks from screens with HTML when omitted",
   )
+  .option("--review-host <url>", "POC host for reviewUrl fields (e.g. https://poc.dev.kaopiz.com)")
+  .option("--project <id>", "Deploy project id for reviewUrl fields")
+  .option("--version <slug>", "Deploy version for reviewUrl fields")
+  .option(
+    "--direct-review-url",
+    "Set reviewUrl = prototypePath (full URL per screen; no host/project/version construction)",
+  )
   .option("--dry-run", "Print planned manifest without writing")
   .option("--strict", "Treat warnings as errors (e.g. missing screen docs)")
   .option("--json", "JSON output")
@@ -1474,6 +1482,42 @@ prototype
       root: projectRootOpt(cmd),
       theme: opts.theme,
       defaultScreen: opts.defaultScreen,
+      reviewHost: opts.reviewHost,
+      projectId: opts.project,
+      version: opts.version,
+      directReviewUrl: opts.directReviewUrl,
+      dryRun: opts.dryRun,
+      strict: opts.strict,
+      json: opts.json,
+    });
+  });
+
+prototype
+  .command("map")
+  .description(
+    "Build prototype/screen-map.json from basic-design Screen Index + prototype/path-map.json (hosted / external prototypes)",
+  )
+  .option("--from <path>", "Path map input (default: prototype/path-map.json)")
+  .option("--theme <name>", "Theme name stored in screen-map.json")
+  .option("--review-host <url>", "POC host for reviewUrl fields (overrides path-map.json)")
+  .option("--project <id>", "Deploy project id for reviewUrl fields")
+  .option("--version <slug>", "Deploy version for reviewUrl fields")
+  .option(
+    "--direct-review-url",
+    "Set reviewUrl = prototypePath (full URL per screen; no host/project/version construction)",
+  )
+  .option("--dry-run", "Print planned screen-map without writing")
+  .option("--strict", "Require prototypePath for every Screen Index row")
+  .option("--json", "JSON output (writes unless --dry-run)")
+  .action(async (opts, cmd) => {
+    await runPrototypeMap({
+      root: projectRootOpt(cmd),
+      from: opts.from,
+      theme: opts.theme,
+      reviewHost: opts.reviewHost,
+      projectId: opts.project,
+      version: opts.version,
+      directReviewUrl: opts.directReviewUrl,
       dryRun: opts.dryRun,
       strict: opts.strict,
       json: opts.json,

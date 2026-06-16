@@ -317,6 +317,29 @@ npx ai-spector prototype validate --strict
 
 If the agent is asked to "sync prototype", "copy build output", or "update screen map after build", run `prototype sync` (with any flags the user specified) and report the URI mapping table.
 
+## External / already-hosted prototype (mapping only)
+
+Use when the prototype **already runs on the server** (another repo or legacy deploy) and the user only needs **`screen-map.json`** for the web UI.
+
+**Not** `prototype manifest` or `prototype sync` — no files required in this repo.
+
+### Workflow
+
+1. Read Screen Index from `list-screens.md` (screen ids + display names).
+2. Ask the user for **URL layout**: `reviewHost` (required), optional `projectId` / `deployVersion`, or `directReviewUrl: true` for full URLs on another host.
+3. Ask for **deploy path per screen** — e.g. `dist/login`, `login` (flat POC), `src/home.html`, or `https://legacy.example.com/…`.
+4. Draft `prototype/path-map.json` with `"hosted": true` (see `path-map.example.json` or `path-map.example-flat.json`).
+5. Show confirmation table (screenId → prototypePath → **reviewUrl**). **Wait for explicit yes.**
+6. Write path-map if needed, then:
+
+```bash
+npx ai-spector prototype map --strict
+```
+
+7. User can edit `path-map.json` and re-run `prototype map` to refresh `screen-map.json`.
+
+Full runbook: [prototype/deploy/external-prototype-map.md](../../../../prototype/deploy/external-prototype-map.md) (in ai-spector repo: [docs/prototype/external-prototype-map.md](../../../../docs/prototype/external-prototype-map.md)).
+
 ## Theme selection
 
 | User says | Action |
