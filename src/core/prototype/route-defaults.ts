@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import type { PrototypeScreenMapEntry } from "./types.js";
 import { buildPreviewUri, routePatternHasUnresolvedParams } from "./preview-uri.js";
 import { pathExists, readJson } from "../util/fs.js";
 
@@ -18,7 +17,7 @@ export interface PrototypeRouteDefaultsFile {
   schemaVersion: 1;
   /**
    * When true (default for prototypes), SPA router guards must not redirect unauthenticated
-   * users away from deep-linked routes — reviewers open any screen-map previewUri directly.
+   * users away from deep-linked routes — reviewers open any screen via prototypePath directly.
    */
   prototypeBypassAuth?: boolean;
   screens: Record<string, PrototypeRouteDefaultsScreen>;
@@ -51,10 +50,6 @@ export interface ApplyRouteDefaultsInput {
   buildMode: "static" | "spa";
   baseUri: string;
   fromFile?: PrototypeRouteDefaultsScreen;
-  fromPriorEntry?: Pick<
-    PrototypeScreenMapEntry,
-    "routePattern" | "routeParams" | "queryParams" | "requiresAuth" | "uri"
-  >;
 }
 
 export interface ApplyRouteDefaultsResult {
@@ -67,14 +62,10 @@ export interface ApplyRouteDefaultsResult {
 }
 
 /**
- * Merge route defaults (file → prior screen-map) and compute previewUri for SPA screens.
+ * Merge route defaults from route-defaults.json and compute SPA route paths for prototypePath.
  */
 export function applyRouteDefaults(input: ApplyRouteDefaultsInput): ApplyRouteDefaultsResult {
   const merged: PrototypeRouteDefaultsScreen = {
-    routePattern: input.fromPriorEntry?.routePattern ?? input.fromPriorEntry?.uri,
-    routeParams: input.fromPriorEntry?.routeParams,
-    queryParams: input.fromPriorEntry?.queryParams,
-    requiresAuth: input.fromPriorEntry?.requiresAuth,
     ...input.fromFile,
   };
 
@@ -82,7 +73,7 @@ export function applyRouteDefaults(input: ApplyRouteDefaultsInput): ApplyRouteDe
     return { uri: input.baseUri };
   }
 
-  const routePattern = merged.routePattern?.trim() || input.fromPriorEntry?.uri || input.baseUri;
+  const routePattern = merged.routePattern?.trim() || input.baseUri;
   const routeParams = merged.routeParams;
   const queryParams = merged.queryParams;
   const requiresAuth = merged.requiresAuth;

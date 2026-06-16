@@ -103,8 +103,6 @@ export interface PrototypeManifest {
 export interface PrototypeScreenMapEntry {
   screenId: string;
   displayName: string;
-  /** Primary screen design doc — full repo-relative path (primary language). */
-  screenDoc: string;
   /**
    * Language-neutral screen design doc path (no `docs/` prefix, no language segment).
    * e.g. "basic-design/screens/login.md"
@@ -116,36 +114,14 @@ export interface PrototypeScreenMapEntry {
    * e.g. { en: "docs/basic-design/en/screens/login.md", vi: "docs/basic-design/vi/screens/login.md" }
    */
   screenDocs?: Record<string, string>;
-  prototypeStem: string;
   /**
-   * Path to open this screen in the deployed prototype.
-   * - static mode: repo-relative HTML file, e.g. "prototype/src/<stem>.html"
-   * - spa mode: deploy-relative route directory, e.g. "dist/schedules/new/" (trailing slash)
+   * Path to open this screen in the prototype.
+   * - static mode: repo-relative HTML file, e.g. "prototype/src/login.html"
+   * - spa mode: deploy-relative route directory, e.g. "dist/login/"
    */
   prototypePath: string;
-  /**
-   * Route path for this screen.
-   * - static mode: "/src/<stem>.html"
-   * - spa mode: "/<slug>" or a pattern with params (e.g. "/orders/:id")
-   */
-  uri: string;
-  htmlExists: boolean;
-  /**
-   * SPA only: explicit router pattern when it differs from the slug-only path.
-   * Usually the same as `uri`; set when the app uses param segments.
-   */
-  routePattern?: string;
-  /** SPA only: default path-param values for prototype deep links (e.g. `{ "id": "demo-001" }`). */
-  routeParams?: Record<string, string>;
-  /** SPA only: default query params appended to `previewUri`. */
-  queryParams?: Record<string, string>;
-  /**
-   * SPA only: concrete URL to open this screen in a browser (params substituted, query appended).
-   * Hosting and reviewers use this instead of typing IDs manually.
-   */
-  previewUri?: string;
-  /** SPA only: production would require login; prototype still allows direct `previewUri` access. */
-  requiresAuth?: boolean;
+  /** Whether the screen route (SPA) or HTML file (static) exists in the workspace. */
+  route_exists: boolean;
 }
 
 export interface PrototypeScreenMap {

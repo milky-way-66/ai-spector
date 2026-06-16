@@ -11,7 +11,7 @@ export interface ResolveDefaultScreenOptions {
 
 /**
  * Pick the default entry screen from the current manifest state.
- * Prefers screens that already have HTML; falls back to the full index order.
+ * Prefers screens that already have a route/file; falls back to the full index order.
  */
 export function resolveDefaultScreenId(
   screens: PrototypeScreenMapEntry[],
@@ -21,8 +21,8 @@ export function resolveDefaultScreenId(
     return undefined;
   }
 
-  const withHtml = screens.filter((s) => s.htmlExists);
-  const pool = withHtml.length > 0 ? withHtml : screens;
+  const withRoutes = screens.filter((s) => s.route_exists);
+  const pool = withRoutes.length > 0 ? withRoutes : screens;
   const poolIds = new Set(pool.map((s) => s.screenId));
 
   const pick = (id?: string): string | undefined =>
@@ -39,8 +39,8 @@ export function resolveDefaultScreenId(
 export function formatDefaultScreenChoices(
   screens: PrototypeScreenMapEntry[],
 ): string {
-  const withHtml = screens.filter((s) => s.htmlExists);
-  const pool = withHtml.length > 0 ? withHtml : screens;
+  const withRoutes = screens.filter((s) => s.route_exists);
+  const pool = withRoutes.length > 0 ? withRoutes : screens;
   return pool.map((s) => `${s.screenId} (${s.displayName})`).join(", ");
 }
 
@@ -48,8 +48,8 @@ export function assertDefaultScreenInPool(
   screenId: string,
   screens: PrototypeScreenMapEntry[],
 ): void {
-  const withHtml = screens.filter((s) => s.htmlExists);
-  const pool = withHtml.length > 0 ? withHtml : screens;
+  const withRoutes = screens.filter((s) => s.route_exists);
+  const pool = withRoutes.length > 0 ? withRoutes : screens;
   const poolIds = new Set(pool.map((s) => s.screenId));
   if (!poolIds.has(screenId.trim())) {
     throw new Error(

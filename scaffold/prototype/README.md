@@ -59,7 +59,23 @@ See `prototype/manifest.json` and `prototype/screen-map.json` (rebuilt by `npx a
 When `buildMode` is `spa`:
 
 1. **Direct routes** — `screen-map.json` sets `prototypeBypassAuth: true` so the app router must not force login before showing a deep-linked screen.
-2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Open each screen via its `previewUri` in `screen-map.json`.
-3. **Zip / static hosting** — deep links like `dist/trip/.../print` are not real files. After `prototype sync` or `prototype manifest`, the CLI copies `dist/index.html` into each route folder (e.g. `dist/trip/.../print/index.html`) so uploaded zips work without nginx config.
+2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Each screen's `prototypePath` in `screen-map.json` is the deploy path to open (e.g. `dist/orders/demo-001/`).
+3. **Deep links** — nginx serves SPA routes with `try_files`, so only the root `dist/index.html` is required.
 
-Starter patterns: `prototype/spa/vue/` (router guard helper).
+Each `screen-map.json` screen entry:
+
+```json
+{
+  "screenId": "login",
+  "displayName": "Login",
+  "screenDocPath": "basic-design/screens/login.md",
+  "screenDocs": {
+    "en": "docs/basic-design/en/screens/login.md",
+    "vi": "docs/basic-design/vi/screens/login.md"
+  },
+  "prototypePath": "dist/login/",
+  "route_exists": true
+}
+```
+
+Static HTML uses a repo-relative file path for `prototypePath` (e.g. `prototype/src/login.html`). Route patterns and param defaults live in `route-defaults.json`, not in `screen-map.json`.

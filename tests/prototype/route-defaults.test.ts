@@ -28,7 +28,7 @@ const LIST = `## 4. Screen Index
 `;
 
 describe("route defaults in screen-map", () => {
-  it("merges route-defaults.json and computes previewUri", async () => {
+  it("merges route-defaults.json into prototypePath", async () => {
     await withTempProject(async (root) => {
       await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
       await writeFile(join(root, "docs/basic-design/list-screens.md"), LIST, "utf8");
@@ -56,45 +56,22 @@ describe("route defaults in screen-map", () => {
       });
 
       const detail = result.screenMap.screens.find((s) => s.screenId === "order-detail");
-      expect(detail?.uri).toBe("/orders/:id");
-      expect(detail?.previewUri).toBe("/orders/demo-001");
       expect(detail?.prototypePath).toBe("dist/orders/demo-001/");
-      expect(detail?.requiresAuth).toBe(true);
+      expect(detail?.route_exists).toBe(false);
       expect(result.screenMap.buildDest).toBe("dist");
       expect(result.screenMap.prototypeBypassAuth).toBe(true);
+
+      const login = result.screenMap.screens.find((s) => s.screenId === "login");
+      expect(login?.prototypePath).toBe("dist/login/");
     });
   });
 
-  it("preserves route defaults from prior screen-map on rebuild", async () => {
+  it("marks route_exists when SPA build entrypoint exists", async () => {
     await withTempProject(async (root) => {
       await mkdir(join(root, "docs/basic-design/screens"), { recursive: true });
       await writeFile(join(root, "docs/basic-design/list-screens.md"), LIST, "utf8");
-      await mkdir(join(root, "prototype"), { recursive: true });
-      await writeFile(
-        join(root, "prototype/screen-map.json"),
-        JSON.stringify({
-          schemaVersion: 1,
-          themeName: "stripe",
-          buildMode: "spa",
-          generatedAt: "2020-01-01T00:00:00.000Z",
-          prototypeBypassAuth: true,
-          screens: [
-            {
-              screenId: "order-detail",
-              displayName: "Order Detail",
-              screenDoc: "docs/basic-design/screens/order-detail.md",
-              screenDocPath: "basic-design/screens/order-detail.md",
-              prototypeStem: "order-detail",
-              prototypePath: "prototype/src/order-detail.html",
-              uri: "/orders/:id",
-              routeParams: { id: "kept-99" },
-              previewUri: "/orders/kept-99",
-              htmlExists: false,
-            },
-          ],
-        }),
-        "utf8",
-      );
+      await mkdir(join(root, "prototype/dist"), { recursive: true });
+      await writeFile(join(root, "prototype/dist/index.html"), "<!DOCTYPE html>", "utf8");
 
       const result = await buildPrototypeManifest({
         projectRoot: root,
@@ -102,9 +79,7 @@ describe("route defaults in screen-map", () => {
         themeName: "stripe",
       });
 
-      const detail = result.screenMap.screens.find((s) => s.screenId === "order-detail");
-      expect(detail?.routeParams).toEqual({ id: "kept-99" });
-      expect(detail?.previewUri).toBe("/orders/kept-99");
+      expect(result.screenMap.screens.every((s) => s.route_exists)).toBe(true);
     });
   });
 });

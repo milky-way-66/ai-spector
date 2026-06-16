@@ -19,7 +19,7 @@ For runs of 5+ screens, follow [context-management.md](../../ai-spector/referenc
 - **Theme must be confirmed before generating** — if no theme is stored, run the [theme picker](theme-picker.md): recommend 3 fits from project context, open previews, wait for user choice. Once chosen (stored in `prototype/theme.json` or config), never ask again.
 - **One file per screen** — file type determined by `techStack`; filename must match `prototypeStem` in `prototype/manifest.json`
 - **Stack drives buildMode** — `html` → `static`; all framework stacks → `spa` (unless `buildMode` is explicitly overridden in config)
-- **`screen-map.json` uses URI, not file path** — each screen entry has a `uri` field for navigation; file path is still present as `prototypePath` for validation only
+- **`screen-map.json` is minimal** — each screen has `screenId`, `displayName`, `screenDocPath`, optional `screenDocs`, `prototypePath`, and `route_exists`. Route patterns and param defaults live in `route-defaults.json`.
 
 ## Build modes
 
@@ -238,6 +238,8 @@ This will:
 1. Copy everything from `buildSrc` → `buildDest`
 2. Rewrite root-absolute asset paths in HTML to `./`-relative paths (e.g. `/assets/app.js` → `./assets/app.js`)
 3. Regenerate `prototype/manifest.json` and `prototype/screen-map.json` with correct `uri` values
+
+SPA deep links (`previewUri` paths) are served by nginx `try_files` — only the root `dist/index.html` is needed; do not copy `index.html` into per-route folders.
 
 **Override source/dest without editing config:**
 

@@ -5,7 +5,6 @@ import type {
   PrototypeConfig,
   PrototypeManifest,
   PrototypeScreenMap,
-  PrototypeScreenMapEntry,
 } from "./types.js";
 import { parseScreenIndexFromList } from "./parse-screen-index.js";
 import {
@@ -108,14 +107,10 @@ export async function buildPrototypeManifest(
   );
   let previousDefault: string | undefined;
   let previousBypassAuth: boolean | undefined;
-  const previousScreensById = new Map<string, PrototypeScreenMapEntry>();
   if (await pathExists(screenMapPath)) {
     const prior = await readJson<PrototypeScreenMap>(screenMapPath);
     previousDefault = prior.defaultScreenId;
     previousBypassAuth = prior.prototypeBypassAuth;
-    for (const s of prior.screens ?? []) {
-      previousScreensById.set(s.screenId, s);
-    }
   }
 
   // For SPA mode, htmlExists is shared across all screens — check once.
@@ -138,14 +133,12 @@ export async function buildPrototypeManifest(
       }
       const baseUri =
         buildMode === "spa" ? `/${r.slug}` : `/src/${r.prototypeStem}.html`;
-      const prior = previousScreensById.get(r.screenId);
       const routeApplied = applyRouteDefaults({
         screenId: r.screenId,
         slug: r.slug,
         buildMode,
         baseUri,
         fromFile: routeDefaults?.screens[r.screenId],
-        fromPriorEntry: prior,
       });
 
       const effectivePath =
@@ -173,13 +166,10 @@ export async function buildPrototypeManifest(
       return {
         screenId: r.screenId,
         displayName: r.displayName,
-        screenDoc: r.screenDoc,
         screenDocPath,
         ...(screenDocs ? { screenDocs } : {}),
-        prototypeStem: r.prototypeStem,
         prototypePath: effectivePath,
-        htmlExists: exists,
-        ...routeApplied,
+        route_exists: exists,
       };
     }),
   );

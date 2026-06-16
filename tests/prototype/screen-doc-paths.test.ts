@@ -97,12 +97,12 @@ describe("screen-map screen doc paths", () => {
       });
 
       const login = result.screenMap.screens[0]!;
-      expect(login.screenDoc).toBe("docs/basic-design/en/screens/login.md");
       expect(login.screenDocPath).toBe("basic-design/screens/login.md");
       expect(login.screenDocs).toEqual({
         en: "docs/basic-design/en/screens/login.md",
         vi: "docs/basic-design/vi/screens/login.md",
       });
+      expect(login.prototypePath).toBe("dist/login/");
       expect(result.manifest.screens[0]!.screenDoc).toBe(
         "docs/basic-design/en/screens/login.md",
       );
@@ -132,8 +132,8 @@ describe("screen-map screen doc paths", () => {
         themeName: "stripe",
       });
 
-      expect(result.screenMap.screens[0]!.screenDoc).toBe(
-        "docs/basic-design/screens/customers-roll-up.md",
+      expect(result.screenMap.screens[0]!.screenDocPath).toBe(
+        "basic-design/screens/customers-roll-up.md",
       );
       expect(result.warnings.some((w) => w.includes("customers-roll-up.md"))).toBe(true);
     });
