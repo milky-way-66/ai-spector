@@ -79,9 +79,9 @@ Top-level **`defaultScreen`** is the landing entry (same shape). Web team uses `
 
 Static HTML uses a deploy-relative file path (e.g. `src/login.html`). Route patterns and param defaults live in `route-defaults.json`.
 
-**Already hosted elsewhere:** fill `prototype/path-map.json` with server paths, confirm with user, then `npx ai-spector prototype map` — see [external-prototype-map.md](deploy/external-prototype-map.md).
+**Already hosted elsewhere:** fill `prototype/path-map.json` with server paths, confirm with user, then `npx ai-spector prototype map` — see [external-prototype-map.md](https://github.com/milky-way-66/ai-spector/blob/main/docs/prototype/external-prototype-map.md).
 
-**Web team:** [url-mapping-handover.md](deploy/url-mapping-handover.md) · [nginx-poc.conf](deploy/nginx-poc.conf)
+**Web team:** [url-mapping-handover.md](https://github.com/milky-way-66/ai-spector/blob/main/docs/prototype/url-mapping-handover.md) · [nginx-poc.conf](https://github.com/milky-way-66/ai-spector/blob/main/docs/prototype/nginx-poc.conf)
 
 ### Review URL (web team)
 
@@ -95,4 +95,4 @@ If `reviewUrl` is missing, build:
 
 `projectId` and `deployVersion` are optional. Example flat URL: `https://poc.dev.kaopiz.com/login`.
 
-Full implementation guide: [url-mapping-handover.md](deploy/url-mapping-handover.md)
+Full implementation guide: [url-mapping-handover.md](https://github.com/milky-way-66/ai-spector/blob/main/docs/prototype/url-mapping-handover.md)

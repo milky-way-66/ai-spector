@@ -338,7 +338,7 @@ npx ai-spector prototype map --strict
 
 7. User can edit `path-map.json` and re-run `prototype map` to refresh `screen-map.json`.
 
-Full runbook: [prototype/deploy/external-prototype-map.md](../../../../prototype/deploy/external-prototype-map.md) (in ai-spector repo: [docs/prototype/external-prototype-map.md](../../../../docs/prototype/external-prototype-map.md)).
+Full runbook: [docs/prototype/external-prototype-map.md](../../../../docs/prototype/external-prototype-map.md).
 
 ## Theme selection
 

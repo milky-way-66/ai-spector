@@ -219,11 +219,6 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
         await copyTree(src, dest);
       }
     }
-    const deployScaffold = join(scaffoldProto, "deploy");
-    const deployDest = join(prototypeRoot, "deploy");
-    if (await pathExists(deployScaffold) && !(await pathExists(deployDest))) {
-      await copyTree(deployScaffold, deployDest);
-    }
   }
 
   const designPath = join(prototypeRoot, "DESIGN.md");
