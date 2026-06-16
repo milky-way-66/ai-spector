@@ -102,7 +102,7 @@ describe("screen-map screen doc paths", () => {
         en: "docs/basic-design/en/screens/login.md",
         vi: "docs/basic-design/vi/screens/login.md",
       });
-      expect(login.prototypePath).toBe("dist/login/");
+      expect(login.prototypePath).toBe("dist/login");
       expect(result.manifest.screens[0]!.screenDoc).toBe(
         "docs/basic-design/en/screens/login.md",
       );

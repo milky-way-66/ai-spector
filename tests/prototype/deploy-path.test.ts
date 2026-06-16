@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { toDeployBasePath, toSpaScreenPrototypePath } from "@/core/prototype/deploy-path.js";
+import {
+  toDeployBasePath,
+  toDeployPrototypePath,
+  toSpaScreenPrototypePath,
+} from "@/core/prototype/deploy-path.js";
 
 describe("deploy path helpers", () => {
+  it("strips prototype dir prefix from repo paths", () => {
+    expect(toDeployPrototypePath("prototype/src/login.html")).toBe("src/login.html");
+    expect(toDeployPrototypePath("prototype/dist/index.html")).toBe("dist/index.html");
+  });
+
   it("strips prototype dir prefix from repo buildDest", () => {
     expect(toDeployBasePath("prototype/dist")).toBe("dist");
     expect(toDeployBasePath("prototype/dist", "prototype")).toBe("dist");
@@ -11,10 +20,11 @@ describe("deploy path helpers", () => {
     expect(toDeployBasePath("dist")).toBe("dist");
   });
 
-  it("builds per-screen SPA prototypePath from previewUri", () => {
-    expect(toSpaScreenPrototypePath("dist", "/schedules/new")).toBe("dist/schedules/new/");
+  it("builds per-screen SPA prototypePath without trailing slash", () => {
+    expect(toSpaScreenPrototypePath("dist", "/schedules/new")).toBe("dist/schedules/new");
     expect(toSpaScreenPrototypePath("dist", "/orders/demo-001?tab=1")).toBe(
-      "dist/orders/demo-001/",
+      "dist/orders/demo-001",
     );
+    expect(toSpaScreenPrototypePath("dist", "/login/")).toBe("dist/login");
   });
 });

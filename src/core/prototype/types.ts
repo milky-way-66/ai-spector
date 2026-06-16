@@ -115,9 +115,9 @@ export interface PrototypeScreenMapEntry {
    */
   screenDocs?: Record<string, string>;
   /**
-   * Path to open this screen in the prototype.
-   * - static mode: repo-relative HTML file, e.g. "prototype/src/login.html"
-   * - spa mode: deploy-relative route directory, e.g. "dist/login/"
+   * Deploy-relative path appended after `{host}/{project}/{version}/`.
+   * - static mode: HTML file, e.g. "src/login.html"
+   * - spa mode: client route under build output, e.g. "dist/login"
    */
   prototypePath: string;
   /** Whether the screen route (SPA) or HTML file (static) exists in the workspace. */

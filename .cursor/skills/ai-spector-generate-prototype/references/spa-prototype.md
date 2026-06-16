@@ -57,7 +57,7 @@ npx ai-spector prototype manifest
 |-------|---------|
 | `screenDocPath` | Language-neutral design doc path |
 | `screenDocs` | Per-language design doc paths (multi-lang projects) |
-| `prototypePath` | **Open this path** — deploy route dir for SPA (e.g. `dist/login/`, `dist/orders/demo-001/`) |
+| `prototypePath` | **Open this path** — deploy route for SPA (e.g. `dist/login`, `dist/orders/demo-001`) |
 | `route_exists` | Whether the SPA build or static HTML file is present |
 
 Route patterns, param defaults, and auth flags live in `route-defaults.json` only — not duplicated in `screen-map.json`.
@@ -80,4 +80,4 @@ Deep links are served by nginx `try_files` — ship only the framework build out
 
 ## 4. Static HTML note
 
-Static prototypes (`techStack: html`) already use one file per screen — no router bypass. `prototypePath` is the repo-relative HTML file (e.g. `prototype/src/login.html`). Param-heavy flows may use query strings in the filename link (e.g. `order-detail.html?id=demo-001`) or a dedicated static page per variant; prefer SPA when many param routes exist.
+Static prototypes (`techStack: html`) already use one file per screen — no router bypass. `prototypePath` is the deploy-relative HTML file (e.g. `src/login.html`). Param-heavy flows may use query strings in the filename link (e.g. `order-detail.html?id=demo-001`) or a dedicated static page per variant; prefer SPA when many param routes exist.

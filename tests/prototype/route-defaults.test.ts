@@ -56,13 +56,13 @@ describe("route defaults in screen-map", () => {
       });
 
       const detail = result.screenMap.screens.find((s) => s.screenId === "order-detail");
-      expect(detail?.prototypePath).toBe("dist/orders/demo-001/");
+      expect(detail?.prototypePath).toBe("dist/orders/demo-001");
       expect(detail?.route_exists).toBe(false);
       expect(result.screenMap.buildDest).toBe("dist");
       expect(result.screenMap.prototypeBypassAuth).toBe(true);
 
       const login = result.screenMap.screens.find((s) => s.screenId === "login");
-      expect(login?.prototypePath).toBe("dist/login/");
+      expect(login?.prototypePath).toBe("dist/login");
     });
   });
 

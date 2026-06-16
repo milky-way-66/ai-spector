@@ -15,7 +15,7 @@ import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
-import { toDeployBasePath, toSpaScreenPrototypePath } from "./deploy-path.js";
+import { toDeployBasePath, toDeployPrototypePath, toSpaScreenPrototypePath } from "./deploy-path.js";
 
 async function htmlExists(projectRoot: string, relativePath: string): Promise<boolean> {
   try {
@@ -147,7 +147,7 @@ export async function buildPrototypeManifest(
               deployBuildDest,
               routeApplied.previewUri ?? routeApplied.uri,
             )
-          : r.prototypePath;
+          : toDeployPrototypePath(r.prototypePath, opts.config.prototypeDir);
 
       const docFilename = r.specFile ?? `${r.slug}.md`;
       const { screenDocPath, screenDocs } = buildScreenDocPaths({

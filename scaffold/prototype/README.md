@@ -59,8 +59,8 @@ See `prototype/manifest.json` and `prototype/screen-map.json` (rebuilt by `npx a
 When `buildMode` is `spa`:
 
 1. **Direct routes** — `screen-map.json` sets `prototypeBypassAuth: true` so the app router must not force login before showing a deep-linked screen.
-2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Each screen's `prototypePath` in `screen-map.json` is the deploy path to open (e.g. `dist/orders/demo-001/`).
-3. **Deep links** — nginx serves SPA routes with `try_files`, so only the root `dist/index.html` is required.
+2. **Detail / param URLs** — copy `route-defaults.example.json` to `route-defaults.json`, set default `routeParams` (e.g. `id: "demo-001"`), then run `npx ai-spector prototype manifest`. Each screen's `prototypePath` is the deploy path (e.g. `dist/orders/demo-001`).
+3. **Deep links** — nginx serves SPA routes with `try_files`; only root `dist/index.html` is required.
 
 Each `screen-map.json` screen entry:
 
@@ -73,9 +73,11 @@ Each `screen-map.json` screen entry:
     "en": "docs/basic-design/en/screens/login.md",
     "vi": "docs/basic-design/vi/screens/login.md"
   },
-  "prototypePath": "dist/login/",
+  "prototypePath": "dist/login",
   "route_exists": true
 }
 ```
 
-Static HTML uses a repo-relative file path for `prototypePath` (e.g. `prototype/src/login.html`). Route patterns and param defaults live in `route-defaults.json`, not in `screen-map.json`.
+Static HTML uses a deploy-relative file path (e.g. `src/login.html`). Route patterns and param defaults live in `route-defaults.json`.
+
+**Web team:** see `prototype/deploy/url-mapping-handover.md` and `prototype/deploy/nginx-poc.conf`.
