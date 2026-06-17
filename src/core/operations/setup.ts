@@ -222,7 +222,7 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
       id: "cocoindex-index",
       label: "CocoIndex — index built (lance_data/)",
       status: cocoReadiness.indexed ? "ok" : "warning",
-      fix: cocoReadiness.indexed ? undefined : "npx ai-spector cocoindex update",
+      fix: cocoReadiness.indexed ? undefined : "npx ai-spector cocoindex index",
     });
   }
 

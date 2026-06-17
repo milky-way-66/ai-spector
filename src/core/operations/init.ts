@@ -342,7 +342,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   }
   if (cocoReadiness.configured) {
     if (cocoReadiness.depsInstalled) {
-      process.stdout.write(`  cocoindex -> ready ✓ (${cocoindexMode === "venv" ? "venv" : "global"}, run: npx ai-spector cocoindex update to build index)\n`);
+      process.stdout.write(`  cocoindex -> ready ✓ (${cocoindexMode === "venv" ? "venv" : "global"}, run: npx ai-spector cocoindex index to build index)\n`);
     } else {
       process.stdout.write(`  cocoindex -> scaffolded only — deps not installed\n`);
       process.stdout.write(`      fix: npx ai-spector cocoindex setup\n`);

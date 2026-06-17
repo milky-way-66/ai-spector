@@ -2,7 +2,7 @@
 
 **You describe what you need in chat.** Claude Code picks the right **skill**; the agent calls **MCP tools** (when `ai-spector` server is configured) or falls back to **`npx ai-spector`** CLI.
 
-Skills load from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
+Skills load from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./.claude/skills/ai-spector/references/cli-failures.md).
 
 ### When routing picks the wrong workflow
 
@@ -123,4 +123,4 @@ offers extracted key specs for review — only approved specs reach the graph, a
 | Unsure what regen | "what's the impact of my changes" |
 | Comments incomplete | "resolve comments" — commit must include doc + `comments/` meta |
 
-References: [cli-failures](./skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md). Web UI handover for browsing detail design: [../docs/plan/detail-design-web-handover.md](../docs/plan/detail-design-web-handover.md).
+References: [cli-failures](./.claude/skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md). Web UI handover for browsing detail design: [../docs/plan/detail-design-web-handover.md](../docs/plan/detail-design-web-handover.md).
