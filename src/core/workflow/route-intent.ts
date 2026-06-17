@@ -358,6 +358,15 @@ function isTaskResumeIntent(msg: string): boolean {
 }
 
 function isIncrementalChangeIntent(msg: string): boolean {
+  // "I want to generate detail design" must not steal full-generate routing.
+  if (
+    isGenerateSrsIntent(msg) ||
+    isGenerateBasicDesignIntent(msg) ||
+    isGenerateDetailDesignIntent(msg) ||
+    isGeneratePrototypeIntent(msg)
+  ) {
+    return false;
+  }
   return (
     /\b(add|update|change|modify|extend)\b/.test(msg) ||
     /\b(i want to|we need to|create task)\b/.test(msg)
@@ -692,7 +701,7 @@ export function classifyWorkflowIntent(
       "ai-spector-resolve-task",
       "high",
       "incremental_change",
-      "Incremental change — clarify, plan, task_approve_plan, then execute.",
+      "Incremental change — propose tier (task_confirm_tier) → clarify → plan → task_approve_plan → execute → verify.",
       ctx,
       {
         nextTools: ["task_create", "task_list"],
@@ -734,7 +743,7 @@ export function classifyWorkflowIntent(
       "ai-spector-generate-detail-design",
       "high",
       "generate_detail_design",
-      "Detail design generation — create/resume task, plan gate, then generate.",
+      "Detail design generation — gated generate flow (check → clarify → briefing → plan) — NOT resolve-task tier workflow.",
       ctx,
       {
         nextTools: ["task_list", "workspace_check"],

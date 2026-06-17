@@ -278,7 +278,7 @@
     "summary-detail-design"
   ],
   "graphUsage": {
-    "rule": "Before opening docs under docs/srs/, docs/basic-design/, or docs/detail-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/_graph.md.",
+    "rule": "Before opening docs under docs/srs/, docs/basic-design/, or docs/detail-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/graph.md.",
     "validateBeforeGenerate": "/validate-graph",
     "afterEdit": "/impact",
     "reconcileProjections": "/sync-graph"

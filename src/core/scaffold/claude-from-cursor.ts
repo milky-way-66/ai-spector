@@ -10,8 +10,74 @@ export function transformCursorPaths(text: string): string {
     .replace(/\bSKILL\.md\b/g, "skill.md")
     .replace(/ai-spector-routing\.mdc/g, "_skill-router.md")
     .replace(/\[_skill-router\.md\]\(\.\.\/\.\.\/_skill-router\.md\)/g, "[_skill-router.md](./_skill-router.md)")
-    .replace(/\[(\.\.\/)+WORKFLOW\.md\]/g, "[WORKFLOW.md](../WORKFLOW.md)")
+    .replace(/\[(\.\.\/)+WORKFLOW\.md\]\(\.\.\/WORKFLOW\.md\)/g, "[WORKFLOW.md](../WORKFLOW.md)")
     .replace(/\[(\.\.\/)+rules\//g, "[../.claude/rules/");
+}
+
+const CLAUDE_ROUTING_OVERRIDE = `## Workflow triggers (override)
+
+When the user says \`workflow: <name>\` (e.g. \`workflow: generate-detail-design\`, \`workflow: resolve-task\`, \`workflow: review\`), read \`.claude/workflows/<name>.md\` and activate the skill named there. **Do not** re-route via natural-language priority below.
+
+`;
+
+const CLAUDE_WORKFLOW_OVERRIDE_SECTION = `### When routing picks the wrong workflow
+
+Say a **workflow trigger** — it **overrides** skill matching for that turn. See [.claude/workflows/README.md](./.claude/workflows/README.md).
+
+| Wrong route? | Say |
+|--------------|-----|
+| "generate detail design" → resolve-task | \`workflow: generate-detail-design\` |
+| incremental add → generate | \`workflow: resolve-task\` |
+| document sign-off → task approve | \`workflow: review\` |
+| resume stuck task | \`workflow: task\` |
+
+`;
+
+/** Full transform for files copied into scaffold/claude/ (skills, rules, workflows, WORKFLOW). */
+export function transformForClaudeBundle(text: string): string {
+  const protectedCommands = text.replace(/\.cursor\/commands\//g, "__COMMANDS__");
+  let out = transformCursorPaths(protectedCommands).replace(/__COMMANDS__/g, ".claude/workflows/");
+  out = out.replace(/\.\/commands\//g, "./.claude/workflows/");
+  out = out.replace(
+    /### When routing picks the wrong workflow[\s\S]*?(?=\n## )/,
+    CLAUDE_WORKFLOW_OVERRIDE_SECTION,
+  );
+  out = out.replace(
+    /## Slash commands \(override\)[\s\S]*?(?=\n## )/,
+    CLAUDE_ROUTING_OVERRIDE,
+  );
+  out = out.replace(
+    /Enable all skills under `\.claude\/skills\/` \(see \[skills\/README\.md\]\(\.\/skills\/README\.md\)\)/,
+    "Skills load from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md))",
+  );
+  out = out.replace(/Cursor picks/g, "Claude Code picks");
+  out = out.replace(
+    /\*\*Routing override:\*\* slash commands in \[(\.\.\/)?commands\/README\.md\]/,
+    "**Routing override:** workflow triggers in [../workflows/README.md]",
+  );
+  out = out.replace(
+    /\[cli-failures\]\(\.\/skills\//g,
+    "[cli-failures](./.claude/skills/",
+  );
+  return out;
+}
+
+function transformWorkflowDocForClaude(text: string): string {
+  let out = transformForClaudeBundle(text)
+    .replace(/^# Slash commands/m, "# Workflow triggers")
+    .replace(/\*\*Routing override:\*\*/g, "**Workflow trigger:**")
+    .replace(/slash command/gi, "workflow trigger")
+    .replace(/`\/([a-z][a-z0-9-]*)`/g, "`workflow: $1`")
+    .replace(
+      /Natural language usually works[\s\S]*?`sync-claude`\./,
+      "Natural language usually works — Claude Code matches skill `description` and [_skill-router.md](../skills/_skill-router.md).\n\nWhen routing picks the **wrong workflow**, say `workflow: <name>`. **The trigger wins** over skill matching for that turn.",
+    )
+    .replace(/\| Command \| Skill \|/g, "| Say | Skill |")
+    .replace(
+      /Pipeline overview: \[WORKFLOW\.md\]\(\.\.\/WORKFLOW\.md\)/,
+      "Pipeline overview: [WORKFLOW.md](../../WORKFLOW.md)",
+    );
+  return out;
 }
 
 /** Strip Cursor-only `paths:` frontmatter block from skill files. */
@@ -46,7 +112,7 @@ function stripMdcFrontmatter(content: string): string {
 
 async function writeTransformed(path: string, content: string): Promise<void> {
   await mkdir(join(path, ".."), { recursive: true });
-  await writeFile(path, transformCursorPaths(content), "utf8");
+  await writeFile(path, transformForClaudeBundle(content), "utf8");
 }
 
 async function copyMarkdownTree(srcDir: string, destDir: string): Promise<void> {
@@ -66,7 +132,7 @@ async function copyMarkdownTree(srcDir: string, destDir: string): Promise<void> 
       continue;
     }
     const raw = await readFile(srcPath, "utf8");
-    await writeFile(destPath, transformCursorPaths(raw), "utf8");
+    await writeFile(destPath, transformForClaudeBundle(raw), "utf8");
   }
 }
 
@@ -83,7 +149,7 @@ async function copyRuleFiles(cursorRoot: string, claudeRoot: string): Promise<vo
       continue;
     }
     const raw = await readFile(join(rulesSrc, ent.name), "utf8");
-    await writeFile(join(rulesDest, ent.name), transformCursorPaths(raw), "utf8");
+    await writeFile(join(rulesDest, ent.name), transformForClaudeBundle(raw), "utf8");
   }
 }
 
@@ -118,13 +184,30 @@ async function buildRouter(cursorSkillsRoot: string, claudeSkillsRoot: string): 
   await writeTransformed(join(claudeSkillsRoot, "_skill-router.md"), raw);
 }
 
+async function buildWorkflowsFromCommands(cursorRoot: string, claudeRoot: string): Promise<void> {
+  const commandsSrc = join(cursorRoot, "commands");
+  const workflowsDest = join(claudeRoot, ".claude", "workflows");
+  if (!(await pathExists(commandsSrc))) {
+    return;
+  }
+  const entries = await readdir(commandsSrc, { withFileTypes: true });
+  await mkdir(workflowsDest, { recursive: true });
+  for (const ent of entries) {
+    if (!ent.isFile() || !ent.name.endsWith(".md")) {
+      continue;
+    }
+    const raw = await readFile(join(commandsSrc, ent.name), "utf8");
+    await writeFile(join(workflowsDest, ent.name), transformWorkflowDocForClaude(raw), "utf8");
+  }
+}
+
 async function buildWorkflow(cursorRoot: string, claudeRoot: string): Promise<void> {
   const src = join(cursorRoot, "WORKFLOW.md");
   if (!(await pathExists(src))) {
     return;
   }
   const raw = await readFile(src, "utf8");
-  await writeTransformed(join(claudeRoot, "WORKFLOW.md"), raw);
+  await writeFile(join(claudeRoot, "WORKFLOW.md"), transformForClaudeBundle(raw), "utf8");
 }
 
 async function readRule(name: string): Promise<string> {
@@ -146,7 +229,7 @@ async function buildClaudeMd(claudeRoot: string): Promise<void> {
 
 You are working in an **AI Spector** managed project. The agent workflow is: read skills, call **MCP tools** (preferred) or \`npx ai-spector\` CLI (fallback), report results. You do not write doc content from scratch — MCP tools / CLI + skills do the work.
 
-Skills load automatically from \`.claude/skills/\` (see [.claude/skills/README.md](./.claude/skills/README.md)). User guide: [WORKFLOW.md](./WORKFLOW.md). Full router: [.claude/skills/_skill-router.md](./.claude/skills/_skill-router.md). Rules: [.claude/rules/](./.claude/rules/).
+Skills load automatically from \`.claude/skills/\` (see [.claude/skills/README.md](./.claude/skills/README.md)). User guide: [WORKFLOW.md](./WORKFLOW.md). Workflow triggers: [.claude/workflows/README.md](./.claude/workflows/README.md). Full router: [.claude/skills/_skill-router.md](./.claude/skills/_skill-router.md). Rules: [.claude/rules/](./.claude/rules/).
 
 ## CLI invocation
 
@@ -217,6 +300,10 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 ## Routing
 
 ${routing}
+
+### Workflow triggers (Claude Code)
+
+When routing is wrong, the user can say \`workflow: <name>\` (e.g. \`workflow: generate-detail-design\`). Read \`.claude/workflows/<name>.md\` and follow it — same content as Cursor slash commands.
 
 ## Plan approval gate
 
@@ -352,6 +439,7 @@ export async function buildClaudeScaffoldFromCursor(
 
   await buildRouter(cursorSkillsRoot, claudeSkillsRoot);
   await buildSkillsReadme(cursorSkillsRoot, claudeSkillsRoot);
+  await buildWorkflowsFromCommands(cursorRoot, claudeRoot);
   await buildWorkflow(cursorRoot, claudeRoot);
   await copyRuleFiles(cursorRoot, claudeRoot);
   await buildClaudeMd(claudeRoot);

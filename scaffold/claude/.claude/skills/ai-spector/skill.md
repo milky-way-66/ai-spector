@@ -11,7 +11,7 @@ description: >-
 
 # AI Spector (core)
 
-**Workflow:** [WORKFLOW.md](../WORKFLOW.md)(../../WORKFLOW.md) · **Router:** [_skill-router.md](../_skill-router.md)
+**Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md) · **Router:** [_skill-router.md](../_skill-router.md)
 
 ## Invocation rule — MCP first, CLI fallback
 

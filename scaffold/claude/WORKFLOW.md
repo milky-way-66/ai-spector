@@ -1,8 +1,20 @@
 # AI Spector workflow
 
-**You describe what you need in chat.** Cursor picks the right **skill**; the agent calls **MCP tools** (when `ai-spector` server is configured) or falls back to **`npx ai-spector`** CLI. You do not need to memorize command names.
+**You describe what you need in chat.** Claude Code picks the right **skill**; the agent calls **MCP tools** (when `ai-spector` server is configured) or falls back to **`npx ai-spector`** CLI.
 
-Enable all skills under `.claude/skills/` (see [skills/README.md](./skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
+Skills load from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md)). On CLI or tool failure: agent pauses, shows output, and offers fix / workaround / pause — [cli-failures](./skills/ai-spector/references/cli-failures.md).
+
+### When routing picks the wrong workflow
+
+Say a **workflow trigger** — it **overrides** skill matching for that turn. See [.claude/workflows/README.md](./.claude/workflows/README.md).
+
+| Wrong route? | Say |
+|--------------|-----|
+| "generate detail design" → resolve-task | `workflow: generate-detail-design` |
+| incremental add → generate | `workflow: resolve-task` |
+| document sign-off → task approve | `workflow: review` |
+| resume stuck task | `workflow: task` |
+
 
 ## One-time setup
 
@@ -34,7 +46,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.claude/
 | Refresh after edits | "re-index", "sync the graph" | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
 | Write SRS | "generate SRS", "write use cases" | `ai-spector-generate-srs` | `task_create` → **gated**: check → clarify → briefing + plan → `task_approve_plan` → `task_record_wave` per wave → `spec_record` → `task_complete` |
 | Basic design | "screen list", "API design", "wireframes" | `ai-spector-generate-basic-design` | same task-state flow → docs/basic-design → index each wave |
-| Detail design | "generate detail design", "feature-level design", "implementation spec for F-01" | `ai-spector-generate-detail-design` | same task-state flow → docs/detail-design → **index every wave** (feature list before per-feature expansion) |
+| Detail design | "generate detail design", "I want to generate detail design", "feature-level design" | `ai-spector-generate-detail-design` | **gated generate**: check → clarify → briefing → plan → `task_approve_plan` → waves → index each wave |
 | Review extracted specs | "pending specs", "approve SPEC-001" | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |
 | Answer clarifications | "open questions", "what did I answer about auth" | `ai-spector-check` | `context_list` → `context_resolve` |
 | HTML prototype | "HTML mockup", "prototype with stripe theme" | `ai-spector-generate-prototype` | auth picker (if needed) → theme picker → setup → HTML → validate |
@@ -46,7 +58,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.claude/
 | Sync translations | "resolve translations", "update JP from EN" | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | "resolve comments", "fix C-001" | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
 | **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "approve detail-design/feature-list", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + quorum + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_decline` / `review_close` / `review_reject` |
-| Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | tier confirm → clarify → plan → `task_approve_plan` → execute → verify → `task_complete` |
+| Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | tier confirm → clarify → (design/briefing by tier) → plan → `task_approve_plan` → execute → verify → `task_complete` |
 | Explore graph | "show the graph" | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
 Unsure? Say **"help me approve"** or call **`workflow_route`** — the agent uses [skills/_skill-router.md](./skills/_skill-router.md) or asks one clarifying question.
@@ -111,4 +123,4 @@ offers extracted key specs for review — only approved specs reach the graph, a
 | Unsure what regen | "what's the impact of my changes" |
 | Comments incomplete | "resolve comments" — commit must include doc + `comments/` meta |
 
-References: [cli-failures](./skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md). Web UI handover for browsing detail design: [../../docs/plan/detail-design-web-handover.md](../../docs/plan/detail-design-web-handover.md).
+References: [cli-failures](./skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md). Web UI handover for browsing detail design: [../docs/plan/detail-design-web-handover.md](../docs/plan/detail-design-web-handover.md).

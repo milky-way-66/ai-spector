@@ -107,4 +107,4 @@ context briefing, and plan confirmation come **before any write**; key-spec
 extraction with human review comes after. See
 [generate-workflow.md](./ai-spector/references/generate-workflow.md).
 
-See [WORKFLOW.md](../WORKFLOW.md)(../WORKFLOW.md).
+See [WORKFLOW.md](../WORKFLOW.md).

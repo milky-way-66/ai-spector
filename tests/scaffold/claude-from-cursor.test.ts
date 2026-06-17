@@ -87,7 +87,8 @@ describe("buildClaudeScaffoldFromCursor", () => {
     expect(claudeMd).toContain("review_approve");
     expect(claudeMd).toContain("review_decline");
     expect(claudeMd).toContain("workflow_route");
-    expect(claudeMd).toContain("sync-claude");
+    expect(claudeMd).toContain("workflow: generate-detail-design");
+    expect(claudeMd).toContain(".claude/workflows/");
 
     const router = await readFile(
       join(result.claudeRoot, ".claude/skills/_skill-router.md"),
@@ -95,6 +96,26 @@ describe("buildClaudeScaffoldFromCursor", () => {
     );
     expect(router).toContain("ai-spector-review");
     expect(router).toContain("WORKFLOW.md");
+
+    const ddWorkflow = join(
+      result.claudeRoot,
+      ".claude/workflows/generate-detail-design.md",
+    );
+    expect(await pathExists(ddWorkflow)).toBe(true);
+    const ddText = await readFile(ddWorkflow, "utf8");
+    expect(ddText).toContain("ai-spector-generate-detail-design");
+    expect(ddText).toContain("Do **not** use `ai-spector-resolve-task`");
+
+    const claudeWorkflow = await readFile(join(result.claudeRoot, "WORKFLOW.md"), "utf8");
+    expect(claudeWorkflow).toContain("workflow: generate-detail-design");
+    expect(claudeWorkflow).not.toContain("/generate-detail-design");
+
+    const claudeRouting = await readFile(
+      join(result.claudeRoot, ".claude/rules/ai-spector-routing.mdc"),
+      "utf8",
+    );
+    expect(claudeRouting).toContain("Workflow triggers (override)");
+    expect(claudeRouting).toContain(".claude/workflows/");
   });
 });
 
@@ -118,6 +139,7 @@ describe("sync-claude", () => {
     expect(await pathExists(join(root, "WORKFLOW.md"))).toBe(true);
     expect(await pathExists(join(root, ".claude/skills/README.md"))).toBe(true);
     expect(await pathExists(join(root, ".claude/rules/ai-spector-plan-gate.mdc"))).toBe(true);
+    expect(await pathExists(join(root, ".claude/workflows/generate-detail-design.md"))).toBe(true);
 
     expect(scaffoldClaudeBundleRoot()).toContain("scaffold/claude");
     expect(scaffoldCursorBundleRoot()).toContain("scaffold/cursor");

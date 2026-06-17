@@ -4,6 +4,8 @@ Enable **every** folder under `.cursor/skills/` in Cursor (Settings â†’ Rules â†
 
 Describe what you want ("generate SRS", "analyze data source"); Cursor matches the skill `description` and the agent reads that skill's **runbook** under `references/`. If intent is ambiguous, the agent asks one clarifying question or calls `workflow_route`.
 
+**Routing override:** slash commands in [../commands/README.md](../commands/README.md) (e.g. `/generate-detail-design`, `/resolve-task`, `/review`) win over natural-language matching.
+
 **Pipeline overview:** [../WORKFLOW.md](../WORKFLOW.md)  
 **Disambiguation:** [_skill-router.md](./_skill-router.md)
 

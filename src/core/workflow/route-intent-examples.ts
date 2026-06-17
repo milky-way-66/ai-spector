@@ -29,6 +29,8 @@ export const WORKFLOW_ROUTE_EXAMPLES: WorkflowRouteExample[] = [
   { say: "write use cases", skill: "ai-spector-generate-srs" },
   { say: "wireframes", skill: "ai-spector-generate-basic-design" },
   { say: "generate detail design", skill: "ai-spector-generate-detail-design" },
+  { say: "I want to generate detail design", skill: "ai-spector-generate-detail-design" },
+  { say: "we need to generate detail design", skill: "ai-spector-generate-detail-design" },
   { say: "feature-level design", skill: "ai-spector-generate-detail-design" },
   { say: "detail design for checkout", skill: "ai-spector-generate-detail-design" },
   { say: "pending specs", skill: "ai-spector-generate" },

@@ -7,7 +7,12 @@ alwaysApply: true
 
 # AI Spector routing
 
-**Full router:** `.claude/skills/_skill-router.md` · **User guide:** `.claude/WORKFLOW.md` · **MCP parity tests:** `src/core/workflow/route-intent-examples.ts`
+**Full router:** `.claude/skills/_skill-router.md` · **User guide:** `.claude/WORKFLOW.md` · **Slash commands:** `.claude/workflows/README.md` · **MCP parity tests:** `src/core/workflow/route-intent-examples.ts`
+
+## Workflow triggers (override)
+
+When the user says `workflow: <name>` (e.g. `workflow: generate-detail-design`, `workflow: resolve-task`, `workflow: review`), read `.claude/workflows/<name>.md` and activate the skill named there. **Do not** re-route via natural-language priority below.
+
 
 ## MCP routing (when ai-spector server is enabled)
 
@@ -20,7 +25,7 @@ Without MCP: follow priority table below and `_skill-router.md` (same rules, no 
 0. **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`) → **`ai-spector-review`**
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
 1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
-2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`**
+2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`** (exception: "I want to generate …" → **`ai-spector-generate-*`**)
 2.5. **Migrate / adopt existing docs** — migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt → **`ai-spector-adopt`**
 3. **Full generation** — generate SRS/chapter/DAG → **`ai-spector-generate-*`**
 

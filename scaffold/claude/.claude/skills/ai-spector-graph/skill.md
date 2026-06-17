@@ -8,7 +8,7 @@ description: >-
 ---
 
 # AI Spector — Graph
-**Core:** [../ai-spector/skill.md](../ai-spector/skill.md) · **Workflow:** [WORKFLOW.md](../WORKFLOW.md)(../../WORKFLOW.md)
+**Core:** [../ai-spector/skill.md](../ai-spector/skill.md) · **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md)
 
 ## When this skill applies
 

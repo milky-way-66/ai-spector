@@ -56,6 +56,17 @@ describe("classifyWorkflowIntent", () => {
     expect(r.skill).toBe("ai-spector-resolve-task");
   });
 
+  it("routes I want to generate detail design to generate-detail-design (not resolve-task)", () => {
+    const r = classifyWorkflowIntent("I want to generate detail design", emptyCtx);
+    expect(r.skill).toBe("ai-spector-generate-detail-design");
+    expect(r.matchedBy).toBe("generate_detail_design");
+  });
+
+  it("routes we need to generate detail design to generate-detail-design", () => {
+    const r = classifyWorkflowIntent("we need to generate detail design", emptyCtx);
+    expect(r.skill).toBe("ai-spector-generate-detail-design");
+  });
+
   it("routes generate SRS to generate skill", () => {
     const r = classifyWorkflowIntent("generate the SRS", emptyCtx);
     expect(r.skill).toBe("ai-spector-generate-srs");

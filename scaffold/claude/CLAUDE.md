@@ -2,7 +2,7 @@
 
 You are working in an **AI Spector** managed project. The agent workflow is: read skills, call **MCP tools** (preferred) or `npx ai-spector` CLI (fallback), report results. You do not write doc content from scratch — MCP tools / CLI + skills do the work.
 
-Skills load automatically from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md)). User guide: [WORKFLOW.md](./WORKFLOW.md). Full router: [.claude/skills/_skill-router.md](./.claude/skills/_skill-router.md). Rules: [.claude/rules/](./.claude/rules/).
+Skills load automatically from `.claude/skills/` (see [.claude/skills/README.md](./.claude/skills/README.md)). User guide: [WORKFLOW.md](./WORKFLOW.md). Workflow triggers: [.claude/workflows/README.md](./.claude/workflows/README.md). Full router: [.claude/skills/_skill-router.md](./.claude/skills/_skill-router.md). Rules: [.claude/rules/](./.claude/rules/).
 
 ## CLI invocation
 
@@ -90,7 +90,11 @@ Skip impact/index only when the user explicitly says it was a typo-only fix with
 
 # AI Spector routing
 
-**Full router:** `.cursor/skills/_skill-router.md` · **User guide:** `.cursor/WORKFLOW.md` · **MCP parity tests:** `src/core/workflow/route-intent-examples.ts`
+**Full router:** `.cursor/skills/_skill-router.md` · **User guide:** `.cursor/WORKFLOW.md` · **Slash commands:** `.cursor/commands/README.md` · **MCP parity tests:** `src/core/workflow/route-intent-examples.ts`
+
+## Slash commands (override)
+
+When the user invokes a slash command (`/generate-detail-design`, `/resolve-task`, `/review`, etc.), read `.cursor/commands/<name>.md` and activate the skill named there. **Do not** re-route via natural-language priority below.
 
 ## MCP routing (when ai-spector server is enabled)
 
@@ -103,7 +107,7 @@ Without MCP: follow priority table below and `_skill-router.md` (same rules, no 
 0. **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`) → **`ai-spector-review`**
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
 1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
-2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`**
+2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`** (exception: "I want to generate …" → **`ai-spector-generate-*`**)
 2.5. **Migrate / adopt existing docs** — migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt → **`ai-spector-adopt`**
 3. **Full generation** — generate SRS/chapter/DAG → **`ai-spector-generate-*`**
 
@@ -165,6 +169,10 @@ Triggers: migrate project, adopt existing docs, wrong SRS folder, legacy layout,
 | "generate SRS", "write chapter 4" | generate-srs / generate-basic-design / generate-detail-design |
 | "add login with Google", "update auth section" | resolve-task |
 
+
+### Workflow triggers (Claude Code)
+
+When routing is wrong, the user can say `workflow: <name>` (e.g. `workflow: generate-detail-design`). Read `.claude/workflows/<name>.md` and follow it — same content as Cursor slash commands.
 
 ## Plan approval gate
 

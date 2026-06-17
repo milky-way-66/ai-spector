@@ -1,16 +1,19 @@
 ---
 name: ai-spector-generate-detail-design
 description: >-
-  Generates detail design chapters from the traceability graph in DAG order (common patterns,
-  feature list, per-feature detail). Do NOT use for incremental adds like "update feature X section"
-  — use ai-spector-resolve-task instead. Do not use for SRS, basic design, HTML prototype, or
-  graph-only analyze/index tasks.
+  FULL GENERATE workflow for detail design from the graph (common → feature list → per-feature).
+  Uses gated CHECK → CLARIFY → BRIEFING → PLAN → GENERATE — NOT resolve-task tier workflow.
+  Do NOT use for incremental edits ("update feature X section") — use ai-spector-resolve-task.
 paths:
   - "docs/detail-design/**"
   - ".ai-spector/templates/detail_design/**"
 ---
 
 # Generate Detail Design
+
+> **This is a generate workflow**, not resolve-task. Do **not** use `task_confirm_tier` or resolve-tier gates.
+> Follow [generate-workflow.md](../ai-spector/references/generate-workflow.md) end-to-end.
+
 ## Step 0 — HARD GATE (before anything else)
 
 **Do not** run `workspace_check`, read templates, or write under `docs/detail-design/` until task state exists.
@@ -29,19 +32,31 @@ task_list({
   → bootstrapped   → continue with new task id
 ```
 
+## Gated flow (mandatory — same as SRS / basic design)
+
+```
+1. CHECK     workspace_check → snapshot.workspaceCheckAt
+2. CLARIFY   readiness_assess({ docType: "detail-design" }) → full criteria table → context store
+3. BRIEFING  per-file context → snapshot.briefingConfirmedAt
+4. PLAN      plan table → explicit user yes → task_approve_plan
+5. GENERATE  DAG waves → readiness_scan + output compliance → task_record_wave → index each wave
+6. EXTRACT   offer spec_record → snapshot.extractOffered → task_complete
+```
+
 ### Forbidden before `task_approve_plan`
 
 - Edit / Write under `docs/detail-design/`
 - `index`, `graph_merge`, spec extraction
+- Resolve-task tools (`task_confirm_tier`, `resolve_task` for doc edits)
 
-After plan approval: each DAG wave ends with `readiness_scan` → `workspace_check` → `task_record_wave`.
-Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only after `snapshot.extractOffered`.
+After plan approval: each DAG wave ends with `readiness_scan` → `readiness_output_checklist` → agent compliance → `workspace_check` → `task_record_wave` → **`index`**.
 
 ## Load at start
+
 1. Step 0 above (task_list → create or resume)
 2. [references/runbook.md](references/runbook.md)
-3. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — gated flow + task state
-4. Run `workspace_check` and `context_list({ docType: "detail-design" })` before planning
+3. [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md)
+4. `workspace_check` + `context_list({ docType: "detail-design" })`
 
 ## Load when needed
 
@@ -54,14 +69,16 @@ Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only
 | Output compliance (after each wave) | [../ai-spector/references/output-compliance.md](../ai-spector/references/output-compliance.md) |
 | Graph queries / merge | [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) |
 | After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
-| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
-| Writing common chapters | [references/dd-context/common-chapters.md](references/dd-context/common-chapters.md) |
-| Writing feature list | [references/dd-context/feature-list.md](references/dd-context/feature-list.md) |
-| Writing feature detail (per feature) | [references/dd-context/feature-detail.md](references/dd-context/feature-detail.md) |
+| Writing guides | [references/dd-context/](./references/dd-context/) |
 | CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
-| Run of 5+ files | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 
-## On CLI failure
-Pause. Report full output. Offer fix + retry. Details in cli-failures.md.
+## Checklist
 
-"detail design", "feature detail design", "dd/feature-list" → this skill.
+```
+- [ ] task_list bootstrap generate-detail-design (NOT resolve task)
+- [ ] CHECK → CLARIFY → BRIEFING → PLAN → task_approve_plan
+- [ ] Each wave: write → readiness_scan → compliance → task_record_wave → index
+- [ ] Offer spec extraction → task_complete
+```
+
+"detail design", "feature detail design", "generate detail design", "I want to generate detail design" → **this skill**.

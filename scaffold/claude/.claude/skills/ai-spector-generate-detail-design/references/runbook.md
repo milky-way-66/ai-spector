@@ -2,7 +2,24 @@
 
 Generate detail design markdown **from the traceability graph**, SRS, and basic design upstream.
 
+> **Generate workflow — not resolve-task.** Use CHECK → CLARIFY → BRIEFING → PLAN → GENERATE.
+> Do **not** use `task_confirm_tier` or resolve-tier gates. For single-section edits use `ai-spector-resolve-task`.
+
 **User runs this command;** the agent runs MCP/CLI.
+
+## Mandatory gates (before any `docs/detail-design/` write)
+
+Follow [generate-workflow.md](../../ai-spector/references/generate-workflow.md) in order:
+
+| Step | MCP tools | Snapshot / step |
+|------|-----------|-----------------|
+| 0 | `task_list` bootstrap `generate-detail-design` | task file |
+| 1 CHECK | `workspace_check` | `workspaceCheckAt`, step `check` done |
+| 2 CLARIFY | `readiness_assess({ docType: "detail-design" })`, `context_list` | `readinessReportShown`, step `clarify` done |
+| 3 BRIEFING | per-file briefing in chat | `briefingConfirmedAt`, step `briefing` done |
+| 4 PLAN | plan table → user **yes** | `planPresentedAt`, `task_approve_plan` |
+| 5 GENERATE | `task_record_wave` per wave | wave steps |
+| 6 EXTRACT | `spec_record` offer | `extractOffered`, `task_complete` |
 
 | Shared workflow | Document |
 |-----------------|----------|
