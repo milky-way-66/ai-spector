@@ -7,12 +7,10 @@ description: >-
   asks to resolve comments, address feedback, open threads, C-001 picks, prototype
   review comments, or meta_data.json on SRS/basic design/prototype. Do not use for
   approve doc / review queue.
-paths:
-  - "comments/**"
 ---
 
 # AI Spector — Resolve comments
-**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
+**Core:** [../ai-spector/skill.md](../ai-spector/skill.md)
 
 ## Required reading
 
