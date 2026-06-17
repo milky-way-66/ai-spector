@@ -1,8 +1,8 @@
-# Phần: Cơ bản về chat
+# Phần: Dùng chat
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Chat hoạt động thế nào](01-how-chat-works.md) | 10 phút | Cụm từ thường dùng |
-| [Bốn loại phê duyệt](02-four-kinds-of-approve.md) | 10 phút | Tránh nhầm lẫn |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [Cách dùng chat](01-how-chat-works.md) | 10 phút | Nói gì để AI hiểu |
+| [Bốn kiểu “đồng ý”](02-four-kinds-of-approve.md) | 10 phút | Không nhầm khi bấm đồng ý |
 
-**Phần tiếp theo:** [Thay đổi](../04-changes/README.md)
+**Phần tiếp:** [Sửa yêu cầu](../04-changes/README.md)

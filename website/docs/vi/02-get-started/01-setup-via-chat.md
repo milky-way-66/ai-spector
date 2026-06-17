@@ -1,66 +1,66 @@
-# Thiết lập qua chat
+# Cài đặt qua chat
 
 **Phần:** [Bắt đầu](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Chuẩn bị dự án bằng cách nhờ agent — không cần gõ lệnh terminal.
+**Học xong sẽ biết:** Nhờ AI cài đặt dự án — không cần mở terminal.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Trước khi tạo tài liệu, dự án cần thiết lập một lần: thư mục, kỹ năng cho agent, và cấu hình. **Nhờ agent thiết lập giúp bạn.**
+Trước khi viết tài liệu, dự án cần cài đặt một lần: tạo thư mục, bật tính năng cho AI, v.v. **Chỉ cần nhắn AI làm giúp.**
 
-Bạn cần:
-- Kho Git (thư mục dự án của bạn)
-- Cursor hoặc Claude Code với AI Spector đã cài trong dự án
+Bạn cần có:
+- Thư mục dự án đang dùng Git
+- Cursor hoặc Claude Code, đã cài AI Spector trong dự án
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"setup ai-spector project"*
+**Bạn nhắn:** *"setup ai-spector project"*
 
-**Agent làm:** Chạy quy trình thiết lập — kiểm tra workspace, cài scaffolding, và liệt kê những gì bạn nên bật.
+**AI làm:** Kiểm tra dự án, cài file cần thiết, liệt kê việc bạn cần bật thêm.
 
 **Bạn thấy:**
-- Danh sách kiểm tra các thư mục đã tạo (`docs/data-source/`, `.ai-spector/`, skills)
-- Nhắc bật skills trong `.cursor/skills/`
-- Tùy chọn chạy *"check my workspace"* khi xong
+- Các thư mục đã tạo (`docs/data-source/`, `.ai-spector/`, …)
+- Nhắc bật skill trong `.cursor/skills/`
+- Gợi ý chạy *"check my workspace"* khi xong
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 setup ai-spector project
 ```
 
-**Bạn nên thấy:**
-- Agent hướng dẫn từng bước thiết lập (không ghi file im lặng)
-- `docs/data-source/` được nhắc là nơi đặt đầu vào của bạn
-- Không có lỗi ở cuối quá trình thiết lập
+**Kết quả mong đợi:**
+- AI hướng dẫn từng bước (không âm thầm sửa file)
+- Có nhắc `docs/data-source/` là nơi bạn để tài liệu đầu vào
+- Kết thúc không báo lỗi
 :::
 
 :::roletip
-**Developer** — bạn có thể xem agent chạy lệnh CLI; bạn không cần tự gõ.
+**Lập trình viên** — có thể xem AI chạy lệnh; bạn không bắt buộc phải tự gõ.
 :::
 
 :::behind
-Developer cũng có thể chạy `npx ai-spector setup -y` từ terminal. Công việc hàng ngày vẫn diễn ra trong chat.
+Dev có thể chạy `npx ai-spector setup -y` trong terminal. Việc hằng ngày vẫn nên làm qua chat.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Chưa phải git repo | Nhờ developer chạy `git init`, hoặc nói *"initialize git repo"* |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| Chưa có Git | Nhờ dev chạy `git init`, hoặc *"initialize git repo"* |
 | Chưa cài package | *"install ai-spector in this project"* |
-| Agent không định tuyến đúng | *"check my workspace"* — agent liệt kê skills còn thiếu |
+| AI không hiểu lệnh | *"check my workspace"* — AI liệt kê phần còn thiếu |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Chat hoạt động thế nào](../03-chat-basics/01-how-chat-works.md)
+[Cách dùng chat](../03-chat-basics/01-how-chat-works.md)

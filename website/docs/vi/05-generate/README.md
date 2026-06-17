@@ -1,7 +1,7 @@
-# Phần: Tạo tài liệu
+# Phần: Viết tài liệu
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Tạo SRS](01-generate-srs.md) | 15 phút | Quy trình SRS có kiểm soát |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [Tạo SRS](01-generate-srs.md) | 15 phút | Quy trình viết SRS có kiểm soát |
 
-**Phần tiếp theo:** [Rà soát](../06-review/README.md)
+**Phần tiếp:** [Kiểm tra & phê duyệt](../06-review/README.md)

@@ -2,13 +2,13 @@ import { DEFAULT_COURSE_LOCALE, sectionLabelForLocale, type CourseLocale } from 
 
 /** English section labels (default). */
 export const SECTION_LABELS: Record<string, string> = {
-  "01-get-started": "Get started",
-  "02-chat-basics": "Chat basics",
-  "03-graph": "Graph & sources",
-  "04-generate": "Generate documents",
-  "05-prototype": "Design & prototype",
-  "06-review": "Review & changes",
-  "07-advanced": "Advanced",
+  "01-welcome": "Welcome",
+  "02-get-started": "Get started",
+  "03-chat-basics": "Chat basics",
+  "04-changes": "Changes",
+  "05-generate": "Generate",
+  "06-review": "Review",
+  "07-everyday": "Everyday",
 };
 
 export function sectionIdFromRelPath(relPath: string): string | undefined {

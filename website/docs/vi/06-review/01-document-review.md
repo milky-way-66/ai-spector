@@ -1,61 +1,61 @@
-# Rà soát và ký duyệt tài liệu
+# Duyệt tài liệu
 
-**Phần:** [Rà soát](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Kiểm tra & phê duyệt](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~15 phút
 
-**Mục tiêu:** Rà soát và ký duyệt tài liệu chính thức — khác với bình luận hay phê duyệt spec.
+**Học xong sẽ biết:** Review và phê duyệt tài liệu — khác với xử lý comment hay duyệt SPEC.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Khi tài liệu sẵn sàng phê duyệt, bạn chạy **quy trình rà soát**. Agent đọc tài liệu, kiểm tra mức độ sẵn sàng, tóm tắt phát hiện trong chat, và chỉ sau đó mới cho bạn phê duyệt hoặc yêu cầu sửa.
+Tài liệu sẵn sàng duyệt thì chạy **quy trình review**. AI đọc bài, chấm mức độ đạt, tóm tắt nhận xét trong chat, rồi mới hỏi bạn: duyệt, yêu cầu sửa, hay bỏ qua.
 
-Đây là **ký duyệt chính thức** — khác với *"yes, go ahead"* trên kế hoạch tạo tài liệu.
+Đây là **phê duyệt chính thức** — khác với *"yes, go ahead"* lúc đồng ý kế hoạch viết.
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"review documents"*
+**Bạn nhắn:** *"review documents"*
 
-**Agent làm:** Mở hàng đợi rà soát, cho bạn chọn tài liệu, viết tóm tắt rà soát trong chat.
+**AI làm:** Mở danh sách chờ duyệt → bạn chọn bài → viết nhận xét trong chat.
 
 **Bạn thấy:**
-- Điểm sẵn sàng và kết quả checklist
-- Bản rà soát viết trong chat (không phải phê duyệt im lặng)
-- Menu quyết định: Approve / Request changes / Skip
+- Điểm / checklist đạt hay chưa
+- Bản tóm tắt review (không im lặng bấm duyệt)
+- Menu: Duyệt / Yêu cầu sửa / Bỏ qua
 
-Bạn cũng có thể chỉ tên tài liệu: *"review srs/01-overview"*
+Chỉ định thẳng một file: *"review srs/01-overview"*
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 review documents
 ```
 
-**Bạn nên thấy:**
-- Hàng đợi rà soát hoặc bộ chọn tài liệu
-- Agent đọc tài liệu và viết phát hiện trước khi hỏi quyết định của bạn
+**Kết quả mong đợi:**
+- Danh sách tài liệu chờ duyệt
+- AI đọc và viết nhận xét **trước** khi hỏi quyết định
 :::
 
 :::roletip
-**BA / Tester** — đây là quy trình hàng ngày cốt lõi cho cổng chất lượng.
+**BA / Kiểm thử** — việc này làm hằng ngày để chốt chất lượng tài liệu.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Agent phê duyệt không có bản rà soát | Nói *"write the review first"* — ký duyệt chính thức cần tóm tắt |
-| Sai tài liệu | Chỉ đường dẫn: *"review srs/01-overview"* |
-| Nhầm với phê duyệt SPEC | Ký duyệt tài liệu = bài học này; SPEC = sau khi generate |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| AI duyệt mà chưa review | *"write the review first"* |
+| Sai tài liệu | *"review srs/01-overview"* |
+| Nhầm với duyệt SPEC | Duyệt tài liệu = bài này · SPEC = sau khi generate |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Xử lý bình luận](02-resolve-comments.md)
+[Xử lý góp ý](02-resolve-comments.md)

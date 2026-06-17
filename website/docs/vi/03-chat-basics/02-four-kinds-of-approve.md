@@ -1,64 +1,64 @@
-# Bốn loại "approve"
+# Bốn kiểu “đồng ý”
 
-**Phần:** [Cơ bản về chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Dùng chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Phân biệt phê duyệt kế hoạch, ký duyệt tài liệu, rà soát spec, và đóng bình luận.
+**Học xong sẽ biết:** Phân biệt đồng ý kế hoạch, duyệt tài liệu, duyệt spec và đóng góp ý.
 
 ---
 
-## Vì sao quan trọng
+## Vì sao cần biết?
 
-*"Looks good"* hoặc *"approve"* có thể có bốn nghĩa khác nhau. Chọn sai gây nhầm lẫn hoặc bỏ qua bước.
-
----
-
-## Bốn loại
-
-| Bạn muốn | Nói (ví dụ) | Điều gì xảy ra |
-|----------|-------------|----------------|
-| **Ký duyệt tài liệu** | *"review documents"*, *"approve srs/01-overview"* | Quy trình rà soát chính thức; có thể cần đủ số người |
-| **Phê duyệt spec trích xuất** | *"approve SPEC-001"* | Sau khi tạo SRS; gộp spec vào kiến thức dự án |
-| **Thực hiện kế hoạch** | *"yes, go ahead"* sau bảng kế hoạch | Agent bắt đầu viết hoặc sửa file |
-| **Đóng luồng bình luận** | *"resolve C-012"*, *"resolve comments"* | Đánh dấu phản hồi đã xử lý |
+*"Ổn rồi"* hay *"approve"* có thể hiểu theo **4 cách khác nhau**. Nhầm thì dễ bỏ sót bước hoặc duyệt nhầm.
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Bốn kiểu
 
-**Bạn nói:** *"help me approve"*
+| Ý bạn | Nhắn (ví dụ) | Chuyện gì xảy ra |
+|-------|--------------|------------------|
+| **Duyệt tài liệu chính thức** | *"review documents"*, *"approve srs/01-overview"* | Quy trình review; có thể cần đủ số người duyệt |
+| **Duyệt mục SPEC** | *"approve SPEC-001"* | Sau khi tạo SRS; đưa spec vào dự án |
+| **Cho phép AI làm theo kế hoạch** | *"yes, go ahead"* (sau bảng kế hoạch) | AI bắt đầu viết / sửa file |
+| **Đóng một góp ý** | *"resolve C-012"*, *"resolve comments"* | Đánh dấu góp ý đã xử lý xong |
 
-**Agent làm:** Hiện menu bốn lựa chọn (hoặc hỏi bạn muốn loại nào).
+---
 
-**Bạn thấy:** Không có tài liệu nào được ký duyệt và không có file nào được ghi cho đến khi bạn chọn đúng loại.
+## Ví dụ thực tế
+
+**Bạn nhắn:** *"help me approve"*
+
+**AI làm:** Hiện 4 lựa chọn (hoặc hỏi bạn chọn kiểu nào).
+
+**Bạn thấy:** Chưa có tài liệu nào được duyệt cho đến khi bạn chọn đúng.
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 help me approve
 ```
 
-**Bạn nên thấy:**
-- Menu phân biệt bốn lựa chọn, **hoặc**
-- Agent liệt kê bốn loại và hỏi bạn muốn loại nào
+**Kết quả mong đợi:**
+- Menu 4 lựa chọn, **hoặc**
+- AI liệt kê 4 kiểu và hỏi bạn muốn kiểu nào
 :::
 
 :::roletip
-**BA / Tester** — bạn sẽ dùng **ký duyệt tài liệu** và **resolve comments** thường xuyên nhất.
+**BA / Kiểm thử** — thường dùng **duyệt tài liệu** và **resolve comments** nhất.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Agent phê duyệt quá sớm | Dừng lại và nói loại bạn muốn; rà soát tài liệu chính thức cần bản tóm tắt trước |
-| Nhầm SPEC với tài liệu | SPEC = sau khi generate; tài liệu = *"review documents"* |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| AI duyệt quá sớm | Dừng lại, nói rõ kiểu bạn muốn; duyệt tài liệu phải có bản tóm tắt review trước |
+| Nhầm SPEC với duyệt tài liệu | SPEC = sau khi generate; duyệt tài liệu = *"review documents"* |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Thêm hoặc thay đổi yêu cầu](../04-changes/01-add-or-change-requirement.md)
+[Thêm hoặc sửa yêu cầu](../04-changes/01-add-or-change-requirement.md)

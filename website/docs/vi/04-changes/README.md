@@ -1,7 +1,7 @@
-# Phần: Thay đổi
+# Phần: Sửa yêu cầu
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Thêm hoặc thay đổi yêu cầu](01-add-or-change-requirement.md) | 10 phút | Một tính năng không cần tạo lại toàn bộ |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [Thêm / sửa một mục](01-add-or-change-requirement.md) | 10 phút | Sửa nhỏ không cần viết lại cả SRS |
 
-**Phần tiếp theo:** [Tạo tài liệu](../05-generate/README.md)
+**Phần tiếp:** [Viết tài liệu](../05-generate/README.md)

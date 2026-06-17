@@ -1,56 +1,56 @@
-# Xử lý bình luận
+# Xử lý góp ý
 
-**Phần:** [Rà soát](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Kiểm tra & phê duyệt](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Xử lý các luồng bình luận phản hồi trên tài liệu.
+**Học xong sẽ biết:** Xử lý các comment / góp ý trên tài liệu.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Người rà soát để lại **luồng bình luận** (ví dụ C-001) trên tài liệu. Khi bạn đã xử lý phản hồi, nhờ agent resolve comments. Đây **không** phải ký duyệt tài liệu chính thức.
+Người review để **góp ý** trên tài liệu (ví dụ C-001). Khi bạn sửa xong, nhờ AI *resolve comments*. Đây **không** phải bước phê duyệt chính thức.
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"resolve comments"*
+**Bạn nhắn:** *"resolve comments"*
 
-**Agent làm:** Hiện luồng bình luận đang mở, lập kế hoạch sửa, chỉnh tài liệu, đánh dấu luồng đã xong.
+**AI làm:** Liệt kê góp ý đang mở → đề xuất sửa → cập nhật tài liệu → đóng góp ý.
 
 **Bạn thấy:**
-- Hộp thư bình luận đang mở
-- Đề xuất chỉnh sửa trước khi commit
-- Luồng được đánh dấu đã resolve khi hoàn tất
+- Danh sách góp ý chưa xử lý
+- Đề xuất sửa trước khi lưu
+- Góp ý chuyển sang “đã xử lý” khi xong
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 resolve comments
 ```
 
-**Bạn nên thấy:**
-- Danh sách luồng bình luận đang mở, **hoặc**
-- Agent báo không có bình luận mở nếu hộp thư trống
+**Kết quả mong đợi:**
+- Danh sách góp ý đang mở, **hoặc**
+- AI báo không còn góp ý nào
 :::
 
 :::roletip
-**Tester** — dùng sau vòng rà soát kiểm thử; **BA** — sau phản hồi stakeholder.
+**Kiểm thử** — sau vòng test · **BA** — sau khi stakeholder góp ý.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Luồng không đóng | Đảm bảo tài liệu và metadata bình luận được cập nhật cùng nhau |
-| Nhầm với phê duyệt tài liệu | Bình luận = *"resolve C-012"*; ký duyệt = *"review documents"* |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| Góp ý không đóng được | Kiểm tra đã sửa cả tài liệu lẫn phần meta comment |
+| Nhầm với duyệt tài liệu | Góp ý: *"resolve C-012"* · Duyệt: *"review documents"* |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Tác vụ và workspace](../07-everyday/01-tasks-and-workspace.md)
+[Việc hằng ngày](../07-everyday/01-tasks-and-workspace.md)

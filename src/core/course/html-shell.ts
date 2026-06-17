@@ -310,6 +310,23 @@ button { font: inherit; cursor: pointer; }
 }
 .chat-hint strong { color: var(--accent); }
 .chat-hint code { font-size: .85em; }
+
+.callout { margin: 1.25rem 0; padding: 1rem 1.1rem; border-radius: var(--radius); border: 1px solid var(--border); }
+.callout.exercise { border-color: var(--accent-border); background: var(--accent-soft); }
+.callout.exercise::before { content: "Try it now"; display: block; font-weight: 700; color: var(--accent); margin-bottom: .5rem; }
+.callout.roletip { font-size: .88rem; background: var(--bg); }
+.callout.roletip::before { content: "Role tip"; display: block; font-weight: 600; color: var(--muted); margin-bottom: .35rem; }
+.callout.behind { font-size: .85rem; color: var(--muted); }
+.locale-switch { font-size: .78rem; display: flex; align-items: center; gap: .25rem; }
+.locale-switch a { color: var(--muted); text-decoration: none; }
+.locale-switch a.locale-active { color: var(--accent); font-weight: 700; }
+.locale-sep { color: var(--muted); }
+.locale-fallback-banner { background: #fef3c7; color: #92400e; padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .88rem; }
+@media (prefers-color-scheme: dark) {
+  .locale-fallback-banner { background: #422006; color: #fde68a; }
+}
+.nav-group-disabled h3 { color: var(--muted); opacity: .7; }
+.nav-disabled { display: block; padding: .32rem .45rem; font-size: .82rem; color: var(--muted); }
 `;
 
 const SCRIPTS = (copyLabel: string, copiedLabel: string) => `
@@ -395,6 +412,7 @@ export interface CourseShellOptions {
   prev?: CoursePage;
   next?: CoursePage;
   locale?: CourseLocale;
+  localeFallback?: boolean;
 }
 
 function escapeHtml(text: string): string {
@@ -434,14 +452,37 @@ function lessonProgress(
 }
 
 const SECTION_IDS = [
-  "01-get-started",
-  "02-chat-basics",
-  "03-graph",
-  "04-generate",
-  "05-prototype",
+  "01-welcome",
+  "02-get-started",
+  "03-chat-basics",
+  "04-changes",
+  "05-generate",
   "06-review",
-  "07-advanced",
+  "07-everyday",
 ] as const;
+
+function localeSwitcherHtml(activeLocale: CourseLocale, activeSlug: string): string {
+  const locales: CourseLocale[] = ["en", "vi"];
+  return locales
+    .map((loc) => {
+      const active = loc === activeLocale ? ' class="locale-active"' : "";
+      return `<a href="${coursePageUrl(loc, activeSlug)}"${active}>${loc.toUpperCase()}</a>`;
+    })
+    .join('<span class="locale-sep">|</span>');
+}
+
+function advancedStubHtml(locale: CourseLocale): string {
+  const title = locale === "vi" ? "Nâng cao (sắp ra mắt)" : "Advanced (coming soon)";
+  const hint =
+    locale === "vi"
+      ? "Đồ thị, prototype, mẫu tùy chỉnh…"
+      : "Graph, prototype, custom templates…";
+  return `<div class="nav-group nav-group-disabled"><h3>${escapeHtml(title)}</h3><ul><li><span class="nav-disabled">${escapeHtml(hint)}</span></li></ul></div>`;
+}
+
+function fallbackBannerHtml(ui: ReturnType<typeof courseUi>): string {
+  return `<div class="locale-fallback-banner" role="status">${escapeHtml(ui.localeFallback)}</div>`;
+}
 
 function navGroups(
   pages: CoursePage[],
@@ -573,6 +614,7 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
       <span>${escapeHtml(progressLabel)}</span>
       <div class="progress-bar" aria-hidden="true"><div class="progress-fill" style="width:${progress.pct}%"></div></div>
     </div>
+    <div class="locale-switch">${localeSwitcherHtml(locale, opts.activeSlug)}</div>
     <a class="open-chat" href="#chat-hint">${escapeHtml(ui.tryInChat)}</a>
   </header>
   <div class="sidebar-backdrop"></div>
@@ -583,9 +625,11 @@ export function buildCoursePageHtml(opts: CourseShellOptions): string {
       <input type="search" class="search" placeholder="${escapeHtml(ui.searchPlaceholder)}" aria-label="${escapeHtml(ui.searchAria)}" />
       <div class="nav-group"><ul>${topNav}</ul></div>
       ${sectionNav}
+      ${advancedStubHtml(locale)}
     </aside>
     <div class="main-wrap">
       <div class="content-panel">
+        ${opts.localeFallback ? fallbackBannerHtml(ui) : ""}
         ${breadcrumbHtml(opts.activePage, locale, ui)}
         ${metaBadges(opts.activePage, progress, ui)}
         <div class="${withTocClass}">

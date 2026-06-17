@@ -1,5 +1,5 @@
-# Phần: Hàng ngày
+# Phần: Việc hằng ngày
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Tác vụ và workspace](01-tasks-and-workspace.md) | 10 phút | Tiếp tục, tạm dừng, kiểm tra sức khỏe |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [Tạm dừng & tiếp tục](01-tasks-and-workspace.md) | 10 phút | Làm dở dang, kiểm tra dự án |

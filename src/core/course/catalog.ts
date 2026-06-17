@@ -104,13 +104,17 @@ export function formatCourseNotFoundMessage(
     ...checkedPaths.map((p) => `  - ${p}`),
     "",
     "Fix:",
-    "  1. Reinstall ai-spector (course ships in node_modules/ai-spector/website/docs/):",
+    "  1. Reinstall ai-spector (course ships in node_modules/ai-spector/website/docs/{locale}/):",
     "       npm install ai-spector",
     "  2. Or add a local copy in your project:",
-    "       docs/course/  (optional override)",
-    "  3. From the ai-spector repo: edit website/docs/ (docs/course is a dev symlink).",
+    "       docs/course/en/  or  docs/course/vi/  (optional override)",
+    "  3. From the ai-spector repo: edit website/docs/en/ or website/docs/vi/.",
   ];
   return lines.join("\n");
+}
+
+function localeCourseDir(base: string, locale: CourseLocale): string {
+  return join(base, locale);
 }
 
 /** Prefer project-local course copy when present; otherwise bundled docs. */
@@ -118,19 +122,21 @@ export async function resolveCourseRoot(
   projectRoot?: string,
   locale: CourseLocale = DEFAULT_COURSE_LOCALE,
 ): Promise<string> {
-  const bundled = courseBundleRoot();
-  const local = projectRoot ? join(projectRoot, "docs", "course") : undefined;
+  const bundledBase = courseBundleRoot();
+  const localBase = projectRoot ? join(projectRoot, "docs", "course") : undefined;
 
   const checkedPaths: string[] = [];
-  if (local) {
-    checkedPaths.push(local);
-    if (await pathExists(local)) {
-      return local;
+  if (localBase) {
+    const localLocale = localeCourseDir(localBase, locale);
+    checkedPaths.push(localLocale);
+    if (await pathExists(localLocale)) {
+      return localLocale;
     }
   }
-  checkedPaths.push(bundled);
-  if (await pathExists(bundled)) {
-    return bundled;
+  const bundledLocale = localeCourseDir(bundledBase, locale);
+  checkedPaths.push(bundledLocale);
+  if (await pathExists(bundledLocale)) {
+    return bundledLocale;
   }
 
   throw new CourseNotFoundError(locale, checkedPaths);

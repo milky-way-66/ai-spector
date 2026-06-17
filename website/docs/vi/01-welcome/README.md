@@ -1,7 +1,7 @@
-# Phần: Chào mừng
+# Phần: Làm quen
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [AI Spector là gì?](01-what-is-ai-spector.md) | 10 phút | Tư duy chat-first |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [AI Spector là gì?](01-what-is-ai-spector.md) | 10 phút | Cách nhắn tin cho AI thay vì tự làm kỹ thuật |
 
-**Phần tiếp theo:** [Bắt đầu](../02-get-started/README.md)
+**Phần tiếp:** [Bắt đầu](../02-get-started/README.md)

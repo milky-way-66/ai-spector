@@ -1,71 +1,71 @@
-# Tác vụ và workspace
+# Tạm dừng, tiếp tục & kiểm tra dự án
 
-**Phần:** [Hàng ngày](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Việc hằng ngày](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Tiếp tục công việc tạm dừng, xem tác vụ đang chạy, và kiểm tra sức khỏe workspace.
+**Học xong sẽ biết:** Làm tiếp việc dang dở, xem task đang chạy, kiểm tra dự án có ổn không.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Quy trình dài (tạo SRS, rà soát) có thể **tạm dừng và tiếp tục**. Agent lưu tiến độ. Bạn cũng có thể nhờ **kiểm tra workspace** khi cảm thấy cấu hình có vấn đề.
+Việc dài (viết SRS, review…) có thể **tạm dừng rồi làm tiếp** — AI nhớ tiến độ. Cảm thấy cài đặt lỗi thì nhờ **kiểm tra dự án**.
 
 ---
 
-## Cụm từ thường dùng
+## Câu nói hay dùng
 
-| Bạn muốn… | Nói (ví dụ) |
-|-----------|-------------|
-| Xem công việc tạm dừng | *"active tasks"*, *"resume my SRS"* |
+| Muốn làm gì | Nhắn (ví dụ) |
+|--------------|--------------|
+| Xem việc đang dở | *"active tasks"*, *"resume my SRS"* |
 | Tạm dừng | *"pause task"* |
-| Kiểm tra sức khỏe | *"check my workspace"* |
-| Câu trả lời cũ | *"open questions"* |
+| Kiểm tra dự án | *"check my workspace"* |
+| Xem câu đã trả lời trước đó | *"open questions"* |
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"active tasks"*
+**Bạn nhắn:** *"active tasks"*
 
-**Agent làm:** Liệt kê tác vụ đang tiến hành kèm trạng thái.
+**AI làm:** Liệt kê task đang chạy và trạng thái.
 
-**Bạn thấy:** Tên tác vụ, giai đoạn, và cách nói để tiếp tục.
+**Bạn thấy:** Tên task, đang ở bước nào, câu nói để làm tiếp.
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 active tasks
 ```
 
-**Bạn nên thấy:**
-- Bảng hoặc danh sách tác vụ (có thể trống trên dự án mới)
-- Cách tiếp tục nếu có tác vụ đang tạm dừng
+**Kết quả mong đợi:**
+- Bảng / danh sách task (dự án mới có thể trống)
+- Hướng dẫn làm tiếp nếu có task đang dừng
 
-Sau đó thử:
+Tiếp theo thử:
 
 ```
 check my workspace
 ```
 
-**Bạn nên thấy:** Bảng kết quả workspace với các mục pass/fail.
+**Kết quả mong đợi:** Bảng kiểm tra dự án — mục nào OK, mục nào cần sửa.
 :::
 
 :::roletip
-**Mọi người** — dùng *"check my workspace"* khi thiết lập hoặc định tuyến có vẻ lỗi.
+**Mọi người** — dùng *"check my workspace"* khi AI không hiểu lệnh hoặc cài đặt có vẻ sai.
 :::
 
-## Chúc mừng
+## Xong khóa cơ bản!
 
-Bạn đã hoàn thành khóa học cơ bản. Giờ bạn có thể dùng chat cho thiết lập, thay đổi, tạo tài liệu, rà soát, và quản lý tác vụ hàng ngày.
+Bạn đã học xong 9 bài. Giờ có thể dùng chat để: cài đặt, sửa yêu cầu, viết SRS, duyệt tài liệu, xử lý góp ý và quản lý task.
 
-Các chủ đề nâng cao (graph, prototype, templates) sẽ được bổ sung trong module sau.
+Phần nâng cao (đồ thị, prototype, mẫu tùy chỉnh…) sẽ bổ sung sau.
 
 ---
 
 ## Tiếp theo
 
-Quay lại [Trang chủ khóa học](../README.md) hoặc luyện cụm từ theo vai trò từ [Chat hoạt động thế nào](../03-chat-basics/01-how-chat-works.md).
+Về [trang chủ khóa học](../README.md), hoặc ôn [câu nói hay dùng](../03-chat-basics/01-how-chat-works.md).

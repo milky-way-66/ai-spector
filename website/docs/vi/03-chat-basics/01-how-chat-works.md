@@ -1,72 +1,72 @@
-# Chat hoạt động thế nào
+# Cách dùng chat
 
-**Phần:** [Cơ bản về chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Dùng chat](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Biết nói gì trong chat và agent sẽ làm gì tiếp theo.
+**Học xong sẽ biết:** Nói gì trong chat và AI sẽ làm gì tiếp.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Mô tả nhu cầu bằng ngôn ngữ hàng ngày. Agent chọn quy trình phù hợp, hỏi khi chưa rõ, và chờ bạn phê duyệt trước khi thay đổi lớn.
+Cứ nói bằng tiếng đời thường. AI tự chọn việc phù hợp, hỏi lại nếu chưa rõ, và chờ bạn đồng ý trước khi sửa lớn.
 
-Bạn **không** cần biết tên công cụ nội bộ hay kiến trúc kỹ thuật.
+Bạn **không** cần biết tên công cụ hay cơ chế bên trong.
 
 ---
 
-## Cụm từ thường dùng
+## Câu nói hay dùng
 
-| Bạn muốn… | Nói (ví dụ) |
-|-----------|-------------|
-| Thiết lập dự án | *"setup ai-spector project"* |
-| Tạo SRS | *"generate the SRS"* |
-| Rà soát tài liệu | *"review documents"* |
+| Muốn làm gì | Nhắn (ví dụ) |
+|--------------|--------------|
+| Cài dự án | *"setup ai-spector project"* |
+| Viết SRS | *"generate the SRS"* |
+| Duyệt tài liệu | *"review documents"* |
 | Thêm một tính năng | *"I want to add login with Google"* |
-| Xử lý phản hồi | *"resolve comments"* |
-| Tiếp tục công việc tạm dừng | *"resume my SRS"*, *"active tasks"* |
-| Kiểm tra sức khỏe dự án | *"check my workspace"* |
+| Xử lý góp ý | *"resolve comments"* |
+| Làm tiếp việc dang dở | *"resume my SRS"*, *"active tasks"* |
+| Kiểm tra dự án ổn chưa | *"check my workspace"* |
 
-Khi không chắc, nói *"help me approve"* — agent sẽ hỏi bạn muốn gì.
+Không chắc nói gì? Thử *"help me approve"* — AI sẽ hỏi lại cho rõ.
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"help me approve"*
+**Bạn nhắn:** *"help me approve"*
 
-**Agent làm:** Hỏi một câu làm rõ nếu ý định của bạn mơ hồ.
+**AI làm:** Hỏi bạn muốn đồng ý kiểu nào (nếu câu chưa rõ).
 
-**Bạn thấy:** Menu ngắn (ký duyệt tài liệu vs kế hoạch vs spec vs bình luận) — không tự động phê duyệt.
+**Bạn thấy:** Menu ngắn — không tự động duyệt hay ghi file.
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 help me approve
 ```
 
-**Bạn nên thấy:**
-- Agent hỏi bạn muốn loại phê duyệt nào, **hoặc**
-- Agent giải thích bốn loại trước khi hành động
+**Kết quả mong đợi:**
+- AI hỏi bạn muốn loại đồng ý nào, **hoặc**
+- AI giải thích 4 kiểu trước khi làm gì
 :::
 
 :::roletip
-**BA / Tester** — đánh dấu dòng *"review documents"* và *"resolve comments"*.
+**BA / Kiểm thử** — hay dùng *"review documents"* và *"resolve comments"*.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Sai quy trình | Diễn đạt lại theo bảng trên; nói *"one feature only"* cho thay đổi nhỏ |
-| Agent làm quá nhiều | *"pause task"* rồi làm rõ phạm vi |
-| Không có gì xảy ra | *"check my workspace"* |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| AI làm sai việc | Nói lại theo bảng trên; sửa nhỏ thì thêm *"one feature only"* |
+| AI làm quá tay | *"pause task"* rồi nói rõ phạm vi |
+| Không phản hồi | *"check my workspace"* |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Bốn loại phê duyệt](02-four-kinds-of-approve.md)
+[Bốn kiểu “đồng ý”](02-four-kinds-of-approve.md)

@@ -1,60 +1,60 @@
 # AI Spector là gì?
 
-**Phần:** [Chào mừng](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Làm quen](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Hiểu rằng bạn mô tả nhu cầu trong chat — agent lo phần kỹ thuật.
+**Học xong sẽ biết:** Bạn chỉ cần nói trong chat — phần kỹ thuật để AI lo.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-AI Spector giúp nhóm biến yêu cầu thành tài liệu có cấu trúc (SRS, thiết kế, rà soát). **Bạn trò chuyện với agent trong Cursor hoặc Claude Code.** Bạn không cần nhớ lệnh hay chỉnh file cấu hình cho công việc hàng ngày.
+AI Spector giúp team biến yêu cầu thành tài liệu rõ ràng (SRS, thiết kế, bản duyệt…). **Bạn chat với AI trong Cursor hoặc Claude Code.** Không cần nhớ lệnh hay tự sửa file cấu hình mỗi ngày.
 
-| Bạn làm | Agent làm |
-|---------|-----------|
-| Nói bạn cần gì | Chọn quy trình phù hợp |
-| Trả lời câu hỏi làm rõ | Đọc dự án và nguồn dữ liệu |
-| Phê duyệt kế hoạch khi được hỏi | Viết tài liệu và cập nhật dự án |
+| Việc của bạn | AI sẽ làm |
+|--------------|-----------|
+| Nói bạn cần gì | Chọn đúng quy trình |
+| Trả lời câu hỏi bổ sung | Đọc dự án và tài liệu nguồn |
+| Bấm đồng ý khi được hỏi | Viết / cập nhật tài liệu |
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"open the course"*
+**Bạn nhắn:** *"open the course"*
 
-**Agent làm:** Mở khóa học trong trình duyệt và chỉ bạn đến bài học đúng.
+**AI làm:** Mở khóa học trên trình duyệt và chỉ đúng bài.
 
-**Bạn thấy:** Một liên kết như `http://127.0.0.1:4177/course/en/index` và tóm tắt ngắn.
+**Bạn thấy:** Link kiểu `http://127.0.0.1:4177/course/vi/index` và vài dòng tóm tắt.
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 open the course
 ```
 
-**Bạn nên thấy:**
-- Agent chạy server khóa học (hoặc gửi liên kết nếu đã chạy)
-- Trình duyệt mở trang chủ khóa học
-- Agent tóm tắt bài học này trong chat — không phải toàn bộ nội dung
+**Kết quả mong đợi:**
+- AI mở khóa học (hoặc gửi link nếu đã mở sẵn)
+- Trình duyệt hiện trang chủ khóa học
+- AI tóm tắt bài trong chat — không dán nguyên cả bài
 :::
 
 :::roletip
-**Mọi người** — đánh dấu URL khóa học để tra cứu nhanh.
+**Mọi người** — lưu link khóa học để mở lại cho nhanh.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Cổng đã được dùng | *"course server port is busy"* — đóng cửa sổ khác hoặc nhờ developer |
-| Không tìm thấy khóa học | *"setup ai-spector project"* trước (bài học tiếp theo) |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| Báo cổng đang bận | *"course server port is busy"* — tắt tab cũ hoặc nhờ dev |
+| Không thấy khóa học | Làm bài tiếp theo: *"setup ai-spector project"* |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
-[Thiết lập qua chat](../02-get-started/01-setup-via-chat.md)
+[Cài đặt qua chat](../02-get-started/01-setup-via-chat.md)

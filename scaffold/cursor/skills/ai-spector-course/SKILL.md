@@ -24,17 +24,19 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
    npx ai-spector course serve --open
    ```
 
-   Default URL: `http://127.0.0.1:4177/course/index`
+   Default URL: `http://127.0.0.1:4177/course/en/index`
 
-2. **Pick the best lesson** from [references/course-guide.md](references/course-guide.md) based on the user's question. Link directly:
+2. **Pick the best lesson** from [references/course-guide.md](references/course-guide.md). Link directly:
 
-   `http://127.0.0.1:4177/course/<slug>`
+   `http://127.0.0.1:4177/course/{locale}/<slug>`
 
-   Example slugs: `01-get-started/01-prerequisites-and-init`, `02-chat-basics/01-how-chat-works`.
+   Use `vi` locale when the user writes in Vietnamese.
 
-3. **Read the matching markdown** under `website/docs/` (or `docs/course/` via symlink) and summarize the key steps in chat — do not paste the whole lesson.
+   Example slugs: `02-get-started/01-setup-via-chat`, `03-chat-basics/01-how-chat-works`.
 
-4. **Offer the next action** — e.g. after setup lesson → `"setup ai-spector project"`; after chat lesson → `"analyze my data source"`.
+3. **Read the matching markdown** under `website/docs/en/` or `website/docs/vi/` and summarize — do not paste the whole lesson.
+
+4. **After exercise:** link the **next lesson URL**. Route to task skills only when the user asks to run the task, not automatically.
 
 ## Boundaries
 
@@ -48,7 +50,8 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
 
 | Item | Path |
 |------|------|
-| Course index | `website/docs/README.md` |
-| Lessons | `website/docs/<section>/` |
+| EN course | `website/docs/en/` |
+| VI course | `website/docs/vi/` |
+| Project override | `docs/course/en/` or `docs/course/vi/` |
 
-`docs/course/` is a symlink to `website/docs/` for npm and CLI. If missing locally, the bundled package still ships course files.
+Essentials: **9 lessons**. Advanced module ships later. |

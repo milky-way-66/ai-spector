@@ -1,58 +1,58 @@
-# Thêm hoặc thay đổi yêu cầu
+# Thêm hoặc sửa yêu cầu
 
-**Phần:** [Thay đổi](README.md) · **Khóa học:** [Trang chủ](../README.md)  
+**Phần:** [Sửa yêu cầu](README.md) · **Khóa học:** [Trang chủ](../README.md)  
 **Thời gian:** ~10 phút
 
-**Mục tiêu:** Thêm hoặc cập nhật một tính năng hoặc mục mà không tạo lại toàn bộ SRS.
+**Học xong sẽ biết:** Thêm / sửa một phần nhỏ mà không phải tạo lại toàn bộ SRS.
 
 ---
 
-## Nói đơn giản
+## Tóm lại
 
-Khi cần **thay đổi nhỏ** — một phương thức đăng nhập, một màn hình, một yêu cầu — hãy nói rõ. Agent lập kế hoạch, chờ bạn đồng ý, rồi chỉ cập nhật phần cần thiết.
+Chỉ cần sửa **một mảng nhỏ** — thêm đăng nhập Google, sửa một màn hình, bổ sung một yêu cầu — thì nói thẳng ra. AI lên kế hoạch, chờ bạn OK, rồi chỉ sửa chỗ cần.
 
-Đây **không** phải tạo tài liệu toàn bộ.
+Đây **không** phải lệnh “viết lại cả bộ tài liệu”.
 
 ---
 
-## Bạn nói → Agent làm → Bạn thấy
+## Ví dụ thực tế
 
-**Bạn nói:** *"I want to add login with Google"*
+**Bạn nhắn:** *"I want to add login with Google"*
 
-**Agent làm:** Làm rõ phạm vi, trình bày kế hoạch, chờ phê duyệt, rồi sửa đúng tài liệu.
+**AI làm:** Hỏi rõ phạm vi → đưa kế hoạch → chờ đồng ý → sửa đúng file.
 
 **Bạn thấy:**
-- Câu hỏi làm rõ (được lưu cho phiên sau)
-- Bảng kế hoạch — trả lời *"yes, go ahead"* để thực hiện
-- Tài liệu cập nhật sau khi phê duyệt — không phải trước
+- Vài câu hỏi (lần sau AI nhớ câu trả lời)
+- Bảng kế hoạch — trả lời *"yes, go ahead"* mới bắt đầu sửa
+- File chỉ đổi **sau** khi bạn đồng ý
 
 ---
 
 :::exercise
-**Dán vào chat:**
+**Copy câu này vào chat (tiếng Anh):**
 
 ```
 I want to add login with Google
 ```
 
-**Bạn nên thấy:**
-- Agent xử lý như một thay đổi tăng dần (không phải tạo SRS toàn bộ)
-- Bảng kế hoạch trước khi ghi file
+**Kết quả mong đợi:**
+- AI coi đây là sửa nhỏ (không chạy generate SRS cả cục)
+- Có bảng kế hoạch trước khi ghi file
 :::
 
 :::roletip
-**BA** — dùng cách này cho hầu hết cập nhật yêu cầu hàng ngày.
+**BA** — cách này dùng hằng ngày khi cập nhật yêu cầu.
 :::
 
-## Nếu có vấn đề
+## Gặp lỗi?
 
-| Triệu chứng | Nói trong chat |
-|-------------|----------------|
-| Agent bắt đầu tạo SRS toàn bộ | Nói *"one feature only"* hoặc *"incremental change"* |
-| File thay đổi trước khi đồng ý kế hoạch | Dừng lại; nói *"pause task"* |
+| Tình huống | Nhắn trong chat |
+|------------|-----------------|
+| AI đòi tạo lại cả SRS | *"one feature only"* hoặc *"incremental change"* |
+| File đã sửa trước khi bạn OK | *"pause task"* |
 
 ---
 
-## Tiếp theo
+## Bài tiếp
 
 [Tạo SRS](../05-generate/01-generate-srs.md)

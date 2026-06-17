@@ -1,7 +1,7 @@
 # Phần: Bắt đầu
 
-| Bài học | Thời gian | Mục tiêu |
-|---------|-----------|----------|
-| [Thiết lập qua chat](01-setup-via-chat.md) | 10 phút | Dự án sẵn sàng không cần terminal |
+| Bài | Thời gian | Học xong sẽ biết |
+|-----|-----------|------------------|
+| [Cài đặt qua chat](01-setup-via-chat.md) | 10 phút | Chuẩn bị dự án mà không cần gõ lệnh |
 
-**Phần tiếp theo:** [Cơ bản về chat](../03-chat-basics/README.md)
+**Phần tiếp:** [Dùng chat](../03-chat-basics/README.md)

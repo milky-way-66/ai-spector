@@ -14,6 +14,43 @@ const mdProcessor = unified()
   .use(remarkRehype)
   .use(rehypeStringify);
 
+const CALLOUT_PLACEHOLDER = "AISPECTOR_CALLOUT_";
+
+function calloutHtml(kind: string, body: string, locale: CourseLocale): string {
+  const behindLabel = locale === "vi" ? "Chi tiết kỹ thuật" : "Behind the scenes";
+  if (kind === "behind") {
+    return `<details class="callout behind"><summary>${behindLabel}</summary>${body.trim()}</details>`;
+  }
+  return `<div class="callout ${kind}">${body.trim()}</div>`;
+}
+
+/** Turn :::exercise / :::roletip / :::behind fences into placeholders for HTML injection after render. */
+export function preprocessCallouts(
+  markdown: string,
+  locale: CourseLocale = DEFAULT_COURSE_LOCALE,
+): { markdown: string; callouts: string[] } {
+  const callouts: string[] = [];
+  const processed = markdown.replace(
+    /:::(exercise|roletip|behind)\n([\s\S]*?):::/g,
+    (_, kind: string, body: string) => {
+      const idx = callouts.length;
+      callouts.push(calloutHtml(kind, body, locale));
+      return `\n\n${CALLOUT_PLACEHOLDER}${idx}\n\n`;
+    },
+  );
+  return { markdown: processed, callouts };
+}
+
+function injectCallouts(html: string, callouts: string[]): string {
+  let result = html;
+  for (let i = 0; i < callouts.length; i++) {
+    const para = new RegExp(`<p>${CALLOUT_PLACEHOLDER}${i}</p>`, "g");
+    result = result.replace(para, callouts[i]);
+    result = result.replaceAll(`${CALLOUT_PLACEHOLDER}${i}`, callouts[i]);
+  }
+  return result;
+}
+
 function slugFromHref(href: string, currentRelPath: string, locale: CourseLocale): string {
   const clean = href.split("#")[0];
   const hash = href.includes("#") ? `#${href.split("#").slice(1).join("#")}` : "";
@@ -75,14 +112,24 @@ export function transformMermaidBlocks(html: string): string {
   );
 }
 
+/** Turn :::exercise / :::roletip / :::behind fences into styled callouts. */
+export function preprocessCalloutsOnly(
+  markdown: string,
+  locale: CourseLocale = DEFAULT_COURSE_LOCALE,
+): string {
+  return preprocessCallouts(markdown, locale).markdown;
+}
+
 export async function renderCourseMarkdown(
   markdown: string,
   currentRelPath = "README.md",
   locale: CourseLocale = DEFAULT_COURSE_LOCALE,
 ): Promise<string> {
-  const prepared = rewriteMarkdownLinks(markdown, currentRelPath, locale);
+  const { markdown: withPlaceholders, callouts } = preprocessCallouts(markdown, locale);
+  const prepared = rewriteMarkdownLinks(withPlaceholders, currentRelPath, locale);
   const file = await mdProcessor.process(prepared);
-  return transformMermaidBlocks(String(file));
+  const html = transformMermaidBlocks(String(file));
+  return injectCallouts(html, callouts);
 }
 
 export async function loadPageHtml(
