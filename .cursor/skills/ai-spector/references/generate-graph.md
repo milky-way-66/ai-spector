@@ -157,6 +157,13 @@ Use sub-agents — one sub-agent per item or 3–5 items per agent. Do not attem
 - **perScreen:** read `docs/basic-design/list-screens.md` §4; one file per screen under `docs/basic-design/screens/<slug>.md`.
 - Ingest `doc.bd.api-*` / `doc.bd.screen-*` with `contains` from list chapter in the wave-end merge.
 
+#### Detail design (perFeature)
+
+- **perFeature:** read `docs/detail-design/{lang}/feature-list.md` §1; one file per row under `docs/detail-design/{lang}/features/f-{nn}-{slug}.md`.
+- Seed = domain id (`F-01`), not only chapter document — query with `--depth 4` + CONTEXT edges; include related BD API/screen docs.
+- Ingest `doc.dd.f-*` with `contains` from `doc.dd.feature-list` in the wave-end merge.
+- **Reindex after wave 1** (feature list) before expanding per-feature rows.
+
 ## Accuracy checklist
 
 - [ ] `graph query` run for target and every DAG dependency with existing files

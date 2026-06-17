@@ -184,6 +184,25 @@
         "why": "Indexing is allowed but summaries need generated basic design files."
       }
     },
+    "summary-detail-design": {
+      "command": "/summary detail-design",
+      "requires": [],
+      "checks": [
+        {
+          "id": "detail-design-any-files",
+          "type": "hasFiles",
+          "path": "docs/detail-design",
+          "glob": "**/*.md",
+          "min": 0,
+          "warnIfBelow": 1,
+          "warn": "No detail design files under docs/detail-design/ yet."
+        }
+      ],
+      "onWarn": {
+        "doFirst": ["/generate-detail-design"],
+        "why": "Indexing is allowed but summaries need generated detail design files."
+      }
+    },
     "generate-detail-design": {
       "command": "/generate-detail-design",
       "requires": ["analyze", "generate-srs-minimum"],
@@ -255,10 +274,11 @@
     "summary-srs",
     "generate-basic-design",
     "summary-basic-design",
-    "generate-detail-design"
+    "generate-detail-design",
+    "summary-detail-design"
   ],
   "graphUsage": {
-    "rule": "Before opening docs under docs/srs/ or docs/basic-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/_graph.md.",
+    "rule": "Before opening docs under docs/srs/, docs/basic-design/, or docs/detail-design/, run graph_neighbors from the task seed id and load only projectionPaths and referenced sources from the result. See .cursor/commands/_graph.md.",
     "validateBeforeGenerate": "/validate-graph",
     "afterEdit": "/impact",
     "reconcileProjections": "/sync-graph"
@@ -266,6 +286,7 @@
   "indexUsage": {
     "rule": "Fallback only when graph domain nodes are missing or graph_neighbors returns an empty subgraph. Otherwise prefer graphUsage.rule.",
     "afterGenerateSrs": "/summary srs",
-    "afterGenerateBasicDesign": "/summary basic-design"
+    "afterGenerateBasicDesign": "/summary basic-design",
+    "afterGenerateDetailDesign": "/summary detail-design"
   }
 }

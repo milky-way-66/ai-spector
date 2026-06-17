@@ -44,11 +44,19 @@ Mark clarify done only after `snapshot.readinessReportShown`. Mark complete only
 
 | Situation | Load |
 |---|---|
+| Readiness assessment (before clarify) | [../ai-spector/references/context-readiness.md](../ai-spector/references/context-readiness.md) |
 | Clarify gaps / stale Q-ids | [../ai-spector/references/clarify.md](../ai-spector/references/clarify.md), [../ai-spector/references/context-store.md](../ai-spector/references/context-store.md) |
+| User adds chapters mid-session | [../ai-spector/references/incremental-continuation.md](../ai-spector/references/incremental-continuation.md) |
 | Briefing + plan gate | [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md) |
+| Output compliance (after each wave) | [../ai-spector/references/output-compliance.md](../ai-spector/references/output-compliance.md) |
 | Graph queries / merge | [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) |
 | After generation (spec extraction) | [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) |
+| Language not set | [../ai-spector/references/language-picker.md](../ai-spector/references/language-picker.md) |
+| Writing common chapters | [references/dd-context/common-chapters.md](references/dd-context/common-chapters.md) |
+| Writing feature list | [references/dd-context/feature-list.md](references/dd-context/feature-list.md) |
+| Writing feature detail (per feature) | [references/dd-context/feature-detail.md](references/dd-context/feature-detail.md) |
 | CLI fails | [../ai-spector/references/cli-failures.md](../ai-spector/references/cli-failures.md) |
+| Run of 5+ files | [../ai-spector/references/context-management.md](../ai-spector/references/context-management.md) |
 
 ## On CLI failure
 Pause. Report full output. Offer fix + retry. Details in cli-failures.md.

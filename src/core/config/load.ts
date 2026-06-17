@@ -164,16 +164,21 @@ export async function resolveActiveManifests(
   const srsPack = config.packs.srs;
   const bdPack = config.packs.basicDesign;
 
-  const [srsEntry, bdEntry] = await Promise.all([
+  const [srsEntry, bdEntry, ddEntry] = await Promise.all([
     resolvePackManifest(root, srsPack, loadDocumentsManifest),
     resolvePackManifest(root, bdPack, async () => {
       const bundleRoot = packageBundleRoot();
       const manifest = await loadBasicDesignListManifest();
       return { bundleRoot, manifest };
     }),
+    resolvePackManifest(root, "builtin", async () => {
+      const bundleRoot = packageBundleRoot();
+      const manifest = await loadDetailDesignListManifest();
+      return { bundleRoot, manifest };
+    }),
   ]);
 
-  return [srsEntry, bdEntry];
+  return [srsEntry, bdEntry, ddEntry];
 }
 
 /** Returns the primary (first) language from config. */
@@ -247,6 +252,17 @@ export async function loadBasicDesignListManifest(): Promise<DocumentsManifest> 
   );
   if (!manifest.templatesDir || !Array.isArray(manifest.documents)) {
     throw new Error(`Invalid documents-basic-design.json in ${bundleRoot}`);
+  }
+  return manifest;
+}
+
+export async function loadDetailDesignListManifest(): Promise<DocumentsManifest> {
+  const bundleRoot = packageBundleRoot();
+  const manifest = await readJson<DocumentsManifest>(
+    join(bundleRoot, "documents-detail-design.json"),
+  );
+  if (!manifest.templatesDir || !Array.isArray(manifest.documents)) {
+    throw new Error(`Invalid documents-detail-design.json in ${bundleRoot}`);
   }
   return manifest;
 }

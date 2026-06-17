@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **Detail design parity** — `documents-detail-design.json`, `dag.graph-seeds.json`, doc-extract for `docs/detail-design/features/` (`doc.dd.f-*`), `.ai-spector/index/detail-design.md`, `readiness-criteria.json`, `dd-context/` agent guides, `summary-detail-design` workflow step, and skill parity with basic design.
 - **Comment resolve flow (git-backed F-05)** — `ai-spector comments inbox|plan|list|show|resolve` for IDE workflows: numbered inbox in chat, graph impact via `comments plan`, propose/apply doc edits, then update `meta_data.json` locally; Cursor **`/resolve-comments`** orchestrates the full flow.
 - **`init` copies templates** — `npx ai-spector init` installs `.ai-spector/templates/` (SRS, basic design, detail design) and sets `paths.templates` in `docflow.config.json`. Cursor skill and generate commands require agents to read templates from that path (not `node_modules`).
 - **Basic-design doc extract** — `ai-spector index` parses `docs/basic-design/api/*.md` and `docs/basic-design/screens/*.md` into `doc.bd.*` documents, section trees, and optional `tracesTo` from related features cited in detail files.

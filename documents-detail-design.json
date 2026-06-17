@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "name": "detail-design",
+  "packName": "builtin-detail-design",
+  "nodePrefix": "doc.dd",
+  "perDomainTemplates": {
+    "featureDetail": "doc.dd.detail-feature"
+  },
+  "defaultListedIn": {
+    "featureDetail": "doc.dd.feature-list"
+  },
+  "templatesDir": "templates/detail_design",
+  "documents": [
+    {
+      "documentId": "doc.dd.architecture-overview",
+      "template": "common/architecture-overview-template.md",
+      "output": "docs/detail-design/common/architecture-overview.md"
+    },
+    {
+      "documentId": "doc.dd.security-patterns",
+      "template": "common/security-patterns-template.md",
+      "output": "docs/detail-design/common/security-patterns.md"
+    },
+    {
+      "documentId": "doc.dd.error-handling",
+      "template": "common/error-handling-patterns-template.md",
+      "output": "docs/detail-design/common/error-handling-patterns.md"
+    },
+    {
+      "documentId": "doc.dd.performance-standards",
+      "template": "common/performance-standards-template.md",
+      "output": "docs/detail-design/common/performance-standards.md"
+    },
+    {
+      "documentId": "doc.dd.integration-patterns",
+      "template": "common/integration-patterns-template.md",
+      "output": "docs/detail-design/common/integration-patterns.md"
+    },
+    {
+      "documentId": "doc.dd.deployment",
+      "template": "common/deployment-infrastructure-template.md",
+      "output": "docs/detail-design/common/deployment-infrastructure.md"
+    },
+    {
+      "documentId": "doc.dd.feature-list",
+      "template": "feature-list-template.md",
+      "output": "docs/detail-design/feature-list.md"
+    }
+  ]
+}

@@ -46,6 +46,6 @@ Always write to `docs/detail-design/{lang.code}/{path}`. Never skip the language
 - [ ] task_list bootstrap generate-detail-design
 - [ ] workspace_check + context_list
 - [ ] Clarify → briefing → plan → task_approve_plan
-- [ ] Each wave: write → readiness_scan → task_record_wave → index
+- [ ] Each wave: write → readiness_scan → output compliance → task_record_wave → index
 - [ ] Offer spec extraction when done
 ```

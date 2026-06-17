@@ -7,6 +7,9 @@ import {
   basicDesignListChaptersNeedSections,
   buildDocExtractPatch,
   classifyBasicDesignDetailFile,
+  classifyDetailDesignDetailFile,
+  detailDesignAnchorStructurePatch,
+  detailDesignListChaptersNeedSections,
 } from "../graph/doc-extract.js";
 import { mergeStructurePatches } from "../registry/structure-patch.js";
 import {
@@ -45,7 +48,7 @@ export async function runDocSemanticMerge(
   const entries: Array<{ relativePath: string; content: string }> = [];
   const sourceHashes: Record<string, string> = {};
 
-  for (const key of ["srs", "basicDesign"] as const) {
+  for (const key of ["srs", "basicDesign", "detailDesign"] as const) {
     const source = config.sources[key];
     if (!source?.root) {
       continue;
@@ -64,19 +67,24 @@ export async function runDocSemanticMerge(
   if (entries.length === 0) {
     return {
       merged: false,
-      detail: "No markdown under docs/srs or docs/basic-design",
+      detail: "No markdown under docs/srs, docs/basic-design, or docs/detail-design",
       sourceHashes,
     };
   }
 
   const graphBefore = await loadInMemoryGraph(opts.graphPath);
-  const listChaptersNeedSections = basicDesignListChaptersNeedSections(graphBefore);
+  const listChaptersNeedSections =
+    basicDesignListChaptersNeedSections(graphBefore) ||
+    detailDesignListChaptersNeedSections(graphBefore);
   let { patch, stats } = await buildDocExtractPatch(entries, opts.projectRoot, {
     includeListChapterMarkdown: listChaptersNeedSections,
   });
 
   if (listChaptersNeedSections) {
-    const structure = await basicDesignAnchorStructurePatch(opts.projectRoot);
+    const structure = mergeStructurePatches([
+      await basicDesignAnchorStructurePatch(opts.projectRoot),
+      await detailDesignAnchorStructurePatch(opts.projectRoot),
+    ]);
     patch = mergeStructurePatches([patch, structure]);
   }
 
@@ -108,10 +116,15 @@ export async function runDocSemanticMerge(
   const bdDetailOnDisk = entries.filter((e) =>
     classifyBasicDesignDetailFile(e.relativePath),
   ).length;
+  const ddDetailOnDisk = entries.filter((e) =>
+    classifyDetailDesignDetailFile(e.relativePath),
+  ).length;
   const detailGapWarning =
     bdDetailOnDisk > 0 && stats.bdDetailDocuments === 0
       ? `\n      ⚠ ${bdDetailOnDisk} basic-design detail file(s) on disk (screens/, api/) produced 0 graph detail nodes — check sources in ${configPath}`
-      : "";
+      : ddDetailOnDisk > 0 && stats.ddDetailDocuments === 0
+        ? `\n      ⚠ ${ddDetailOnDisk} detail-design feature file(s) on disk produced 0 graph detail nodes — check sources in ${configPath}`
+        : "";
 
   return {
     merged: true,
@@ -119,8 +132,8 @@ export async function runDocSemanticMerge(
       `${stats.filesScanned} files → ${stats.useCases} use cases, ${stats.features} features, ${stats.actors} actors` +
       (stats.detailDocuments > 0
         ? `, ${stats.detailDocuments} detail documents` +
-          (stats.bdDetailDocuments > 0
-            ? ` (${stats.srsDetailDocuments} SRS, ${stats.bdDetailDocuments} basic-design)`
+          (stats.bdDetailDocuments > 0 || stats.ddDetailDocuments > 0
+            ? ` (${stats.srsDetailDocuments} SRS, ${stats.bdDetailDocuments} basic-design, ${stats.ddDetailDocuments} detail-design)`
             : "")
         : "") +
       (stats.detailSections > 0 ? `, ${stats.detailSections} detail sections` : "") +

@@ -31,6 +31,7 @@
     "templates",
     "documents.json",
     "documents-basic-design.json",
+    "documents-detail-design.json",
     "scaffold",
     "assets",
     "website/docs",

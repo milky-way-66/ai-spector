@@ -21,6 +21,14 @@ export async function resolveCriteriaFilePath(
     };
   }
 
+  if (effectiveDocType === "detail-design") {
+    return {
+      path: docTypeReadinessCriteriaPath(root, "detail-design"),
+      docType: "detail-design",
+      packName: null,
+    };
+  }
+
   const packName =
     effectiveDocType !== "srs" && effectiveDocType !== "basic-design"
       ? effectiveDocType

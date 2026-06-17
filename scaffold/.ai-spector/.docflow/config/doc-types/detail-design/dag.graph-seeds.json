@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "description": "Map doc-types/detail-design/dag.json node ids to graph query seeds and projection document ids",
+  "seeds": {
+    "dd.common.architecture-overview": "doc.bd.db-design",
+    "dd.common.security-patterns": "doc.srs.7-quality-attributes",
+    "dd.common.error-handling": "doc.srs.7-quality-attributes",
+    "dd.common.performance-standards": "doc.srs.7-quality-attributes",
+    "dd.common.integration-patterns": "doc.srs.6-external-interfaces",
+    "dd.common.deployment": "doc.bd.db-design",
+    "dd.feature-list": "doc.srs.4-system-features",
+    "dd.feature-details": "doc.srs.4-system-features"
+  },
+  "perDomain": {
+    "perFeature": {
+      "parentDagId": "dd.feature-details",
+      "expandFrom": "doc.dd.feature-list",
+      "listTableSection": "## 1. List of Features",
+      "outputDir": "docs/detail-design/features/",
+      "outputSlugFrom": "featureName",
+      "oneFilePerRow": true,
+      "graphNodeType": "feature",
+      "documentPattern": "doc.dd.f-{id}"
+    }
+  },
+  "documentNodes": {
+    "dd.common.architecture-overview": {
+      "id": "doc.dd.architecture-overview",
+      "type": "document",
+      "output": "docs/detail-design/common/architecture-overview.md",
+      "template": "detail_design/common/architecture-overview-template.md"
+    },
+    "dd.common.security-patterns": {
+      "id": "doc.dd.security-patterns",
+      "type": "document",
+      "output": "docs/detail-design/common/security-patterns.md",
+      "template": "detail_design/common/security-patterns-template.md"
+    },
+    "dd.common.error-handling": {
+      "id": "doc.dd.error-handling",
+      "type": "document",
+      "output": "docs/detail-design/common/error-handling-patterns.md",
+      "template": "detail_design/common/error-handling-patterns-template.md"
+    },
+    "dd.common.performance-standards": {
+      "id": "doc.dd.performance-standards",
+      "type": "document",
+      "output": "docs/detail-design/common/performance-standards.md",
+      "template": "detail_design/common/performance-standards-template.md"
+    },
+    "dd.common.integration-patterns": {
+      "id": "doc.dd.integration-patterns",
+      "type": "document",
+      "output": "docs/detail-design/common/integration-patterns.md",
+      "template": "detail_design/common/integration-patterns-template.md"
+    },
+    "dd.common.deployment": {
+      "id": "doc.dd.deployment",
+      "type": "document",
+      "output": "docs/detail-design/common/deployment-infrastructure.md",
+      "template": "detail_design/common/deployment-infrastructure-template.md"
+    },
+    "dd.feature-list": {
+      "id": "doc.dd.feature-list",
+      "type": "document",
+      "output": "docs/detail-design/feature-list.md",
+      "template": "detail_design/feature-list-template.md"
+    }
+  }
+}

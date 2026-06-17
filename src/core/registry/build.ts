@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { RegistryDocument, RegistrySection, SectionRegistry } from "@/types.js";
 import {
   loadBasicDesignListManifest,
+  loadDetailDesignListManifest,
   loadDocflowConfig,
   loadDocumentsManifest,
   resolveActiveManifests,
@@ -51,7 +52,7 @@ async function resolveTemplatesSubdir(
   config: Awaited<ReturnType<typeof loadDocflowConfig>>["config"],
   bundleRoot: string,
   bundledRelativeDir: string,
-  subfolder: "srs" | "basic_design",
+  subfolder: "srs" | "basic_design" | "detail_design",
 ): Promise<string> {
   const projectDir = join(resolveProjectTemplatesDir(projectRoot, config), subfolder);
   if (await pathExists(projectDir)) {
@@ -77,6 +78,27 @@ export async function scanBasicDesignListDocuments(
   const documents: RegistryDocument[] = [];
   for (const doc of bdManifest.documents) {
     documents.push(await scanTemplate(bdTemplatesDir, doc));
+  }
+  return documents;
+}
+
+/** Scan detail-design list-chapter templates (common chapters + feature list). */
+export async function scanDetailDesignListDocuments(
+  projectRoot: string,
+): Promise<RegistryDocument[]> {
+  const { config } = await loadDocflowConfig(projectRoot);
+  const { bundleRoot } = await loadDocumentsManifest();
+  const ddManifest = await loadDetailDesignListManifest();
+  const ddTemplatesDir = await resolveTemplatesSubdir(
+    projectRoot,
+    config,
+    bundleRoot,
+    ddManifest.templatesDir,
+    "detail_design",
+  );
+  const documents: RegistryDocument[] = [];
+  for (const doc of ddManifest.documents) {
+    documents.push(await scanTemplate(ddTemplatesDir, doc));
   }
   return documents;
 }

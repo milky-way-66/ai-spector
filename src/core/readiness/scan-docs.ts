@@ -110,6 +110,9 @@ async function resolveDocPaths(
   if (docType === "basic-design") {
     return listMarkdownUnder(root, join(root, "docs", "basic-design", lang));
   }
+  if (docType === "detail-design") {
+    return listMarkdownUnder(root, join(root, "docs", "detail-design", lang));
+  }
 
   if (manifest) {
     const paths: string[] = [];

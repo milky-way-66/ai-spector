@@ -237,7 +237,8 @@ export class InMemoryGraph {
           (node.perDomain === "useCase" ||
             node.perDomain === "feature" ||
             node.perDomain === "apiDetail" ||
-            node.perDomain === "screenDetail");
+            node.perDomain === "screenDetail" ||
+            node.perDomain === "featureDetail");
         if (isPerDomainInstance) {
           continue;
         }

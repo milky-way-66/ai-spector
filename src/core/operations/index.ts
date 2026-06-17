@@ -579,7 +579,7 @@ export async function runIndex(
         const hashes: Record<string, string> = {};
         const fileCounts: Record<string, number> = {};
 
-        for (const kind of ["srs", "basicDesign", "dataSource"] as const) {
+        for (const kind of ["srs", "basicDesign", "detailDesign", "dataSource"] as const) {
           const sourceKey = kind;
           // dataSource may be absent from older configs — fall back to the
           // conventional root so existing projects get indexed without migration.

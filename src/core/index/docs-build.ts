@@ -126,23 +126,26 @@ export function firstMeaningfulLine(content: string): string {
   return "(empty file)";
 }
 
-export type DocIndexKind = "srs" | "basicDesign" | "dataSource";
+export type DocIndexKind = "srs" | "basicDesign" | "detailDesign" | "dataSource";
 
 export const DOC_INDEX_DEFAULT_ROOTS: Record<DocIndexKind, string> = {
   srs: "docs/srs",
   basicDesign: "docs/basic-design",
+  detailDesign: "docs/detail-design",
   dataSource: "docs/data-source",
 };
 
 export const DOC_INDEX_DEFAULT_OUTPUTS: Record<DocIndexKind, string> = {
   srs: ".ai-spector/index/srs.md",
   basicDesign: ".ai-spector/index/basic-design.md",
+  detailDesign: ".ai-spector/index/detail-design.md",
   dataSource: ".ai-spector/index/data-source.md",
 };
 
 const DOC_INDEX_TITLES: Record<DocIndexKind, string> = {
   srs: "SRS Document Index",
   basicDesign: "Basic Design Document Index",
+  detailDesign: "Detail Design Document Index",
   dataSource: "Data Source Document Index",
 };
 

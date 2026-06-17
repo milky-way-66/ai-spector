@@ -4,7 +4,10 @@ import type { ExtractPatch } from "./knowledge.js";
 import {
   BASIC_DESIGN_LIST_DOCUMENT_IDS,
   DEFAULT_BD_LIST_DOC,
+  DEFAULT_DD_LIST_DOC,
+  DETAIL_DESIGN_LIST_DOCUMENT_IDS,
   isBasicDesignListChapterDocumentId,
+  isDetailDesignListChapterDocumentId,
 } from "./defaults.js";
 
 const HEADING_RE = /^(#{2,4})\s+(.+)$/;
@@ -23,10 +26,17 @@ export interface ParsedDetailSection {
 
 const BD_INSTANCE_PATH_RE =
   /docs\/basic-design\/(?:api\/|screens\/)/i;
+const DD_INSTANCE_PATH_RE =
+  /docs\/detail-design\/(?:[^/]+\/)?features\//i;
 
 /** List-chapter basic-design documents (api-list, screen map, db-design). */
 export function isBasicDesignListChapterDocument(node: GraphNode): boolean {
   return node.type === "document" && isBasicDesignListChapterDocumentId(node.id);
+}
+
+/** List-chapter detail-design documents (feature-list). */
+export function isDetailDesignListChapterDocument(node: GraphNode): boolean {
+  return node.type === "document" && isDetailDesignListChapterDocumentId(node.id);
 }
 
 /** Whether doc-extract may upsert `section` nodes under this document parent. */
@@ -34,7 +44,10 @@ export function allowsSectionUpsertParent(parentDoc: GraphNode): boolean {
   if (isPerDomainInstanceDocument(parentDoc)) {
     return true;
   }
-  return isBasicDesignListChapterDocument(parentDoc);
+  return (
+    isBasicDesignListChapterDocument(parentDoc) ||
+    isDetailDesignListChapterDocument(parentDoc)
+  );
 }
 
 /** Per-domain detail markdown instance (not a template document from bootstrap). */
@@ -49,10 +62,14 @@ export function isPerDomainInstanceDocument(node: GraphNode): boolean {
   if (node.perDomain === "useCase" || node.perDomain === "feature") {
     return true;
   }
+  if (node.perDomain === "featureDetail") {
+    return true;
+  }
   if (
     node.perDomain === "apiDetail" ||
     node.perDomain === "screenDetail" ||
-    BD_INSTANCE_PATH_RE.test(output.replace(/\\/g, "/"))
+    BD_INSTANCE_PATH_RE.test(output.replace(/\\/g, "/")) ||
+    DD_INSTANCE_PATH_RE.test(output.replace(/\\/g, "/"))
   ) {
     return true;
   }
@@ -276,4 +293,31 @@ export function basicDesignListChapterFileToPatch(
   return detailSectionsToPatch(documentId, sections, content);
 }
 
-export { BASIC_DESIGN_LIST_DOCUMENT_IDS };
+/** Map list-chapter detail-design markdown paths to graph document ids. */
+export function detailDesignListChapterDocumentId(
+  relativePath: string,
+): string | null {
+  const p = normalizeDocPath(relativePath);
+  if (p === "docs/detail-design/feature-list.md" || p.endsWith("/feature-list.md")) {
+    return DEFAULT_DD_LIST_DOC.featureList;
+  }
+  return null;
+}
+
+/** Parse headings from generated feature-list.md into section nodes. */
+export function detailDesignListChapterFileToPatch(
+  relativePath: string,
+  content: string,
+): ExtractPatch {
+  const documentId = detailDesignListChapterDocumentId(relativePath);
+  if (!documentId) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+  const sections = parseDetailSections(content, documentId);
+  if (sections.length === 0) {
+    return { version: 1, nodes: [], edges: [] };
+  }
+  return detailSectionsToPatch(documentId, sections, content);
+}
+
+export { BASIC_DESIGN_LIST_DOCUMENT_IDS, DETAIL_DESIGN_LIST_DOCUMENT_IDS };

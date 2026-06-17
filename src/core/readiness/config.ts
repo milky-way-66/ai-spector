@@ -50,7 +50,7 @@ export interface ReadinessConfigStatus {
   suggestions: string[];
 }
 
-const DEFAULT_DOC_TYPES = ["srs", "basic-design"] as const;
+const DEFAULT_DOC_TYPES = ["srs", "basic-design", "detail-design"] as const;
 
 export function isReadinessExplicitlyConfigured(config: DocflowConfig): boolean {
   const r = config.readiness;

@@ -28,3 +28,21 @@ export const PER_DOMAIN_TEMPLATE_DOC_BD = {
   api: "doc.bd.detail-api",
   screen: "doc.bd.detail-screen",
 } as const;
+
+/** Detail-design list chapter documents (from generate merge / graph-seeds). */
+export const DEFAULT_DD_LIST_DOC = {
+  featureList: "doc.dd.feature-list",
+} as const;
+
+export const DETAIL_DESIGN_LIST_DOCUMENT_IDS: ReadonlySet<string> = new Set(
+  Object.values(DEFAULT_DD_LIST_DOC),
+);
+
+export function isDetailDesignListChapterDocumentId(id: string): boolean {
+  return DETAIL_DESIGN_LIST_DOCUMENT_IDS.has(id);
+}
+
+/** Template document ids for per-domain detail-design feature files (DAG / graph-seeds). */
+export const PER_DOMAIN_TEMPLATE_DOC_DD = {
+  feature: "doc.dd.detail-feature",
+} as const;

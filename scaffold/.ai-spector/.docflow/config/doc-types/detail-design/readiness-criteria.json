@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "docType": "detail-design",
+  "globalCriteria": [],
+  "targets": [
+    {
+      "dagNode": "dd.common.architecture-overview",
+      "criteria": [
+        {
+          "id": "DD-ARCH-001",
+          "severity": "blocking",
+          "question": "Confirm the system architecture stack and major components for detail design.",
+          "graphProbe": "graph query doc.bd.db-design"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.common.security-patterns",
+      "criteria": [
+        {
+          "id": "DD-SEC-001",
+          "severity": "blocking",
+          "question": "Confirm authentication, authorization, and data protection patterns to apply across features.",
+          "graphProbe": "graph query doc.srs.7-quality-attributes"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.common.error-handling",
+      "criteria": [
+        {
+          "id": "DD-ERR-001",
+          "severity": "blocking",
+          "question": "Confirm error handling strategy (API errors, retries, user messaging).",
+          "graphProbe": "graph query doc.srs.7-quality-attributes"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.common.performance-standards",
+      "criteria": [
+        {
+          "id": "DD-PERF-001",
+          "severity": "should-ask",
+          "question": "Confirm performance targets and measurement approach for feature implementations.",
+          "graphProbe": "graph query doc.srs.7-quality-attributes"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.common.integration-patterns",
+      "criteria": [
+        {
+          "id": "DD-INT-001",
+          "severity": "should-ask",
+          "question": "Confirm external systems and integration patterns (sync/async, messaging).",
+          "graphProbe": "graph query doc.srs.6-external-interfaces"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.common.deployment",
+      "criteria": [
+        {
+          "id": "DD-DEP-001",
+          "severity": "should-ask",
+          "question": "Confirm deployment topology and infrastructure constraints.",
+          "graphProbe": "graph query doc.bd.db-design"
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.feature-list",
+      "criteria": [
+        {
+          "id": "DD-FL-001",
+          "severity": "blocking",
+          "field": "featureInventory",
+          "question": "Confirm the complete feature inventory (F-xx ids + titles) matches the traceability graph.",
+          "graphProbe": "graph nodes where type === \"feature\"",
+          "minGraphCount": 1
+        }
+      ]
+    },
+    {
+      "dagNode": "dd.feature-details",
+      "perDomain": "feature",
+      "criteria": [
+        {
+          "id": "DD-FD-001",
+          "severity": "blocking",
+          "field": "implementationApproach",
+          "question": "For each feature, confirm implementation approach and which basic-design API/screen docs apply.",
+          "graphProbe": "graph query F-xx --depth 4",
+          "perEntity": "feature",
+          "minGraphCount": 1
+        }
+      ]
+    }
+  ]
+}
