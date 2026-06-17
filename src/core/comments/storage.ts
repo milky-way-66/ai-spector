@@ -5,12 +5,13 @@ import { promisify } from "node:util";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import {
   logicalPathToTargetPath,
-  matchesFilePathFilter,
   normalizeLogicalPath,
   threadDirRel,
   threadEventsRel,
   threadMetaRel,
 } from "./paths.js";
+import type { CommentListFilters } from "./filters.js";
+import { threadMatchesFilters } from "./filters.js";
 import type {
   CommentBody,
   CommentEvent,
@@ -31,9 +32,24 @@ const exec = promisify(execFile);
 
 export interface ListThreadsOptions {
   projectRoot: string;
+  filters?: CommentListFilters;
+  /** @deprecated Prefer filters.filePath */
   filePath?: string;
+  /** @deprecated Prefer filters.commentTypes */
   commentTypes?: CommentType[];
+  /** @deprecated Prefer filters.status */
   status?: ThreadStatus | "all";
+}
+
+function resolveListFilters(opts: ListThreadsOptions): CommentListFilters {
+  if (opts.filters) {
+    return opts.filters;
+  }
+  return {
+    filePath: opts.filePath,
+    commentTypes: opts.commentTypes,
+    status: opts.status ?? "open",
+  };
 }
 
 export interface ResolveThreadOptions {
@@ -189,29 +205,21 @@ async function discoverThreadMetas(
 }
 
 export async function listThreads(opts: ListThreadsOptions): Promise<ThreadSummary[]> {
-  const fileFilter = opts.filePath ? normalizeLogicalPath(opts.filePath) : undefined;
-  const statusFilter = opts.status ?? "open";
+  const filters = resolveListFilters(opts);
   const discovered = await discoverThreadMetas(opts.projectRoot);
   const summaries: ThreadSummary[] = [];
 
-  const typeFilter = opts.commentTypes?.length ? new Set(opts.commentTypes) : null;
-
   for (const item of discovered) {
-    if (fileFilter && !matchesFilePathFilter(item.logicalPath, fileFilter)) {
-      continue;
-    }
     const meta = await readJson<unknown>(item.metaPath);
     if (!isThreadMeta(meta)) {
       continue;
     }
-    if (typeFilter && !typeFilter.has(threadCommentType(meta))) {
-      continue;
-    }
-    if (statusFilter !== "all" && meta.status !== statusFilter) {
-      continue;
-    }
     const replyCount = await countCommentFiles(dirname(item.metaPath));
-    summaries.push(toSummary(opts.projectRoot, item.logicalPath, meta, replyCount));
+    const summary = toSummary(opts.projectRoot, item.logicalPath, meta, replyCount);
+    if (!threadMatchesFilters(summary, filters)) {
+      continue;
+    }
+    summaries.push(summary);
   }
 
   summaries.sort((a, b) => {

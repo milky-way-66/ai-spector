@@ -6,6 +6,13 @@ import {
   resolveImpactOrigins,
 } from "../graph/resolve.js";
 import { readDocAnchorContext, readPrototypeAnchorContext } from "./anchor.js";
+import type { CommentListFilters } from "./filters.js";
+import { parseScreenFromPhrase } from "./filters.js";
+import {
+  buildCommentBatchPlan,
+  resolveBatchPickId,
+  resolveThreadPicks,
+} from "./batch.js";
 import type { CommentInboxItem } from "./inbox.js";
 import {
   buildCommentInbox,
@@ -25,23 +32,38 @@ import { isDocumentAnchor, isPrototypeAnchor, threadCommentType } from "./types.
 
 export interface BuildInboxOptions {
   projectRoot: string;
+  filters?: CommentListFilters;
+  /** @deprecated Use filters */
   filePath?: string;
+  /** @deprecated Use filters */
   commentTypes?: import("./types.js").CommentType[];
+  /** @deprecated Use filters */
   status?: "open" | "resolved" | "all";
+  groupByScreen?: boolean;
+}
+
+function resolveInboxFilters(opts: BuildInboxOptions): CommentListFilters {
+  if (opts.filters) {
+    return opts.filters;
+  }
+  return {
+    filePath: opts.filePath,
+    commentTypes: opts.commentTypes,
+    status: opts.status ?? "open",
+  };
 }
 
 export async function buildCommentInboxPayload(
   opts: BuildInboxOptions,
 ): Promise<CommentInbox> {
+  const filters = resolveInboxFilters(opts);
   const threads = await listThreads({
     projectRoot: opts.projectRoot,
-    filePath: opts.filePath,
-    commentTypes: opts.commentTypes,
-    status: opts.status ?? "open",
+    filters,
   });
 
   const firstComments = await loadCommentBodiesForThreads(opts.projectRoot, threads);
-  const base = buildCommentInbox(threads);
+  const base = buildCommentInbox(threads, { groupByScreen: opts.groupByScreen });
   return enrichInboxPreviews(base, firstComments);
 }
 
@@ -52,6 +74,7 @@ export interface BuildPlanOptions {
   threadId: string;
   filePath?: string;
   pickId?: string;
+  filters?: CommentListFilters;
 }
 
 export async function buildCommentPlan(
@@ -121,11 +144,51 @@ export async function buildCommentPlan(
   return buildResolvePlan(thread, anchor, impact, resolvedFrom, opts.pickId);
 }
 
+export interface BuildBatchPlanOptions {
+  projectRoot: string;
+  filters?: CommentListFilters;
+  groupByScreen?: boolean;
+  batchId?: string;
+  picks?: string[];
+  screen?: string;
+  phrase?: string;
+}
+
+export async function buildCommentBatchPlanPayload(opts: BuildBatchPlanOptions) {
+  const filters: CommentListFilters = {
+    ...(opts.filters ?? { status: "open", commentTypes: ["prototype"] }),
+    commentTypes: opts.filters?.commentTypes ?? ["prototype"],
+    status: opts.filters?.status ?? "open",
+  };
+
+  const screen =
+    opts.screen ?? (opts.phrase ? parseScreenFromPhrase(opts.phrase) ?? undefined : undefined);
+
+  const inbox = await buildCommentInboxPayload({
+    projectRoot: opts.projectRoot,
+    filters,
+    groupByScreen: opts.groupByScreen ?? true,
+  });
+
+  return buildCommentBatchPlan({
+    projectRoot: opts.projectRoot,
+    inbox,
+    batchId: opts.batchId,
+    picks: opts.picks,
+    screen,
+    filters,
+  });
+}
+
 export function resolvePickId(
   inbox: CommentInbox,
   token: string,
 ): CommentInboxItem | undefined {
   const t = token.trim();
+  const batch = resolveBatchPickId(inbox, t);
+  if (batch) {
+    return undefined;
+  }
   const byPick = inbox.inbox.find(
     (i) => i.pickId.toLowerCase() === t.toLowerCase(),
   );
@@ -133,6 +196,10 @@ export function resolvePickId(
     return byPick;
   }
   return inbox.inbox.find((i) => i.threadId === t || i.threadId.startsWith(t));
+}
+
+export function resolvePickIds(inbox: CommentInbox, tokens: string[]): CommentInboxItem[] {
+  return resolveThreadPicks(inbox, tokens);
 }
 
 export function pickIdForThread(inbox: CommentInbox, threadId: string): string | undefined {

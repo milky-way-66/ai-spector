@@ -3,6 +3,7 @@ import type { ReviewSessionFile, ReviewSessionPhase } from "../reviews/types.js"
 export type WorkflowId =
   | "doc-review"
   | "resolve-comments"
+  | "resolve-prototype-comments"
   | "generate-srs"
   | "generate-basic-design"
   | "generate-detail-design"
@@ -72,6 +73,7 @@ export interface WorkflowRouteResult {
 const SKILL_TO_WORKFLOW: Record<string, WorkflowId> = {
   "ai-spector-review": "doc-review",
   "ai-spector-resolve-comments": "resolve-comments",
+  "ai-spector-resolve-prototype-comments": "resolve-prototype-comments",
   "ai-spector-generate-srs": "generate-srs",
   "ai-spector-generate-basic-design": "generate-basic-design",
   "ai-spector-generate-detail-design": "generate-detail-design",
@@ -297,6 +299,17 @@ function result(
 }
 
 const REVIEW_AVOID_TOOLS = ["spec_approve", "task_approve_plan", "comments_resolve"] as const;
+
+function isPrototypeCommentResolveIntent(msg: string, message: string): boolean {
+  return (
+    /\bb-\d{3}\b/i.test(message) ||
+    /\b(resolve|fix|address)\b.*\bprototype\b.*\bcomments?\b/i.test(message) ||
+    /\bprototype\b.*\bcomments?\b.*\b(resolve|fix|batch)\b/i.test(message) ||
+    /\bresolve\b.*\bcomments?\b.*\b(screen|login|home)\b/i.test(message) ||
+    /\b(login|home|index)\s+screen\b.*\bcomments?\b/i.test(message) ||
+    /\bbatch\b.*\bprototype\b.*\bcomments?\b/i.test(message)
+  );
+}
 
 function isCommentThreadIntent(msg: string, message: string): boolean {
   return (
@@ -616,6 +629,20 @@ export function classifyWorkflowIntent(
       "Translation sync workflow — process queue then re-index.",
       ctx,
       { nextTools: ["lang_queue", "index"] },
+    );
+  }
+
+  if (isPrototypeCommentResolveIntent(msg, message)) {
+    return result(
+      "ai-spector-resolve-prototype-comments",
+      "high",
+      "prototype_comment_batch",
+      "Prototype comment batch workflow — clarify, approaches, yes, then HTML + batch-resolve.",
+      ctx,
+      {
+        nextTools: ["comments_facets", "comments_inbox", "comments_batch_plan", "comments_batch_resolve"],
+        avoidTools: ["review_approve", "spec_approve", "task_approve_plan"],
+      },
     );
   }
 

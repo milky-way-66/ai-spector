@@ -23,14 +23,16 @@ Agents use this when intent is ambiguous.
 | **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`), "what changed since approval" | `ai-spector-review` | `review_approve` | `spec_approve`, `task_approve_plan`, `comments_resolve` |
 | **Extracted spec** — SPEC-001, spec queue, graph patch from generate stage 6 | generate skills + [extract-specs.md](./ai-spector/references/extract-specs.md) | `spec_approve` | `review_approve` |
 | **Task plan** — user said yes to GoalSpec + TaskPlan table, "go ahead execute", plan approval | `ai-spector-resolve-task` or generate skills | `task_approve_plan` | `review_approve` |
-| **Comment thread done** — C-001, resolve thread, feedback addressed | `ai-spector-resolve-comments` | `comments_resolve` | `review_approve` |
+| **Comment thread done** — C-001, resolve thread, feedback on doc | `ai-spector-resolve-comments` | `comments_resolve` | `review_approve` |
+| **Prototype comment batch** — B-001, resolve login screen, prototype HTML feedback | `ai-spector-resolve-prototype-comments` | `comments_batch_plan`, `comments_batch_resolve` | `review_approve`, document resolve skill |
 
 **Routing rules:**
 
 - Logical path (`srs/01-overview`, `bd/api-design`) + *approve* → **`ai-spector-review`** (run full runbook phases before `review_approve`).
 - `SPEC-NNN` or "spec queue" + *approve* → **`spec_approve`**.
 - User just approved a **plan table** in chat → **`task_approve_plan`** only.
-- `C-NNN` or "comment thread" → **`ai-spector-resolve-comments`**.
+- `C-NNN` or "comment thread" on **documents** → **`ai-spector-resolve-comments`**.
+- `B-NNN`, "prototype comments", "resolve login screen" → **`ai-spector-resolve-prototype-comments`**.
 - **Ambiguous** ("approve it", "looks good", "help me approve") → ask **one** question (user-facing, four options):
 
   ```

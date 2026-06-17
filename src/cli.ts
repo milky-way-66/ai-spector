@@ -93,6 +93,9 @@ import {
   formatCommentsPlan,
   formatCommentsShow,
   formatCommentsResolve,
+  formatCommentsFacets,
+  formatCommentsBatchPlan,
+  formatCommentsBatchResolve,
 } from "./interfaces/cli/format/comments.js";
 import {
   formatSyncClaude,
@@ -109,11 +112,15 @@ import { loadInMemoryGraph } from "./core/graph/loadGraph.js";
 import { runGraphVisualize } from "./core/operations/graph-visualize.js";
 import { runIndex } from "./core/operations/index.js";
 import {
+  runCommentsBatchPlan,
+  runCommentsBatchResolve,
+  runCommentsFacets,
   runCommentsInbox,
   runCommentsList,
   runCommentsPlan,
   runCommentsResolve,
   runCommentsShow,
+  type CommentFilterOptions,
 } from "./core/operations/comments.js";
 import { runProvenanceLink } from "./core/graph/provenance.js";
 import {
@@ -1063,20 +1070,61 @@ function parseCommentTypesOpt(raw: string | undefined): import("./core/comments/
   return types.length > 0 ? types : undefined;
 }
 
+function commentFilterOpts(opts: {
+  file?: string;
+  path?: string;
+  type?: string;
+  status?: string;
+  screen?: string;
+  branch?: string;
+  anchorState?: string;
+  group?: string;
+}): CommentFilterOptions {
+  return {
+    filePath: opts.file,
+    pathPrefix: opts.path,
+    commentTypes: parseCommentTypesOpt(opts.type),
+    status: (opts.status as CommentFilterOptions["status"]) ?? "open",
+    screen: opts.screen,
+    branch: opts.branch,
+    anchorState: opts.anchorState as CommentFilterOptions["anchorState"],
+    groupByScreen: opts.group === "screen",
+  };
+}
+
+comments
+  .command("facets")
+  .description("Available comment filter values and counts")
+  .option("--file <path>", "Scope facets to file path filter")
+  .option("--path <prefix>", "Scope facets to path prefix")
+  .option("--type <types>", "Comma-separated: document, prototype")
+  .option("--screen <name>", "Prototype screen filter")
+  .option("--branch <name>", "Branch filter")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const result = await runCommentsFacets({
+      root: projectRootOpt(cmd),
+      ...commentFilterOpts({ ...opts, status: "all" }),
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsFacets(result));
+  });
+
 comments
   .command("list")
   .description("List comment threads from comments/{logical_path}/")
   .option("--file <path>", "Filter by logical file path (e.g. srs/01-overview or prototype)")
+  .option("--path <prefix>", "Path prefix (e.g. srs/)")
   .option("--type <types>", "Comma-separated comment types: document, prototype")
+  .option("--screen <name>", "Prototype screen stem (e.g. login)")
+  .option("--branch <name>", "Filter by originBranch")
+  .option("--anchor-state <state>", "active | drifted | missing")
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    const commentTypes = parseCommentTypesOpt(opts.type);
     const result = await runCommentsList({
       root: projectRootOpt(cmd),
-      filePath: opts.file,
-      commentTypes,
-      status: opts.status,
+      ...commentFilterOpts(opts),
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCommentsList(result));
@@ -1085,19 +1133,21 @@ comments
 comments
   .command("inbox")
   .description(
-    "Thread pick list for IDE chat (C-001…) — JSON includes idePresentation.markdown table",
+    "Thread pick list for IDE chat (C-001 / B-001) — JSON includes idePresentation.markdown",
   )
   .option("--file <path>", "Filter by logical file path (e.g. prototype)")
+  .option("--path <prefix>", "Path prefix")
   .option("--type <types>", "Comma-separated comment types: document, prototype")
+  .option("--screen <name>", "Prototype screen stem (e.g. login)")
+  .option("--branch <name>", "Filter by originBranch")
+  .option("--anchor-state <state>", "active | drifted | missing")
+  .option("--group <mode>", "screen — add B-00N batch rows for prototype screens")
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    const commentTypes = parseCommentTypesOpt(opts.type);
     const inbox = await runCommentsInbox({
       root: projectRootOpt(cmd),
-      filePath: opts.file,
-      commentTypes,
-      status: opts.status,
+      ...commentFilterOpts(opts),
     });
     if (opts.json) console.log(JSON.stringify(inbox, null, 2));
     else console.log(formatCommentsInbox(inbox));
@@ -1157,6 +1207,69 @@ comments
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCommentsResolve(result, threadId));
+  });
+
+comments
+  .command("batch-plan [token]")
+  .description(
+    "Batch resolve plan for prototype screen(s): B-001, --screen login, or --picks C-001,C-002,B-002",
+  )
+  .option("--pick <id>", "Batch id B-001 or comma-separated picks")
+  .option("--picks <ids>", "Comma-separated B-00N / C-00N ids")
+  .option("--screen <name>", "Prototype screen stem (e.g. login)")
+  .option("--phrase <text>", "Natural phrase (e.g. 'login screen')")
+  .option("--file <path>", "Filter by logical file path")
+  .option("--path <prefix>", "Path prefix")
+  .option("--branch <name>", "Branch filter")
+  .option("--json", "JSON output for agents")
+  .action(async (token: string | undefined, opts, cmd) => {
+    const picksRaw = opts.picks ?? opts.pick ?? token;
+    const picks = picksRaw
+      ? String(picksRaw)
+          .split(",")
+          .map((p: string) => p.trim())
+          .filter(Boolean)
+      : undefined;
+    const batchId = picks?.length === 1 && /^B-\d{3}$/i.test(picks[0]!) ? picks[0] : undefined;
+    const result = await runCommentsBatchPlan({
+      root: projectRootOpt(cmd),
+      ...commentFilterOpts({ ...opts, type: "prototype" }),
+      batchId,
+      picks: batchId ? undefined : picks,
+      screen: opts.screen,
+      phrase: opts.phrase,
+      groupByScreen: true,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsBatchPlan(result));
+  });
+
+comments
+  .command("batch-resolve <picks>")
+  .description("Mark multiple threads resolved (B-001 or comma-separated picks)")
+  .option("--by <email>", "Resolver email override")
+  .option("--username <name>", "Resolver name override")
+  .option("--role <role>", "Actor role: user | client")
+  .option("--commit-sha <sha>", "resolvedInCommitSha (defaults to git HEAD)")
+  .option("--dry-run", "Preview without writing")
+  .option("--json", "JSON output for agents")
+  .action(async (picksArg: string, opts, cmd) => {
+    const picks = picksArg
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const result = await runCommentsBatchResolve({
+      root: projectRootOpt(cmd),
+      picks,
+      commentTypes: ["prototype"],
+      resolvedBy: opts.by,
+      resolvedByUsername: opts.username,
+      role: opts.role,
+      commitSha: opts.commitSha,
+      dryRun: opts.dryRun,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsBatchResolve(result));
   });
 
 // ── Review commands ───────────────────────────────────────────────────────────

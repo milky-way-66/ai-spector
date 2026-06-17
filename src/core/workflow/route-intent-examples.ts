@@ -38,6 +38,8 @@ export const WORKFLOW_ROUTE_EXAMPLES: WorkflowRouteExample[] = [
   { say: "what's stale in JP", skill: "ai-spector-lang-status" },
   { say: "resolve translations", skill: "ai-spector-resolve-translation" },
   { say: "resolve comments", skill: "ai-spector-resolve-comments" },
+  { say: "resolve all comments on login screen", skill: "ai-spector-resolve-prototype-comments" },
+  { say: "batch prototype comments B-001", skill: "ai-spector-resolve-prototype-comments" },
   { say: "review docs", skill: "ai-spector-review" },
   { say: "approve SRS", skill: "ai-spector-review" },
   { say: "import template", skill: "ai-spector-template-import" },

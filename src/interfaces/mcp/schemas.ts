@@ -77,28 +77,56 @@ export const IndexSchema = RootSchema.extend({
 
 // ── Comments ──────────────────────────────────────────────────────────────────
 
-export const CommentsListSchema = RootSchema.extend({
-  filePath: z.string().optional().describe("Filter by file path (use `prototype` for all prototype threads)"),
+const CommentFilterFields = {
+  filePath: z
+    .string()
+    .optional()
+    .describe("Filter by file path (use `prototype` for all prototype threads)"),
+  pathPrefix: z.string().optional().describe("Logical path prefix (e.g. srs/, prototype/src/)"),
   commentTypes: z
     .array(z.enum(["document", "prototype"]))
     .optional()
-    .describe("Filter by comment type (e.g. prototype only)"),
+    .describe("Filter by comment type"),
+  screen: z.string().optional().describe("Prototype screen stem or URL fragment (e.g. login)"),
+  originBranch: z.string().optional().describe("Filter by originBranch"),
+  anchorState: z
+    .enum(["active", "drifted", "missing"])
+    .optional()
+    .describe("Filter by anchor health"),
   status: z
     .enum(["open", "resolved", "all"])
     .optional()
     .describe("Filter by status (default: open)"),
+  groupByScreen: z
+    .boolean()
+    .optional()
+    .describe("Add B-00N batch rows grouped by prototype screen"),
+};
+
+export const CommentsListSchema = RootSchema.extend(CommentFilterFields);
+
+export const CommentsInboxSchema = RootSchema.extend(CommentFilterFields);
+
+export const CommentsFacetsSchema = RootSchema.extend({
+  filePath: CommentFilterFields.filePath,
+  pathPrefix: CommentFilterFields.pathPrefix,
+  commentTypes: CommentFilterFields.commentTypes,
+  screen: CommentFilterFields.screen,
+  originBranch: CommentFilterFields.originBranch,
 });
 
-export const CommentsInboxSchema = RootSchema.extend({
-  filePath: z.string().optional().describe("Filter by file path (use `prototype` for all prototype threads)"),
-  commentTypes: z
-    .array(z.enum(["document", "prototype"]))
-    .optional()
-    .describe("Filter by comment type (e.g. prototype only)"),
-  status: z
-    .enum(["open", "resolved", "all"])
-    .optional()
-    .describe("Filter by status (default: open)"),
+export const CommentsBatchPlanSchema = RootSchema.extend({
+  ...CommentFilterFields,
+  batchId: z.string().optional().describe("Batch pick id B-001"),
+  picks: z.array(z.string()).optional().describe("B-00N or C-00N pick ids"),
+  phrase: z.string().optional().describe("Natural phrase e.g. login screen"),
+});
+
+export const CommentsBatchResolveSchema = RootSchema.extend({
+  picks: z.array(z.string()).min(1).describe("B-00N or comma-separated C-00N ids"),
+  ...AuditActorOverrideSchema,
+  resolvedBy: z.string().optional().describe("Deprecated alias for by"),
+  dryRun: z.boolean().optional(),
 });
 
 export const CommentsShowSchema = RootSchema.extend({

@@ -14,6 +14,7 @@ const MAX_LOG_LINES = 200;
 const SKILL_BY_WORKFLOW: Record<WorkflowId, string> = {
   "doc-review": "ai-spector-review",
   "resolve-comments": "ai-spector-resolve-comments",
+  "resolve-prototype-comments": "ai-spector-resolve-prototype-comments",
   "generate-srs": "ai-spector-generate-srs",
   "generate-basic-design": "ai-spector-generate-basic-design",
   "generate-detail-design": "ai-spector-generate-detail-design",

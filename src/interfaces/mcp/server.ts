@@ -15,6 +15,9 @@ import {
   KnowledgeSchemaSchema,
   LangQueueSchema,
   CommentsListSchema,
+  CommentsFacetsSchema,
+  CommentsBatchPlanSchema,
+  CommentsBatchResolveSchema,
   CommentsInboxSchema,
   CommentsShowSchema,
   CommentsResolveSchema,
@@ -84,7 +87,10 @@ import { toolLangQueue } from "./tools/lang.js";
 import { toolIndex } from "./tools/index.js";
 import {
   toolCommentsList,
+  toolCommentsFacets,
   toolCommentsInbox,
+  toolCommentsBatchPlan,
+  toolCommentsBatchResolve,
   toolCommentsShow,
   toolCommentsResolve,
 } from "./tools/comments.js";
@@ -299,6 +305,19 @@ server.registerTool(
 // ── Comment tools ─────────────────────────────────────────────────────────────
 
 server.registerTool(
+  "comments_facets",
+  {
+    description:
+      "List available comment filter facets (types, screens, paths, branches) with counts. Use before filtering inbox/list.",
+    inputSchema: CommentsFacetsSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCommentsFacets(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
   "comments_list",
   {
     description: "List inline comment/feedback threads left on documents (notes, questions, annotations). These are NOT approval actions — use review_* tools for formal sign-off.",
@@ -318,6 +337,35 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolCommentsInbox(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "comments_batch_plan",
+  {
+    description:
+      "Build a batch resolve plan for prototype comment thread(s) on one or more screens. " +
+      "Returns clarify prompts, approach guidance, and resolve steps — no file writes. " +
+      "Use B-001, picks array, or screen filter.",
+    inputSchema: CommentsBatchPlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCommentsBatchPlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "comments_batch_resolve",
+  {
+    description:
+      "Mark multiple prototype comment threads resolved after HTML edits are committed. " +
+      "Pass B-00N or C-00N pick ids from inbox.",
+    inputSchema: CommentsBatchResolveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolCommentsBatchResolve(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1141,7 +1189,8 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "graph_query", "graph_impact", "graph_validate", "graph_merge", "graph_report",
     "knowledge_status", "knowledge_validate", "knowledge_schema",
     "lang_queue", "index",
-    "comments_list", "comments_inbox", "comments_show", "comments_resolve",
+    "comments_list", "comments_facets", "comments_inbox", "comments_batch_plan",
+    "comments_batch_resolve", "comments_show", "comments_resolve",
     "template_list", "template_inspect", "template_validate", "template_setup_mark",
     "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
     "readiness_assess", "readiness_scan", "readiness_output_checklist",

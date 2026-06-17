@@ -1,3 +1,5 @@
+import type { CommentBatchItem } from "./batch.js";
+import { buildPrototypeBatchGroups } from "./batch.js";
 import type { ImpactResult } from "../graph/impact.js";
 import { previewCommentBody } from "./anchor.js";
 import type { WorkflowToolGuidance } from "../workflow/guidance.js";
@@ -30,19 +32,28 @@ export interface CommentInboxItem {
 
 export interface CommentInbox {
   inbox: CommentInboxItem[];
+  batches?: CommentBatchItem[];
   count: number;
   openCount: number;
   prompt: string;
   workflowGuidance: WorkflowToolGuidance;
   /** Pre-rendered pick list for IDE chat — agent should show this, not raw JSON or thread uuids */
   idePresentation: {
-    mode: "thread_pick_list";
+    mode: "thread_pick_list" | "prototype_batch_pick_list";
     markdown: string;
+    batchMarkdown?: string;
     rules: string[];
   };
 }
 
-export function buildCommentInbox(threads: ThreadSummary[]): CommentInbox {
+export interface BuildInboxPresentationOptions {
+  groupByScreen?: boolean;
+}
+
+export function buildCommentInbox(
+  threads: ThreadSummary[],
+  opts: BuildInboxPresentationOptions = {},
+): CommentInbox {
   const inbox: CommentInboxItem[] = threads.map((t, index) => {
     const commentType = threadCommentType(t);
     if (commentType === "prototype" && isPrototypeAnchor(t.anchor)) {
@@ -86,27 +97,39 @@ export function buildCommentInbox(threads: ThreadSummary[]): CommentInbox {
   });
 
   const openCount = inbox.filter((i) => i.status === "open").length;
+  const batches =
+    opts.groupByScreen && inbox.some((i) => i.commentType === "prototype")
+      ? buildPrototypeBatchGroups(inbox)
+      : undefined;
+
+  const hasBatches = batches != null && batches.length > 0;
+  const prompt = hasBatches
+    ? "Reply with a batch id (B-001) for all comments on a screen, or C-00N for a single thread."
+    : inbox.length === 0
+      ? "No open comment threads. Run git pull or check comments/."
+      : "Reply with a pick id (e.g. C-001) to start the resolve workflow.";
 
   return {
     inbox,
+    batches,
     count: inbox.length,
     openCount,
-    prompt:
-      inbox.length === 0
-        ? "No open comment threads. Run git pull or check comments/."
-        : "Reply with a pick id (e.g. C-001) to start the resolve workflow.",
+    prompt,
     workflowGuidance: buildCommentsInboxWorkflowGuidance(openCount),
-    idePresentation: buildIdePresentation(inbox),
+    idePresentation: buildIdePresentation(inbox, batches),
   };
 }
 
 const IDE_PRESENTATION_RULES = [
-  "Show only the markdown table below — one row per open thread (not per reply).",
+  "Show batch table first when present, then thread table if user needs detail.",
   "Do not paste raw JSON or full thread uuids in chat.",
-  "Use pick ids (C-001) for user selection; keep threadId internal until running plan/resolve.",
+  "Use B-00N for screen batch resolve; C-00N for single thread.",
 ];
 
-function buildIdePresentation(inbox: CommentInboxItem[]): CommentInbox["idePresentation"] {
+function buildIdePresentation(
+  inbox: CommentInboxItem[],
+  batches?: CommentBatchItem[],
+): CommentInbox["idePresentation"] {
   if (inbox.length === 0) {
     return {
       mode: "thread_pick_list",
@@ -115,6 +138,34 @@ function buildIdePresentation(inbox: CommentInboxItem[]): CommentInbox["idePrese
     };
   }
 
+  const threadTable = buildThreadTable(inbox);
+  if (!batches?.length) {
+    return {
+      mode: "thread_pick_list",
+      markdown: threadTable,
+      rules: IDE_PRESENTATION_RULES,
+    };
+  }
+
+  const batchHeader = "| Batch | Screen | Target | Threads | Picks |";
+  const batchSep = "|-------|--------|--------|---------|-------|";
+  const batchRows = batches.map(
+    (b) =>
+      `| **${b.batchId}** | ${b.screenStem} | \`${b.prototypePath ?? "?"}\` | ${b.threadCount} | ${b.pickIds.join(", ")} |`,
+  );
+  const batchMarkdown = [batchHeader, batchSep, ...batchRows].join("\n");
+
+  return {
+    mode: "prototype_batch_pick_list",
+    markdown: ["### Batch by screen", "", batchMarkdown, "", "### All threads", "", threadTable].join(
+      "\n",
+    ),
+    batchMarkdown,
+    rules: IDE_PRESENTATION_RULES,
+  };
+}
+
+function buildThreadTable(inbox: CommentInboxItem[]): string {
   const header = "| Pick | Type | Target | Location | Reviewer ask |";
   const sep = "|------|------|--------|----------|--------------|";
   const rows = inbox.map((item) => {
@@ -130,12 +181,14 @@ function buildIdePresentation(inbox: CommentInboxItem[]): CommentInbox["idePrese
         : "";
     return `| **${item.pickId}** | ${item.commentType} | \`${target}\` | ${location.replace(/\|/g, "\\|")} | ${ask}${excerpt} |`;
   });
+  return [header, sep, ...rows].join("\n");
+}
 
-  return {
-    mode: "thread_pick_list",
-    markdown: [header, sep, ...rows].join("\n"),
-    rules: IDE_PRESENTATION_RULES,
-  };
+function rebuildIdePresentation(
+  inbox: CommentInboxItem[],
+  batches?: CommentBatchItem[],
+): CommentInbox["idePresentation"] {
+  return buildIdePresentation(inbox, batches);
 }
 
 export function enrichInboxPreviews(
@@ -149,7 +202,7 @@ export function enrichInboxPreviews(
   return {
     ...inbox,
     inbox: enrichedInbox,
-    idePresentation: buildIdePresentation(enrichedInbox),
+    idePresentation: rebuildIdePresentation(enrichedInbox, inbox.batches),
   };
 }
 

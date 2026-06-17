@@ -21,6 +21,7 @@ Without MCP: follow priority table below and `_skill-router.md` (same rules, no 
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
 1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
 2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`**
+2.3. **Prototype comment batch** — resolve prototype comments, B-001, "login screen" → **`ai-spector-resolve-prototype-comments`**
 2.5. **Migrate / adopt existing docs** — migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt → **`ai-spector-adopt`**
 3. **Full generation** — generate SRS/chapter/DAG → **`ai-spector-generate-*`**
 
@@ -42,6 +43,7 @@ Which did you mean?
 | 2 | generate + extract-specs | `spec_approve` |
 | 3 | resolve-task or generate | `task_approve_plan` |
 | 4 | `ai-spector-resolve-comments` | `comments_resolve` |
+| 4.5 | `ai-spector-resolve-prototype-comments` | `comments_batch_plan`, `comments_batch_resolve` |
 
 ## Document review gate
 
