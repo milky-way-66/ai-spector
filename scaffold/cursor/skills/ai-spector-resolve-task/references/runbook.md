@@ -1,6 +1,15 @@
 # Resolve Task — conversational runbook
 
-Plan-first workflow for incremental doc/graph changes. The agent **never edits or runs impact** until the user approves a written plan.
+Tiered plan-first workflow for incremental doc/graph changes. The agent **never edits or runs impact** until the user approves a written plan.
+
+**Tier routing:** [tier-router.md](./tier-router.md) — propose Fast/Standard/Full after Phase 1.
+
+| Tier | Extended runbook |
+|------|------------------|
+| Fast | This file (Phases 2–7 below) |
+| Standard | [resolve-standard.md](./resolve-standard.md) |
+| Full | [resolve-full.md](./resolve-full.md) |
+| Execute / verify | [resolve-execute.md](./resolve-execute.md) |
 
 ---
 
@@ -24,15 +33,30 @@ User sends a free-form message.
 **Actions:**
 1. `task_list({ status: ["active", "paused"] })` — if a **resolve** task exists, offer **resume** (`task_resume`) or start new.
 2. Otherwise `task_create({ kind: "resolve", workflow: "resolve", trigger: "<user message>" })`.
-3. Acknowledge you will use the resolve-task workflow.
+3. Acknowledge resolve-task workflow and go to **tier proposal** ([tier-router.md](./tier-router.md)).
 
-**Forbidden:** Every tool — no `graph_impact`, no `index`, no file edits, no bulk `docs/**` reads.
-
-**Then:** Go to Phase 2. Do not skip.
+**Forbidden:** Every tool — no `graph_impact`, no `index`, no file edits.
 
 ---
 
-## Phase 2 — Clarify (mandatory)
+## Phase 2 — Tier (mandatory for new tasks)
+
+Propose Fast/Standard/Full with rationale. User confirms.
+
+```json
+task_update({
+  snapshot: { resolveTier: "fast", tierConfirmedAt: "<ISO>" },
+  step: { id: "tier", patch: { status: "done" } }
+})
+```
+
+Fast: skip `check`, `design`, `briefing` with `status: "skipped"`.
+
+Standard/Full: follow extended runbooks before plan.
+
+---
+
+## Phase 3 — Clarify (mandatory)
 
 Ask what you need to fill **all four** `GoalSpec` fields. Batch ≤3 questions in one message.
 
@@ -59,7 +83,7 @@ Ask what you need to fill **all four** `GoalSpec` fields. Batch ≤3 questions i
 
 ---
 
-## Phase 3 — Discover (optional, read-only)
+## Phase 4 — Discover (optional, read-only)
 
 Use **only** when you need to find where content belongs.
 
@@ -74,7 +98,7 @@ Stop when you can name concrete `scope` paths. Go to Phase 4.
 
 ---
 
-## Phase 4 — Build and show the plan
+## Phase 5 — Build and show the plan
 
 Construct `GoalSpec` + `TaskPlan`. **Show both in chat.** Do not execute.
 
@@ -111,7 +135,7 @@ End with:
 
 ---
 
-## Phase 5 — Wait for approval
+## Phase 6 — Wait for approval
 
 Proceed only on explicit approval: "yes", "approve", "go ahead", "looks good", "execute".
 
@@ -123,74 +147,17 @@ If the user changes the plan → update GoalSpec/TaskPlan → `task_update` → 
 
 ---
 
-## Phase 6 — Execute
+## Phase 7 — Execute
 
-Run **only** approved steps, in order.
+See [resolve-execute.md](./resolve-execute.md). Prefer `resolve_task({ taskId })` for MCP steps; edit steps via Edit/Write.
 
-### Direct edit steps
-Use Edit / Write. Report each file changed.
-
-### MCP / CLI steps
-Prefer **`resolve_task({ taskId })`** — loads the approved plan from the task file and updates step progress after each executor.
-
-Inline plan (legacy) or one-off runs:
-
-```json
-{
-  "intent": "I want to add login with Google feature",
-  "goalSpec": {
-    "trigger": "I want to add login with Google feature",
-    "domain": "docs",
-    "scope": ["docs/srs/en/04-features/f-12-google-login.md"],
-    "criteria": ["Google OAuth requirements documented", "graph reindexed"]
-  },
-  "plan": {
-    "goal": {
-      "trigger": "I want to add login with Google feature",
-      "domain": "docs",
-      "scope": ["docs/srs/en/04-features/f-12-google-login.md"],
-      "criteria": ["Google OAuth requirements documented", "graph reindexed"]
-    },
-    "steps": [
-      { "id": "s2", "description": "Check traceability impact", "tool": "graph_impact", "args": { "change": "content_change" } },
-      { "id": "s3", "description": "Re-index project", "tool": "index", "args": {} },
-      { "id": "s4", "description": "Merge knowledge", "tool": "graph_merge", "args": {} }
-    ]
-  }
-}
-```
-
-CLI fallback:
-- `npx ai-spector resolve-task --task-id task-abc123` (preferred)
-- `npx ai-spector resolve-task plan.json`
-
-**Note:** Edit steps (s1) are done outside `resolve_task` — the tool only runs registered executors (`index`, `graph_merge`, `graph_impact`, `graph_report`). After edits, `task_update` the execute step with artifact paths for drift tracking on resume.
-
-### If a step is blocked
-Report the blocker. Ask: skip, retry, or stop?
+CLI: `npx ai-spector resolve-task --task-id <id>`
 
 ---
 
-## Phase 7 — Report state update
+## Phase 8 — Verify and report
 
-`task_complete({ taskId, summary: "..." })` when the user is satisfied.
-
-```
-✓ Task task-abc123 — COMPLETE
-  domain: docs  risk: low
-
-Steps:
-  ✓ [s1] Added docs/srs/en/04-features/f-12-google-login.md
-  ✓ [s2] graph_impact — 2 review, 0 regenerate
-  ✓ [s3] Re-index project
-  ✓ [s4] Merge knowledge
-
-State update:
-  1 file(s) changed
-  graph reindexed
-```
-
-Ask if anything else needs adjustment.
+`workspace_check` on changed paths (all tiers). Standard/Full: `readiness_output_checklist`. Then `task_complete` — see [resolve-execute.md](./resolve-execute.md).
 
 ---
 

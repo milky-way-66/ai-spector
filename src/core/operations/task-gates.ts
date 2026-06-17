@@ -1,4 +1,4 @@
-import type { StoredPlan, TaskState } from "./task.js";
+import type { ResolveTier, StoredPlan, TaskState } from "./task.js";
 
 type StepStatus = TaskState["steps"][number]["status"];
 
@@ -83,6 +83,20 @@ function stepStatus(task: TaskState, stepId: string): string {
   return task.steps.find((s) => s.id === stepId)?.status ?? "missing";
 }
 
+/** Resolve tier; defaults to fast. Legacy tasks without snapshot fields use fast gates only. */
+export function effectiveResolveTier(task: TaskState): ResolveTier {
+  return task.snapshot.resolveTier ?? "fast";
+}
+
+/** Tasks created before tiered resolve gates (no tier snapshot fields). */
+export function isLegacyResolveTask(task: TaskState): boolean {
+  return task.kind === "resolve" && !task.snapshot.resolveTier && !task.snapshot.tierConfirmedAt;
+}
+
+function resolveTierUsesExtendedGates(tier: ResolveTier): boolean {
+  return tier === "standard" || tier === "full";
+}
+
 function assertStepDone(
   task: TaskState,
   stepId: string,
@@ -158,6 +172,29 @@ export function listApprovedTaskGateViolations(task: TaskState): string[] {
     if (!task.snapshot.planPresentedAt) violations.push("snapshot.planPresentedAt missing");
     if (stepStatus(task, "clarify") !== "done") {
       violations.push(`step "clarify" is ${stepStatus(task, "clarify")} after plan approval`);
+    }
+    if (!isLegacyResolveTask(task) && !task.snapshot.tierConfirmedAt) {
+      violations.push("snapshot.tierConfirmedAt missing");
+    }
+    const tier = effectiveResolveTier(task);
+    if (resolveTierUsesExtendedGates(tier)) {
+      if (stepStatus(task, "check") !== "done") {
+        violations.push(`step "check" is ${stepStatus(task, "check")} after plan approval`);
+      }
+      if (!task.snapshot.workspaceCheckAt) violations.push("snapshot.workspaceCheckAt missing");
+      if (!task.snapshot.readinessReportShown) violations.push("snapshot.readinessReportShown missing");
+      if (stepStatus(task, "briefing") !== "done") {
+        violations.push(`step "briefing" is ${stepStatus(task, "briefing")} after plan approval`);
+      }
+      if (!task.snapshot.briefingConfirmedAt) violations.push("snapshot.briefingConfirmedAt missing");
+      if (!task.snapshot.implementationPlanPath) violations.push("snapshot.implementationPlanPath missing");
+    }
+    if (tier === "full") {
+      if (stepStatus(task, "design") !== "done") {
+        violations.push(`step "design" is ${stepStatus(task, "design")} after plan approval`);
+      }
+      if (!task.snapshot.designSpecPath) violations.push("snapshot.designSpecPath missing");
+      if (!task.snapshot.designSpecApprovedAt) violations.push("snapshot.designSpecApprovedAt missing");
     }
   }
 
@@ -303,9 +340,40 @@ function assertResolveApproveGates(task: TaskState): void {
       "plan_invalid",
       `Task "${task.id}" resolve plan has no steps.`,
       "Build TaskPlan with impact map, show table in chat, wait for explicit yes.",
-      ["task_update", "graph_impact"],
+      ["task_update"],
       task,
       "plan",
+    );
+  }
+
+  const tier = effectiveResolveTier(task);
+
+  if (!isLegacyResolveTask(task)) {
+    if (!task.snapshot.resolveTier) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" has no resolve tier — propose Fast/Standard/Full and record snapshot.resolveTier.`,
+        "Show tier proposal with rationale, get user confirmation, set resolveTier and tierConfirmedAt via task_update.",
+        ["task_update"],
+        task,
+        "tier",
+      );
+    }
+    if (!task.snapshot.tierConfirmedAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" tier not confirmed — wait for user to pick Fast/Standard/Full.`,
+        "Propose tier with rationale, then set snapshot.tierConfirmedAt after user confirms.",
+        ["task_update"],
+        task,
+        "tier",
+      );
+    }
+    assertStepDone(
+      task,
+      "tier",
+      "Confirm Fast/Standard/Full tier with user, then mark tier step done.",
+      ["task_update"],
     );
   }
 
@@ -315,6 +383,90 @@ function assertResolveApproveGates(task: TaskState): void {
     "Clarify GoalSpec fields (≤3 questions), then mark clarify done via task_update.",
     ["task_update", "context_list"],
   );
+
+  if (resolveTierUsesExtendedGates(tier)) {
+    assertStepDone(
+      task,
+      "check",
+      "Run workspace_check, set snapshot.workspaceCheckAt via task_update, then mark check done.",
+      ["workspace_check", "task_update"],
+    );
+    if (!task.snapshot.workspaceCheckAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" check step done but snapshot.workspaceCheckAt is missing.`,
+        "Call workspace_check and record snapshot.workspaceCheckAt via task_update.",
+        ["workspace_check", "task_update"],
+        task,
+        "check",
+      );
+    }
+    if (!task.snapshot.readinessReportShown) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" needs scoped readiness_assess — set snapshot.readinessReportShown.`,
+        "Run readiness_assess for affected doc type, show criteria table, set snapshot.readinessReportShown.",
+        ["readiness_assess", "task_update"],
+        task,
+        "clarify",
+      );
+    }
+    assertStepDone(
+      task,
+      "briefing",
+      "Present per-file context briefing, get user confirmation, set snapshot.briefingConfirmedAt.",
+      ["task_update", "context_list"],
+    );
+    if (!task.snapshot.briefingConfirmedAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" briefing not confirmed — set snapshot.briefingConfirmedAt.`,
+        "Present context briefing for affected files, get user yes, then record briefingConfirmedAt.",
+        ["task_update"],
+        task,
+        "briefing",
+      );
+    }
+    if (!task.snapshot.implementationPlanPath) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" needs implementation plan file — set snapshot.implementationPlanPath.`,
+        "Save bite-sized plan to docs/superpowers/plans/YYYY-MM-DD-<slug>.md and record path via task_update.",
+        ["task_update"],
+        task,
+        "plan",
+      );
+    }
+  }
+
+  if (tier === "full") {
+    assertStepDone(
+      task,
+      "design",
+      "Write design spec, get user approval, set designSpecPath and designSpecApprovedAt.",
+      ["task_update"],
+    );
+    if (!task.snapshot.designSpecPath) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" needs design spec — set snapshot.designSpecPath.`,
+        "Save design to docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md and record path.",
+        ["task_update"],
+        task,
+        "design",
+      );
+    }
+    if (!task.snapshot.designSpecApprovedAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Task "${task.id}" design spec not approved — set snapshot.designSpecApprovedAt after user yes.`,
+        "Present design spec sections, wait for explicit approval, then record designSpecApprovedAt.",
+        ["task_update"],
+        task,
+        "design",
+      );
+    }
+  }
 
   if (!task.snapshot.planPresentedAt) {
     throw new TaskPreconditionError(
@@ -335,6 +487,20 @@ function assertResolveApproveGates(task: TaskState): void {
       ["task_update"],
       task,
       "plan",
+    );
+  }
+}
+
+/** Gate resolve_task and doc writes on approved plan. */
+export function assertResolveExecutionAllowed(task: TaskState): void {
+  if (task.kind !== "resolve") return;
+  if (!task.planApprovedAt) {
+    throw new TaskPreconditionError(
+      "plan_not_approved",
+      `Task "${task.id}" plan is not approved — call task_approve_plan after user says yes to the plan table.`,
+      "Complete tier → clarify → (design) → briefing → plan table → explicit yes → task_approve_plan before edits or resolve_task.",
+      ["task_get", "task_update", ...NOT_APPROVE_SIBLINGS],
+      task,
     );
   }
 }
@@ -375,37 +541,116 @@ export function assertTaskStepUpdateAllowed(
     );
   }
 
-  if (task.kind !== "generate" || nextStatus !== "done") return;
+  if (task.kind !== "generate" && task.kind !== "resolve") return;
+  if (nextStatus !== "done") return;
 
-  if (stepId === "check" && !task.snapshot.workspaceCheckAt) {
-    throw new TaskPreconditionError(
-      "snapshot_missing",
-      `Cannot mark check done on task "${task.id}" until workspace_check ran.`,
-      "Call workspace_check, set snapshot.workspaceCheckAt via task_update, then mark check done.",
-      ["workspace_check", "task_update"],
-      task,
-      "check",
-    );
+  if (task.kind === "generate") {
+    if (stepId === "check" && !task.snapshot.workspaceCheckAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark check done on task "${task.id}" until workspace_check ran.`,
+        "Call workspace_check, set snapshot.workspaceCheckAt via task_update, then mark check done.",
+        ["workspace_check", "task_update"],
+        task,
+        "check",
+      );
+    }
+
+    if (stepId === "clarify" && !task.snapshot.readinessReportShown) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark clarify done on task "${task.id}" until readiness report was shown.`,
+        "Present readiness criteria table, set snapshot.readinessReportShown, then mark clarify done.",
+        ["readiness_assess", "task_update"],
+        task,
+        "clarify",
+      );
+    }
+
+    if (stepId === "briefing") {
+      if (stepStatus(task, "clarify") !== "done") {
+        throw new TaskPreconditionError(
+          "step_incomplete",
+          `Cannot mark briefing done on task "${task.id}" until clarify is done.`,
+          "Finish clarify (readiness_assess + gaps) before briefing.",
+          ["readiness_assess", "task_update"],
+          task,
+          "briefing",
+        );
+      }
+      if (!task.snapshot.briefingConfirmedAt) {
+        throw new TaskPreconditionError(
+          "snapshot_missing",
+          `Cannot mark briefing done on task "${task.id}" until user confirmed briefing.`,
+          "Present context briefing per file, get user confirmation, set snapshot.briefingConfirmedAt.",
+          ["task_update"],
+          task,
+          "briefing",
+        );
+      }
+    }
+    return;
   }
 
-  if (stepId === "clarify" && !task.snapshot.readinessReportShown) {
+  const tier = effectiveResolveTier(task);
+
+  if (stepId === "tier" && nextStatus === "done") {
+    if (!task.snapshot.tierConfirmedAt || !task.snapshot.resolveTier) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark tier done on task "${task.id}" until user confirmed Fast/Standard/Full.`,
+        "Set snapshot.resolveTier and tierConfirmedAt via task_update after user confirms tier.",
+        ["task_update"],
+        task,
+        "tier",
+      );
+    }
+  }
+
+  if (stepId === "check" && resolveTierUsesExtendedGates(tier)) {
+    if (!task.snapshot.workspaceCheckAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark check done on task "${task.id}" until workspace_check ran.`,
+        "Call workspace_check, set snapshot.workspaceCheckAt via task_update, then mark check done.",
+        ["workspace_check", "task_update"],
+        task,
+        "check",
+      );
+    }
+  }
+
+  if (stepId === "clarify" && resolveTierUsesExtendedGates(tier) && !task.snapshot.readinessReportShown) {
     throw new TaskPreconditionError(
       "snapshot_missing",
-      `Cannot mark clarify done on task "${task.id}" until readiness report was shown.`,
-      "Present readiness criteria table, set snapshot.readinessReportShown, then mark clarify done.",
+      `Cannot mark clarify done on task "${task.id}" until scoped readiness report was shown.`,
+      "Run readiness_assess for affected scope, set snapshot.readinessReportShown, then mark clarify done.",
       ["readiness_assess", "task_update"],
       task,
       "clarify",
     );
   }
 
-  if (stepId === "briefing") {
+  if (stepId === "design" && tier === "full") {
+    if (!task.snapshot.designSpecPath || !task.snapshot.designSpecApprovedAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark design done on task "${task.id}" until design spec is approved.`,
+        "Save design spec, get user approval, set designSpecPath and designSpecApprovedAt.",
+        ["task_update"],
+        task,
+        "design",
+      );
+    }
+  }
+
+  if (stepId === "briefing" && resolveTierUsesExtendedGates(tier)) {
     if (stepStatus(task, "clarify") !== "done") {
       throw new TaskPreconditionError(
         "step_incomplete",
         `Cannot mark briefing done on task "${task.id}" until clarify is done.`,
-        "Finish clarify (readiness_assess + gaps) before briefing.",
-        ["readiness_assess", "task_update"],
+        "Finish clarify before briefing.",
+        ["task_update"],
         task,
         "briefing",
       );

@@ -72,6 +72,9 @@ import {
   TaskGetSchema,
   TaskUpdateSchema,
   TaskApprovePlanSchema,
+  TaskConfirmTierSchema,
+  TaskApproveDesignSpecSchema,
+  TaskSetExecutionModeSchema,
   TaskPauseSchema,
   TaskResumeSchema,
   TaskCompleteSchema,
@@ -124,14 +127,17 @@ import { toolContextList, toolContextRecord, toolContextResolve } from "./tools/
 import { toolSpecList, toolSpecRecord, toolSpecApprove, toolSpecReject } from "./tools/extracted.js";
 import {
   toolTaskAbandon,
+  toolTaskApproveDesignSpec,
   toolTaskApprovePlan,
   toolTaskComplete,
+  toolTaskConfirmTier,
   toolTaskCreate,
   toolTaskGet,
   toolTaskList,
   toolTaskStatus,
   toolTaskPause,
   toolTaskResume,
+  toolTaskSetExecutionMode,
   toolTaskUpdate,
   toolTaskRecordWave,
 } from "./tools/task.js";
@@ -685,7 +691,7 @@ server.registerTool(
   "resolve_task",
   {
     description:
-      "Execute a structured resolve-task workflow: validate a GoalSpec + TaskPlan and run each step against registered executors (index, graph_merge, graph_impact, graph_report). Returns execution results and a state-update summary.",
+      "Execute approved resolve-task MCP steps (index, graph_merge, graph_impact, graph_report). Prefer taskId after task_approve_plan. Edit steps are done outside this tool. Returns workflowGuidance for verify/complete.",
     inputSchema: ResolveTaskSchema.shape,
   },
   async (input) => {
@@ -1094,7 +1100,7 @@ server.registerTool(
   "task_update",
   {
     description:
-      "Patch task state: advance phase, update a step, set goal/plan, record blockers or artifact snapshot. Keep file state in sync after each workflow gate.",
+      "Patch task state: advance phase, update a step, set goal/plan, record resolve-tier snapshots (resolveTier, implementationPlanPath, designSpecPath, executionMode). Prefer task_confirm_tier for tier confirmation.",
     inputSchema: TaskUpdateSchema.shape,
   },
   async (input) => {
@@ -1111,6 +1117,45 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolTaskApprovePlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_confirm_tier",
+  {
+    description:
+      "Confirm resolve-task tier (fast | standard | full) after user picks. Sets snapshot.resolveTier + tierConfirmedAt, marks tier step done, skips check/design/briefing for Fast. Returns workflowGuidance for next gate.",
+    inputSchema: TaskConfirmTierSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskConfirmTier(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_approve_design_spec",
+  {
+    description:
+      "Full-tier resolve only: record approved design spec path (docs/superpowers/specs/…) and designSpecApprovedAt after user approves spec in chat. Advances to workspace_check.",
+    inputSchema: TaskApproveDesignSpecSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskApproveDesignSpec(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_set_execution_mode",
+  {
+    description:
+      "Standard/Full resolve after task_approve_plan: record inline vs subagent execution (snapshot.executionMode). Fast tier is always inline.",
+    inputSchema: TaskSetExecutionModeSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskSetExecutionMode(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1204,6 +1249,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",
     "task_create", "task_list", "task_status", "task_get", "task_update", "task_approve_plan",
+    "task_confirm_tier", "task_approve_design_spec", "task_set_execution_mode",
     "task_pause", "task_resume", "task_complete", "task_abandon", "task_record_wave",
   ];
   process.stderr.write(

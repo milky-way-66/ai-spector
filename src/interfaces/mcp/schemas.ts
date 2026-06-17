@@ -255,7 +255,7 @@ export const ResolveTaskSchema = RootSchema.extend({
     .string()
     .optional()
     .describe(
-      "Load approved GoalSpec + TaskPlan from .ai-spector/.docflow/tasks/<id>.json instead of inline plan",
+      "Preferred: load approved GoalSpec + TaskPlan from task file (requires task_approve_plan). Tier gates must be complete first.",
     ),
   intent: z.string().optional().describe("Free-form user intent (required when taskId omitted)"),
   goalSpec: GoalSpecSchema.optional().describe("Required when taskId omitted"),
@@ -483,6 +483,9 @@ export const TaskStepStatusEnum = z.enum([
 ]);
 export const PhaseStatusEnum = z.enum(["in_progress", "awaiting_user", "done"]);
 
+export const ResolveTierEnum = z.enum(["fast", "standard", "full"]);
+export const ResolveExecutionModeEnum = z.enum(["inline", "subagent"]);
+
 export const GeneratePlanRowSchema = z.object({
   output: z.string(),
   dagNode: z.string(),
@@ -558,7 +561,7 @@ export const TaskUpdatePatchSchema = z.object({
       readinessReportShown: z
         .boolean()
         .optional()
-        .describe("Required before clarify step can be marked done on generate tasks"),
+        .describe("Required before clarify step done (generate; resolve Standard/Full)"),
       briefingConfirmedAt: z
         .string()
         .optional()
@@ -571,6 +574,29 @@ export const TaskUpdatePatchSchema = z.object({
         .boolean()
         .optional()
         .describe("Set after offering spec_record — required before task_complete"),
+      adoptedAt: z.string().optional().describe("Set when adopt workflow migrated docs"),
+      resolveTier: ResolveTierEnum.optional().describe(
+        "Resolve-task depth: fast | standard | full — set via task_confirm_tier or task_update",
+      ),
+      tierConfirmedAt: z
+        .string()
+        .optional()
+        .describe("ISO timestamp when user confirmed Fast/Standard/Full tier"),
+      designSpecPath: z
+        .string()
+        .optional()
+        .describe("Full tier: path to design spec under docs/superpowers/specs/"),
+      designSpecApprovedAt: z
+        .string()
+        .optional()
+        .describe("Full tier: ISO timestamp when user approved the design spec"),
+      implementationPlanPath: z
+        .string()
+        .optional()
+        .describe("Standard/Full tier: path to plan file under docs/superpowers/plans/"),
+      executionMode: ResolveExecutionModeEnum.optional().describe(
+        "Standard/Full tier after plan approval: inline or subagent execution",
+      ),
     })
     .optional(),
   step: z.object({ id: z.string(), patch: TaskStepPatchSchema }).optional(),
@@ -626,6 +652,23 @@ export const TaskApprovePlanSchema = RootSchema.extend({
   taskId: z.string(),
   plan: StoredPlanSchema.optional().describe("Plan to approve; omit if already set via task_update"),
   ...AuditActorOverrideSchema,
+});
+
+export const TaskConfirmTierSchema = RootSchema.extend({
+  taskId: z.string().describe("Resolve task id"),
+  tier: ResolveTierEnum.describe("User-confirmed tier: fast | standard | full"),
+});
+
+export const TaskApproveDesignSpecSchema = RootSchema.extend({
+  taskId: z.string().describe("Resolve task id (Full tier)"),
+  designSpecPath: z
+    .string()
+    .describe("Relative path to approved design spec, e.g. docs/superpowers/specs/2026-06-17-topic-design.md"),
+});
+
+export const TaskSetExecutionModeSchema = RootSchema.extend({
+  taskId: z.string().describe("Resolve task id with approved plan"),
+  mode: ResolveExecutionModeEnum.describe("inline or subagent — Standard/Full only"),
 });
 
 export const TaskResumeSchema = RootSchema.extend({

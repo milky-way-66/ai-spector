@@ -3,6 +3,9 @@ import type {
   TaskAbandonSchema,
   TaskRecordWaveSchema,
   TaskApprovePlanSchema,
+  TaskConfirmTierSchema,
+  TaskApproveDesignSpecSchema,
+  TaskSetExecutionModeSchema,
   TaskCompleteSchema,
   TaskCreateSchema,
   TaskGetSchema,
@@ -15,13 +18,16 @@ import type {
 import type { WorkflowId } from "@/core/operations/task-templates.js";
 import {
   runTaskAbandon,
+  runTaskApproveDesignSpec,
   runTaskApprovePlan,
   runTaskComplete,
+  runTaskConfirmTier,
   runTaskCreate,
   runTaskGet,
   runTaskList,
   runTaskPause,
   runTaskResume,
+  runTaskSetExecutionMode,
   runTaskStatus,
   runTaskUpdate,
   recordGenerateWaveProgress,
@@ -75,6 +81,34 @@ export async function toolTaskApprovePlan(input: z.infer<typeof TaskApprovePlanS
     by: input.by,
     username: input.username,
     role: input.role,
+  });
+}
+
+export async function toolTaskConfirmTier(input: z.infer<typeof TaskConfirmTierSchema>) {
+  return runTaskConfirmTier({
+    root: input.root,
+    taskId: input.taskId,
+    tier: input.tier,
+  });
+}
+
+export async function toolTaskApproveDesignSpec(
+  input: z.infer<typeof TaskApproveDesignSpecSchema>,
+) {
+  return runTaskApproveDesignSpec({
+    root: input.root,
+    taskId: input.taskId,
+    designSpecPath: input.designSpecPath,
+  });
+}
+
+export async function toolTaskSetExecutionMode(
+  input: z.infer<typeof TaskSetExecutionModeSchema>,
+) {
+  return runTaskSetExecutionMode({
+    root: input.root,
+    taskId: input.taskId,
+    mode: input.mode,
   });
 }
 

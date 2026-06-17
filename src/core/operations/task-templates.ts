@@ -30,10 +30,14 @@ const GENERATE_STEPS: TemplateStep[] = [
 ];
 
 const RESOLVE_STEPS: TemplateStep[] = [
+  { id: "tier", phase: "tier", description: "Confirm Fast/Standard/Full tier with user" },
+  { id: "design", phase: "design", description: "Design spec and user approval (Full tier)" },
+  { id: "check", phase: "check", description: "Validate workspace (Standard/Full)" },
   { id: "clarify", phase: "clarify", description: "Clarify GoalSpec fields" },
-  { id: "discover", phase: "discover", description: "Read-only lookup for scope" },
+  { id: "briefing", phase: "briefing", description: "Context briefing for affected files (Standard/Full)" },
   { id: "plan", phase: "plan", description: "Present GoalSpec + TaskPlan for approval" },
   { id: "execute", phase: "execute", description: "Run approved plan steps" },
+  { id: "verify", phase: "verify", description: "Verify changed paths before complete" },
   { id: "report", phase: "report", description: "Summarize state update" },
 ];
 

@@ -1,5 +1,9 @@
 import type { ExtractedSpec, SpecStore } from "../operations/extracted.js";
 import type { TaskState } from "../operations/task.js";
+import {
+  effectiveResolveTier,
+  isLegacyResolveTask,
+} from "../operations/task-gates.js";
 import type { ReviewSessionFile } from "../reviews/types.js";
 import type { WorkflowId } from "./route-intent.js";
 
@@ -18,6 +22,10 @@ const SPEC_APPROVE = "spec_approve";
 const TASK_APPROVE = "task_approve_plan";
 const COMMENTS_RESOLVE = "comments_resolve";
 const APPROVE_SIBLINGS = [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE] as const;
+
+function taskStepStatus(task: TaskState, stepId: string): string {
+  return task.steps.find((s) => s.id === stepId)?.status ?? "missing";
+}
 
 function gateBlockedGuidance(
   workflowId: WorkflowId,
@@ -50,13 +58,28 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
   if (task.planApprovedAt) {
     const executeTools =
       task.kind === "resolve"
-        ? ["resolve_task", "graph_impact", "index", "task_complete"]
+        ? [
+            "resolve_task",
+            "graph_impact",
+            "index",
+            "workspace_check",
+            "readiness_output_checklist",
+            "task_complete",
+          ]
         : ["task_record_wave", "index", "spec_record", "task_complete"];
+    const tier = task.kind === "resolve" ? effectiveResolveTier(task) : null;
+    const execHint =
+      tier && tier !== "fast" && !task.snapshot.executionMode
+        ? " Offer inline vs subagent execution and set snapshot.executionMode before large execute batches."
+        : "";
     return {
       workflowId,
-      phase: "plan_approved",
+      phase:
+        task.kind === "resolve" && taskStepStatus(task, "execute") === "done"
+          ? "verify"
+          : "plan_approved",
       message:
-        "Plan approved — execute the task steps. Use task_approve_plan only once; this is not document sign-off (review_approve).",
+        `Plan approved — execute the task steps, then verify changed paths before task_complete.${execHint} Use task_approve_plan only once; this is not document sign-off (review_approve).`,
       nextTools: executeTools,
       notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
       canProceed: true,
@@ -98,18 +121,9 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
           ["task_update"],
         );
       }
-    } else if (task.steps.find((s) => s.id === "clarify")?.status !== "done") {
-      return gateBlockedGuidance(workflowId, "clarify", "Clarify GoalSpec fields before plan approval.", [
-        "task_update",
-        "context_list",
-      ]);
-    } else if (!task.snapshot.planPresentedAt || task.phaseStatus !== "awaiting_user") {
-      return gateBlockedGuidance(
-        workflowId,
-        "plan",
-        "Show GoalSpec + TaskPlan — wait for explicit yes (not ok/scope alone).",
-        ["task_update"],
-      );
+    } else {
+      const resolveGuidance = buildResolvePreApproveGuidance(task, workflowId);
+      if (resolveGuidance) return resolveGuidance;
     }
 
     return {
@@ -123,14 +137,112 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
     };
   }
 
+  if (task.kind === "resolve") {
+    const resolveGuidance = buildResolvePreApproveGuidance(task, workflowId);
+    if (resolveGuidance) return resolveGuidance;
+  }
+
   return {
     workflowId,
     phase: "planning",
-    message: "Clarify gaps → build GoalSpec + TaskPlan → wait for user yes → task_approve_plan before any doc writes.",
+    message:
+      "Propose tier → clarify → build GoalSpec + TaskPlan → wait for user yes → task_approve_plan before any doc writes.",
     nextTools: ["task_update", "context_list"],
     notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
     canProceed: false,
   };
+}
+
+function buildResolvePreApproveGuidance(
+  task: TaskState,
+  workflowId: WorkflowId,
+): WorkflowToolGuidance | null {
+  const tier = effectiveResolveTier(task);
+
+  if (!isLegacyResolveTask(task) && !task.snapshot.tierConfirmedAt) {
+    return gateBlockedGuidance(
+      workflowId,
+      "tier",
+      "Propose Fast/Standard/Full tier with rationale — user must confirm before clarify/plan.",
+      ["task_update", "task_confirm_tier"],
+    );
+  }
+
+  if (tier === "full") {
+    if (taskStepStatus(task, "design") !== "done" || !task.snapshot.designSpecApprovedAt) {
+      return gateBlockedGuidance(
+        workflowId,
+        "design",
+        "Write design spec, get user approval — task_approve_design_spec or snapshot fields.",
+        ["task_approve_design_spec", "task_update"],
+      );
+    }
+  }
+
+  if (tier === "standard" || tier === "full") {
+    if (taskStepStatus(task, "check") !== "done") {
+      return gateBlockedGuidance(
+        workflowId,
+        "check",
+        "Run workspace_check, record snapshot.workspaceCheckAt, mark check done.",
+        ["workspace_check", "task_update"],
+      );
+    }
+  }
+
+  if (taskStepStatus(task, "clarify") !== "done") {
+    return gateBlockedGuidance(workflowId, "clarify", "Clarify GoalSpec fields before plan approval.", [
+      "task_update",
+      "context_list",
+    ]);
+  }
+
+  if (tier === "standard" || tier === "full") {
+    if (!task.snapshot.readinessReportShown) {
+      return gateBlockedGuidance(
+        workflowId,
+        "clarify",
+        "Run scoped readiness_assess, show criteria table, set snapshot.readinessReportShown.",
+        ["readiness_assess", "context_list", "task_update"],
+      );
+    }
+    if (taskStepStatus(task, "briefing") !== "done" || !task.snapshot.briefingConfirmedAt) {
+      return gateBlockedGuidance(
+        workflowId,
+        "briefing",
+        "Present per-file context briefing — user must confirm before plan table.",
+        ["task_update", "context_list"],
+      );
+    }
+    if (!task.snapshot.implementationPlanPath) {
+      return gateBlockedGuidance(
+        workflowId,
+        "plan",
+        "Save bite-sized plan to docs/superpowers/plans/… and set snapshot.implementationPlanPath.",
+        ["task_update"],
+      );
+    }
+  }
+
+  if (!task.plan) {
+    return gateBlockedGuidance(
+      workflowId,
+      "plan",
+      "Build GoalSpec + TaskPlan — store via task_update before presenting for approval.",
+      ["task_update", "context_list"],
+    );
+  }
+
+  if (!task.snapshot.planPresentedAt || task.phaseStatus !== "awaiting_user") {
+    return gateBlockedGuidance(
+      workflowId,
+      "plan",
+      "Show GoalSpec + TaskPlan — wait for explicit yes (not ok/scope alone).",
+      ["task_update"],
+    );
+  }
+
+  return null;
 }
 
 export function buildTaskListWorkflowGuidance(opts: {

@@ -54,7 +54,7 @@ describe("task CLI formatters", () => {
       const got = await runTaskGet({ root, taskId: created.task.id });
       const getText = formatTaskGet(got);
       expect(getText).toContain(got.taskPath);
-      expect(getText).toContain("clarify");
+      expect(getText).toContain("tier");
 
       const status = await runTaskStatus({ root });
       const statusText = formatTaskStatus(status);

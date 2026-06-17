@@ -23,9 +23,11 @@ import { recordWorkflowFromTask } from "../workflow/active-worker.js";
 import { resolveAuditActor } from "../util/audit-actor.js";
 import {
   assertGenerateExecutionAllowed,
+  assertResolveExecutionAllowed,
   assertGeneratePlanStoreAllowed,
   assertTaskApprovePlanAllowed,
   assertTaskStepUpdateAllowed,
+  effectiveResolveTier,
 } from "./task-gates.js";
 
 export type { TaskKind, WorkflowId };
@@ -153,6 +155,9 @@ function expandGenerateWaveSteps(task: TaskState, plan: GeneratePlan): void {
   task.steps.splice(placeholderIndex, 1, ...waveSteps);
 }
 
+export type ResolveTier = "fast" | "standard" | "full";
+export type ResolveExecutionMode = "inline" | "subagent";
+
 export interface TaskSnapshot {
   workspaceCheckAt?: string;
   artifactHashes?: Record<string, string>;
@@ -167,6 +172,16 @@ export interface TaskSnapshot {
   extractOffered?: boolean;
   /** Set when docs were migrated via adopt workflow (not generate). */
   adoptedAt?: string;
+  /** Resolve-task tier confirmed with user (fast / standard / full). */
+  resolveTier?: ResolveTier;
+  tierConfirmedAt?: string;
+  /** Full tier: path to approved design spec under docs/superpowers/specs/. */
+  designSpecPath?: string;
+  designSpecApprovedAt?: string;
+  /** Standard/Full tier: path to bite-sized plan under docs/superpowers/plans/. */
+  implementationPlanPath?: string;
+  /** Standard/Full tier: inline or subagent execution after plan approval. */
+  executionMode?: ResolveExecutionMode;
 }
 
 export interface TaskState {
@@ -675,6 +690,185 @@ export async function runTaskUpdate(opts: TaskUpdateOptions): Promise<TaskUpdate
   return { task, taskPath };
 }
 
+const RESOLVE_FAST_SKIP_STEPS = ["check", "design", "briefing"] as const;
+
+function advanceResolveStep(task: TaskState, fromStepId: string): void {
+  const fromIndex = task.steps.findIndex((s) => s.id === fromStepId);
+  const nextStep =
+    fromIndex >= 0
+      ? task.steps.slice(fromIndex + 1).find((s) => s.status !== "done" && s.status !== "skipped")
+      : task.steps.find((s) => s.status === "pending" || s.status === "in-progress");
+  if (!nextStep) return;
+  nextStep.status = "in-progress";
+  task.currentStepId = nextStep.id;
+  task.phase = nextStep.phase;
+  task.phaseStatus = "in_progress";
+  task.nextAction = defaultNextAction(task.workflow, nextStep.id);
+}
+
+export interface TaskConfirmTierOptions {
+  root?: string;
+  taskId: string;
+  tier: ResolveTier;
+}
+
+export interface TaskConfirmTierResult {
+  task: TaskState;
+  taskPath: string;
+  workflowGuidance: WorkflowToolGuidance;
+}
+
+/** Record user-confirmed resolve tier and advance to clarify (Fast: skip check/design/briefing). */
+export async function runTaskConfirmTier(
+  opts: TaskConfirmTierOptions,
+): Promise<TaskConfirmTierResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  if (task.kind !== "resolve") {
+    throw new Error(`Task "${task.id}" is kind "${task.kind}" — task_confirm_tier is for resolve tasks only`);
+  }
+  if (task.planApprovedAt) {
+    throw new Error(`Task "${task.id}" plan already approved — cannot change tier`);
+  }
+
+  const now = new Date().toISOString();
+  task.snapshot.resolveTier = opts.tier;
+  task.snapshot.tierConfirmedAt = now;
+
+  const tierStep = task.steps.find((s) => s.id === "tier");
+  if (tierStep) {
+    tierStep.status = "done";
+    tierStep.completedAt = now;
+    tierStep.blocker = null;
+  }
+
+  if (opts.tier === "fast") {
+    for (const stepId of RESOLVE_FAST_SKIP_STEPS) {
+      const step = task.steps.find((s) => s.id === stepId);
+      if (step && (step.status === "pending" || step.status === "in-progress")) {
+        step.status = "skipped";
+      }
+    }
+  } else if (opts.tier === "standard") {
+    const designStep = task.steps.find((s) => s.id === "design");
+    if (designStep && (designStep.status === "pending" || designStep.status === "in-progress")) {
+      designStep.status = "skipped";
+    }
+  }
+
+  advanceResolveStep(task, "tier");
+
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+
+  const index = await loadIndex(root);
+  pushRecent(index, task.id);
+  await saveIndex(root, index);
+
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskWorkflowGuidance(task),
+  };
+}
+
+export interface TaskApproveDesignSpecOptions {
+  root?: string;
+  taskId: string;
+  designSpecPath: string;
+}
+
+export interface TaskApproveDesignSpecResult {
+  task: TaskState;
+  taskPath: string;
+  workflowGuidance: WorkflowToolGuidance;
+}
+
+/** Full tier: record approved design spec path and advance to check. */
+export async function runTaskApproveDesignSpec(
+  opts: TaskApproveDesignSpecOptions,
+): Promise<TaskApproveDesignSpecResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  if (task.kind !== "resolve") {
+    throw new Error(`Task "${task.id}" is not a resolve task`);
+  }
+  if (effectiveResolveTier(task) !== "full") {
+    throw new Error(`Task "${task.id}" tier is "${effectiveResolveTier(task)}" — design spec approval is Full tier only`);
+  }
+  if (task.planApprovedAt) {
+    throw new Error(`Task "${task.id}" plan already approved — design spec gate is pre-plan only`);
+  }
+  if (!task.snapshot.tierConfirmedAt) {
+    throw new Error(`Task "${task.id}" tier not confirmed — call task_confirm_tier first`);
+  }
+
+  const now = new Date().toISOString();
+  task.snapshot.designSpecPath = opts.designSpecPath.replace(/\\/g, "/");
+  task.snapshot.designSpecApprovedAt = now;
+
+  const designStep = task.steps.find((s) => s.id === "design");
+  if (designStep) {
+    designStep.status = "done";
+    designStep.completedAt = now;
+    designStep.blocker = null;
+  }
+
+  advanceResolveStep(task, "design");
+
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskWorkflowGuidance(task),
+  };
+}
+
+export interface TaskSetExecutionModeOptions {
+  root?: string;
+  taskId: string;
+  mode: ResolveExecutionMode;
+}
+
+export interface TaskSetExecutionModeResult {
+  task: TaskState;
+  taskPath: string;
+  workflowGuidance: WorkflowToolGuidance;
+}
+
+/** Standard/Full resolve tasks: record inline vs subagent execution after plan approval. */
+export async function runTaskSetExecutionMode(
+  opts: TaskSetExecutionModeOptions,
+): Promise<TaskSetExecutionModeResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  if (task.kind !== "resolve") {
+    throw new Error(`Task "${task.id}" is not a resolve task`);
+  }
+  if (!task.planApprovedAt) {
+    throw new Error(`Task "${task.id}" plan not approved — call task_approve_plan first`);
+  }
+  const tier = effectiveResolveTier(task);
+  if (tier === "fast") {
+    throw new Error(`Task "${task.id}" is Fast tier — execution is always inline`);
+  }
+
+  task.snapshot.executionMode = opts.mode;
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskWorkflowGuidance(task),
+  };
+}
+
 // ── approve plan ──────────────────────────────────────────────────────────────
 
 export interface TaskApprovePlanOptions {
@@ -1117,9 +1311,7 @@ export async function loadResolveExecutionContext(opts: {
   if (task.workflow !== "resolve") {
     throw new Error(`Task "${task.id}" uses workflow "${task.workflow}", not resolve`);
   }
-  if (!task.planApprovedAt) {
-    throw new Error(`Task "${task.id}" plan is not approved — call task_approve_plan first`);
-  }
+  assertResolveExecutionAllowed(task);
   if (!task.plan || task.plan.kind !== "resolve") {
     throw new Error(`Task "${task.id}" has no stored resolve plan`);
   }

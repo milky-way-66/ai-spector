@@ -10,7 +10,7 @@ import {
   runTaskCreate,
   runTaskUpdate,
 } from "@/core/operations/task.js";
-import { passGenerateGates, passResolveGates } from "../helpers/task-gate-fixture.js";
+import { passGenerateGates, passResolveFastGates, passResolveGates, passResolveStandardGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 async function scaffold(root: string): Promise<void> {
@@ -146,6 +146,128 @@ describe("task workflow gates", () => {
       await passResolveGates(root, task.id, goal, plan);
       const approved = await runTaskApprovePlan({ root, taskId: task.id });
       expect(approved.task.currentStepId).toBe("execute");
+    });
+  });
+
+  it("rejects fast-tier resolve approve without tierConfirmedAt", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "resolve",
+        workflow: "resolve",
+        trigger: "add login",
+      });
+      const goal = createGoalSpec("add login", "docs", ["docs/srs/en/04.md"], ["done"]);
+      const plan = createPlan(
+        goal,
+        [{ id: "s1", description: "edit", tool: "edit", args: {} }],
+        [{ nodeId: "F-01", directCallers: 0, riskLevel: "low" }],
+      );
+
+      await runTaskUpdate({
+        root,
+        taskId: task.id,
+        patch: {
+          goal,
+          plan: { kind: "resolve", plan },
+          phaseStatus: "awaiting_user",
+          snapshot: {
+            resolveTier: "fast",
+            planPresentedAt: new Date().toISOString(),
+          },
+          step: { id: "clarify", patch: { status: "done", completedAt: new Date().toISOString() } },
+        },
+      });
+
+      await expect(runTaskApprovePlan({ root, taskId: task.id })).rejects.toMatchObject({
+        reason: "snapshot_missing",
+      });
+    });
+  });
+
+  it("approves fast-tier resolve when tier gates are complete", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "resolve",
+        workflow: "resolve",
+        trigger: "fix typo",
+      });
+      const goal = createGoalSpec("fix typo", "docs", ["docs/srs/en/04.md"], ["done"]);
+      const plan = createPlan(goal, [{ id: "s1", description: "edit", tool: "edit", args: {} }], []);
+
+      await passResolveFastGates(root, task.id, goal, plan);
+      const approved = await runTaskApprovePlan({ root, taskId: task.id });
+      expect(approved.task.planApprovedAt).toBeTruthy();
+    });
+  });
+
+  it("rejects standard-tier resolve without implementationPlanPath", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "resolve",
+        workflow: "resolve",
+        trigger: "extend feature",
+      });
+      const goal = createGoalSpec("extend", "docs", ["docs/srs/en/04.md"], ["done"]);
+      const plan = createPlan(goal, [{ id: "s1", description: "edit", tool: "edit", args: {} }], []);
+      const now = new Date().toISOString();
+
+      await runTaskUpdate({
+        root,
+        taskId: task.id,
+        patch: {
+          snapshot: { resolveTier: "standard", tierConfirmedAt: now, workspaceCheckAt: now, readinessReportShown: true, briefingConfirmedAt: now, planPresentedAt: now },
+          goal,
+          plan: { kind: "resolve", plan },
+          phaseStatus: "awaiting_user",
+          step: { id: "tier", patch: { status: "done", completedAt: now } },
+        },
+      });
+      for (const id of ["check", "clarify", "briefing"] as const) {
+        await runTaskUpdate({
+          root,
+          taskId: task.id,
+          patch: { step: { id, patch: { status: "done", completedAt: now } } },
+        });
+      }
+      await runTaskUpdate({
+        root,
+        taskId: task.id,
+        patch: { step: { id: "design", patch: { status: "skipped" } } },
+      });
+
+      await expect(runTaskApprovePlan({ root, taskId: task.id })).rejects.toMatchObject({
+        reason: "snapshot_missing",
+      });
+    });
+  });
+
+  it("approves standard-tier resolve when extended gates are complete", async () => {
+    await withTempDir(async (root) => {
+      await scaffold(root);
+      const { task } = await runTaskCreate({
+        root,
+        kind: "resolve",
+        workflow: "resolve",
+        trigger: "extend feature",
+      });
+      const goal = createGoalSpec("extend", "docs", ["docs/srs/en/04.md"], ["done"]);
+      const plan = createPlan(goal, [{ id: "s1", description: "edit", tool: "edit", args: {} }], []);
+
+      await passResolveStandardGates(
+        root,
+        task.id,
+        goal,
+        plan,
+        "docs/superpowers/plans/2026-06-17-resolve-extend.md",
+      );
+      const approved = await runTaskApprovePlan({ root, taskId: task.id });
+      expect(approved.task.planApprovedAt).toBeTruthy();
     });
   });
 

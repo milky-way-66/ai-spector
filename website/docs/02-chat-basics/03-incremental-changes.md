@@ -33,11 +33,12 @@ The agent creates a **task** — no edits yet.
 
 ## What you should see
 
-1. **Clarifying questions** — scope, target docs, constraints (answers stored for later).
-2. **GoalSpec + TaskPlan table** — what will change, which files, graph impact planned.
-3. Agent **waits** for your explicit **yes** — reply `yes, go ahead` or `task_approve_plan`.
-4. After approval: targeted edits under `docs/` or `prototype/`, then `index` if needed.
-5. Task marked complete when done.
+1. **Tier proposal** — Fast / Standard / Full (agent proposes, you confirm).
+2. **Clarifying questions** — scope, target docs, constraints.
+3. **Standard/Full extras** — scoped readiness, briefing, plan file under `docs/superpowers/plans/`.
+4. **Full tier** — design spec under `docs/superpowers/specs/` before plan.
+5. **GoalSpec + TaskPlan table** — what will change; agent waits for explicit **yes**.
+6. After approval: edits, optional subagent execution, verify, then complete.
 
 **On disk:** changed doc files only — not a full `docs/srs/` rewrite.
 

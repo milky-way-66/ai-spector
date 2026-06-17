@@ -46,7 +46,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Sync translations | "resolve translations", "update JP from EN" | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | "resolve comments", "fix C-001" | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
 | **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "approve detail-design/feature-list", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + quorum + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_decline` / `review_close` / `review_reject` |
-| Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
+| Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | tier confirm → clarify → (design/briefing by tier) → plan → `task_approve_plan` → execute → verify → `task_complete` |
 | Explore graph | "show the graph" | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
 Unsure? Say **"help me approve"** or call **`workflow_route`** — the agent uses [skills/_skill-router.md](./skills/_skill-router.md) or asks one clarifying question.

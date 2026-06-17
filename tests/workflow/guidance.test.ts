@@ -104,11 +104,36 @@ describe("buildTaskWorkflowGuidance", () => {
 
   it("suggests resolve_task when plan approved", () => {
     const g = buildTaskWorkflowGuidance(
-      minimalTask({ planApprovedAt: "2026-06-15T00:00:00.000Z" }),
+      minimalTask({
+        planApprovedAt: "2026-06-15T00:00:00.000Z",
+        steps: [{ id: "execute", phase: "execute", description: "", status: "pending" }],
+      }),
     );
     expect(g.phase).toBe("plan_approved");
     expect(g.nextTools).toContain("resolve_task");
+    expect(g.nextTools).toContain("workspace_check");
     expect(g.canProceed).toBe(true);
+  });
+
+  it("blocks standard resolve at tier gate when tier not confirmed", () => {
+    const g = buildTaskWorkflowGuidance(
+      minimalTask({
+        snapshot: { resolveTier: "standard" },
+        plan: {
+          kind: "resolve",
+          plan: {
+            id: "p1",
+            goal: { trigger: "t", domain: "docs", scope: [], criteria: [] },
+            steps: [{ id: "s1", description: "edit", tool: "edit", args: {}, status: "pending" }],
+            impactMap: [],
+            riskLevel: "low",
+          },
+        },
+        steps: [{ id: "clarify", phase: "clarify", description: "", status: "done" }],
+      }),
+    );
+    expect(g.phase).toBe("tier");
+    expect(g.notTheseTools).toContain("task_approve_plan");
   });
 });
 
