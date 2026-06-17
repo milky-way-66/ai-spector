@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
+    "prebuild": "rm -rf i18n/vi/docusaurus-plugin-content-docs/current && cp -R docs/vi i18n/vi/docusaurus-plugin-content-docs/current",
+    "prestart": "npm run prebuild",
     "start": "docusaurus start",
     "preview": "docusaurus build && docusaurus serve",
     "build": "docusaurus build",

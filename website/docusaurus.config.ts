@@ -43,7 +43,7 @@ const config: Config = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'vi'],
   },
 
   presets: [
@@ -51,7 +51,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          path: 'docs',
+          path: 'docs/en',
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
           exclude: courseExclude,
@@ -81,6 +81,10 @@ const config: Config = {
           position: 'left',
           label: 'Course',
         },
+        {
+          type: 'localeDropdown',
+          position: 'right',
+        },
       ],
     },
     footer: {
@@ -89,7 +93,7 @@ const config: Config = {
         {
           title: 'Course',
           items: [
-            {label: 'Get started', to: 'get-started'},
+            {label: 'Course home', to: '/docs/'},
           ],
         },
       ],

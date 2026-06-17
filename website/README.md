@@ -4,11 +4,14 @@
 
 | Language | Edit here |
 |----------|-----------|
-| English | `website/docs/` |
+| English | `website/docs/en/` |
+| Vietnamese | `website/docs/vi/` |
 
 ```text
-website/docs/              ← canonical course content
-docs/course                → symlink → website/docs/   (npm + course serve)
+website/docs/en/           ← EN course (Docusaurus default locale + course serve)
+website/docs/vi/           ← VI course (Docusaurus vi locale + course serve)
+website/i18n/vi/.../current → symlink → docs/vi/
+docs/course                → symlink → website/docs/   (override: docs/course/en/, docs/course/vi/)
 ```
 
 ## Commands
@@ -27,10 +30,16 @@ npm run docs:dev         # preview
 npm run docs:dev:en      # fast dev server
 ```
 
+- **EN:** `http://localhost:3000/docs/`
+- **VI:** `http://localhost:3000/vi/docs/`
+
 ## vs `course serve`
 
-Same files via `docs/course` symlink:
+Same markdown files; interactive course UI with exercises:
 
 ```bash
 npx ai-spector course serve --open
 ```
+
+- **EN:** `http://127.0.0.1:4177/course/en/index`
+- **VI:** `http://127.0.0.1:4177/course/vi/index`
