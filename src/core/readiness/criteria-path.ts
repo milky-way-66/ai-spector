@@ -21,6 +21,14 @@ export async function resolveCriteriaFilePath(
     };
   }
 
+  if (effectiveDocType === "basic-design") {
+    return {
+      path: docTypeReadinessCriteriaPath(root, "basic-design"),
+      docType: "basic-design",
+      packName: null,
+    };
+  }
+
   if (effectiveDocType === "detail-design") {
     return {
       path: docTypeReadinessCriteriaPath(root, "detail-design"),

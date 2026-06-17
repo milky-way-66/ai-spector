@@ -5,7 +5,10 @@ export interface ReadinessCriterion {
   id: string;
   dimension?: string;
   severity: ReadinessSeverity;
+  /** ISO/IEC/IEEE 29148 clause ref (SRS). */
   iso29148?: string;
+  /** Any other standard clause, e.g. "ISO/IEC/IEEE 12207 §6.5.3". */
+  standardRef?: string;
   field?: string;
   question: string;
   graphProbe?: string;
@@ -35,8 +38,10 @@ export interface ReadinessCriteriaFile {
   purpose?: string;
   standards?: unknown[];
   dimensions?: unknown[];
-  /** Template filename → ISO/IEC/IEEE 29148 §9.6 section refs (builtin SRS). */
+  /** Template filename → standard clause refs (29148 §9.6 for SRS; 12207/15289/42010 for design). */
   templateToIso29148?: Record<string, string[]>;
+  /** Design-document quality rubric (basic design, detail design). */
+  designQuality?: unknown;
   globalCriteria: ReadinessCriterion[];
   targets: ReadinessTarget[];
   requirementQuality?: unknown;
@@ -76,6 +81,7 @@ export interface ReadinessCriterionResult {
   status: ReadinessStatus;
   question: string;
   iso29148?: string;
+  standardRef?: string;
   field?: string;
   evidence: string[];
   gap?: string;

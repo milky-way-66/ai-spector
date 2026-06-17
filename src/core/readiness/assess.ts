@@ -163,6 +163,7 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
       status: probe.status,
       question: criterion.question,
       iso29148: criterion.iso29148,
+      standardRef: criterion.standardRef,
       field: criterion.field,
       evidence: probe.evidence,
       gap: probe.gap,

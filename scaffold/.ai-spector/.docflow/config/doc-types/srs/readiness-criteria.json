@@ -23,6 +23,11 @@
       "scope": "Product quality model — quality attributes for §7 (performance, security, usability, …)"
     },
     {
+      "id": "ISO-15289",
+      "title": "ISO/IEC/IEEE 15289:2019",
+      "scope": "Life-cycle information items — SRS as requirements specification (§10.57)"
+    },
+    {
       "id": "IEEE-830",
       "title": "IEEE 830-1998 (superseded)",
       "scope": "Legacy SRS outline — mapped via ISO 29148 §9.6; retained for traceability only"
@@ -37,7 +42,10 @@
     "1-introduction.md": ["9.6.1", "9.6.2", "9.6.3"],
     "2-overall-description.md": ["9.6.4", "9.6.5", "9.6.6", "9.6.7", "9.6.8", "9.6.9"],
     "3-use-cases.md": ["9.6.5", "9.6.10", "9.6.12"],
+    "3-use-case-detail-template.md": ["9.6.10", "9.6.12"],
+    "4-system-features-list-template.md": ["9.6.5", "9.6.10", "9.6.12"],
     "4-system-features.md": ["9.6.5", "9.6.10", "9.6.12"],
+    "4-system-feature-detail-template.md": ["9.6.10", "9.6.12"],
     "features/F-*.md": ["9.6.10", "9.6.12"],
     "features/UC-*.md": ["9.6.10", "9.6.12"],
     "5-data-requirements.md": ["9.6.15"],
@@ -57,13 +65,16 @@
       { "id": "RQ-06", "name": "Feasible", "iso": "5.2.5", "check": "Achievable within constraints" },
       { "id": "RQ-07", "name": "Verifiable", "iso": "5.2.5", "check": "Test/inspect/analyze/demonstrate pass-fail criteria exist" },
       { "id": "RQ-08", "name": "Modifiable", "iso": "5.2.5", "check": "Unique ID; isolated from unrelated requirements" },
-      { "id": "RQ-09", "name": "Traceable", "iso": "5.2.5", "check": "Links to source (UC/F/stakeholder) and verification method" }
+      { "id": "RQ-09", "name": "Traceable", "iso": "5.2.5", "check": "Links to source (UC/F/stakeholder) and verification method" },
+      { "id": "RQ-10", "name": "Appropriate", "iso": "5.2.5", "check": "Requirement is at the correct abstraction level — not design or implementation detail" },
+      { "id": "RQ-11", "name": "Singular", "iso": "5.2.5", "check": "One requirement per statement — no compound 'and/or' that should be split" }
     ],
     "setCharacteristics": [
       { "id": "RQS-01", "name": "Complete set", "iso": "5.2.6", "check": "All functions, interfaces, data, NFR in scope are covered" },
       { "id": "RQS-02", "name": "Consistent set", "iso": "5.2.6", "check": "No contradictions across chapters" },
       { "id": "RQS-03", "name": "Bounded", "iso": "5.2.6", "check": "Scope boundary clear; out-of-scope explicit" },
-      { "id": "RQS-04", "name": "Structured", "iso": "5.2.6", "check": "Organized by function/feature; traceable hierarchy" }
+      { "id": "RQS-04", "name": "Structured", "iso": "5.2.6", "check": "Organized by function/feature; traceable hierarchy" },
+      { "id": "RQS-05", "name": "No unresolved TBD", "iso": "5.2.6", "check": "Set stands alone — no TBD/TBR in generation scope without accepted timeframe and risk" }
     ],
     "requiredAttributes": [
       { "id": "RQA-01", "name": "Unique identifier", "iso": "5.2.8" },
@@ -332,6 +343,15 @@
       "iso29148": "9.6.19",
       "question": "Acceptance criteria at product level (definition of done for SRS baseline sign-off)?",
       "graphProbe": "acceptanceCriteria on system or release nodes"
+    },
+    {
+      "id": "G-021",
+      "dimension": "graph",
+      "severity": "blocking",
+      "iso29148": "5.2.6",
+      "question": "Confirm no blocking TBD/TBR items remain in the generation scope — or each has owner, timeframe, and accepted risk?",
+      "graphProbe": "nodes or context entries tagged TBD, TBR, deferred",
+      "acceptAssumption": false
     }
   ],
   "targets": [

@@ -22,6 +22,7 @@ export interface DagFile {
 export interface OutputChecklistItem {
   criterionId: string;
   iso29148?: string;
+  standardRef?: string;
   dimension?: string;
   severity: string;
   question: string;
@@ -136,12 +137,19 @@ function isoSectionsForTemplate(
   return [];
 }
 
+function formatStandardRef(c: ReadinessCriterion): string | undefined {
+  if (c.standardRef) return c.standardRef;
+  if (c.iso29148) return `ISO/IEC/IEEE 29148 §${c.iso29148}`;
+  return undefined;
+}
+
 function buildAgentCheck(c: ReadinessCriterion): string {
   const parts: string[] = [];
   if (c.heading) parts.push(`Section "${c.heading}"`);
   if (c.field) parts.push(`field ${c.field}`);
   parts.push(c.question);
-  if (c.iso29148) parts.push(`(ISO 29148 §${c.iso29148})`);
+  const ref = formatStandardRef(c);
+  if (ref) parts.push(`(${ref})`);
   return parts.join(" — ");
 }
 
@@ -157,9 +165,16 @@ function criteriaForDagNode(
       dagNodeId,
     ) || /features\/|UC-|api\/|screens\//i.test(dagNodeId);
 
-  if (isDetail && criteria.requirementQuality) {
-    const rq = criteria.requirementQuality as {
-      individualCharacteristics?: Array<{ id?: string; name?: string; check?: string; iso?: string }>;
+  const qualityRubric = criteria.designQuality ?? criteria.requirementQuality;
+  if (isDetail && qualityRubric) {
+    const rq = qualityRubric as {
+      individualCharacteristics?: Array<{
+        id?: string;
+        name?: string;
+        check?: string;
+        iso?: string;
+        standardRef?: string;
+      }>;
     };
     for (const ch of rq.individualCharacteristics ?? []) {
       if (!ch.id || !ch.check) continue;
@@ -168,7 +183,8 @@ function criteriaForDagNode(
         severity: "should-ask",
         question: ch.check,
         iso29148: ch.iso,
-        dimension: "requirement-quality",
+        standardRef: ch.standardRef,
+        dimension: criteria.designQuality ? "design-quality" : "requirement-quality",
       });
     }
   }
@@ -207,6 +223,7 @@ export async function buildReadinessOutputChecklist(
     const items: OutputChecklistItem[] = criterionList.map((c) => ({
       criterionId: c.id,
       iso29148: c.iso29148,
+      standardRef: c.standardRef,
       dimension: c.dimension,
       severity: c.severity,
       question: c.question,

@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "description": "Maps each built-in template section to ISO/IEC/IEEE (and IEEE 1016) clauses. Informative only — not a compliance certificate.",
+  "standardsCatalog": {
+    "ISO-29148": {
+      "title": "ISO/IEC/IEEE 29148:2018",
+      "role": "Requirements engineering — SRS content §9.6, requirement quality §5.2"
+    },
+    "ISO-12207": {
+      "title": "ISO/IEC/IEEE 12207:2017",
+      "role": "Software life cycle — requirements analysis §6.4.4, architectural design §6.5.3, detailed design §6.5.4"
+    },
+    "ISO-15288": {
+      "title": "ISO/IEC/IEEE 15288:2015",
+      "role": "System life cycle — stakeholder needs, requirements definition"
+    },
+    "ISO-15289": {
+      "title": "ISO/IEC/IEEE 15289:2019",
+      "role": "Life-cycle information items — SRS §10.71, design description §10.15, database design §10.14, interface §10.28, software design §10.70"
+    },
+    "ISO-42010": {
+      "title": "ISO/IEC/IEEE 42010:2022",
+      "role": "Architecture description — viewpoints, views, stakeholder concerns, decisions"
+    },
+    "ISO-25010": {
+      "title": "ISO/IEC 25010:2011",
+      "role": "Product quality model — performance, security, usability, maintainability"
+    },
+    "IEEE-1016": {
+      "title": "IEEE Std 1016-2009",
+      "role": "Software design descriptions (SDD) — design views and viewpoints; maps to 15289 design items"
+    },
+    "IEEE-830": {
+      "title": "IEEE 830-1998 (superseded)",
+      "role": "Legacy SRS outline — superseded by 29148"
+    }
+  },
+  "docTypes": {
+    "srs": {
+      "folder": "docs/srs/",
+      "primaryStandard": "ISO-29148",
+      "lifecycleProcess": "ISO-12207 §6.4.4 (Software requirements analysis)",
+      "informationItem": "ISO-15289 §10.71 (Software requirements specification)",
+      "templates": {
+        "srs/1-introduction.md": {
+          "output": "1-introduction.md",
+          "clauses": ["29148:9.6.1", "29148:9.6.2", "29148:9.6.3"],
+          "sections": [
+            { "heading": "1.1 Document Purpose", "clause": "29148:9.6.2", "topic": "Audience and intended use of the SRS" },
+            { "heading": "1.2 Document Conventions", "clause": "29148:9.6.2", "topic": "Notation, priority keywords, requirement ID scheme" },
+            { "heading": "1.3 Project Scope", "clause": "29148:9.6.3", "topic": "Product identity, in-scope, out-of-scope" },
+            { "heading": "1.4 References", "clause": "29148:9.6.2", "topic": "Upstream documents (BRS, regulations, standards)" }
+          ]
+        },
+        "srs/2-overall-description.md": {
+          "output": "2-overall-description.md",
+          "clauses": ["29148:9.6.4", "29148:9.6.5", "29148:9.6.6", "29148:9.6.7", "29148:9.6.8", "29148:9.6.9"],
+          "sections": [
+            { "heading": "2.1 Product Perspective", "clause": "29148:9.6.4", "topic": "System context, interfaces, operating environment" },
+            { "heading": "2.2 User Classes and Characteristics", "clause": "29148:9.6.6", "topic": "Actors, roles, skill levels" },
+            { "heading": "2.3 Operating Environment", "clause": "29148:9.6.4.6", "topic": "Hardware, OS, network, deployment context" },
+            { "heading": "2.4 Design and Implementation Constraints", "clause": "29148:9.6.7", "topic": "Technology, regulatory, parallel operations limits" },
+            { "heading": "2.5 Assumptions and Dependencies", "clause": "29148:9.6.8", "topic": "External systems, teams, data feeds" }
+          ]
+        },
+        "srs/3-use-cases.md": {
+          "output": "3-use-cases.md",
+          "clauses": ["29148:9.6.5", "29148:9.6.10"],
+          "sections": [
+            { "heading": "3.1 Use Case Diagrams", "clause": "29148:9.6.5", "topic": "Product functions at use-case level" },
+            { "heading": "3.2 List Use Case", "clause": "29148:9.6.10", "topic": "Specified requirements inventory — use cases" }
+          ]
+        },
+        "srs/3-use-case-detail-template.md": {
+          "output": "use-cases/UC-*.md",
+          "clauses": ["29148:9.6.10", "29148:9.6.12"],
+          "sections": [
+            { "heading": "1. Use Case Overview", "clause": "29148:9.6.10", "topic": "Actors, pre/postconditions, priority" },
+            { "heading": "2. Main Success Scenario", "clause": "29148:9.6.12", "topic": "Functional behavior — basic flow" },
+            { "heading": "3. Alternative Flows", "clause": "29148:9.6.12", "topic": "Branching behavior" },
+            { "heading": "4. Exception Flows", "clause": "29148:9.6.12", "topic": "Error handling requirements" },
+            { "heading": "6. Functional Requirements", "clause": "29148:9.6.10", "topic": "Derived FR statements" },
+            { "heading": "7. Data Requirements", "clause": "29148:9.6.15", "topic": "Data touched by use case" },
+            { "heading": "8. User Interface Requirements", "clause": "29148:9.6.4.2", "topic": "UI expectations for this UC" }
+          ]
+        },
+        "srs/4-system-features-list-template.md": {
+          "output": "4-system-features.md",
+          "clauses": ["29148:9.6.5", "29148:9.6.10"],
+          "sections": [
+            { "heading": "4.2 List of System Features", "clause": "29148:9.6.10", "topic": "Feature inventory F-xx" },
+            { "heading": "4.3 Feature Relationships", "clause": "29148:9.6.9", "topic": "Apportioning and dependencies between features" }
+          ]
+        },
+        "srs/4-system-feature-detail-template.md": {
+          "output": "features/F-*.md",
+          "clauses": ["29148:9.6.10", "29148:9.6.12"],
+          "sections": [
+            { "heading": "1. Description", "clause": "29148:9.6.10", "topic": "Feature purpose and scope" },
+            { "heading": "2. Stimulus/Response Sequences", "clause": "29148:9.6.12", "topic": "Functional behavior" },
+            { "heading": "3. Functional Requirements", "clause": "29148:9.6.10", "topic": "Atomic FR statements with IDs" }
+          ]
+        },
+        "srs/5-data-requirements.md": {
+          "output": "5-data-requirements.md",
+          "clauses": ["29148:9.6.15"],
+          "sections": [
+            { "heading": "5.1 Logical Data Model", "clause": "29148:9.6.15", "topic": "Entities and relationships" },
+            { "heading": "5.2 Data Dictionary", "clause": "29148:9.6.15", "topic": "Field definitions" },
+            { "heading": "5.4 Data Acquisition, Integrity, Retention, and Disposal", "clause": "29148:9.6.15", "topic": "Lifecycle and integrity rules" }
+          ]
+        },
+        "srs/6-external-interfaces.md": {
+          "output": "6-external-interfaces.md",
+          "clauses": ["29148:9.6.4.1", "29148:9.6.4.2", "29148:9.6.4.3", "29148:9.6.4.4", "29148:9.6.4.5", "29148:9.6.11"],
+          "sections": [
+            { "heading": "6.1 User Interfaces", "clause": "29148:9.6.4.2", "topic": "UI requirements at system level" },
+            { "heading": "6.2 Software Interfaces", "clause": "29148:9.6.4.4", "topic": "APIs and software-to-software interfaces" },
+            { "heading": "6.3 Hardware Interfaces", "clause": "29148:9.6.4.3", "topic": "Hardware interaction" },
+            { "heading": "6.4 Communications Interfaces", "clause": "29148:9.6.4.5", "topic": "Protocols, messaging" }
+          ]
+        },
+        "srs/7-quality-attributes.md": {
+          "output": "7-quality-attributes.md",
+          "clauses": ["29148:9.6.13", "29148:9.6.14", "29148:9.6.18", "25010"],
+          "sections": [
+            { "heading": "7.1 Usability", "clause": "29148:9.6.13", "topic": "ISO 25010 usability characteristics" },
+            { "heading": "7.2 Performance", "clause": "29148:9.6.14", "topic": "Response time, throughput, capacity" },
+            { "heading": "7.3 Security", "clause": "29148:9.6.18", "topic": "Confidentiality, integrity, availability" },
+            { "heading": "7.4 Safety", "clause": "29148:9.6.18", "topic": "Safety-related software attributes" }
+          ]
+        },
+        "srs/8-internationalization.md": {
+          "output": "8-internationalization.md",
+          "clauses": ["29148:9.6.7", "29148:9.6.17"],
+          "sections": [
+            { "heading": "8. Internationalization and Localization", "clause": "29148:9.6.17", "topic": "Languages, locales, cultural rules" }
+          ]
+        },
+        "srs/9-other-requirements.md": {
+          "output": "9-other-requirements.md",
+          "clauses": ["29148:9.6.16", "29148:9.6.17", "29148:9.6.19", "29148:9.6.20"],
+          "sections": [
+            { "heading": "9.1 Legal and Regulatory Compliance", "clause": "29148:9.6.17", "topic": "Standards compliance requirements" },
+            { "heading": "9.2 Installation and Configuration", "clause": "29148:9.6.16", "topic": "Design constraints — installation" },
+            { "heading": "9.3 Logging and Monitoring", "clause": "29148:9.6.19", "topic": "Verification and operational support" }
+          ]
+        }
+      }
+    },
+    "basic-design": {
+      "folder": "docs/basic-design/",
+      "primaryStandard": "ISO-12207",
+      "lifecycleProcess": "ISO-12207 §6.5.3 (Software architectural design)",
+      "informationItems": [
+        "ISO-15289 §10.14 (Database design description)",
+        "ISO-15289 §10.28 (Interface description)",
+        "ISO-15289 §10.70 (Software design description — architectural level)"
+      ],
+      "templates": {
+        "basic_design/db-design-template.md": {
+          "output": "db-design.md",
+          "clauses": ["12207:6.5.3", "15289:10.14", "1016:5.6", "42010:information-view"],
+          "sections": [
+            { "heading": "1. Overview", "clause": "15289:10.14", "topic": "DBMS choice, design scope" },
+            { "heading": "2. Entity-Relationship Diagram", "clause": "29148:9.6.15", "topic": "Logical data model from SRS" },
+            { "heading": "3. Table List and Roles", "clause": "12207:6.5.3.1", "topic": "Component identification" },
+            { "heading": "4. Detailed Table Descriptions", "clause": "15289:10.14", "topic": "Fields, keys, constraints" },
+            { "heading": "6. Data Integrity Rules", "clause": "29148:9.6.15", "topic": "Integrity from requirements" },
+            { "heading": "7. Performance Considerations", "clause": "25010:Performance", "topic": "Indexes, partitioning" },
+            { "heading": "8. Security Considerations", "clause": "25010:Security", "topic": "Encryption, access control at data layer" }
+          ]
+        },
+        "basic_design/list-api-template.md": {
+          "output": "api-list.md",
+          "clauses": ["12207:6.5.3.2", "15289:10.28", "29148:9.6.4.4"],
+          "sections": [
+            { "heading": "1. API Overview", "clause": "15289:10.28", "topic": "Interface scope and style" },
+            { "heading": "2. Authentication", "clause": "25010:Security", "topic": "Auth model for all endpoints" },
+            { "heading": "3. Endpoint Summary", "clause": "12207:6.5.3.1", "topic": "Interface inventory — allocation from SRS" },
+            { "heading": "4. Pagination", "clause": "29148:9.6.14", "topic": "Performance-related interface behavior" },
+            { "heading": "6. OpenAPI / Specification Reference", "clause": "15289:10.28", "topic": "Machine-readable interface contract" }
+          ]
+        },
+        "basic_design/detail-api-template.md": {
+          "output": "api/*.md",
+          "clauses": ["12207:6.5.3.2", "15289:10.28", "1016:5.8", "29148:9.6.11"],
+          "sections": [
+            { "heading": "1. Detailed Endpoint Specifications", "clause": "15289:10.28", "topic": "Method, path, auth, request/response" },
+            { "heading": "2. Data Models", "clause": "1016:5.6", "topic": "Information viewpoint — payload schemas" },
+            { "heading": "3. Error Handling", "clause": "29148:9.6.18", "topic": "HTTP error semantics from UC exceptions" },
+            { "heading": "4. Rate Limiting", "clause": "25010:Performance", "topic": "Throughput constraints" }
+          ]
+        },
+        "basic_design/list-screen-template.md": {
+          "output": "list-screens.md",
+          "clauses": ["42010:viewpoint", "29148:9.6.4.2", "25010:Usability"],
+          "sections": [
+            { "heading": "2. Screen Map (Navigation Flow)", "clause": "42010:view", "topic": "UI architecture navigation view" },
+            { "heading": "4. Screen Index", "clause": "12207:6.5.3.1", "topic": "Screen inventory S-xx" },
+            { "heading": "7. Accessibility Considerations", "clause": "25010:Usability", "topic": "Accessibility from SRS NFRs" }
+          ]
+        },
+        "basic_design/detail-screen-template.md": {
+          "output": "screens/*.md",
+          "clauses": ["15289:10.28", "1016:5.8", "29148:9.6.4.2"],
+          "sections": [
+            { "heading": "1.x Visual Wireframe", "clause": "42010:view", "topic": "UI view — layout and components" },
+            { "heading": "1.x Component Details", "clause": "15289:10.28", "topic": "Form fields bound to API request/response" },
+            { "heading": "1.x User Interactions", "clause": "29148:9.6.12", "topic": "Behavior from UC main flows" },
+            { "heading": "1.x Field Validation", "clause": "29148:9.6.10", "topic": "Validation from FR inputData" }
+          ]
+        }
+      }
+    },
+    "detail-design": {
+      "folder": "docs/detail-design/",
+      "primaryStandard": "ISO-12207",
+      "lifecycleProcess": "ISO-12207 §6.5.4 (Software detailed design)",
+      "informationItems": [
+        "ISO-15289 §10.15 (Design description)",
+        "ISO-15289 §10.70 (Software design description — detailed level)"
+      ],
+      "templates": {
+        "detail_design/common/architecture-overview-template.md": {
+          "output": "common/architecture-overview.md",
+          "clauses": ["42010:AD", "12207:6.5.4", "1016:5.2", "1016:5.9"],
+          "sections": [
+            { "heading": "2. System Context (C4 Level 1)", "clause": "1016:5.2", "topic": "Context viewpoint" },
+            { "heading": "3. Container Architecture (C4 Level 2)", "clause": "1016:5.9", "topic": "Structure viewpoint" },
+            { "heading": "4. Component Architecture (C4 Level 3)", "clause": "12207:6.5.4.1", "topic": "Software units" },
+            { "heading": "6. Architectural Patterns", "clause": "1016:5.7", "topic": "Patterns use viewpoint" },
+            { "heading": "7. Design Principles", "clause": "42010:rationale", "topic": "Architecture rationale" },
+            { "heading": "10. Non-Functional Requirements", "clause": "25010", "topic": "NFR allocation to architecture" }
+          ]
+        },
+        "detail_design/common/security-patterns-template.md": {
+          "output": "common/security-patterns.md",
+          "clauses": ["25010:Security", "29148:9.6.18", "1016:overlay"],
+          "sections": [
+            { "heading": "2. Authentication", "clause": "25010:Security", "topic": "Cross-cutting auth pattern" },
+            { "heading": "3. Authorization", "clause": "25010:Security", "topic": "RBAC/ABAC patterns" },
+            { "heading": "4. Data Protection", "clause": "29148:9.6.18", "topic": "Encryption and masking" }
+          ]
+        },
+        "detail_design/common/error-handling-patterns-template.md": {
+          "output": "common/error-handling-patterns.md",
+          "clauses": ["29148:9.6.18", "1016:overlay"],
+          "sections": [
+            { "heading": "2. Standard Error Response Format", "clause": "15289:10.28", "topic": "Interface error contract" },
+            { "heading": "4. Exception Handling Strategy", "clause": "12207:6.5.4", "topic": "Implementation error strategy" }
+          ]
+        },
+        "detail_design/common/performance-standards-template.md": {
+          "output": "common/performance-standards.md",
+          "clauses": ["25010:Performance", "29148:9.6.14"],
+          "sections": [
+            { "heading": "2. Performance Requirements", "clause": "29148:9.6.14", "topic": "Targets from SRS" },
+            { "heading": "3. Caching Strategies", "clause": "12207:6.5.4", "topic": "Detailed design decision" }
+          ]
+        },
+        "detail_design/common/integration-patterns-template.md": {
+          "output": "common/integration-patterns.md",
+          "clauses": ["29148:9.6.4.3", "1016:5.8"],
+          "sections": [
+            { "heading": "2. API Integration Patterns", "clause": "1016:5.8", "topic": "Interface viewpoint" },
+            { "heading": "3. Event-Driven Architecture", "clause": "12207:6.5.4", "topic": "Async integration design" }
+          ]
+        },
+        "detail_design/common/deployment-infrastructure-template.md": {
+          "output": "common/deployment-infrastructure.md",
+          "clauses": ["29148:9.6.7", "42010:view", "1016:5.13"],
+          "sections": [
+            { "heading": "2. Infrastructure Architecture", "clause": "42010:view", "topic": "Deployment viewpoint" },
+            { "heading": "4. CI/CD Pipeline", "clause": "12207:6.5.4", "topic": "Build and release design" },
+            { "heading": "9. Disaster Recovery", "clause": "25010:Reliability", "topic": "Availability and recovery" }
+          ]
+        },
+        "detail_design/feature-list-template.md": {
+          "output": "feature-list.md",
+          "clauses": ["12207:6.5.4", "29148:9.6.10"],
+          "sections": [
+            { "heading": "1. List of Features", "clause": "29148:9.6.10", "topic": "DD scope per F-xx" },
+            { "heading": "2. Feature Dependencies", "clause": "12207:6.5.4.1", "topic": "Unit dependencies" }
+          ]
+        },
+        "detail_design/feature-detail-design-template.md": {
+          "output": "features/*.md",
+          "clauses": ["15289:10.15", "12207:6.5.4", "1016:5.10", "1016:5.11"],
+          "sections": [
+            { "heading": "1.2 Design Decisions", "clause": "42010:decision", "topic": "Architecture decisions and rationale" },
+            { "heading": "2. Component Design", "clause": "1016:5.9", "topic": "Structure viewpoint — classes/modules" },
+            { "heading": "3. Sequence Diagrams", "clause": "1016:5.10", "topic": "Interaction viewpoint" },
+            { "heading": "4. API Design", "clause": "15289:10.28", "topic": "Refines BD API for this feature" },
+            { "heading": "5. Database Design", "clause": "15289:10.14", "topic": "Feature-local schema refinements" },
+            { "heading": "6. UI Design", "clause": "29148:9.6.4.2", "topic": "Refines BD screens for this feature" },
+            { "heading": "11. Testing Strategy", "clause": "29148:9.6.19", "topic": "Verification approach per feature" }
+          ]
+        }
+      }
+    }
+  }
+}

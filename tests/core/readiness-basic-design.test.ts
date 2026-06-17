@@ -19,37 +19,37 @@ async function writeMinimalConfig(root: string) {
   );
 }
 
-describe("detail design readiness", () => {
-  it("resolves builtin detail-design criteria path", async () => {
-    const root = await mkdtemp(join(tmpdir(), "dd-ready-"));
+describe("basic design readiness", () => {
+  it("resolves builtin basic-design criteria path", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bd-ready-"));
     await writeMinimalConfig(root);
-    const cfgDir = join(root, ".ai-spector/.docflow/config/doc-types/detail-design");
+    const cfgDir = join(root, ".ai-spector/.docflow/config/doc-types/basic-design");
     await mkdir(cfgDir, { recursive: true });
     const src = join(
       packageBundleRoot(),
-      "scaffold/.ai-spector/.docflow/config/doc-types/detail-design/readiness-criteria.json",
+      "scaffold/.ai-spector/.docflow/config/doc-types/basic-design/readiness-criteria.json",
     );
     await copyFile(src, join(cfgDir, "readiness-criteria.json"));
     const { config } = await loadDocflowConfig(root);
-    const resolved = await resolveCriteriaFilePath(root, config, "detail-design");
-    expect(resolved.docType).toBe("detail-design");
-    expect(resolved.path).toContain("detail-design/readiness-criteria.json");
+    const resolved = await resolveCriteriaFilePath(root, config, "basic-design");
+    expect(resolved.docType).toBe("basic-design");
+    expect(resolved.path).toContain("basic-design/readiness-criteria.json");
   });
 
-  it("loads merged criteria with feature-list target", async () => {
-    const root = await mkdtemp(join(tmpdir(), "dd-ready2-"));
+  it("loads merged criteria with list-api target", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bd-ready2-"));
     await writeMinimalConfig(root);
-    const cfgDir = join(root, ".ai-spector/.docflow/config/doc-types/detail-design");
+    const cfgDir = join(root, ".ai-spector/.docflow/config/doc-types/basic-design");
     await mkdir(cfgDir, { recursive: true });
     const src = join(
       packageBundleRoot(),
-      "scaffold/.ai-spector/.docflow/config/doc-types/detail-design/readiness-criteria.json",
+      "scaffold/.ai-spector/.docflow/config/doc-types/basic-design/readiness-criteria.json",
     );
     await copyFile(src, join(cfgDir, "readiness-criteria.json"));
-    const merged = await loadMergedReadinessCriteria({ root, docType: "detail-design" });
-    expect(merged.docType).toBe("detail-design");
-    expect(merged.criteria.targets?.some((t) => t.dagNode === "dd.feature-list")).toBe(true);
+    const merged = await loadMergedReadinessCriteria({ root, docType: "basic-design" });
+    expect(merged.docType).toBe("basic-design");
+    expect(merged.criteria.targets?.some((t) => t.dagNode === "bd.list-api")).toBe(true);
     expect(merged.criteria.standards?.length).toBeGreaterThan(0);
-    expect(merged.criteria.designQuality).toBeTruthy();
+    expect(merged.criteria.version).toBe(2);
   });
 });

@@ -1,0 +1,281 @@
+{
+  "version": 2,
+  "docType": "basic-design",
+  "purpose": "Input readiness for software architectural design — data model, external interfaces, and UI structure before basic-design generation.",
+  "standards": [
+    {
+      "id": "ISO-12207",
+      "title": "ISO/IEC/IEEE 12207:2017",
+      "scope": "Software architectural design process (§6.4.5) — top-level structure, component identification, interface definition"
+    },
+    {
+      "id": "ISO-42010",
+      "title": "ISO/IEC/IEEE 42010:2022",
+      "scope": "Architecture description — stakeholder concerns, viewpoints, consistency across views"
+    },
+    {
+      "id": "ISO-15289",
+      "title": "ISO/IEC/IEEE 15289:2019",
+      "scope": "Life-cycle information items — design description (§10.15), database design description (§10.14)"
+    },
+    {
+      "id": "ISO-29148",
+      "title": "ISO/IEC/IEEE 29148:2018",
+      "scope": "Upstream SRS traceability — requirements allocated to design elements (§5.2.8, §9.6.4, §9.6.15)"
+    },
+    {
+      "id": "IEEE-1016",
+      "title": "IEEE Std 1016-2009",
+      "scope": "Software design descriptions — design views/viewpoints; complements 15289 design items"
+    },
+    {
+      "id": "ISO-25010",
+      "title": "ISO/IEC 25010:2011",
+      "scope": "Quality attributes carried into interface and data design (security, performance, usability)"
+    }
+  ],
+  "templateToIso29148": {
+    "basic_design/db-design-template.md": ["15289:10.14", "12207:6.5.3", "29148:9.6.15"],
+    "basic_design/list-api-template.md": ["15289:10.15", "12207:6.5.3", "29148:9.6.4"],
+    "basic_design/detail-api-template.md": ["15289:10.15", "12207:6.5.3", "29148:9.6.11"],
+    "basic_design/list-screen-template.md": ["42010:viewpoint", "29148:9.6.4.1"],
+    "basic_design/detail-screen-template.md": ["42010:view", "15289:10.15", "29148:9.6.4.1"]
+  },
+  "designQuality": {
+    "iso12207": "§6.5.3",
+    "individualCharacteristics": [
+      {
+        "id": "DQ-01",
+        "name": "Traceable",
+        "standardRef": "ISO/IEC/IEEE 29148 §5.2.8",
+        "check": "Every table, endpoint, and screen traces to SRS entities (F-xx, UC-xx, dataEntity)"
+      },
+      {
+        "id": "DQ-02",
+        "name": "Complete allocation",
+        "standardRef": "ISO/IEC/IEEE 12207 §6.5.3.1",
+        "check": "All in-scope SRS requirements are allocated to a BD component (data, API, or screen)"
+      },
+      {
+        "id": "DQ-03",
+        "name": "Verifiable interfaces",
+        "standardRef": "ISO/IEC/IEEE 15289 §10.15",
+        "check": "API request/response fields and screen form fields are specific enough to test against SRS"
+      },
+      {
+        "id": "DQ-04",
+        "name": "Consistent views",
+        "standardRef": "ISO/IEC/IEEE 42010 §5",
+        "check": "Data model, API contracts, and screen fields are consistent across BD documents"
+      },
+      {
+        "id": "DQ-05",
+        "name": "No invented scope",
+        "standardRef": "ISO/IEC/IEEE 29148 §5.2.5",
+        "check": "No endpoints, tables, or screens without graph evidence (UC, feature, or dataEntity backing)"
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "traceability",
+      "label": "SRS → design traceability",
+      "iso": "29148:5.2.8, 12207:6.5.3",
+      "description": "Requirements allocated from SRS to BD components with satisfies/tracesTo links"
+    },
+    {
+      "id": "data-architecture",
+      "label": "Data architecture",
+      "iso": "15289:10.14, 29148:9.6.15",
+      "description": "Entities, relationships, keys, indexes, constraints"
+    },
+    {
+      "id": "interfaces",
+      "label": "External software interfaces",
+      "iso": "15289:10.15, 29148:9.6.4, 9.6.11",
+      "description": "REST/API contracts, auth, error semantics"
+    },
+    {
+      "id": "ui-architecture",
+      "label": "User interface architecture",
+      "iso": "42010:viewpoint, 29148:9.6.4.1",
+      "description": "Screens, navigation, actor roles, wireframe structure"
+    },
+    {
+      "id": "constraints",
+      "label": "Design constraints",
+      "iso": "29148:9.6.7, 25010",
+      "description": "Technology stack, security, performance limits from SRS NFRs"
+    }
+  ],
+  "globalCriteria": [
+    {
+      "id": "G-BD-001",
+      "dimension": "traceability",
+      "severity": "blocking",
+      "standardRef": "ISO/IEC/IEEE 12207 §6.5.3",
+      "question": "Confirm the SRS baseline is complete enough to allocate requirements to BD components (no blocking TBD in scope)?",
+      "graphProbe": "graph query doc.srs.4-system-features --depth 2",
+      "minGraphCount": 1
+    },
+    {
+      "id": "G-BD-002",
+      "dimension": "constraints",
+      "severity": "blocking",
+      "standardRef": "ISO/IEC/IEEE 29148 §9.6.7",
+      "question": "Confirm technology stack, deployment model, and mandated constraints from SRS apply to BD.",
+      "graphProbe": "graph query doc.srs.7-quality-attributes",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-BD-003",
+      "dimension": "interfaces",
+      "severity": "should-ask",
+      "standardRef": "ISO/IEC/IEEE 42010 §5",
+      "question": "Who are the stakeholders for API and UI views (developers, QA, ops, security)? Any viewpoint priorities?",
+      "graphProbe": "actor nodes + stakeholder tags",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-BD-004",
+      "dimension": "traceability",
+      "severity": "blocking",
+      "standardRef": "ISO/IEC/IEEE 29148 §5.2.8",
+      "question": "Confirm ID scheme for BD artifacts: API slugs, screen S-xx ids, table names — consistent with graph?",
+      "graphProbe": "existing node id patterns in graph",
+      "acceptAssumption": true
+    }
+  ],
+  "targets": [
+    {
+      "dagNode": "bd.db-design",
+      "template": "basic_design/db-design-template.md",
+      "criteria": [
+        {
+          "id": "BD-DB-001",
+          "dimension": "data-architecture",
+          "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 15289 §10.14",
+          "question": "Confirm data entities, relationships, and DBMS constraints from SRS are sufficient for database design.",
+          "graphProbe": "graph query doc.srs.5-data-requirements",
+          "minGraphCount": 1
+        },
+        {
+          "id": "BD-DB-002",
+          "dimension": "data-architecture",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.15",
+          "question": "Confirm retention, classification (PII), and integrity rules per entity are documented in SRS.",
+          "graphProbe": "dataEntity nodes with classification or retention",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "bd.list-api",
+      "template": "basic_design/list-api-template.md",
+      "criteria": [
+        {
+          "id": "BD-API-LIST-001",
+          "dimension": "interfaces",
+          "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 12207 §6.5.3.2",
+          "field": "endpointInventory",
+          "question": "Confirm the API endpoint inventory (method + path + source F-xx/UC-xx) can be derived from the traceability graph.",
+          "graphProbe": "graph query doc.srs.6-external-interfaces",
+          "minGraphCount": 1
+        },
+        {
+          "id": "BD-API-LIST-002",
+          "dimension": "interfaces",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC 25010 — Security",
+          "question": "Confirm default auth model (public, bearer, session, API key) and which endpoints require authentication.",
+          "graphProbe": "actor.authRequired; NFR security nodes",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "bd.detail-api",
+      "perDomain": "apiDetail",
+      "template": "basic_design/detail-api-template.md",
+      "criteria": [
+        {
+          "id": "BD-API-DET-001",
+          "dimension": "interfaces",
+          "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 15289 §10.15",
+          "field": "endpointSpec",
+          "question": "For each endpoint, confirm source F-xx/UC-xx, auth requirements, and request/response fields from graph evidence.",
+          "graphProbe": "graph query doc.bd.list-api --depth 3",
+          "perEntity": "endpoint",
+          "minGraphCount": 1
+        },
+        {
+          "id": "BD-API-DET-002",
+          "dimension": "interfaces",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.11",
+          "question": "Confirm error response semantics (400/401/403/404/409) per endpoint from UC exception flows.",
+          "graphProbe": "UC exceptionFlows linked to endpoint",
+          "perEntity": "endpoint",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "bd.list-screen",
+      "template": "basic_design/list-screen-template.md",
+      "criteria": [
+        {
+          "id": "BD-SCR-LIST-001",
+          "dimension": "ui-architecture",
+          "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 42010 §5",
+          "field": "screenInventory",
+          "question": "Confirm the screen inventory (S-xx ids + names + related UC-xx) matches actor-facing use cases in the graph.",
+          "graphProbe": "graph query doc.srs.3-use-cases",
+          "minGraphCount": 1
+        },
+        {
+          "id": "BD-SCR-LIST-002",
+          "dimension": "ui-architecture",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC 25010 — Usability",
+          "question": "Confirm navigation flow between screens (postconditions → target screen) is derivable from UC flows.",
+          "graphProbe": "UC postconditions and actor actions",
+          "acceptAssumption": true
+        }
+      ]
+    },
+    {
+      "dagNode": "bd.detail-screen",
+      "perDomain": "screenDetail",
+      "template": "basic_design/detail-screen-template.md",
+      "criteria": [
+        {
+          "id": "BD-SCR-DET-001",
+          "dimension": "ui-architecture",
+          "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 15289 §10.15",
+          "field": "screenSpec",
+          "question": "For each screen, confirm related UC-xx/F-xx, wireframe components, and bound API endpoints.",
+          "graphProbe": "graph query doc.bd.list-screen --depth 3",
+          "perEntity": "screen",
+          "minGraphCount": 1
+        },
+        {
+          "id": "BD-SCR-DET-002",
+          "dimension": "ui-architecture",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC 25010 — Usability",
+          "question": "Confirm form fields map to API request bodies and table columns map to API response fields.",
+          "graphProbe": "F-xx inputData/outputData linked to screen",
+          "perEntity": "screen",
+          "acceptAssumption": true
+        }
+      ]
+    }
+  ]
+}

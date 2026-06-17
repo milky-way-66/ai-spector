@@ -1,25 +1,172 @@
 {
-  "version": 1,
+  "version": 2,
   "docType": "detail-design",
-  "globalCriteria": [],
+  "purpose": "Input readiness for software detailed design — implementation patterns and per-feature design before detail-design generation.",
+  "standards": [
+    {
+      "id": "ISO-12207",
+      "title": "ISO/IEC/IEEE 12207:2017",
+      "scope": "Software detailed design process (§6.5.4) — units refinable to code, internal/external interfaces"
+    },
+    {
+      "id": "ISO-42010",
+      "title": "ISO/IEC/IEEE 42010:2022",
+      "scope": "Architecture decisions and rationale documented for implementation stakeholders"
+    },
+    {
+      "id": "ISO-15289",
+      "title": "ISO/IEC/IEEE 15289:2019",
+      "scope": "Design description (§10.15) — sufficient detail to permit coding and testing"
+    },
+    {
+      "id": "ISO-29148",
+      "title": "ISO/IEC/IEEE 29148:2018",
+      "scope": "Bidirectional traceability from requirements through BD to DD (§5.2.8)"
+    },
+    {
+      "id": "IEEE-1016",
+      "title": "IEEE Std 1016-2009",
+      "scope": "SDD design views — context, structure, interface, interaction, information viewpoints"
+    },
+    {
+      "id": "ISO-25010",
+      "title": "ISO/IEC 25010:2011",
+      "scope": "Quality attributes implemented in common patterns and per-feature design"
+    }
+  ],
+  "templateToIso29148": {
+    "detail_design/common/architecture-overview-template.md": ["42010:AD", "12207:6.5.4"],
+    "detail_design/common/security-patterns-template.md": ["25010:Security", "29148:9.6.14"],
+    "detail_design/common/error-handling-patterns-template.md": ["12207:6.5.4", "29148:9.6.18"],
+    "detail_design/common/performance-standards-template.md": ["25010:Performance", "29148:9.6.13"],
+    "detail_design/common/integration-patterns-template.md": ["29148:9.6.4.3", "12207:6.5.4"],
+    "detail_design/common/deployment-infrastructure-template.md": ["42010:view", "29148:9.6.7"],
+    "detail_design/feature-list-template.md": ["12207:6.5.4", "29148:9.6.10"],
+    "detail_design/feature-detail-design-template.md": ["15289:10.15", "12207:6.5.4"]
+  },
+  "designQuality": {
+    "iso12207": "§6.5.4",
+    "individualCharacteristics": [
+      {
+        "id": "DDQ-01",
+        "name": "Allocable to code",
+        "standardRef": "ISO/IEC/IEEE 12207 §6.5.4.1",
+        "check": "Design is refined to units that can be coded, compiled, and tested without further design decisions"
+      },
+      {
+        "id": "DDQ-02",
+        "name": "Interface complete",
+        "standardRef": "ISO/IEC/IEEE 12207 §6.5.4.2",
+        "check": "Internal and external interfaces documented sufficiently to implement without guessing"
+      },
+      {
+        "id": "DDQ-03",
+        "name": "Traceable",
+        "standardRef": "ISO/IEC/IEEE 29148 §5.2.8",
+        "check": "Each feature design references SRS requirements and BD API/screen specs — no orphan implementation"
+      },
+      {
+        "id": "DDQ-04",
+        "name": "Pattern-consistent",
+        "standardRef": "ISO/IEC/IEEE 42010 §5",
+        "check": "Feature implementations follow common chapters (security, errors, performance) unless deviation is justified"
+      },
+      {
+        "id": "DDQ-05",
+        "name": "Verifiable",
+        "standardRef": "ISO/IEC/IEEE 15289 §10.15",
+        "check": "Sequences, components, and data flows are specific enough to derive test cases"
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "architecture",
+      "label": "Implementation architecture",
+      "iso": "42010, 12207:6.5.4",
+      "description": "Stack, components, layering, module boundaries"
+    },
+    {
+      "id": "cross-cutting",
+      "label": "Cross-cutting patterns",
+      "iso": "25010, 29148:9.6.13-14",
+      "description": "Security, error handling, performance, integration, deployment"
+    },
+    {
+      "id": "traceability",
+      "label": "SRS → BD → DD traceability",
+      "iso": "29148:5.2.8, 12207:6.5.4",
+      "description": "Feature inventory and per-feature links to requirements and BD specs"
+    },
+    {
+      "id": "feature-design",
+      "label": "Per-feature detailed design",
+      "iso": "15289:10.15, 12207:6.5.4",
+      "description": "Sequences, components, data flow, implementation approach per F-xx"
+    }
+  ],
+  "globalCriteria": [
+    {
+      "id": "G-DD-001",
+      "dimension": "traceability",
+      "severity": "blocking",
+      "standardRef": "ISO/IEC/IEEE 12207 §6.5.4",
+      "question": "Confirm basic design (DB, API list/detail, screen list/detail) is complete enough to drive detailed design?",
+      "graphProbe": "graph query doc.bd.list-api --depth 2",
+      "minGraphCount": 1
+    },
+    {
+      "id": "G-DD-002",
+      "dimension": "architecture",
+      "severity": "blocking",
+      "standardRef": "ISO/IEC/IEEE 42010 §5",
+      "question": "Confirm implementation technology stack and major runtime components for this project.",
+      "graphProbe": "graph query doc.bd.db-design",
+      "acceptAssumption": true
+    },
+    {
+      "id": "G-DD-003",
+      "dimension": "cross-cutting",
+      "severity": "should-ask",
+      "standardRef": "ISO/IEC 25010",
+      "question": "Rank quality priorities for implementation (security vs performance vs maintainability) when patterns conflict.",
+      "graphProbe": "NFR nodes by category",
+      "acceptAssumption": true
+    }
+  ],
   "targets": [
     {
       "dagNode": "dd.common.architecture-overview",
+      "template": "detail_design/common/architecture-overview-template.md",
       "criteria": [
         {
           "id": "DD-ARCH-001",
+          "dimension": "architecture",
           "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 42010 §5",
           "question": "Confirm the system architecture stack and major components for detail design.",
           "graphProbe": "graph query doc.bd.db-design"
+        },
+        {
+          "id": "DD-ARCH-002",
+          "dimension": "architecture",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 12207 §6.5.4.1",
+          "question": "Confirm module/layer boundaries and dependency direction (e.g. API → service → repository).",
+          "graphProbe": "graph query doc.srs.2-overall-description",
+          "acceptAssumption": true
         }
       ]
     },
     {
       "dagNode": "dd.common.security-patterns",
+      "template": "detail_design/common/security-patterns-template.md",
       "criteria": [
         {
           "id": "DD-SEC-001",
+          "dimension": "cross-cutting",
           "severity": "blocking",
+          "standardRef": "ISO/IEC 25010 — Security",
           "question": "Confirm authentication, authorization, and data protection patterns to apply across features.",
           "graphProbe": "graph query doc.srs.7-quality-attributes"
         }
@@ -27,10 +174,13 @@
     },
     {
       "dagNode": "dd.common.error-handling",
+      "template": "detail_design/common/error-handling-patterns-template.md",
       "criteria": [
         {
           "id": "DD-ERR-001",
+          "dimension": "cross-cutting",
           "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.18",
           "question": "Confirm error handling strategy (API errors, retries, user messaging).",
           "graphProbe": "graph query doc.srs.7-quality-attributes"
         }
@@ -38,10 +188,13 @@
     },
     {
       "dagNode": "dd.common.performance-standards",
+      "template": "detail_design/common/performance-standards-template.md",
       "criteria": [
         {
           "id": "DD-PERF-001",
+          "dimension": "cross-cutting",
           "severity": "should-ask",
+          "standardRef": "ISO/IEC 25010 — Performance efficiency",
           "question": "Confirm performance targets and measurement approach for feature implementations.",
           "graphProbe": "graph query doc.srs.7-quality-attributes"
         }
@@ -49,10 +202,13 @@
     },
     {
       "dagNode": "dd.common.integration-patterns",
+      "template": "detail_design/common/integration-patterns-template.md",
       "criteria": [
         {
           "id": "DD-INT-001",
+          "dimension": "cross-cutting",
           "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.4.3",
           "question": "Confirm external systems and integration patterns (sync/async, messaging).",
           "graphProbe": "graph query doc.srs.6-external-interfaces"
         }
@@ -60,10 +216,13 @@
     },
     {
       "dagNode": "dd.common.deployment",
+      "template": "detail_design/common/deployment-infrastructure-template.md",
       "criteria": [
         {
           "id": "DD-DEP-001",
+          "dimension": "cross-cutting",
           "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.7",
           "question": "Confirm deployment topology and infrastructure constraints.",
           "graphProbe": "graph query doc.bd.db-design"
         }
@@ -71,10 +230,13 @@
     },
     {
       "dagNode": "dd.feature-list",
+      "template": "detail_design/feature-list-template.md",
       "criteria": [
         {
           "id": "DD-FL-001",
+          "dimension": "traceability",
           "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 29148 §9.6.10",
           "field": "featureInventory",
           "question": "Confirm the complete feature inventory (F-xx ids + titles) matches the traceability graph.",
           "graphProbe": "graph nodes where type === \"feature\"",
@@ -85,15 +247,28 @@
     {
       "dagNode": "dd.feature-details",
       "perDomain": "feature",
+      "template": "detail_design/feature-detail-design-template.md",
       "criteria": [
         {
           "id": "DD-FD-001",
+          "dimension": "feature-design",
           "severity": "blocking",
+          "standardRef": "ISO/IEC/IEEE 15289 §10.15",
           "field": "implementationApproach",
           "question": "For each feature, confirm implementation approach and which basic-design API/screen docs apply.",
           "graphProbe": "graph query F-xx --depth 4",
           "perEntity": "feature",
           "minGraphCount": 1
+        },
+        {
+          "id": "DD-FD-002",
+          "dimension": "feature-design",
+          "severity": "should-ask",
+          "standardRef": "ISO/IEC/IEEE 12207 §6.5.4.1",
+          "question": "For each feature, confirm sequence diagrams and component breakdown are derivable from UC flows and BD APIs.",
+          "graphProbe": "graph query F-xx --depth 4 --edges CONTEXT",
+          "perEntity": "feature",
+          "acceptAssumption": true
         }
       ]
     }
