@@ -1,14 +1,18 @@
 ---
 name: ai-spector-resolve-comments
 description: >-
-  Resolves git-backed comment threads under comments/ (comments_resolve). NOT formal
-  document sign-off — use ai-spector-review and review_approve for that. Use when
-  the user asks to resolve comments, address feedback, open threads, C-001 picks,
-  or meta_data.json on SRS/basic design. Do not use for approve doc / review queue.
+  Resolves git-backed comment threads under comments/ (comments_resolve). Supports
+  document line anchors and prototype HTML selector pins. NOT formal document
+  sign-off — use ai-spector-review and review_approve for that. Use when the user
+  asks to resolve comments, address feedback, open threads, C-001 picks, prototype
+  review comments, or meta_data.json on SRS/basic design/prototype. Do not use for
+  approve doc / review queue.
+paths:
+  - "comments/**"
 ---
 
 # AI Spector — Resolve comments
-**Core:** [../ai-spector/skill.md](../ai-spector/skill.md)
+**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md)
 
 ## Required reading
 

@@ -20,6 +20,7 @@ export async function toolCommentsList(input: z.infer<typeof CommentsListSchema>
   const threads = await listThreads({
     projectRoot: paths.root,
     filePath: input.filePath,
+    commentTypes: input.commentTypes,
     status: input.status ?? "open",
   });
   return { threads, count: threads.length };
@@ -30,6 +31,7 @@ export async function toolCommentsInbox(input: z.infer<typeof CommentsInboxSchem
   const inbox = await buildCommentInboxPayload({
     projectRoot: paths.root,
     filePath: input.filePath,
+    commentTypes: input.commentTypes,
     status: input.status ?? "open",
   });
   return inbox;

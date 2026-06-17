@@ -5,7 +5,7 @@ import {
   pickPrimaryImpactOrigin,
   resolveImpactOrigins,
 } from "../graph/resolve.js";
-import { readDocAnchorContext } from "./anchor.js";
+import { readDocAnchorContext, readPrototypeAnchorContext } from "./anchor.js";
 import type { CommentInboxItem } from "./inbox.js";
 import {
   buildCommentInbox,
@@ -21,10 +21,12 @@ import {
   listThreads,
   loadCommentBodiesForThreads,
 } from "./storage.js";
+import { isDocumentAnchor, isPrototypeAnchor, threadCommentType } from "./types.js";
 
 export interface BuildInboxOptions {
   projectRoot: string;
   filePath?: string;
+  commentTypes?: import("./types.js").CommentType[];
   status?: "open" | "resolved" | "all";
 }
 
@@ -34,6 +36,7 @@ export async function buildCommentInboxPayload(
   const threads = await listThreads({
     projectRoot: opts.projectRoot,
     filePath: opts.filePath,
+    commentTypes: opts.commentTypes,
     status: opts.status ?? "open",
   });
 
@@ -70,33 +73,49 @@ export async function buildCommentPlan(
     );
   }
 
-  const anchor = await readDocAnchorContext(
-    opts.projectRoot,
-    thread.filePath,
-    thread.anchor.startLine,
-    thread.anchor.endLine,
-  );
+  const commentType = threadCommentType(thread);
+  let anchor: Awaited<ReturnType<typeof readDocAnchorContext>> | Awaited<
+    ReturnType<typeof readPrototypeAnchorContext>
+  > | null = null;
+
+  if (commentType === "prototype" && isPrototypeAnchor(thread.anchor)) {
+    anchor = await readPrototypeAnchorContext(
+      opts.projectRoot,
+      thread.filePath,
+      thread.anchor,
+    );
+  } else if (isDocumentAnchor(thread.anchor)) {
+    anchor = await readDocAnchorContext(
+      opts.projectRoot,
+      thread.filePath,
+      thread.anchor.startLine,
+      thread.anchor.endLine,
+    );
+  }
 
   let impact = null;
   let resolvedFrom: { id: string; type: string; reason: string } | undefined;
 
-  try {
-    const g = await loadInMemoryGraph(opts.graphPath);
-    const origins = resolveImpactOrigins(g, {
-      file: anchor?.docPath ?? thread.docPath ?? undefined,
-      heading: anchor?.heading,
-      sectionAnchor: anchor?.sectionAnchor,
-      text: thread.anchor.lineExcerpt,
-    });
-    const primary = pickPrimaryImpactOrigin(origins);
-    if (primary) {
-      resolvedFrom = primary;
-      const rules = await loadImpactRules(opts.rulesPath);
-      impact = computeImpact(g, primary.id, "content_change", rules);
-      impact.resolvedFrom = primary;
+  if (commentType === "document") {
+    try {
+      const g = await loadInMemoryGraph(opts.graphPath);
+      const docAnchor = anchor && "docPath" in anchor ? anchor : null;
+      const origins = resolveImpactOrigins(g, {
+        file: docAnchor?.docPath ?? thread.docPath ?? undefined,
+        heading: docAnchor?.heading,
+        sectionAnchor: docAnchor?.sectionAnchor,
+        text: isDocumentAnchor(thread.anchor) ? thread.anchor.lineExcerpt : undefined,
+      });
+      const primary = pickPrimaryImpactOrigin(origins);
+      if (primary) {
+        resolvedFrom = primary;
+        const rules = await loadImpactRules(opts.rulesPath);
+        impact = computeImpact(g, primary.id, "content_change", rules);
+        impact.resolvedFrom = primary;
+      }
+    } catch {
+      /* graph missing or invalid — plan still usable without impact */
     }
-  } catch {
-    /* graph missing or invalid — plan still usable without impact */
   }
 
   return buildResolvePlan(thread, anchor, impact, resolvedFrom, opts.pickId);

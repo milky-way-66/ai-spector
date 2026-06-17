@@ -1,5 +1,6 @@
 import { resolveProjectPaths } from "../util/paths.js";
 import { normalizeLogicalPath } from "../comments/paths.js";
+import type { CommentType } from "../comments/types.js";
 import {
   buildCommentInboxPayload,
   buildCommentPlan,
@@ -27,6 +28,7 @@ export interface CommentResolvePlanWithGuidance extends CommentResolvePlan {
 export interface CommentsListOptions {
   root?: string;
   filePath?: string;
+  commentTypes?: CommentType[];
   status?: "open" | "resolved" | "all";
 }
 
@@ -38,6 +40,7 @@ export interface CommentsListResult {
 export interface CommentsInboxOptions {
   root?: string;
   filePath?: string;
+  commentTypes?: CommentType[];
   status?: "open" | "resolved" | "all";
 }
 
@@ -71,6 +74,7 @@ export async function runCommentsList(opts: CommentsListOptions): Promise<Commen
   const threads = await listThreads({
     projectRoot: paths.root,
     filePath: opts.filePath,
+    commentTypes: opts.commentTypes,
     status: opts.status ?? "open",
   });
   return { threads, count: threads.length };
@@ -81,6 +85,7 @@ export async function runCommentsInbox(opts: CommentsInboxOptions): Promise<Comm
   return buildCommentInboxPayload({
     projectRoot: paths.root,
     filePath: opts.filePath,
+    commentTypes: opts.commentTypes,
     status: opts.status ?? "open",
   });
 }

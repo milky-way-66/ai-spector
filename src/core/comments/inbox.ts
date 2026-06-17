@@ -2,19 +2,24 @@ import type { ImpactResult } from "../graph/impact.js";
 import { previewCommentBody } from "./anchor.js";
 import type { WorkflowToolGuidance } from "../workflow/guidance.js";
 import { buildCommentsInboxWorkflowGuidance } from "../workflow/guidance.js";
-import type { ThreadSummary } from "./types.js";
+import type { CommentType, ThreadSummary } from "./types.js";
+import { isDocumentAnchor, isPrototypeAnchor, threadCommentType } from "./types.js";
 
 export interface CommentInboxItem {
   /** Short id for chat selection, e.g. C-001 */
   pickId: string;
   threadId: string;
   filePath: string;
+  commentType: CommentType;
   docPath: string | null;
   status: string;
   language: string;
+  /** Document line range or prototype `@url` label for legacy columns */
   lines: string;
   startLine: number;
   endLine: number;
+  /** CSS selector @ url for prototype; undefined for document threads */
+  location?: string;
   excerpt?: string;
   /** First comment in thread (reviewer ask) */
   preview: string;
@@ -38,22 +43,47 @@ export interface CommentInbox {
 }
 
 export function buildCommentInbox(threads: ThreadSummary[]): CommentInbox {
-  const inbox: CommentInboxItem[] = threads.map((t, index) => ({
-    pickId: `C-${String(index + 1).padStart(3, "0")}`,
-    threadId: t.threadId,
-    filePath: t.filePath,
-    docPath: t.docPath,
-    status: t.status,
-    language: t.anchor.language,
-    lines: `${t.anchor.startLine}-${t.anchor.endLine}`,
-    startLine: t.anchor.startLine,
-    endLine: t.anchor.endLine,
-    excerpt: t.anchor.lineExcerpt,
-    preview: "(loading…)",
-    replyCount: t.replyCount,
-    originBranch: t.originBranch,
-    version: t.version,
-  }));
+  const inbox: CommentInboxItem[] = threads.map((t, index) => {
+    const commentType = threadCommentType(t);
+    if (commentType === "prototype" && isPrototypeAnchor(t.anchor)) {
+      return {
+        pickId: `C-${String(index + 1).padStart(3, "0")}`,
+        threadId: t.threadId,
+        filePath: t.filePath,
+        commentType,
+        docPath: t.docPath,
+        status: t.status,
+        language: "HTML",
+        lines: `@${t.anchor.url}`,
+        startLine: 0,
+        endLine: 0,
+        location: `${t.anchor.selector} @ ${t.anchor.url}`,
+        excerpt: t.anchor.textExcerpt,
+        preview: "(loading…)",
+        replyCount: t.replyCount,
+        originBranch: t.originBranch,
+        version: t.version,
+      };
+    }
+    const docAnchor = isDocumentAnchor(t.anchor) ? t.anchor : null;
+    return {
+      pickId: `C-${String(index + 1).padStart(3, "0")}`,
+      threadId: t.threadId,
+      filePath: t.filePath,
+      commentType: "document" as const,
+      docPath: t.docPath,
+      status: t.status,
+      language: docAnchor?.language ?? "",
+      lines: docAnchor ? `${docAnchor.startLine}-${docAnchor.endLine}` : "?",
+      startLine: docAnchor?.startLine ?? 0,
+      endLine: docAnchor?.endLine ?? 0,
+      excerpt: docAnchor?.lineExcerpt,
+      preview: "(loading…)",
+      replyCount: t.replyCount,
+      originBranch: t.originBranch,
+      version: t.version,
+    };
+  });
 
   const openCount = inbox.filter((i) => i.status === "open").length;
 
@@ -85,16 +115,20 @@ function buildIdePresentation(inbox: CommentInboxItem[]): CommentInbox["idePrese
     };
   }
 
-  const header = "| Pick | Document | Lines | Lang | Reviewer ask |";
-  const sep = "|------|----------|-------|------|--------------|";
+  const header = "| Pick | Type | Target | Location | Reviewer ask |";
+  const sep = "|------|------|--------|----------|--------------|";
   const rows = inbox.map((item) => {
-    const doc = item.docPath ?? item.filePath;
+    const target = item.docPath ?? item.filePath;
+    const location =
+      item.commentType === "prototype"
+        ? (item.location ?? item.lines)
+        : `${item.lines} (${item.language})`;
     const ask = item.preview.replace(/\|/g, "\\|").replace(/\n/g, " ");
     const excerpt =
       item.excerpt && !ask.includes(item.excerpt.slice(0, 20))
         ? ` _(${item.excerpt.replace(/\|/g, "\\|").slice(0, 60)}…)_`
         : "";
-    return `| **${item.pickId}** | \`${doc}\` | ${item.lines} | ${item.language} | ${ask}${excerpt} |`;
+    return `| **${item.pickId}** | ${item.commentType} | \`${target}\` | ${location.replace(/\|/g, "\\|")} | ${ask}${excerpt} |`;
   });
 
   return {
@@ -165,7 +199,7 @@ export function summarizeImpact(impact: ImpactResult | null): ImpactSummary | nu
 export interface CommentResolvePlan {
   pickId?: string;
   thread: import("./types.js").ThreadDetail;
-  anchor: import("./anchor.js").DocAnchorContext | null;
+  anchor: import("./anchor.js").DocAnchorContext | import("./anchor.js").PrototypeAnchorContext | null;
   impact: ImpactResult | null;
   impactSummary: ImpactSummary | null;
   resolvedFrom?: { id: string; type: string; reason: string };
@@ -186,13 +220,16 @@ export interface CommentResolvePlan {
 
 export function buildResolvePlan(
   thread: import("./types.js").ThreadDetail,
-  anchor: import("./anchor.js").DocAnchorContext | null,
+  anchor: import("./anchor.js").DocAnchorContext | import("./anchor.js").PrototypeAnchorContext | null,
   impact: ImpactResult | null,
   resolvedFrom?: { id: string; type: string; reason: string },
   pickId?: string,
 ): CommentResolvePlan {
   const firstComment = thread.comments.find((c) => !c.deletedAt);
   const ask = firstComment?.body ?? "(no comment body)";
+  const commentType = threadCommentType(thread);
+  const protoAnchor = isPrototypeAnchor(thread.anchor) ? thread.anchor : null;
+  const docAnchor = isDocumentAnchor(thread.anchor) ? thread.anchor : null;
 
   const regenerateCommands =
     impact && impact.regenerate.length > 0
@@ -205,6 +242,9 @@ export function buildResolvePlan(
         ]
       : [];
 
+  const prototypePath =
+    anchor && "prototypePath" in anchor ? anchor.prototypePath : thread.docPath;
+
   return {
     pickId,
     thread,
@@ -213,24 +253,47 @@ export function buildResolvePlan(
     impactSummary: summarizeImpact(impact),
     resolvedFrom,
     workflow: {
-      phases: [
-        "show_plan_in_chat",
-        "propose_doc_edit",
-        "user_approval",
-        "apply_edit_to_doc",
-        "git_commit_doc_then_resolve_meta",
-        "git_push",
-        "optional_index_or_regen",
-      ],
+      phases:
+        commentType === "prototype"
+          ? [
+              "show_plan_in_chat",
+              "propose_prototype_edit",
+              "user_approval",
+              "apply_edit_to_prototype_html",
+              "git_commit_prototype_then_resolve_meta",
+              "git_push",
+            ]
+          : [
+              "show_plan_in_chat",
+              "propose_doc_edit",
+              "user_approval",
+              "apply_edit_to_doc",
+              "git_commit_doc_then_resolve_meta",
+              "git_push",
+              "optional_index_or_regen",
+            ],
       suggestEdit: {
-        docPath: anchor?.docPath ?? thread.docPath,
-        startLine: thread.anchor.startLine,
-        endLine: thread.anchor.endLine,
-        instruction: `Address reviewer comment at lines ${thread.anchor.startLine}-${thread.anchor.endLine}: ${previewCommentBody(ask, 200)}`,
+        docPath:
+          commentType === "prototype"
+            ? prototypePath
+            : anchor && "docPath" in anchor
+              ? anchor.docPath
+              : thread.docPath,
+        startLine: docAnchor?.startLine ?? 0,
+        endLine: docAnchor?.endLine ?? 0,
+        instruction:
+          commentType === "prototype" && protoAnchor
+            ? `Apply prototype review comment on ${protoAnchor.url} at ${protoAnchor.selector}: ${previewCommentBody(ask, 200)}`
+            : docAnchor
+              ? `Address reviewer comment at lines ${docAnchor.startLine}-${docAnchor.endLine}: ${previewCommentBody(ask, 200)}`
+              : `Address reviewer comment: ${previewCommentBody(ask, 200)}`,
       },
       afterApply: {
-        indexRefresh: impact != null && (impact.regenerate.length > 0 || impact.review.length > 0),
-        regenerateCommands,
+        indexRefresh:
+          commentType === "document" &&
+          impact != null &&
+          (impact.regenerate.length > 0 || impact.review.length > 0),
+        regenerateCommands: commentType === "document" ? regenerateCommands : [],
       },
     },
   };
@@ -238,15 +301,26 @@ export function buildResolvePlan(
 
 export function formatPlanForChat(plan: CommentResolvePlan): string {
   const t = plan.thread;
+  const commentType = threadCommentType(t);
   const lines: string[] = [
     plan.pickId ? `# ${plan.pickId} → ${t.threadId}` : `# Thread ${t.threadId}`,
     "",
+    `**Type:** ${commentType}`,
     `**File:** ${t.filePath} → ${t.docPath ?? "(unknown)"}`,
-    `**Anchor:** lines ${t.anchor.startLine}-${t.anchor.endLine} (${t.anchor.language})`,
   ];
 
-  if (t.anchor.lineExcerpt) {
-    lines.push(`**Excerpt:** ${t.anchor.lineExcerpt}`);
+  if (commentType === "prototype" && isPrototypeAnchor(t.anchor)) {
+    lines.push(
+      `**Anchor:** ${t.anchor.selector} @ ${t.anchor.url}${t.anchor.tagName ? ` (${t.anchor.tagName})` : ""}`,
+    );
+    if (t.anchor.textExcerpt) {
+      lines.push(`**Excerpt:** ${t.anchor.textExcerpt}`);
+    }
+  } else if (isDocumentAnchor(t.anchor)) {
+    lines.push(`**Anchor:** lines ${t.anchor.startLine}-${t.anchor.endLine} (${t.anchor.language})`);
+    if (t.anchor.lineExcerpt) {
+      lines.push(`**Excerpt:** ${t.anchor.lineExcerpt}`);
+    }
   }
 
   lines.push("", "**Comments:**");
@@ -257,8 +331,10 @@ export function formatPlanForChat(plan: CommentResolvePlan): string {
     lines.push(`- ${c.authorId}: ${c.body}`);
   }
 
-  if (plan.anchor?.anchoredText) {
+  if (plan.anchor && "anchoredText" in plan.anchor && plan.anchor.anchoredText) {
     lines.push("", "**Current text at anchor:**", "```markdown", plan.anchor.anchoredText, "```");
+  } else if (plan.anchor && "htmlPreview" in plan.anchor) {
+    lines.push("", "**Prototype HTML (preview):**", "```html", plan.anchor.htmlPreview, "```");
   }
 
   if (plan.impactSummary) {
@@ -277,17 +353,16 @@ export function formatPlanForChat(plan: CommentResolvePlan): string {
         lines.push(`- \`${e.id}\`${e.projectionPath ? ` → ${e.projectionPath}` : ""}`);
       }
     }
-  } else {
+  } else if (commentType === "document") {
     lines.push("", "**Impact:** (graph unavailable — run /index or /validate-graph first)");
   }
 
   lines.push(
     "",
     "**Next (IDE workflow):**",
-    "1. Propose a concrete doc edit addressing the comment",
-    "2. Wait for your approval",
-    "3. Apply the edit",
-    "4. Commit **doc + comment meta in one commit** (amend) → push",
+    commentType === "prototype"
+      ? "1. Propose a concrete HTML edit addressing the pinned element\n2. Wait for your approval\n3. Apply the edit to the prototype file\n4. Commit **prototype + comment meta in one commit** (amend) → push"
+      : "1. Propose a concrete doc edit addressing the comment\n2. Wait for your approval\n3. Apply the edit\n4. Commit **doc + comment meta in one commit** (amend) → push",
   );
 
   return lines.join("\n");

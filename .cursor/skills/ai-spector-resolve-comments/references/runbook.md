@@ -1,8 +1,17 @@
 # Resolve review comments
 
-IDE-first workflow (Cursor) for **git-backed review comments** under `comments/`. Web reviewers create threads; you resolve locally: inbox in chat → pick thread → impact → propose edit → apply → commit (doc + resolve meta) → push.
+IDE-first workflow (Cursor) for **git-backed review comments** under `comments/`. Web reviewers create threads on **documents** (line anchors) or **prototype HTML** (CSS selector pins); you resolve locally: inbox in chat → pick thread → impact → propose edit → apply → commit (target file + resolve meta) → push.
 
 No Writer API — storage is git-only (`meta_data.json` + `events.jsonl`).
+
+## Comment types
+
+| Type | Storage prefix | Anchor | Resolve target |
+|------|----------------|--------|----------------|
+| `document` | `comments/srs/…`, `comments/basic-design/…` | line range | `docs/…/*.md` |
+| `prototype` | `comments/prototype/{url}/…` | `url` + CSS `selector` | `prototype/…/*.html` |
+
+List all prototype threads: `--file prototype --type prototype`.
 
 ## Usage
 
@@ -10,7 +19,8 @@ No Writer API — storage is git-only (`meta_data.json` + `events.jsonl`).
 |---------|------------|
 | `/resolve-comments` | Inbox table in chat → wait for your pick |
 | `/resolve-comments C-001` | Plan + impact for pick **C-001** |
-| `/resolve-comments srs/01-overview` | Inbox filtered to that file |
+| `/resolve-comments srs/01-overview` | Inbox filtered to that doc file |
+| `/resolve-comments prototype` | Inbox filtered to prototype threads only |
 
 ## IDE workflow (agent — follow in order)
 
@@ -24,6 +34,8 @@ git pull
 
 ```bash
 npx ai-spector comments inbox --json
+# Prototype-only inbox:
+npx ai-spector comments inbox --file prototype --type prototype --json
 ```
 
 **IDE presentation (required):**
@@ -34,9 +46,10 @@ npx ai-spector comments inbox --json
 
 Example table (from CLI):
 
-| Pick | Document | Lines | Lang | Reviewer ask |
-|------|----------|-------|------|--------------|
-| **C-001** | `docs/srs/01-overview.md` | 12-14 | EN | Please clarify… |
+| Pick | Type | Target | Location | Reviewer ask |
+|------|------|--------|----------|--------------|
+| **C-001** | document | `docs/srs/01-overview.md` | 12-14 (EN) | Please clarify… |
+| **C-002** | prototype | `prototype/src/login.html` | `html>body>h1 @ src/login.html` | Make heading larger… |
 
 **Stop and ask:** “Which thread should we resolve? Reply with **C-00N**.”
 
@@ -60,13 +73,17 @@ npx ai-spector comments plan C-001 --json
 
 ### Phase 4 — Apply edit
 
-Edit `anchor.docPath` at lines `startLine`–`endLine`. Show diff summary in chat.
+**Document threads:** edit `anchor.docPath` at lines `startLine`–`endLine`.
 
-### Phase 5 — Resolve status + single git commit (doc + comment meta)
+**Prototype threads:** edit the HTML file at `workflow.suggestEdit.docPath` (e.g. `prototype/src/login.html`); locate the pinned element via `anchor.selector` and `anchor.url`.
 
-Each resolve must land in git with **both** the **document fix** and **comment thread metadata** — never commit only `comments/` without the changed doc file.
+Show diff summary in chat.
 
-**Steps:**
+### Phase 5 — Resolve status + single git commit (target + comment meta)
+
+Each resolve must land in git with **both** the **fix** and **comment thread metadata** — never commit only `comments/` without the changed target file.
+
+**Document threads:**
 
 ```bash
 # 1) Stage and commit doc fix first (establishes resolvedInCommitSha target)
@@ -86,17 +103,34 @@ Resolved thread <threadId>. Pick C-001."
 git push
 ```
 
+**Prototype threads:** same amend pattern — commit `prototype/…/*.html` first, then resolve with `--file prototype/src/login.html` (use **thread.filePath** from plan, not the list key `prototype`).
+
+```bash
+git add prototype/src/login.html
+git commit -m "fix(prototype): address comment C-002 on login heading"
+
+npx ai-spector comments resolve <threadId> --file prototype/src/login.html \
+  --expected-version <v from plan> --json
+
+git add comments/prototype/src/login.html/<threadId>/ prototype/src/login.html
+git commit --amend -m "fix(prototype): address comment C-002 on login heading
+
+Resolved thread <threadId>. Pick C-002."
+
+git push
+```
+
 **Why amend:** `comments resolve` needs HEAD after the doc commit for `resolvedInCommitSha`. Amending folds `meta_data.json` + `events.jsonl` into the **same commit** as the doc change so one push contains the full resolve.
 
 **Commit must include:**
 
 | Path | Content |
 |------|---------|
-| `docs/…` | Edited document (the fix) |
+| `docs/…` or `prototype/…` | Edited document or HTML (the fix) |
 | `comments/…/{thread_id}/meta_data.json` | `status: resolved`, `resolvedInCommitSha`, … |
 | `comments/…/{thread_id}/events.jsonl` | append `resolved` event |
 
-**Never:** `git add` only `comments/` while doc changes stay unstaged or uncommitted.
+**Never:** `git add` only `comments/` while target changes stay unstaged or uncommitted.
 
 If HEAD moved before resolve, pass `--commit-sha <doc-fix-sha>` explicitly.
 
@@ -124,7 +158,8 @@ Re-run `comments inbox --json` → show `idePresentation.markdown` → ask for n
 | Command | Purpose |
 |---------|---------|
 | `comments inbox [--json]` | Thread pick list + `idePresentation` for chat |
-| `comments plan C-001 [--json]` | Anchor excerpt + graph impact |
+| `comments inbox --file prototype --type prototype` | Prototype threads only |
+| `comments plan C-001 [--json]` | Anchor excerpt + graph impact (docs) or HTML preview (prototype) |
 | `comments resolve <threadId> --file <path> [--expected-version]` | Update meta before final amend commit |
 
 ## Guardrails

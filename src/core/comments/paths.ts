@@ -45,6 +45,42 @@ export function logicalPathToDocPath(logicalPath: string): string | null {
   return null;
 }
 
+/** Map prototype thread filePath (e.g. `prototype/src/login.html`) to repo HTML path. */
+export function logicalPathToPrototypePath(logicalPath: string): string | null {
+  const p = normalizeLogicalPath(logicalPath);
+  if (!p.startsWith("prototype/")) {
+    return null;
+  }
+  return p;
+}
+
+/** Doc or prototype repo-relative path for a thread's logical filePath. */
+export function logicalPathToTargetPath(logicalPath: string): string | null {
+  return logicalPathToDocPath(logicalPath) ?? logicalPathToPrototypePath(logicalPath);
+}
+
+export function isPrototypeLogicalPath(logicalPath: string): boolean {
+  const p = normalizeLogicalPath(logicalPath);
+  return p === "prototype" || p.startsWith("prototype/");
+}
+
+/** Screen stem from bundle-relative prototype URL (e.g. `src/login.html` → `login`). */
+export function screenStemFromPrototypeUrl(url: string): string {
+  const base = url.split("/").pop() ?? url;
+  const stem = base.replace(/\.html?$/i, "");
+  return stem || "index";
+}
+
+/** Match list/inbox filePath filter — `prototype` aggregates all URL subfolders. */
+export function matchesFilePathFilter(logicalPath: string, fileFilter: string): boolean {
+  const lp = normalizeLogicalPath(logicalPath);
+  const ff = normalizeLogicalPath(fileFilter);
+  if (ff === "prototype") {
+    return lp.startsWith("prototype/");
+  }
+  return lp === ff;
+}
+
 export function commentsRootRel(): string {
   return COMMENTS_ROOT;
 }

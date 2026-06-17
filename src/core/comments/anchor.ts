@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathExists } from "../util/fs.js";
-import { logicalPathToDocPath } from "./paths.js";
+import { logicalPathToDocPath, logicalPathToPrototypePath } from "./paths.js";
+import type { PrototypeCommentAnchor } from "./types.js";
 
 const SECTION_ANCHOR_RE = /<!--\s*section:\s*([^\s>]+)\s*-->/;
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;
@@ -18,6 +19,43 @@ export interface DocAnchorContext {
   sectionAnchor?: string;
   /** Total lines in document */
   lineCount: number;
+}
+
+export interface PrototypeAnchorContext {
+  prototypePath: string;
+  url: string;
+  selector: string;
+  textExcerpt?: string;
+  tagName?: string;
+  /** HTML file content (truncated when very large). */
+  htmlPreview: string;
+}
+
+export async function readPrototypeAnchorContext(
+  projectRoot: string,
+  logicalPath: string,
+  anchor: PrototypeCommentAnchor,
+): Promise<PrototypeAnchorContext | null> {
+  const prototypePath = logicalPathToPrototypePath(logicalPath);
+  if (!prototypePath) {
+    return null;
+  }
+  const abs = join(projectRoot, prototypePath);
+  if (!(await pathExists(abs))) {
+    return null;
+  }
+
+  const raw = await readFile(abs, "utf8");
+  const htmlPreview = raw.length > 4000 ? `${raw.slice(0, 4000)}\n…` : raw;
+
+  return {
+    prototypePath,
+    url: anchor.url,
+    selector: anchor.selector,
+    textExcerpt: anchor.textExcerpt,
+    tagName: anchor.tagName,
+    htmlPreview,
+  };
 }
 
 export async function readDocAnchorContext(

@@ -71,6 +71,7 @@ describe("comment paths", () => {
     expect(logicalPathToDocPath("basic-design/list-api")).toBe(
       "docs/basic-design/list-api.md",
     );
+    expect(logicalPathToDocPath("prototype/src/login.html")).toBeNull();
   });
 });
 

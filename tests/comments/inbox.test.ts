@@ -13,6 +13,7 @@ import { withTempProject } from "../helpers/temp-project.js";
 const SAMPLE_META = {
   threadId: "20260530T143022Z_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   filePath: "srs/01-overview",
+  commentType: "document" as const,
   originBranch: "main",
   status: "open" as const,
   version: 1,

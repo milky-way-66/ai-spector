@@ -1051,14 +1051,33 @@ const comments = program
   .command("comments")
   .description("Git-backed review comment threads under comments/ (local resolve flow)");
 
+function parseCommentTypesOpt(raw: string | undefined): import("./core/comments/types.js").CommentType[] | undefined {
+  if (!raw?.trim()) {
+    return undefined;
+  }
+  const allowed = new Set(["document", "prototype"]);
+  const types = raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t): t is import("./core/comments/types.js").CommentType => allowed.has(t));
+  return types.length > 0 ? types : undefined;
+}
+
 comments
   .command("list")
   .description("List comment threads from comments/{logical_path}/")
-  .option("--file <path>", "Filter by logical file path (e.g. srs/01-overview)")
+  .option("--file <path>", "Filter by logical file path (e.g. srs/01-overview or prototype)")
+  .option("--type <types>", "Comma-separated comment types: document, prototype")
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    const result = await runCommentsList({ root: projectRootOpt(cmd), filePath: opts.file, status: opts.status });
+    const commentTypes = parseCommentTypesOpt(opts.type);
+    const result = await runCommentsList({
+      root: projectRootOpt(cmd),
+      filePath: opts.file,
+      commentTypes,
+      status: opts.status,
+    });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCommentsList(result));
   });
@@ -1068,11 +1087,18 @@ comments
   .description(
     "Thread pick list for IDE chat (C-001…) — JSON includes idePresentation.markdown table",
   )
-  .option("--file <path>", "Filter by logical file path")
+  .option("--file <path>", "Filter by logical file path (e.g. prototype)")
+  .option("--type <types>", "Comma-separated comment types: document, prototype")
   .option("--status <status>", "open | resolved | all", "open")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
-    const inbox = await runCommentsInbox({ root: projectRootOpt(cmd), filePath: opts.file, status: opts.status });
+    const commentTypes = parseCommentTypesOpt(opts.type);
+    const inbox = await runCommentsInbox({
+      root: projectRootOpt(cmd),
+      filePath: opts.file,
+      commentTypes,
+      status: opts.status,
+    });
     if (opts.json) console.log(JSON.stringify(inbox, null, 2));
     else console.log(formatCommentsInbox(inbox));
   });

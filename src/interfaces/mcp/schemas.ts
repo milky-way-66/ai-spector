@@ -78,7 +78,11 @@ export const IndexSchema = RootSchema.extend({
 // ── Comments ──────────────────────────────────────────────────────────────────
 
 export const CommentsListSchema = RootSchema.extend({
-  filePath: z.string().optional().describe("Filter by file path"),
+  filePath: z.string().optional().describe("Filter by file path (use `prototype` for all prototype threads)"),
+  commentTypes: z
+    .array(z.enum(["document", "prototype"]))
+    .optional()
+    .describe("Filter by comment type (e.g. prototype only)"),
   status: z
     .enum(["open", "resolved", "all"])
     .optional()
@@ -86,7 +90,11 @@ export const CommentsListSchema = RootSchema.extend({
 });
 
 export const CommentsInboxSchema = RootSchema.extend({
-  filePath: z.string().optional().describe("Filter by file path"),
+  filePath: z.string().optional().describe("Filter by file path (use `prototype` for all prototype threads)"),
+  commentTypes: z
+    .array(z.enum(["document", "prototype"]))
+    .optional()
+    .describe("Filter by comment type (e.g. prototype only)"),
   status: z
     .enum(["open", "resolved", "all"])
     .optional()

@@ -4,7 +4,8 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import {
-  logicalPathToDocPath,
+  logicalPathToTargetPath,
+  matchesFilePathFilter,
   normalizeLogicalPath,
   threadDirRel,
   threadEventsRel,
@@ -13,10 +14,16 @@ import {
 import type {
   CommentBody,
   CommentEvent,
+  CommentType,
   ThreadDetail,
   ThreadMeta,
   ThreadStatus,
   ThreadSummary,
+} from "./types.js";
+import {
+  isDocumentAnchor,
+  isPrototypeAnchor,
+  threadCommentType,
 } from "./types.js";
 import { resolveAuditActor } from "../util/audit-actor.js";
 
@@ -25,6 +32,7 @@ const exec = promisify(execFile);
 export interface ListThreadsOptions {
   projectRoot: string;
   filePath?: string;
+  commentTypes?: CommentType[];
   status?: ThreadStatus | "all";
 }
 
@@ -53,14 +61,16 @@ function isThreadMeta(raw: unknown): raw is ThreadMeta {
     return false;
   }
   const m = raw as ThreadMeta;
-  return (
-    typeof m.threadId === "string" &&
-    typeof m.filePath === "string" &&
-    typeof m.status === "string" &&
-    typeof m.version === "number" &&
-    m.anchor != null &&
-    typeof m.anchor.startLine === "number"
-  );
+  if (
+    typeof m.threadId !== "string" ||
+    typeof m.filePath !== "string" ||
+    typeof m.status !== "string" ||
+    typeof m.version !== "number" ||
+    m.anchor == null
+  ) {
+    return false;
+  }
+  return isDocumentAnchor(m.anchor) || isPrototypeAnchor(m.anchor);
 }
 
 function isCommentBody(raw: unknown): raw is CommentBody {
@@ -136,7 +146,7 @@ function toSummary(
     ...meta,
     replyCount,
     threadDir,
-    docPath: logicalPathToDocPath(meta.filePath),
+    docPath: logicalPathToTargetPath(meta.filePath),
   };
 }
 
@@ -184,12 +194,17 @@ export async function listThreads(opts: ListThreadsOptions): Promise<ThreadSumma
   const discovered = await discoverThreadMetas(opts.projectRoot);
   const summaries: ThreadSummary[] = [];
 
+  const typeFilter = opts.commentTypes?.length ? new Set(opts.commentTypes) : null;
+
   for (const item of discovered) {
-    if (fileFilter && normalizeLogicalPath(item.logicalPath) !== fileFilter) {
+    if (fileFilter && !matchesFilePathFilter(item.logicalPath, fileFilter)) {
       continue;
     }
     const meta = await readJson<unknown>(item.metaPath);
     if (!isThreadMeta(meta)) {
+      continue;
+    }
+    if (typeFilter && !typeFilter.has(threadCommentType(meta))) {
       continue;
     }
     if (statusFilter !== "all" && meta.status !== statusFilter) {
@@ -200,9 +215,22 @@ export async function listThreads(opts: ListThreadsOptions): Promise<ThreadSumma
   }
 
   summaries.sort((a, b) => {
-    const lineDiff = a.anchor.startLine - b.anchor.startLine;
-    if (lineDiff !== 0) {
-      return lineDiff;
+    const typeOrder = threadCommentType(a).localeCompare(threadCommentType(b));
+    if (typeOrder !== 0) {
+      return typeOrder;
+    }
+    if (isPrototypeAnchor(a.anchor) && isPrototypeAnchor(b.anchor)) {
+      const urlDiff = a.anchor.url.localeCompare(b.anchor.url);
+      if (urlDiff !== 0) {
+        return urlDiff;
+      }
+      return a.updatedAt.localeCompare(b.updatedAt);
+    }
+    if (isDocumentAnchor(a.anchor) && isDocumentAnchor(b.anchor)) {
+      const lineDiff = a.anchor.startLine - b.anchor.startLine;
+      if (lineDiff !== 0) {
+        return lineDiff;
+      }
     }
     return a.updatedAt.localeCompare(b.updatedAt);
   });
@@ -299,9 +327,10 @@ export async function resolveThread(
 
   const threadDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId));
   const eventsPath = join(opts.projectRoot, threadEventsRel(lp, opts.threadId));
-  const commitMessageSuggestion =
-    `resolve comment thread ${opts.threadId} on ${meta.filePath} ` +
-    `(lines ${meta.anchor.startLine}-${meta.anchor.endLine})`;
+  const commitMessageSuggestion = isPrototypeAnchor(meta.anchor)
+    ? `resolve prototype comment thread ${opts.threadId} on ${meta.anchor.url} (${meta.anchor.selector})`
+    : `resolve comment thread ${opts.threadId} on ${meta.filePath} ` +
+      `(lines ${isDocumentAnchor(meta.anchor) ? `${meta.anchor.startLine}-${meta.anchor.endLine}` : "?"})`;
 
   if (!opts.dryRun) {
     await writeJson(metaPath, updated);
@@ -355,13 +384,24 @@ export function formatThreadListText(threads: ThreadSummary[]): string {
     return "No comment threads found.";
   }
   const lines = threads.map((t) => {
-    const doc = t.docPath ?? "(unknown doc path)";
+    const target = t.docPath ?? "(unknown target path)";
+    const type = threadCommentType(t);
+    const location = isPrototypeAnchor(t.anchor)
+      ? `${t.anchor.selector} @ ${t.anchor.url}`
+      : isDocumentAnchor(t.anchor)
+        ? `lines ${t.anchor.startLine}-${t.anchor.endLine} | lang ${t.anchor.language}`
+        : "(unknown anchor)";
+    const excerpt = isPrototypeAnchor(t.anchor)
+      ? t.anchor.textExcerpt
+      : isDocumentAnchor(t.anchor)
+        ? t.anchor.lineExcerpt
+        : undefined;
     return [
       `${t.threadId}`,
-      `  file: ${t.filePath} → ${doc}`,
-      `  status: ${t.status} | lines ${t.anchor.startLine}-${t.anchor.endLine} | lang ${t.anchor.language}`,
+      `  type: ${type} | file: ${t.filePath} → ${target}`,
+      `  status: ${t.status} | ${location}`,
       `  branch: ${t.originBranch} | replies: ${t.replyCount}`,
-      t.anchor.lineExcerpt ? `  excerpt: ${t.anchor.lineExcerpt}` : null,
+      excerpt ? `  excerpt: ${excerpt}` : null,
     ]
       .filter(Boolean)
       .join("\n");
