@@ -322,7 +322,7 @@ function isCommentThreadIntent(msg: string, message: string): boolean {
 
 function isLogicalPathSignoff(msg: string): boolean {
   return (
-    /\b(srs|bd|dd)\/[\w.-]+/.test(msg) &&
+    /\b(srs|bd|dd|basic-design|detail-design)\/[\w.-]+/.test(msg) &&
     /\b(approve|sign.?off|review status|what changed)\b/.test(msg)
   );
 }
@@ -341,7 +341,8 @@ function isDocReviewIntent(msg: string): boolean {
     /\breview status\b/.test(msg) ||
     /\bwhat changed since (last )?approval\b/.test(msg) ||
     /\bapprove (the )?srs\b/.test(msg) ||
-    /\bapprove (the )?basic design\b/.test(msg)
+    /\bapprove (the )?basic design\b/.test(msg) ||
+    /\bapprove (the )?detail design\b/.test(msg)
   );
 }
 
@@ -382,6 +383,7 @@ function isGenerateBasicDesignIntent(msg: string): boolean {
 function isGenerateDetailDesignIntent(msg: string): boolean {
   return (
     /\bgenerate detail design\b/.test(msg) ||
+    /\b(feature[- ]level design|implementation spec)\b/.test(msg) ||
     /\bdetail design\b/.test(msg) ||
     /\bdd\/[\w.-]+/.test(msg)
   );

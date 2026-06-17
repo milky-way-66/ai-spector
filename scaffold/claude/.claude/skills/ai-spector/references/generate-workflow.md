@@ -1,6 +1,6 @@
 # Document generation workflow
 
-Used by SRS and basic design skills.
+Used by SRS, basic design, and detail design skills.
 
 **References (load when needed):**
 - Workspace check → [workspace-check.md](./workspace-check.md)
@@ -72,6 +72,7 @@ Read `.ai-spector/docflow.config.json` at the project root. Check the `languages
 |-------------|-------------|
 | Builtin (SRS) | `docs/srs/{lang.code}/{filename}` |
 | Builtin (basic design) | `docs/basic-design/{lang.code}/{filename}` |
+| Builtin (detail design) | `docs/detail-design/{lang.code}/{filename}` |
 | Custom pack | Path from `doc-types/srs/dag.json` node (`output` or `outputPattern`). If the path includes `{lang}`, substitute `lang.code`. If it does not include `{lang}`, write to the path as-is (no language subfolder added automatically). |
 
 For custom packs: **never rewrite the output path** to add a language subfolder that the manifest didn't define. Respect the path exactly as written in `doc-types/srs/dag.json`.
@@ -131,7 +132,7 @@ do not skip them.
 ```
 - [ ] Targets for this wave identified (parallel OK within wave only)
 - [ ] Per target: delegate graph queries to sub-agent; receive ≤400-word summary
-- [ ] Load matching srs-context/ or bd-context/ section for this doc type
+- [ ] Load matching srs-context/, bd-context/, or dd-context/ section for this doc type
 - [ ] Read template from .ai-spector/templates/ — never invent structure
 - [ ] Write primary language file from summary + template
 - [ ] `readiness_scan({ paths: [written paths], updateLastScan: false })` — structural findings (headings, placeholders)
@@ -140,7 +141,7 @@ do not skip them.
 - [ ] [PAUSE — translation prompt] (see below)
 - [ ] Merge projection patch (rendersTo + dependsOn) for the wave
 - [ ] npx ai-spector graph validate
-- [ ] npx ai-spector index (basic design: every wave; SRS: see runbook)
+- [ ] npx ai-spector index (basic design and detail design: every wave; SRS: see runbook)
 - [ ] `task_record_wave` with artifact paths for this wave
 - [ ] /compact with plan summary before next wave
 ```

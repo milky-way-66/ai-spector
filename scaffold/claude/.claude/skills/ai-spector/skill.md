@@ -82,7 +82,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Graph | `.ai-spector/graph/traceability.graph.json` |
 | Query | `graph_query({ id })` MCP · fallback: `npx ai-spector graph query <id> --json` |
 | Templates | `.ai-spector/templates/` |
-| Doc output | `docs/srs/{lang.code}/` · `docs/basic-design/{lang.code}/` |
+| Doc output | `docs/srs/{lang.code}/` · `docs/basic-design/{lang.code}/` · `docs/detail-design/{lang.code}/` |
 
 ## Route to a task skill
 
@@ -94,6 +94,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 | Add/update one feature or section ("I want to add…") | `ai-spector-resolve-task` |
 | Generate SRS (full chapter / DAG) | `ai-spector-generate-srs` |
 | Generate basic design (full wave) | `ai-spector-generate-basic-design` |
+| Generate detail design (full wave) | `ai-spector-generate-detail-design` |
 | Prototype | `ai-spector-generate-prototype` |
 | Comments | `ai-spector-resolve-comments` |
 | Review / approve documents (`review_approve`), review queue | `ai-spector-review` |

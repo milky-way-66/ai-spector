@@ -1,5 +1,5 @@
 ---
-description: After editing SRS or basic design docs, run graph impact and refresh the translation queue
+description: After editing SRS, basic design, or detail design docs, run graph impact and refresh the translation queue
 globs: docs/srs/**,docs/basic-design/**,docs/detail-design/**
 alwaysApply: false
 ---

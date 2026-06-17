@@ -19,7 +19,7 @@ everything else is reported with a remediation hint.
 |------|----------|--------|
 | STRUCT-001 | error | Required dirs exist: `docs/data-source/`, `.ai-spector/.docflow/config/` |
 | STRUCT-002 | error | `.ai-spector/docflow.config.json` present and parseable |
-| STRUCT-003 | warning | Each configured language has its output folder (`docs/srs/{lang}/`, `docs/basic-design/{lang}/`) |
+| STRUCT-003 | warning | Each configured language has its output folder (`docs/srs/{lang}/`, `docs/basic-design/{lang}/`, `docs/detail-design/{lang}/`) |
 | STRUCT-004 | error | Builtin SRS/BD docs live under `docs/{type}/{lang}/` — not at `docs/srs/{filename}` root |
 | CFG-001 | error | `languages[]` non-empty in the raw config |
 | TMPL-001 | warning | `.ai-spector/templates/` exists |

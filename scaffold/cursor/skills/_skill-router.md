@@ -79,7 +79,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 | generate docs, write SRS (full chapter/DAG), generate use cases from graph | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
 | add feature, add requirement, update section, "I want to add…", "we need…" | `ai-spector-resolve-task` | `references/runbook.md` |
 | screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
-| detail design, feature-level design | `ai-spector-generate-detail-design` | `references/runbook.md` |
+| detail design, feature-level design, implementation spec | `ai-spector-generate-detail-design` | `references/runbook.md` |
 | HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
 | set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
 | create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
@@ -98,6 +98,7 @@ analyze → validate graph
   → generate SRS        (gated: check → clarify → briefing → plan → waves → extract specs)
   → index → spec review queue (approve → graph merge)
   → generate basic design (same gates) → index
+  → generate detail design (same gates) → index each wave
   → prototype setup → generate HTML screens
 ```
 

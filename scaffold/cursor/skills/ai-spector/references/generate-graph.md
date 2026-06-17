@@ -100,7 +100,7 @@ npx ai-spector graph merge .ai-spector/.docflow/extract/projection-patch.json
 npx ai-spector graph validate
 ```
 
-Then — for SRS and basic-design waves — run index before starting the next wave:
+Then — for SRS, basic-design, and detail-design waves — run index before starting the next wave:
 
 ```bash
 npx ai-spector index

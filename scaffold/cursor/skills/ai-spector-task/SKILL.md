@@ -18,6 +18,7 @@ paths:
 | resume / continue / pick up where we left off | `task_list` → `task_resume` → `task_get` |
 | what tasks are active / in progress | `task_list({ status: ["active", "paused"] })` |
 | start generate SRS | `task_create({ kind: "generate", workflow: "generate-srs", docType: "srs", trigger })` |
+| start generate detail design | `task_create({ kind: "generate", workflow: "generate-detail-design", docType: "detail-design", trigger })` |
 | start incremental change | `task_create({ kind: "resolve", workflow: "resolve", trigger })` |
 | pause / stop for now | `task_pause` |
 | done / finished | `task_complete` |

@@ -34,9 +34,9 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.claude/
 | Refresh after edits | "re-index", "sync the graph" | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
 | Write SRS | "generate SRS", "write use cases" | `ai-spector-generate-srs` | `task_create` → **gated**: check → clarify → briefing + plan → `task_approve_plan` → `task_record_wave` per wave → `spec_record` → `task_complete` |
 | Basic design | "screen list", "API design", "wireframes" | `ai-spector-generate-basic-design` | same task-state flow → docs/basic-design → index each wave |
+| Detail design | "generate detail design", "feature-level design", "implementation spec for F-01" | `ai-spector-generate-detail-design` | same task-state flow → docs/detail-design → **index every wave** (feature list before per-feature expansion) |
 | Review extracted specs | "pending specs", "approve SPEC-001" | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |
 | Answer clarifications | "open questions", "what did I answer about auth" | `ai-spector-check` | `context_list` → `context_resolve` |
-| Detail design | "detail design for checkout" | `ai-spector-generate-detail-design` | docs/detail-design |
 | HTML prototype | "HTML mockup", "prototype with stripe theme" | `ai-spector-generate-prototype` | auth picker (if needed) → theme picker → setup → HTML → validate |
 | Pick / preview UI theme | "help me pick a theme", "show me themes" | `ai-spector-generate-prototype` | read project context → recommend 3 → `prototype preview` ×3 |
 | What to redo | "what's impacted", "what should I regenerate" | `ai-spector-graph` | `graph_impact({ git: true, change: "…" })` — includes `semanticSuggestions` when CocoIndex ready |
@@ -45,7 +45,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.claude/
 | Translation status | "what's stale in JP", "pending translations" | `ai-spector-lang-status` | `lang_queue({})` MCP |
 | Sync translations | "resolve translations", "update JP from EN" | `ai-spector-resolve-translation` | read queue → translate → `index({ cocoindexSync: true })` |
 | Review comments | "resolve comments", "fix C-001" | `ai-spector-resolve-comments` | inbox → plan → edit → commit |
-| **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + quorum + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_decline` / `review_close` / `review_reject` |
+| **Review documents** | "review docs", "approve SRS", "approve srs/01-overview", "approve detail-design/feature-list", "pending review", "what changed since approval" | `ai-spector-review` | `review_check` → queue → pick → `review_status` (readiness + quorum + custom checklists) → read doc → graph_impact → **write review** → user decision → `review_approve` / `review_decline` / `review_close` / `review_reject` |
 | Add/update one feature or section | "I want to add login with Google", "add requirement", "update auth section" | `ai-spector-resolve-task` | `task_create` → clarify → plan → `task_approve_plan` → `resolve_task({ taskId })` → `task_complete` |
 | Explore graph | "show the graph" | `ai-spector-graph` | `npx ai-spector graph visualize --open` (no MCP equivalent) |
 
@@ -90,7 +90,7 @@ analyze → validate graph
   → generate SRS         (gated: check → clarify → briefing → plan → waves → extract)
   → index → spec review  (approve → graph merge)
   → generate basic design (same gates) → index
-  → generate detail design
+  → generate detail design (same gates) → index each wave
   → prototype setup + generate HTML screens
 ```
 
@@ -111,4 +111,4 @@ offers extracted key specs for review — only approved specs reach the graph, a
 | Unsure what regen | "what's the impact of my changes" |
 | Comments incomplete | "resolve comments" — commit must include doc + `comments/` meta |
 
-References: [cli-failures](./skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md).
+References: [cli-failures](./skills/ai-spector/references/cli-failures.md), [graph CLI](./skills/ai-spector/references/graph.md), [prerequisites](./skills/ai-spector/references/prerequisites.md). Web UI handover for browsing detail design: [../../docs/plan/detail-design-web-handover.md](../../docs/plan/detail-design-web-handover.md).
