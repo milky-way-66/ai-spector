@@ -658,8 +658,10 @@ export const TaskUpdatePatchSchema = z.object({
 });
 
 export const TaskCreateSchema = RootSchema.extend({
-  kind: TaskKindEnum.describe("generate (SRS/basic-design) or resolve (incremental change)"),
-  workflow: WorkflowIdEnum.describe("Workflow template to initialize steps from"),
+  kind: TaskKindEnum.describe("generate (SRS/basic-design) | resolve (incremental) | import (template pack)"),
+  workflow: WorkflowIdEnum.describe(
+    "Workflow template to initialize steps from (generate-srs, resolve, template-import, …)",
+  ),
   trigger: z.string().describe("Original user intent that started this task"),
   docType: z.string().optional().describe("Doc type for generate workflows (e.g. srs)"),
   force: z
@@ -669,8 +671,10 @@ export const TaskCreateSchema = RootSchema.extend({
 });
 
 const TaskListBootstrapSchema = z.object({
-  kind: TaskKindEnum.describe("generate or resolve"),
-  workflow: WorkflowIdEnum.describe("Workflow template for the new task"),
+  kind: TaskKindEnum.describe("generate | resolve | import"),
+  workflow: WorkflowIdEnum.describe(
+    "Workflow template for the new task (e.g. generate-srs, resolve, template-import)",
+  ),
   trigger: z.string().describe("User intent that started this workflow"),
   docType: z.string().optional().describe("Doc type for generate workflows (e.g. srs)"),
   force: z

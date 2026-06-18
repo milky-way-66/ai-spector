@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **MCP template-import descriptor parity** — `task_create` / `task_list` JSON schemas expose `kind: import` and `workflow: template-import`; CI asserts tool registration parity. SDK exports `runTaskApproveImportPlan` and `runTaskApprovePackDesign`. CLI fallbacks: `task approve-import-plan`, `task approve-pack-design`, `task create -k import -w template-import`. Reload MCP after upgrade (`UPG-030`) so Cursor refreshes cached tool descriptors.
+
 - **Node 22 / Node 20.20+ CLI crash** — `ai-spector-graph@0.4.1` imports `default-impact.json` with `with { type: "json" }` (`ERR_IMPORT_ATTRIBUTE_MISSING`). **Publish `ai-spector-graph@0.4.1` before `ai-spector@0.6.0`.**
 - **Screen-map doc paths** — `screenDoc` is the full primary-language repo path; new `screenDocPath` is the language-neutral logical path (e.g. `basic-design/screens/login.md`); `screenDocs` has distinct full paths per language (`docs/basic-design/en/...`, `docs/basic-design/vi/...`).
 - **`setup --check`** — reports missing `prototype/screen-map.json` when `manifest.json` exists.

@@ -185,6 +185,7 @@ import {
   ADOPT_TOOL_DESCRIPTIONS,
   UPGRADE_TOOL_DESCRIPTIONS,
 } from "./tool-descriptions.js";
+import { MCP_TOOL_NAMES } from "./tool-names.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
 
 const require = createRequire(import.meta.url);
@@ -1157,7 +1158,7 @@ server.registerTool(
   "task_create",
   {
     description:
-      "Create a new workflow task persisted to .ai-spector/.docflow/tasks/<id>.json. Initializes steps from a workflow template (generate-srs, generate-basic-design, resolve). One active task per slot unless force:true replaces the previous task.",
+      "Create a new workflow task persisted to .ai-spector/.docflow/tasks/<id>.json. Initializes steps from a workflow template (generate-srs, generate-basic-design, generate-detail-design, resolve, template-import, or generate-<pack>). One active task per slot unless force:true replaces the previous task.",
     inputSchema: TaskCreateSchema.shape,
   },
   async (input) => {
@@ -1365,31 +1366,7 @@ await server.connect(transport);
 // Log registered tools to stderr so users can verify the full tool set is loaded.
 // Set AI_SPECTOR_MCP_DEBUG=1 to suppress (e.g. in tests that parse stderr).
 if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
-  const toolNames = [
-    "graph_query", "graph_impact", "graph_validate", "graph_merge", "graph_report",
-    "knowledge_status", "knowledge_validate", "knowledge_schema",
-    "lang_queue", "index",
-    "comments_list", "comments_facets", "comments_inbox", "comments_batch_plan",
-    "comments_batch_resolve", "comments_show", "comments_resolve",
-    "template_list", "template_inspect", "template_validate", "template_setup_mark", "template_scan", "template_infer", "template_install",
-    "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
-    "readiness_assess", "readiness_scan", "readiness_output_checklist",
-    "adopt_scan", "adopt_plan", "adopt_apply", "adopt_bootstrap", "adopt_validate", "adopt_setup_mark", "adopt_context_record",
-    "upgrade_scan", "upgrade_apply", "upgrade_validate", "upgrade_setup_mark",
-    "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
-    "resolve_task",
-    "review_approve", "review_decline", "review_close", "review_withdraw", "review_reopen", "review_config", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",
-    "review_session_start", "review_session_ack_review",
-    "workflow_route", "workflow_status",
-    "workspace_check",
-    "context_list", "context_record", "context_resolve",
-    "spec_list", "spec_record", "spec_approve", "spec_reject",
-    "task_create", "task_list", "task_status", "task_get", "task_update", "task_approve_plan",
-    "task_approve_import_plan", "task_approve_pack_design",
-    "task_confirm_tier", "task_approve_design_spec", "task_set_execution_mode",
-    "task_pause", "task_resume", "task_complete", "task_abandon", "task_record_wave",
-  ];
   process.stderr.write(
-    `[ai-spector-mcp] v${pkg.version} started — ${toolNames.length} tools registered: ${toolNames.join(", ")}\n`,
+    `[ai-spector-mcp] v${pkg.version} started — ${MCP_TOOL_NAMES.length} tools registered: ${MCP_TOOL_NAMES.join(", ")}\n`,
   );
 }

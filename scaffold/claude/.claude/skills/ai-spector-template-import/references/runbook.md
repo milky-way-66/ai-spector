@@ -2,7 +2,7 @@
 
 Three-factor: **Human + AI + MCP/CLI**. Follow import **task steps** in order.
 
-**MCP first** — see [import-aspects.md](./import-aspects.md). **Clarify rules** — [import-clarify.md](./import-clarify.md) (do not use legacy question lists).
+**MCP first, CLI when MCP fails** — see [import-aspects.md](./import-aspects.md). **Clarify rules** — [import-clarify.md](./import-clarify.md) (do not use legacy question lists).
 
 | Step | Gate | MCP / action |
 |------|------|----------------|
@@ -33,6 +33,8 @@ npx ai-spector template list
 
 `task_create({ kind: "import", workflow: "template-import", trigger: "…" })` if no active import task.
 
+CLI: `npx ai-spector task create -k import -w template-import -t "…"`
+
 `workspace_check` → `task_update` snapshot + mark `check` done.
 
 ---
@@ -53,6 +55,8 @@ Draft pack design spec (purpose, doc shape, perDomain, output tree, standards, g
 
 User **yes** → `task_approve_pack_design({ designSpecPath })`.
 
+CLI: `npx ai-spector task approve-pack-design <taskId> --design-spec <path>`
+
 ---
 
 ## manifest-briefing → manifest-plan
@@ -66,6 +70,8 @@ Show table:
 User confirms rows → mark `manifest-briefing` done.
 
 Present plan table → `snapshot.manifestPlanPresentedAt` → user **yes** → `task_approve_import_plan`.
+
+CLI: `npx ai-spector task approve-import-plan <taskId>`
 
 ### Manifest drafting rules
 
@@ -90,6 +96,8 @@ Load [skill-outline.md](./skill-outline.md) → write `generate-skill.md` with g
 
 `template_install({})` — gated on active import task + approved manifest plan.
 
+CLI: `npx ai-spector template install`
+
 On success: [readiness-setup.md](./readiness-setup.md) post-install review.
 
 ---
@@ -105,5 +113,5 @@ Resolve gaps per [readiness-setup.md](./readiness-setup.md). `task_complete` whe
 ## Guardrails
 
 - Never install before `task_approve_import_plan`
-- On CLI/MCP failure → show full error; do not invent results
+- On CLI/MCP failure → show full error; fall back to the matching CLI command from [import-aspects.md](./import-aspects.md); do not invent results
 - Cancel → staging preserved; resume with `/template-import` or `task_resume`

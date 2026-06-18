@@ -50,6 +50,8 @@ import {
 import {
   runTaskAbandon,
   runTaskApprovePlan,
+  runTaskApproveImportPlan,
+  runTaskApprovePackDesign,
   runTaskComplete,
   runTaskCreate,
   runTaskGet,
@@ -435,10 +437,10 @@ const task = program
 task
   .command("create")
   .description("Create a new workflow task")
-  .requiredOption("-k, --kind <kind>", "generate | resolve")
+  .requiredOption("-k, --kind <kind>", "generate | resolve | import")
   .requiredOption(
     "-w, --workflow <workflow>",
-    "generate-srs | generate-basic-design | generate-detail-design | resolve",
+    "generate-srs | generate-basic-design | generate-detail-design | resolve | template-import",
   )
   .requiredOption("-t, --trigger <text>", "User intent that started this task")
   .option("-C, --cwd <path>", "Project root", process.cwd())
@@ -463,7 +465,7 @@ task
   .description("List tasks")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("-s, --status <status>", "Filter by status (comma-separated)")
-  .option("-k, --kind <kind>", "generate | resolve")
+  .option("-k, --kind <kind>", "generate | resolve | import")
   .option("-w, --workflow <workflow>", "Workflow id filter")
   .option("--recent", "Only tasks in index.recent")
   .option(
@@ -568,6 +570,41 @@ task
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatTaskSimple("Approved plan for", result));
+  });
+
+task
+  .command("approve-import-plan <taskId>")
+  .description("Import task: approve manifest plan after user yes (not task approve)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--plan <json>", "ImportPlan JSON (StoredPlan kind import) if not already on task")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskApproveImportPlan({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      plan: opts.plan ? JSON.parse(opts.plan as string) : undefined,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Approved import manifest plan for", result));
+  });
+
+task
+  .command("approve-pack-design <taskId>")
+  .description("Import task: record approved pack design spec path after user yes")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .requiredOption(
+    "--design-spec <path>",
+    "Relative path to approved pack design spec (e.g. docs/superpowers/specs/…-pack-design.md)",
+  )
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskApprovePackDesign({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      designSpecPath: opts.designSpec as string,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Approved pack design spec for", result));
   });
 
 task

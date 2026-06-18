@@ -2,20 +2,25 @@
 
 Clarify fills **required aspects** the scan could not resolve, plus **supplemental questions** when the scan surfaces more. Do not dump a fixed question list.
 
-## MCP first (agents)
+## MCP first, CLI when MCP fails
 
-When the ai-spector MCP server is enabled, **use MCP tools — not CLI** — for import steps:
+Prefer MCP when the ai-spector server is enabled and tool descriptors are current. **If MCP is unavailable, stale, or rejects import enums — use the CLI column below** (same gates, same behavior).
 
-| Step | MCP tool | CLI fallback (humans / no MCP) |
-|------|----------|--------------------------------|
+| Step | MCP tool | CLI fallback |
+|------|----------|----------------|
 | Scan templates | `template_scan({ sourcePath })` | `npx ai-spector template scan <path>` |
 | Aspect coverage | `template_infer({})` | `npx ai-spector template infer` |
-| Bootstrap task | `task_create({ kind: "import", … })` | — |
+| Bootstrap task | `task_create({ kind: "import", workflow: "template-import", … })` | `npx ai-spector task create -k import -w template-import -t "…"` |
+| Workspace check | `workspace_check({})` | `npx ai-spector check` |
+| Patch task / steps | `task_update({ taskId, patch })` | `npx ai-spector task update <taskId> --patch '<json>'` |
+| Pack design gate | `task_approve_pack_design({ designSpecPath })` | `npx ai-spector task approve-pack-design <taskId> --design-spec <path>` |
+| Manifest plan gate | `task_approve_import_plan({ taskId })` | `npx ai-spector task approve-import-plan <taskId>` |
 | Validate pack | `template_validate({ pack, sync: true })` | `npx ai-spector template verify …` |
 | Mark readiness | `template_setup_mark({ pack, itemId })` | `npx ai-spector template setup-mark …` |
-| Install (gated) | `template_install` (when available) | `npx ai-spector template install` |
+| Install (gated) | `template_install({})` | `npx ai-spector template install` (needs approved import task; `--legacy` only as human escape hatch) |
+| Complete | `task_complete({ taskId })` | `npx ai-spector task complete <taskId>` |
 
-Gate error hints list MCP tool names first.
+Gate error hints list MCP tool names first; use the matching CLI command when MCP cannot be called.
 
 ## Required aspects (minimum checklist)
 
