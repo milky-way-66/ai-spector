@@ -1,0 +1,115 @@
+{
+  "scannedAt": "2026-06-18T08:08:57.213Z",
+  "fromVersion": "0.4.0",
+  "toVersion": "0.8.85",
+  "editors": [
+    "cursor"
+  ],
+  "applicableItems": [
+    "UPG-001",
+    "UPG-010",
+    "UPG-011",
+    "UPG-020",
+    "UPG-021",
+    "UPG-030",
+    "UPG-031",
+    "UPG-040"
+  ],
+  "autoFixable": [
+    "UPG-001",
+    "UPG-010",
+    "UPG-011",
+    "UPG-040"
+  ],
+  "findings": [
+    {
+      "id": "UPG-001",
+      "status": "stale",
+      "severity": "required",
+      "message": "Refresh Cursor scaffold",
+      "fix": "auto"
+    },
+    {
+      "id": "UPG-010",
+      "status": "missing",
+      "severity": "required",
+      "message": "Ensure packs.basicDesign in docflow.config.json",
+      "fix": "auto",
+      "detail": "Missing config key: packs.basicDesign"
+    },
+    {
+      "id": "UPG-020",
+      "status": "stale",
+      "severity": "recommended",
+      "message": "Re-index graph after doc-extract changes",
+      "fix": "agent"
+    },
+    {
+      "id": "UPG-021",
+      "status": "stale",
+      "severity": "recommended",
+      "message": "Validate graph after index",
+      "fix": "agent"
+    },
+    {
+      "id": "UPG-030",
+      "status": "missing",
+      "severity": "required",
+      "message": "Reload MCP in editor",
+      "fix": "manual",
+      "detail": "Cursor: reload MCP from .cursor/mcp.json. Claude Code: reload .mcp.json."
+    },
+    {
+      "id": "UPG-031",
+      "status": "missing",
+      "severity": "required",
+      "message": "Enable Agent Skills in Cursor",
+      "fix": "manual",
+      "detail": "Cursor → Settings → Rules → Agent Skills — enable all folders under .cursor/skills/."
+    },
+    {
+      "id": "UPG-040",
+      "status": "missing",
+      "severity": "recommended",
+      "message": "Reinstall pre-commit hook",
+      "fix": "auto"
+    },
+    {
+      "id": "SCAN-scaffold-version",
+      "status": "stale",
+      "severity": "required",
+      "message": "Scaffold 0.4.0 is behind installed package 0.8.85",
+      "fix": "auto",
+      "detail": "Run upgrade apply to sync scaffold"
+    },
+    {
+      "id": "SCAN-config-schema-packs.basicDesign",
+      "status": "missing",
+      "severity": "required",
+      "message": "docflow.config.json is missing packs.basicDesign",
+      "fix": "auto"
+    },
+    {
+      "id": "SCAN-config-schema-paths.templates",
+      "status": "missing",
+      "severity": "recommended",
+      "message": "docflow.config.json is missing paths.templates",
+      "fix": "auto"
+    },
+    {
+      "id": "SCAN-hook",
+      "status": "missing",
+      "severity": "recommended",
+      "message": "Pre-commit hook missing or stale",
+      "fix": "auto"
+    },
+    {
+      "id": "SCAN-mcp-config-cursor",
+      "status": "warning",
+      "severity": "recommended",
+      "message": "Missing .cursor/mcp.json",
+      "fix": "manual"
+    }
+  ],
+  "ready": false
+}

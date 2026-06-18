@@ -49,22 +49,36 @@ Creates:
 - **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
 - Pre-commit hook (when git is available)
 
-### Upgrade (refresh skills & rules)
+### Upgrade (guided workflow)
 
-After installing a newer `ai-spector` version, refresh the editor scaffold from the package. This updates skills and rules only — it does **not** touch `.ai-spector/`, your graph, or `docs/`.
+In chat: **"upgrade ai-spector"**
+
+Or CLI:
 
 ```bash
 npm install ai-spector@latest          # public npm; add --registry … for Verdaccio
+npx ai-spector upgrade scan
+npx ai-spector upgrade apply --auto
+# complete manual steps from scan (MCP reload, enable skills, …)
+npx ai-spector upgrade validate
+```
+
+The upgrade workflow scans a package checklist, syncs scaffold, backfills config, and stamps `scaffoldVersion` in `docflow.config.json` when complete.
+
+Legacy skills-only refresh:
+
+```bash
 npx ai-spector sync-cursor             # Cursor → .cursor/skills/, .cursor/rules/
 npx ai-spector sync-claude             # Claude Code → CLAUDE.md, .claude/skills/
 ```
 
 Then **reload MCP** in your editor (`.cursor/mcp.json` or `.mcp.json`).
 
-In chat you can also say **“sync ai-spector cursor skills”** or **“sync ai-spector claude skills”**.
-
 | Command | What it updates |
 |---------|-----------------|
+| `upgrade scan` | Detect stale scaffold + config drift; list checklist items |
+| `upgrade apply` | Auto-fix scaffold sync, config backfill, hooks |
+| `upgrade validate` | Verify checklist complete; stamp `scaffoldVersion` |
 | `sync-cursor` | Cursor skills, routing rules, `WORKFLOW.md` under `.cursor/` |
 | `sync-claude` | `CLAUDE.md`, Claude skills and rules under `.claude/` |
 

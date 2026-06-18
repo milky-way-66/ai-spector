@@ -105,6 +105,7 @@ export async function loadDocflowConfig(
 
   const config: DocflowConfig = {
     version: raw.version ?? 1,
+    ...(raw.scaffoldVersion ? { scaffoldVersion: raw.scaffoldVersion } : {}),
     languages,
     ...(clientLanguage ? { clientLanguage } : {}),
     ...(readinessRaw && Object.keys(readinessRaw).length > 0 ? { readiness: readinessRaw } : {}),

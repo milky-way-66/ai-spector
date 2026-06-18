@@ -920,6 +920,23 @@ export const AdoptContextRecordSchema = RootSchema.extend({
   answer: z.string().describe("Human answer to store in adopt context.json"),
 });
 
+export const UpgradeScanSchema = RootSchema.extend({
+  target: z.string().optional().describe("Target package version (default: installed)"),
+});
+
+export const UpgradeApplySchema = RootSchema.extend({
+  auto: z.boolean().optional().describe("Apply all auto-fixable checklist items (default true)"),
+  items: z.array(z.string()).optional().describe("Subset of checklist item IDs to apply"),
+});
+
+export const UpgradeValidateSchema = RootSchema;
+
+export const UpgradeSetupMarkSchema = RootSchema.extend({
+  itemId: z
+    .string()
+    .describe('Upgrade item id, e.g. "UPG-030", "upgrade.confirmed", "upgrade.complete"'),
+});
+
 // ── Workflow routing ──────────────────────────────────────────────────────────
 
 export const WorkflowRouteSchema = RootSchema.extend({

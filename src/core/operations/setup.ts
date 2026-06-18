@@ -11,6 +11,9 @@ import { pathExists, readJson } from "../util/fs.js";
 import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import { isInteractive, promptLine, promptYesNo } from "../util/prompt.js";
 import { HOOK_MARKER } from "./hooks-constants.js";
+import { installedPackageVersion } from "../upgrade/package-version.js";
+import { readScaffoldVersion } from "../upgrade/stamp.js";
+import semver from "semver";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../../../package.json") as { version: string; engines?: { node?: string } };
@@ -103,6 +106,19 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
     status: (await pathExists(skillsPath)) ? "ok" : "missing",
     fix: (await pathExists(skillsPath)) ? undefined : "npx ai-spector init",
   });
+
+  if (initialized) {
+    const scaffoldVer = await readScaffoldVersion(root);
+    const pkgVer = installedPackageVersion();
+    const stale = semver.lt(semver.coerce(scaffoldVer) ?? scaffoldVer, semver.coerce(pkgVer) ?? pkgVer);
+    steps.push({
+      id: "scaffold-version",
+      label: "Scaffold matches installed ai-spector",
+      status: stale ? "warning" : "ok",
+      detail: stale ? `scaffold ${scaffoldVer}, package ${pkgVer}` : `v${scaffoldVer}`,
+      fix: stale ? 'npx ai-spector upgrade scan (or chat: "upgrade ai-spector")' : undefined,
+    });
+  }
 
   const dataSource = join(root, "docs/data-source");
   const hasDataSource = await pathExists(dataSource);

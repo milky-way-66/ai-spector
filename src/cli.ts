@@ -160,6 +160,7 @@ import {
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { registerReadinessCommand } from "./core/operations/readiness.js";
 import { registerAdoptCommand } from "./core/operations/adopt.js";
+import { registerUpgradeCommand } from "./core/operations/upgrade.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
   formatCocoindexSetup,
@@ -1723,6 +1724,7 @@ graph
 
 registerTemplateCommand(program);
 registerAdoptCommand(program);
+registerUpgradeCommand(program);
 registerReadinessCommand(program);
 
 const course = program

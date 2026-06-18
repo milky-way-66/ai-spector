@@ -208,4 +208,35 @@ export const ADOPT_TOOL_DESCRIPTIONS = {
   ].join("\n"),
 } as const;
 
+export const UPGRADE_TOOL_DESCRIPTIONS = {
+  upgrade_scan: [
+    "Detect stale scaffold, config drift, and applicable upgrade checklist items for a version bump.",
+    "",
+    "WHEN: User wants to upgrade ai-spector or after npm install ai-spector@new — start of ai-spector-upgrade Phase 1.",
+    "NOT WHEN: Greenfield setup (ai-spector-setup); doc migration (adopt_scan).",
+    "Returns fromVersion, toVersion, applicableItems, findings, and autoFixable IDs.",
+  ].join("\n"),
+
+  upgrade_apply: [
+    "Apply auto-fixable upgrade checklist items (sync scaffold, config backfill, hooks).",
+    "",
+    "WHEN: After user confirmed target version and ran npm install — ai-spector-upgrade Phase 4.",
+    "NOT WHEN: Before upgrade_scan; manual/agent items (mark via upgrade_setup_mark after user confirms).",
+  ].join("\n"),
+
+  upgrade_validate: [
+    "Verify required upgrade items are done; stamp scaffoldVersion on success.",
+    "",
+    "WHEN: After manual/agent items marked — ai-spector-upgrade Phase 7.",
+    "Returns ready flag; required before upgrade.complete.",
+  ].join("\n"),
+
+  upgrade_setup_mark: [
+    "Mark a human-confirmed upgrade checklist or gate item done in upgrade-setup.json.",
+    "",
+    "WHEN: User confirmed manual step (UPG-030 MCP reload), npm install (upgrade.npm-installed), or target version (upgrade.confirmed).",
+    'itemId "upgrade.complete" requires upgrade_validate ready:true.',
+  ].join("\n"),
+} as const;
+
 export type AdoptToolName = keyof typeof ADOPT_TOOL_DESCRIPTIONS;

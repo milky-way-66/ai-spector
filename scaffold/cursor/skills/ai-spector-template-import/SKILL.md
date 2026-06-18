@@ -1,11 +1,9 @@
 ---
 name: ai-spector-template-import
 description: >-
-  Guides the user through the three-factor template pack import workflow: read scan result, ask
-  intent questions, draft manifest, refine template files, and install. Use when the user says
-  "set up template pack", "import my template", "install template", "use my own template",
-  "custom template", or similar. Do NOT use for "generate SRS", "generate docs", or
-  "use builtin template" — those route to other skills.
+  Gated template pack import: template_scan, smart aspect-driven clarify, pack design spec,
+  manifest plan approval, template_install. Use for "set up template pack", "import my template",
+  "custom template". NOT for generate SRS/docs or builtin template switch.
 paths:
   - ".ai-spector/packs/**"
   - ".ai-spector/docflow.config.json"
@@ -13,19 +11,33 @@ paths:
 
 # AI Spector — Template Pack Import
 
+## HARD-GATE — clarify
+
+**Never** post a numbered list of 5–9 generic questions (legacy Phase 1).
+
+**Always:**
+
+1. `template_scan` → `task_create` (import) → `template_infer`
+2. Follow [references/import-clarify.md](references/import-clarify.md)
+3. Ask only `unknown` / `ambiguous` aspects + open `supplementalQuestions`
+4. Batch **confirm-or-correct** for `inferred` proposals — do not MCQ every inferred row
+
 ## Required reading
 
-[references/runbook.md](references/runbook.md) — follow all phases in order.
+| Step | Doc |
+|------|-----|
+| Full pipeline | [references/runbook.md](references/runbook.md) |
+| Clarify | [references/import-clarify.md](references/import-clarify.md) |
+| Aspects + MCP | [references/import-aspects.md](references/import-aspects.md) |
 
 ## Load when needed
 
 | Phase | Load |
 |-------|------|
-| Phase 5 — Write generate skill | [references/skill-outline.md](references/skill-outline.md) |
-| Readiness + gated workflow (custom packs) | [references/readiness-setup.md](references/readiness-setup.md) |
-| Builtin vs custom gap matrix | [references/pack-gap-matrix.md](references/pack-gap-matrix.md) |
+| Generate skill | [references/skill-outline.md](references/skill-outline.md) |
+| Readiness | [references/readiness-setup.md](references/readiness-setup.md) |
+| Builtin gap matrix | [references/pack-gap-matrix.md](references/pack-gap-matrix.md) |
 
-## Natural language
+## Slash command
 
-"set up template pack", "import my template", "install template", "use my own template",
-"custom template" → this skill.
+`/template-import` — routing override for this skill.

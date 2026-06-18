@@ -2,6 +2,8 @@ import { join, resolve } from "node:path";
 import { scaffoldClaudeBundleRoot } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
 import { copyClaudeToProject } from "./init.js";
+import { installedPackageVersion } from "../upgrade/package-version.js";
+import { stampScaffoldVersion } from "../upgrade/stamp.js";
 
 export interface SyncClaudeOptions {
   targetDir: string;
@@ -22,6 +24,7 @@ export async function runSyncClaude(opts: SyncClaudeOptions): Promise<SyncClaude
   }
 
   await copyClaudeToProject(root);
+  await stampScaffoldVersion(root, installedPackageVersion());
 
   return {
     targetDir: root,

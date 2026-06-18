@@ -76,6 +76,41 @@ describe("buildScanInference", () => {
     expect(pairs?.status).toBe("inferred");
     expect(pairs?.proposal).toEqual({ useCase: "srs/use-cases.md" });
   });
+
+  it("infers detail-design filled example as ambiguous per-feature shape", () => {
+    const scan: ScanResult = {
+      scannedAt: "2026-06-18T00:00:00.000Z",
+      sourceDir: "/tmp/user-templates/detailed-design",
+      files: [
+        {
+          relativePath: "detailed-design.md",
+          headings: [
+            { depth: 1, text: "車種マスタ詳細設計書", order: 1 },
+            { depth: 2, text: "機能別アーキテクチャ検討", order: 2 },
+            { depth: 2, text: "モジュール詳細設計", order: 3 },
+            { depth: 2, text: "データベース設計", order: 4 },
+          ],
+          placeholders: ["{id}", "{keyword}", "{operation}", "{resource}"],
+        },
+      ],
+    };
+    const result = buildScanInference(scan);
+    const purpose = result.aspectCoverage.find((a) => a.aspectId === "doc-purpose");
+    expect(purpose?.proposal).toBe("detail-design");
+    expect(purpose?.confidence).toBe("high");
+
+    const shape = result.aspectCoverage.find((a) => a.aspectId === "doc-shape");
+    expect(shape?.status).toBe("ambiguous");
+    expect(shape?.scanSignals).toContain("shape:filled-example-per-feature");
+
+    const vocab = result.aspectCoverage.find((a) => a.aspectId === "domain-vocabulary");
+    expect(vocab?.proposal).toBe("feature");
+
+    expect(
+      result.supplementalQuestions.some((q) => q.id.startsWith("scan:placeholder:")),
+    ).toBe(false);
+  });
+
   it("detects supplemental questions for multi-root templates", () => {
     const scan: ScanResult = {
       ...srsScan,

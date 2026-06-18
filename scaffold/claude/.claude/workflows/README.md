@@ -16,6 +16,7 @@ When routing picks the **wrong workflow**, say `workflow: <name>`. **The trigger
 | `workflow: graph` | `ai-spector-graph` | Analyze data source, index, validate graph |
 | `workflow: resolve-comments` | `ai-spector-resolve-comments` | Comment inbox → plan → commit |
 | `workflow: adopt` | `ai-spector-adopt` | Migrate legacy docs into ai-spector layout |
+| `workflow: template-import` | `ai-spector-template-import` | Gated custom template pack import (scan → install) |
 
 Still unsure? Say **"help me approve"** or ask the agent to call **`workflow_route({ message })`**.
 

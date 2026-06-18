@@ -14,6 +14,8 @@ import { checkCocoindexReadiness, runCocoindexSetup } from "./cocoindex.js";
 import type { CocoindexInstallMode } from "./cocoindex.js";
 import type { LanguageConfig, SupportedLanguageCode } from "../config/types.js";
 import { assertSupportedLanguageCode } from "../config/types.js";
+import { installedPackageVersion } from "../upgrade/package-version.js";
+import { stampScaffoldVersion } from "../upgrade/stamp.js";
 
 const MCP_SERVER_ENTRY = {
   command: "npx",
@@ -237,6 +239,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
     ...(clientLanguageCode ? { clientLanguage: clientLanguageCode } : {}),
     packs: (existingConfig.packs as Record<string, unknown>) ?? { srs: "builtin", basicDesign: "builtin" },
   });
+  await stampScaffoldVersion(root, installedPackageVersion());
 
   // Templates
   const projectTemplates = join(root, ".ai-spector", "templates");

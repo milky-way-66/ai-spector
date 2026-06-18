@@ -60,6 +60,8 @@ export interface ReadinessConfig {
 
 export interface DocflowConfig {
   version: number;
+  /** Last ai-spector package version that synced project scaffold */
+  scaffoldVersion?: string;
   /** Configured languages. First entry is the primary language. */
   languages: LanguageConfig[];
   /** Readiness tailoring — see readiness/profiles/ in docflow config. */

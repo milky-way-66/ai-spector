@@ -7,6 +7,7 @@ Agents use this when intent is ambiguous.
 0. **Document sign-off** — *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-review`** first. **Not** resolve-task, generate, or comments unless user explicitly switches topic after disambiguation.
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` exists and `phase` is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic). Check session via last `review_status` response or `review_check`.
 1. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** (`task_list` → `task_resume`). Skip if message is clearly document sign-off (priority 0) or an active review session exists (priority 0.5).
+1.5. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector-upgrade`**. Not greenfield setup (`ai-spector-setup`), not doc migration (`ai-spector-adopt`).
 2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
 2.5. **Migrate / adopt existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *wrong SRS*, *legacy SRS*, *move docs to ai-spector structure*, *continue adopt* → **`ai-spector-adopt`**. Not greenfield setup (`ai-spector-setup`), not empty template import (`ai-spector-template-import`), not full generate.
 3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
@@ -61,6 +62,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 | resume task, continue SRS, active tasks, pause task, list tasks | `ai-spector-task` | `references/runbook.md` |
 | learn, course, tutorial, walkthrough, "how do I", open course, mở khóa học, khóa học tiếng Việt | `ai-spector-course` | `references/course-guide.md` |
 | setup, init, bootstrap, get started *(run setup)* | `ai-spector-setup` | `references/runbook.md` |
+| upgrade ai-spector, update ai-spector, sync after update, stale scaffold, continue upgrade | `ai-spector-upgrade` | `references/runbook.md` |
 | migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt | `ai-spector-adopt` | `references/runbook.md` |
 | check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `skill.md` |
 | clarifications, open questions, context store, "what did I answer" | `ai-spector-check` → context tools | `ai-spector/references/context-store.md` |

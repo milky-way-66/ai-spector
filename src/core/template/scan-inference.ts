@@ -50,6 +50,18 @@ const COMMON_PLACEHOLDERS = new Set([
   "{description}",
 ]);
 
+/** REST/OpenAPI path tokens often mistaken for template variables. */
+const REST_FALSE_POSITIVE_PLACEHOLDERS = new Set([
+  "{id}",
+  "{keyword}",
+  "{operation}",
+  "{resource}",
+]);
+
+const DETAIL_DESIGN_HEADING_RE =
+  /詳細設計|モジュール|module|controller|service|DTO|API|データベース設計|Prisma|エラー処理|テスト戦略|ディレクトリ構成|機能別/i;
+const DETAIL_DESIGN_PATH_RE = /detail[-_ ]?design|detailed[-_ ]?design/i;
+
 const VOCABULARY_PATTERNS: Array<{ re: RegExp; perDomain: string; label: string }> = [
   { re: /use[-_ ]?case/i, perDomain: "useCase", label: "use case" },
   { re: /feature/i, perDomain: "feature", label: "feature" },
@@ -81,6 +93,7 @@ function fileSignals(file: ScanFile): string[] {
   if (isRepeatingFile(file)) signals.push("repeating-candidate");
   if (hasNamedHeading(file)) signals.push("named-heading");
   if (file.placeholders.includes("{lang}")) signals.push("locale-placeholder");
+  if (looksLikeFilledFeatureExample(file)) signals.push("filled-example-candidate");
   if (/\bFR[-_]?\d*/i.test(file.relativePath) || file.placeholders.some((p) => /requirement/i.test(p))) {
     signals.push("atomic-requirements");
   }
@@ -100,6 +113,33 @@ function digestFile(file: ScanFile): ScanFileDigest {
     placeholders: file.placeholders,
     signals: fileSignals(file),
   };
+}
+
+function looksLikeFilledFeatureExample(file: ScanFile): boolean {
+  const h1 = file.headings.find((h) => h.depth === 1);
+  const h1Text = h1?.text ?? "";
+  const hasConcreteH1 = Boolean(h1 && !/\{[a-zA-Z]+\}/.test(h1Text));
+  const detailSections = file.headings.some((h) => DETAIL_DESIGN_HEADING_RE.test(h.text));
+  const detailPath = DETAIL_DESIGN_PATH_RE.test(file.relativePath);
+  return (detailPath || detailSections) && hasConcreteH1;
+}
+
+function detectFilledExampleCandidates(files: ScanFile[]): RepeatingCandidate[] {
+  const out: RepeatingCandidate[] = [];
+  for (const file of files) {
+    if (isRepeatingFile(file) || hasNamedHeading(file)) continue;
+    if (!looksLikeFilledFeatureExample(file)) continue;
+    const evidence = [
+      "filled-in example (concrete H1, no {featureName})",
+      "detail-design section structure",
+    ];
+    let perDomainHint: string | null = "feature";
+    if (/use[-_ ]?case/i.test(file.relativePath + file.headings.map((h) => h.text).join(" "))) {
+      perDomainHint = "useCase";
+    }
+    out.push({ path: file.relativePath, perDomainHint, evidence });
+  }
+  return out;
 }
 
 function detectRepeatingCandidates(files: ScanFile[]): RepeatingCandidate[] {
@@ -144,6 +184,16 @@ function inferPurpose(files: ScanFile[], sourceDir: string): ImportAspectCoverag
     aspect.confidence = "medium";
     evidence.push("basic-design-like paths or headings");
     signals.push("purpose:basic-design");
+  } else if (
+    DETAIL_DESIGN_PATH_RE.test(paths) ||
+    DETAIL_DESIGN_PATH_RE.test(basename(sourceDir).toLowerCase()) ||
+    /詳細設計|詳細設計書|module design|モジュール詳細/i.test(paths + headingText)
+  ) {
+    aspect.proposal = "detail-design";
+    aspect.status = "inferred";
+    aspect.confidence = "high";
+    evidence.push("detail-design paths, folder, or section headings");
+    signals.push("purpose:detail-design");
   } else if (/\badr\b|architecture decision|arc42/i.test(paths + headingText)) {
     aspect.proposal = "ADR";
     aspect.status = "inferred";
@@ -162,6 +212,11 @@ function inferPurpose(files: ScanFile[], sourceDir: string): ImportAspectCoverag
 
 function inferDocShape(repeating: RepeatingCandidate[]): ImportAspectCoverage {
   const aspect = emptyAspectCoverage("doc-shape");
+  const filledOnly = repeating.filter((r) =>
+    r.evidence.some((e) => e.includes("filled-in example")),
+  );
+  const paramRepeating = repeating.filter((r) => !filledOnly.includes(r));
+
   if (repeating.length === 0) {
     aspect.status = "resolved";
     aspect.proposal = { repeating: [], single: "all files" };
@@ -169,12 +224,35 @@ function inferDocShape(repeating: RepeatingCandidate[]): ImportAspectCoverage {
     aspect.scanSignals = ["shape:all-single"];
     return aspect;
   }
-  aspect.proposal = {
-    repeating: repeating.map((r) => r.path),
-    single: "other files",
-  };
+
+  if (filledOnly.length > 0 && paramRepeating.length === 0) {
+    aspect.proposal = {
+      repeating: filledOnly.map((r) => r.path),
+      single: "none",
+      needsParameterization: true,
+    };
+    aspect.status = "ambiguous";
+    aspect.confidence = "medium";
+    aspect.scanEvidence = filledOnly.flatMap((r) => r.evidence.map((e) => `${r.path}: ${e}`));
+    aspect.scanSignals = ["shape:filled-example-per-feature"];
+    return aspect;
+  }
+
+  if (paramRepeating.length > 0) {
+    aspect.proposal = {
+      repeating: repeating.map((r) => r.path),
+      single: "other files",
+    };
+    aspect.status = "inferred";
+    aspect.confidence = repeating.every((r) => r.perDomainHint) ? "high" : "medium";
+    aspect.scanEvidence = repeating.flatMap((r) => r.evidence.map((e) => `${r.path}: ${e}`));
+    aspect.scanSignals = ["shape:repeating-detected"];
+    return aspect;
+  }
+
+  aspect.proposal = { repeating: repeating.map((r) => r.path), single: "other files" };
   aspect.status = "inferred";
-  aspect.confidence = repeating.every((r) => r.perDomainHint) ? "high" : "medium";
+  aspect.confidence = "medium";
   aspect.scanEvidence = repeating.flatMap((r) => r.evidence.map((e) => `${r.path}: ${e}`));
   aspect.scanSignals = ["shape:repeating-detected"];
   return aspect;
@@ -272,13 +350,25 @@ function inferPackIdentity(sourceDir: string): ImportAspectCoverage {
 function inferOutputRouting(files: ScanFile[], sourceDir: string): ImportAspectCoverage {
   const aspect = emptyAspectCoverage("output-routing");
   const topDirs = [...new Set(files.map((f) => f.relativePath.split("/")[0]).filter(Boolean))];
-  if (topDirs.length === 1 && topDirs[0] !== undefined) {
+  const flatFiles = files.every((f) => !f.relativePath.includes("/"));
+  if (topDirs.length === 1 && topDirs[0] !== undefined && !topDirs[0].includes(".")) {
     const root = `docs/${topDirs[0]}/`;
     aspect.proposal = root;
     aspect.status = "inferred";
     aspect.confidence = "medium";
     aspect.scanEvidence = [`templates grouped under ${topDirs[0]}/`, `source: ${basename(sourceDir)}`];
     aspect.scanSignals = ["output:mirror-top-folder"];
+  } else if (flatFiles && files.length > 0) {
+    const slug = slugifyPackName(basename(sourceDir));
+    const normalized = slug.replace(/^detailed-/, "detail-");
+    aspect.proposal = `docs/${normalized}/`;
+    aspect.status = "inferred";
+    aspect.confidence = "medium";
+    aspect.scanEvidence = [
+      `single-file templates at scan root`,
+      `source folder: ${basename(sourceDir)}`,
+    ];
+    aspect.scanSignals = ["output:mirror-source-folder"];
   } else if (files.some((f) => f.relativePath.toLowerCase().startsWith("srs/"))) {
     aspect.proposal = "docs/srs/";
     aspect.status = "inferred";
@@ -452,6 +542,7 @@ function detectSupplementalQuestions(
     }
   }
   for (const [placeholder, paths] of unusual) {
+    if (REST_FALSE_POSITIVE_PLACEHOLDERS.has(placeholder)) continue;
     questions.push({
       id: `scan:placeholder:${placeholder.replace(/[{}]/g, "")}`,
       scanTrigger: `Uncommon placeholder ${placeholder} in ${paths.slice(0, 3).join(", ")}${paths.length > 3 ? "…" : ""}`,
@@ -493,7 +584,10 @@ export function buildScanInference(
 ): ScanInferenceResult {
   const files = scan.files;
   const scanDigest = files.map(digestFile);
-  const repeatingCandidates = detectRepeatingCandidates(files);
+  const repeatingCandidates = [
+    ...detectRepeatingCandidates(files),
+    ...detectFilledExampleCandidates(files),
+  ];
   const ctx = { files, sourceDir: scan.sourceDir, repeating: repeatingCandidates };
 
   const aspectCoverage = IMPORT_ASPECT_IDS.map((id) => INFERERS[id](ctx));

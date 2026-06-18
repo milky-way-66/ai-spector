@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "scaffoldVersion": "0.4.0",
+  "languages": [{ "code": "en", "label": "English" }],
+  "paths": {
+    "graph": ".ai-spector/graph/traceability.graph.json",
+    "registry": ".ai-spector/registry/section-registry.json"
+  },
+  "packs": {
+    "srs": "builtin"
+  }
+}

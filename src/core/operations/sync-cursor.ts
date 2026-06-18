@@ -2,6 +2,8 @@ import { join, resolve } from "node:path";
 import { scaffoldCursorBundleRoot } from "../config/load.js";
 import { pathExists } from "../util/fs.js";
 import { copyCursorToProject } from "./init.js";
+import { installedPackageVersion } from "../upgrade/package-version.js";
+import { stampScaffoldVersion } from "../upgrade/stamp.js";
 
 export interface SyncCursorOptions {
   targetDir: string;
@@ -21,6 +23,7 @@ export async function runSyncCursor(opts: SyncCursorOptions): Promise<SyncCursor
   }
 
   await copyCursorToProject(root);
+  await stampScaffoldVersion(root, installedPackageVersion());
 
   return {
     targetDir: root,

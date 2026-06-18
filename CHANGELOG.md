@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **Upgrade workflow** — `npx ai-spector upgrade` (scan → apply → validate → status), `ai-spector-upgrade` skill, package `upgrade-checklist.json`, `scaffoldVersion` in `docflow.config.json`, MCP `upgrade_*` tools. Chat: **"upgrade ai-spector"**; checklist IDs in `### Upgrade` release notes (e.g. `UPG-001`, `UPG-010`).
 - **Detail design parity** — `documents-detail-design.json`, `dag.graph-seeds.json`, doc-extract for `docs/detail-design/features/` (`doc.dd.f-*`), `.ai-spector/index/detail-design.md`, `readiness-criteria.json`, `dd-context/` agent guides, `summary-detail-design` workflow step, and skill parity with basic design.
 - **Comment resolve flow (git-backed F-05)** — `ai-spector comments inbox|plan|list|show|resolve` for IDE workflows: numbered inbox in chat, graph impact via `comments plan`, propose/apply doc edits, then update `meta_data.json` locally; Cursor **`/resolve-comments`** orchestrates the full flow.
 - **`init` copies templates** — `npx ai-spector init` installs `.ai-spector/templates/` (SRS, basic design, detail design) and sets `paths.templates` in `docflow.config.json`. Cursor skill and generate commands require agents to read templates from that path (not `node_modules`).

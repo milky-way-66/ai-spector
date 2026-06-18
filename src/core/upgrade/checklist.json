@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "packageMinVersion": "0.6.0",
+  "items": [
+    {
+      "id": "UPG-001",
+      "since": "0.6.0",
+      "kind": "auto",
+      "severity": "required",
+      "title": "Refresh Cursor scaffold",
+      "detect": { "type": "scaffold-stale", "target": "cursor" },
+      "apply": { "command": "sync-cursor" },
+      "editors": ["cursor"],
+      "changelogRef": "0.6.0#skills-only-cursor-bundle"
+    },
+    {
+      "id": "UPG-002",
+      "since": "0.6.0",
+      "kind": "auto",
+      "severity": "required",
+      "title": "Refresh Claude scaffold",
+      "detect": { "type": "scaffold-stale", "target": "claude" },
+      "apply": { "command": "sync-claude" },
+      "editors": ["claude"],
+      "changelogRef": "0.6.0#skills-only-cursor-bundle"
+    },
+    {
+      "id": "UPG-010",
+      "since": "0.6.0",
+      "kind": "config",
+      "severity": "required",
+      "title": "Ensure packs.basicDesign in docflow.config.json",
+      "detect": {
+        "type": "config-missing-key",
+        "path": ".ai-spector/docflow.config.json",
+        "key": "packs.basicDesign",
+        "default": "builtin"
+      },
+      "apply": { "type": "config-set", "key": "packs.basicDesign", "value": "builtin" }
+    },
+    {
+      "id": "UPG-011",
+      "since": "0.6.0",
+      "kind": "config",
+      "severity": "required",
+      "title": "Rename packs.active to packs.srs if present",
+      "detect": {
+        "type": "config-deprecated-key",
+        "path": ".ai-spector/docflow.config.json",
+        "key": "packs.active"
+      },
+      "apply": { "type": "config-rename", "from": "packs.active", "to": "packs.srs" }
+    },
+    {
+      "id": "UPG-020",
+      "since": "0.5.0",
+      "kind": "agent",
+      "severity": "recommended",
+      "title": "Re-index graph after doc-extract changes",
+      "detect": { "type": "scaffold-stale", "minJump": "minor" },
+      "agentGuide": "Run: npx ai-spector index — then confirm output with the user."
+    },
+    {
+      "id": "UPG-021",
+      "since": "0.5.0",
+      "kind": "agent",
+      "severity": "recommended",
+      "title": "Validate graph after index",
+      "detect": { "type": "scaffold-stale", "minJump": "minor" },
+      "agentGuide": "Run: npx ai-spector graph validate — fix any blocking errors before completing upgrade."
+    },
+    {
+      "id": "UPG-030",
+      "since": "0.0.0",
+      "kind": "manual",
+      "severity": "required",
+      "title": "Reload MCP in editor",
+      "detect": { "type": "always-when-upgrading" },
+      "userGuide": "Cursor: reload MCP from .cursor/mcp.json. Claude Code: reload .mcp.json."
+    },
+    {
+      "id": "UPG-031",
+      "since": "0.0.0",
+      "kind": "manual",
+      "severity": "required",
+      "title": "Enable Agent Skills in Cursor",
+      "detect": { "type": "always-when-upgrading" },
+      "editors": ["cursor"],
+      "userGuide": "Cursor → Settings → Rules → Agent Skills — enable all folders under .cursor/skills/."
+    },
+    {
+      "id": "UPG-040",
+      "since": "0.0.0",
+      "kind": "auto",
+      "severity": "recommended",
+      "title": "Reinstall pre-commit hook",
+      "detect": { "type": "hook-stale" },
+      "apply": { "command": "hooks install" }
+    }
+  ]
+}

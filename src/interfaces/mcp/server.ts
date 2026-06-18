@@ -41,6 +41,10 @@ import {
   AdoptValidateSchema,
   AdoptSetupMarkSchema,
   AdoptContextRecordSchema,
+  UpgradeScanSchema,
+  UpgradeApplySchema,
+  UpgradeValidateSchema,
+  UpgradeSetupMarkSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -128,6 +132,12 @@ import {
   toolAdoptSetupMark,
   toolAdoptContextRecord,
 } from "./tools/adopt.js";
+import {
+  toolUpgradeScan,
+  toolUpgradeApply,
+  toolUpgradeValidate,
+  toolUpgradeSetupMark,
+} from "./tools/upgrade.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
@@ -173,6 +183,7 @@ import {
   APPROVE_TOOL_DESCRIPTIONS,
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
   ADOPT_TOOL_DESCRIPTIONS,
+  UPGRADE_TOOL_DESCRIPTIONS,
 } from "./tool-descriptions.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
 
@@ -664,6 +675,54 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolAdoptContextRecord(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "upgrade_scan",
+  {
+    description: UPGRADE_TOOL_DESCRIPTIONS.upgrade_scan,
+    inputSchema: UpgradeScanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolUpgradeScan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "upgrade_apply",
+  {
+    description: UPGRADE_TOOL_DESCRIPTIONS.upgrade_apply,
+    inputSchema: UpgradeApplySchema.shape,
+  },
+  async (input) => {
+    const result = await toolUpgradeApply(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "upgrade_validate",
+  {
+    description: UPGRADE_TOOL_DESCRIPTIONS.upgrade_validate,
+    inputSchema: UpgradeValidateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolUpgradeValidate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "upgrade_setup_mark",
+  {
+    description: UPGRADE_TOOL_DESCRIPTIONS.upgrade_setup_mark,
+    inputSchema: UpgradeSetupMarkSchema.shape,
+  },
+  async (input) => {
+    const result = await toolUpgradeSetupMark(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1316,6 +1375,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
     "readiness_assess", "readiness_scan", "readiness_output_checklist",
     "adopt_scan", "adopt_plan", "adopt_apply", "adopt_bootstrap", "adopt_validate", "adopt_setup_mark", "adopt_context_record",
+    "upgrade_scan", "upgrade_apply", "upgrade_validate", "upgrade_setup_mark",
     "cocoindex_status", "cocoindex_stats", "cocoindex_index", "docs_search", "graph_query_fuzzy",
     "resolve_task",
     "review_approve", "review_decline", "review_close", "review_withdraw", "review_reopen", "review_config", "review_status", "review_queue", "review_check", "review_begin", "review_reject", "review_list",
