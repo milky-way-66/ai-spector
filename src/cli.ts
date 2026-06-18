@@ -505,7 +505,7 @@ task
 
 task
   .command("status")
-  .description("Show active workflow task slots (generate / resolve)")
+  .description("Show active workflow task slots (generate / resolve / import)")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("--json", "JSON output")
   .action(async (opts) => {

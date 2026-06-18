@@ -62,6 +62,25 @@ After any workaround that wrote docs: `graph validate` (+ `index` if required) b
 
 ---
 
+## Template-import fallback (MCP unavailable)
+
+Prefer MCP when descriptors are current. **Do not** deep-import `node_modules/ai-spector/dist/core/operations/*` via `node -e`.
+
+| Operation | MCP | CLI | SDK (`ai-spector`) |
+|-----------|-----|-----|---------------------|
+| Create import task | `task_create` | `npx ai-spector task create -k import -w template-import -t "…"` | `runTaskCreate` |
+| Patch task / steps | `task_update` | `npx ai-spector task update <id> --patch '<json>' --json` | `runTaskUpdate` |
+| Approve pack design | `task_approve_pack_design` | `npx ai-spector task approve-pack-design <id> --design-spec <path>` | `runTaskApprovePackDesign` |
+| Approve manifest plan | `task_approve_import_plan` | `npx ai-spector task approve-import-plan <id>` | `runTaskApproveImportPlan` |
+| Install pack | `template_install` | `npx ai-spector template install` | `installTemplateFromStaging` |
+| Scan / infer | `template_scan` / `template_infer` | `npx ai-spector template scan …` / `template infer` | — |
+
+If MCP and CLI both fail for a gated step, **stop and report** — do not invent export names or shell one-liners.
+
+Full table: `ai-spector-template-import/references/import-aspects.md`.
+
+---
+
 ## Filing a feedback report
 
 Write a feedback report whenever the **tool or workflow itself caused friction** — even if the agent recovered. A workaround that worked is still a signal the tool should be improved.

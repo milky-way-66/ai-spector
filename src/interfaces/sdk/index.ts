@@ -273,6 +273,13 @@ export type {
   AdoptValidationGap,
 } from "../../core/operations/adopt.js";
 
+// Template pack install (staging → .ai-spector/packs/<name>/)
+export {
+  installTemplateFromStaging,
+  installTemplateFromStaging as runTemplateInstall,
+} from "../../core/operations/template.js";
+export type { TemplateInstallResult } from "../../core/operations/template.js";
+
 // Workspace check
 export { runCheck } from "../../core/operations/check.js";
 export type {

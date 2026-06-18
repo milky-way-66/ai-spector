@@ -20,7 +20,7 @@ Three-factor: **Human + AI + MCP/CLI**. Follow import **task steps** in order.
 | `verify` | ready | `template_validate({ sync: true })` |
 | `complete` | | `task_complete` |
 
-**Forbidden:** `task_approve_plan` (use `task_approve_import_plan`); `template install` before manifest plan approved; Phase-1-style 7-question dumps.
+**Forbidden:** `task_approve_plan` (use `task_approve_import_plan`); `template install` before manifest plan approved; Phase-1-style 7-question dumps; `node -e "import … from '…/dist/core/operations/…'"` (use MCP or `npx ai-spector` only — if both fail, report blocker to user); inventing export names (`runTemplateInstall` — use `template install` or SDK `installTemplateFromStaging`).
 
 ---
 

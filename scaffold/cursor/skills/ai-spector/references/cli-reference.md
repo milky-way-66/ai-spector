@@ -26,6 +26,9 @@ Complete command reference for AI agents. Run all commands from the project root
 | Comment triage inbox | `npx ai-spector comments inbox --json` |
 | Resolve a comment thread | `npx ai-spector comments resolve <threadId>` |
 | Refresh Cursor skills | `npx ai-spector sync-cursor` |
+| Bootstrap template-import task | `npx ai-spector task create -k import -w template-import -t "…"` |
+| Approve import manifest plan | `npx ai-spector task approve-import-plan <taskId>` |
+| Install template pack | `npx ai-spector template install --name <pack>` |
 
 ---
 
@@ -425,6 +428,43 @@ npx ai-spector sync-cursor [-C <path>]
 ```
 
 Use when a new version of `ai-spector` ships updated skills.
+
+---
+
+## `task`
+
+Workflow task state (generate, resolve, **import**). Prefer MCP tools when available.
+
+```bash
+npx ai-spector task create -k <generate|resolve|import> -w <workflow> -t "<trigger>" [--force] [--json]
+npx ai-spector task list [-k kind] [-w workflow] [--json]
+npx ai-spector task status [--json]                    # slots: generate / resolve / import
+npx ai-spector task get <taskId> [--json]
+npx ai-spector task update <taskId> --patch '<json>' [--json]
+npx ai-spector task approve <taskId>                   # generate/resolve plan gate only
+npx ai-spector task approve-import-plan <taskId>       # import manifest plan gate
+npx ai-spector task approve-pack-design <taskId> --design-spec <path>
+npx ai-spector task complete <taskId> [--json]
+```
+
+**Import workflow** (`-k import -w template-import`): use `approve-pack-design` and `approve-import-plan` — **not** `task approve`.
+
+---
+
+## `template`
+
+Template pack scan, infer, install (gated during import).
+
+```bash
+npx ai-spector template scan <sourcePath>
+npx ai-spector template infer [--json]
+npx ai-spector template install [--name <pack>] [--dry-run]
+npx ai-spector template list
+npx ai-spector template inspect <pack> [--json]
+npx ai-spector template setup-mark <pack> <itemId>
+```
+
+`template install` requires an active import task with approved manifest plan unless `--legacy`.
 
 ---
 

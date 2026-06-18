@@ -19,6 +19,8 @@ description: >-
 3. Ask only `unknown` / `ambiguous` aspects + open `supplementalQuestions`
 4. Batch **confirm-or-correct** for `inferred` proposals — do not MCQ every inferred row
 
+**Never** deep-import `dist/core/operations/*` via `node -e`. Use MCP, then `npx ai-spector` (see [references/import-aspects.md](references/import-aspects.md)). If both fail, stop and report — do not invent export names.
+
 ## Required reading
 
 | Step | Doc |
