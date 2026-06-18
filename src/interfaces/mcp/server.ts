@@ -82,6 +82,7 @@ import {
   TaskConfirmTierSchema,
   TaskApproveDesignSpecSchema,
   TaskApproveImportPlanSchema,
+  TaskApproveAdoptPlanSchema,
   TaskApprovePackDesignSchema,
   TaskSetExecutionModeSchema,
   TaskPauseSchema,
@@ -147,6 +148,7 @@ import {
   toolTaskAbandon,
   toolTaskApproveDesignSpec,
   toolTaskApproveImportPlan,
+  toolTaskApproveAdoptPlan,
   toolTaskApprovePackDesign,
   toolTaskApprovePlan,
   toolTaskComplete,
@@ -1266,6 +1268,19 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolTaskApproveImportPlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_approve_adopt_plan",
+  {
+    description:
+      "Adopt task only: approve migration move plan after user yes — sets planApprovedAt, marks plan done, approves adopt plan.json. NOT task_approve_plan.",
+    inputSchema: TaskApproveAdoptPlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskApproveAdoptPlan(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

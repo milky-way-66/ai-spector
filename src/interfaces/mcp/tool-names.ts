@@ -81,6 +81,7 @@ export const MCP_TOOL_NAMES = [
   "task_update",
   "task_approve_plan",
   "task_approve_import_plan",
+  "task_approve_adopt_plan",
   "task_approve_pack_design",
   "task_confirm_tier",
   "task_approve_design_spec",

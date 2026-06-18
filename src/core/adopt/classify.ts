@@ -15,7 +15,8 @@ import type {
 const FILENAME_WEIGHT = 0.55;
 const HEADING_WEIGHT = 0.45;
 const LANG_CODE = /^[a-z]{2,3}(?:-[a-z]{2})?$/i;
-const LAYER_PREFIX = /^(?:docs\/srs|docs\/basic-design)\/([^/]+)(?:\/(.+))?$/;
+const LAYER_PREFIX =
+  /^(?:docs\/srs|docs\/basic-design|docs\/detail-design|docs\/dd|docs\/detail_design)\/([^/]+)(?:\/(.+))?$/;
 const DOMAIN_ID_RE = /\b(UC|F|SCR|API)-(\d+)\b/gi;
 const PROTOTYPE_SOURCE_DIRS = ["prototype/src", "prototype", "docs/prototype"] as const;
 const SPA_FRAMEWORKS = ["react", "vue", "@vue/", "next", "nuxt", "svelte"];
@@ -35,6 +36,7 @@ interface ManifestEntry {
 
 let srsManifestCache: ManifestEntry[] | null = null;
 let basicDesignManifestCache: ManifestEntry[] | null = null;
+let detailDesignManifestCache: ManifestEntry[] | null = null;
 
 function readManifestSync(filename: string): DocumentsManifest {
   const raw = readFileSync(join(packageBundleRoot(), filename), "utf8");
@@ -77,19 +79,27 @@ function buildManifestEntries(manifest: DocumentsManifest): ManifestEntry[] {
   }));
 }
 
-function getManifestEntries(layer: "srs" | "basic-design"): ManifestEntry[] {
+function getManifestEntries(layer: "srs" | "basic-design" | "detail-design"): ManifestEntry[] {
   if (layer === "srs") {
     if (!srsManifestCache) {
       srsManifestCache = buildManifestEntries(readManifestSync("documents.json"));
     }
     return srsManifestCache;
   }
-  if (!basicDesignManifestCache) {
-    basicDesignManifestCache = buildManifestEntries(
-      readManifestSync("documents-basic-design.json"),
+  if (layer === "basic-design") {
+    if (!basicDesignManifestCache) {
+      basicDesignManifestCache = buildManifestEntries(
+        readManifestSync("documents-basic-design.json"),
+      );
+    }
+    return basicDesignManifestCache;
+  }
+  if (!detailDesignManifestCache) {
+    detailDesignManifestCache = buildManifestEntries(
+      readManifestSync("documents-detail-design.json"),
     );
   }
-  return basicDesignManifestCache;
+  return detailDesignManifestCache;
 }
 
 function normalizeLabel(text: string): string {
@@ -147,7 +157,7 @@ function scoreAgainstManifestEntry(
 
 export function scoreBuiltinMatch(
   file: AdoptClassifyFile,
-  layer: "srs" | "basic-design",
+  layer: "srs" | "basic-design" | "detail-design",
 ): number {
   const entries = getManifestEntries(layer);
   let best = 0;
@@ -159,7 +169,7 @@ export function scoreBuiltinMatch(
 
 export function classifyLayer(
   files: AdoptClassifyFile[],
-  layer: "srs" | "basic-design",
+  layer: "srs" | "basic-design" | "detail-design",
 ): AdoptLayerClass {
   if (files.length === 0) return "missing";
 
@@ -351,4 +361,5 @@ export async function classifyPrototype(root: string): Promise<AdoptPrototypeCla
 export function resetAdoptClassifyCacheForTests(): void {
   srsManifestCache = null;
   basicDesignManifestCache = null;
+  detailDesignManifestCache = null;
 }

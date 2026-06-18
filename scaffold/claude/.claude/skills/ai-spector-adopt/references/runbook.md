@@ -1,15 +1,26 @@
-# Project Adopt Runbook
+# Project Adopt Runbook (gated)
 
-Three-factor collaboration: **Human + AI (Cursor/Claude) + CLI**.
+Three-factor: **Human + AI + MCP/CLI**. Follow adopt **task steps** in order.
 
-Follow phases **0 → 6** in order. Human gates are hard stops — do not skip ahead.
+**Artifact directory:** `.ai-spector/.docflow/adopt/` (`scan-result.json`, `plan.json`, `adopt-setup.json`, `context.json`, `history.jsonl`)
 
-**Artifact directory:** `.ai-spector/.docflow/adopt/` (`scan-result.json`, `plan.json`,
-`adopt-setup.json`, `context.json`, `history.jsonl`)
+| Step | Gate | MCP / action |
+|------|------|----------------|
+| `check` | workspace + user confirms candidate | `workspace_check`, `task_create` (kind `adopt`) |
+| `clarify` | no blocking scan questions | `adopt_scan`, `adopt_context_record` |
+| `plan` | mapping table approved | `adopt_plan` → user yes → `task_approve_adopt_plan` |
+| `apply` | plan approved on task + disk | `adopt_apply` (`dryRun` optional) |
+| `bootstrap` | apply done | `adopt_bootstrap` (index) |
+| `validate` | `ready: true` | `adopt_validate({ sync: true })` |
+| `complete` | migration.complete | `adopt_setup_mark migration.complete`, `task_complete` |
+
+**Forbidden:** `task_approve_plan` (use `task_approve_adopt_plan`); `adopt_apply` before plan approval; template-import nested in adopt task — pause adopt → template-import → new adopt task.
+
+**Custom pack:** scan classifies `custom` + no installed pack → pause adopt task → `ai-spector-template-import` → start **new** adopt task after install.
 
 ---
 
-## Phase 0 — Preflight
+## check
 
 Confirm this is an **adopt candidate** (init done, docs misplaced — not greenfield setup).
 

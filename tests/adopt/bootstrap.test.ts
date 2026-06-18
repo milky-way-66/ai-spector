@@ -92,7 +92,7 @@ describe("runAdoptBootstrap", () => {
       };
       await writeJson(paths.plan, approvedPlan);
 
-      await expect(runAdoptBootstrap({ root })).rejects.toThrow(/applied/i);
+      await expect(runAdoptBootstrap({ root, legacy: true })).rejects.toThrow(/applied/i);
     });
   });
 
@@ -101,7 +101,7 @@ describe("runAdoptBootstrap", () => {
       await scaffoldBootstrapProject(root);
       await writeAppliedPlan(root);
 
-      const result = await runAdoptBootstrap({ root });
+      const result = await runAdoptBootstrap({ root, legacy: true });
 
       expect(result.steps.some((s) => s.id === "config-patches" && s.status === "ok")).toBe(true);
       expect(result.steps.some((s) => s.id === "analyze" && s.status === "skipped")).toBe(true);

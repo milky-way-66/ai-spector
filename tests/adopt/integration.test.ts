@@ -108,7 +108,7 @@ describe("adopt integration", () => {
 
       await approveAdoptPlan({ root, by: "integration-test@example.com" });
 
-      const apply = await runAdoptApply({ root });
+      const apply = await runAdoptApply({ root, legacy: true });
       expect(apply.moved).toBeGreaterThanOrEqual(2);
       expect(await pathExists(join(root, "docs/srs/en/1-introduction.md"))).toBe(true);
       expect(await pathExists(join(root, "docs/srs/1-introduction.md"))).toBe(false);
@@ -116,7 +116,7 @@ describe("adopt integration", () => {
         await pathExists(join(root, "docs/srs/en/use-cases/uc-UC-01-login.md")),
       ).toBe(true);
 
-      await runAdoptBootstrap({ root });
+      await runAdoptBootstrap({ root, legacy: true });
 
       let validation = await validateAdopt({ root });
       if (!validation.ready) {

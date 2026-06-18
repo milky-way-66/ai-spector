@@ -454,7 +454,7 @@ export const ReviewListSchema = RootSchema.extend({
 
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
-export const TaskKindEnum = z.enum(["generate", "resolve", "import"]);
+export const TaskKindEnum = z.enum(["generate", "resolve", "import", "adopt"]);
 export const BuiltinWorkflowIdEnum = z.enum([
   "generate-srs",
   "generate-basic-design",
@@ -564,10 +564,35 @@ export const ImportPlanSchema = z.object({
   supplementalQuestions: z.array(ImportSupplementalQuestionSchema).optional(),
 });
 
+export const AdoptPlanSummarySchema = z.object({
+  moveCount: z.number().int(),
+  layers: z.object({
+    srs: z.number().int(),
+    basicDesign: z.number().int(),
+    detailDesign: z.number().int(),
+    prototype: z.number().int(),
+  }),
+  lowConfidenceCount: z.number().int(),
+  classification: z.object({
+    srs: z.string(),
+    basicDesign: z.string(),
+    detailDesign: z.string(),
+    prototype: z.string(),
+    languages: z.object({
+      detected: z.array(z.string()),
+      strategy: z.string(),
+    }),
+    dataSource: z.string(),
+    activePack: z.string(),
+  }),
+  warnings: z.array(z.string()),
+});
+
 export const StoredPlanSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("resolve"), plan: FullTaskPlanSchema }),
   z.object({ kind: z.literal("generate"), plan: GeneratePlanSchema }),
   z.object({ kind: z.literal("import"), plan: ImportPlanSchema }),
+  z.object({ kind: z.literal("adopt"), plan: AdoptPlanSummarySchema }),
 ]);
 
 export const TaskStepPatchSchema = z.object({
@@ -729,6 +754,12 @@ export const TaskApproveImportPlanSchema = RootSchema.extend({
   taskId: z.string().describe("Import task id"),
   plan: StoredPlanSchema.optional().describe("ImportPlan to approve; omit if already set via task_update"),
   ...AuditActorOverrideSchema,
+});
+
+export const TaskApproveAdoptPlanSchema = RootSchema.extend({
+  taskId: z.string().describe("Adopt task id"),
+  plan: StoredPlanSchema.optional().describe("AdoptPlanSummary to approve; omit if already set via task_update"),
+  by: z.string().optional().describe("Approver identity"),
 });
 
 export const TaskApprovePackDesignSchema = RootSchema.extend({
@@ -900,10 +931,12 @@ export const AdoptPlanSchema = RootSchema.extend({
 
 export const AdoptApplySchema = RootSchema.extend({
   dryRun: z.boolean().optional().describe("Preview moves without changing files"),
+  legacy: z.boolean().optional().describe("Bypass adopt task gates (scripts/CI only)"),
 });
 
 export const AdoptBootstrapSchema = RootSchema.extend({
   skipAnalyze: z.boolean().optional().describe("Skip optional analyze step"),
+  legacy: z.boolean().optional().describe("Bypass adopt task gates (scripts/CI only)"),
 });
 
 export const AdoptValidateSchema = RootSchema.extend({

@@ -33,10 +33,19 @@ import {
   assertTaskApproveImportPlanAllowed,
   assertTaskApprovePackDesignAllowed,
 } from "./template-import-gates.js";
+import {
+  assertTaskApproveAdoptPlanAllowed,
+} from "./adopt-gates.js";
+import { buildAdoptPlanSummary } from "./adopt-plan.js";
+import { approveAdoptPlan } from "../adopt/plan.js";
+import type { AdoptScanResult } from "../adopt/types.js";
+import { adoptArtifactPaths } from "../adopt/paths.js";
 
 export type { TaskKind, WorkflowId };
 import type { ImportPlan } from "./import-plan.js";
+import type { AdoptPlanSummary } from "./adopt-plan.js";
 export type { ImportPlan, ImportManifestRow } from "./import-plan.js";
+export type { AdoptPlanSummary } from "./adopt-plan.js";
 
 export type TaskStatus =
   | "draft"
@@ -100,7 +109,8 @@ export interface GeneratePlan {
 export type StoredPlan =
   | { kind: "resolve"; plan: TaskPlan }
   | { kind: "generate"; plan: GeneratePlan }
-  | { kind: "import"; plan: ImportPlan };
+  | { kind: "import"; plan: ImportPlan }
+  | { kind: "adopt"; plan: AdoptPlanSummary };
 
 export interface TaskContextRefs {
   docType?: string;
@@ -203,6 +213,20 @@ export interface TaskSnapshot {
   packValidateReadyAt?: string;
   /** Import clarify — aspect coverage confirmed */
   aspectCoverageConfirmedAt?: string;
+  /** Adopt task — first successful adopt_scan during clarify */
+  adoptScanAt?: string;
+  /** Adopt task — all blocking scan questions resolved */
+  adoptClarifyCompleteAt?: string;
+  /** Adopt task — move mapping table presented in chat */
+  adoptPlanPresentedAt?: string;
+  /** Adopt task — adopt_apply succeeded */
+  adoptApplyAt?: string;
+  /** Adopt task — adopt_bootstrap succeeded */
+  adoptBootstrapAt?: string;
+  /** Adopt task — adopt_validate ready */
+  adoptValidateReadyAt?: string;
+  /** Adopt task — handed off to template-import */
+  adoptForkedToImportAt?: string;
 }
 
 export interface TaskState {
@@ -933,6 +957,12 @@ export async function runTaskApprovePlan(
     );
   }
 
+  if (task.kind === "adopt") {
+    throw new Error(
+      'Adopt tasks use task_approve_adopt_plan, not task_approve_plan.',
+    );
+  }
+
   if (opts.plan) {
     task.plan = opts.plan;
   }
@@ -1058,6 +1088,75 @@ export async function runTaskApproveImportPlan(
     task,
     taskPath,
     workflowGuidance: buildTaskApprovePlanWorkflowGuidance(task),
+  };
+}
+
+export interface TaskApproveAdoptPlanOptions {
+  root?: string;
+  taskId: string;
+  plan?: StoredPlan;
+  by?: string;
+}
+
+export async function runTaskApproveAdoptPlan(
+  opts: TaskApproveAdoptPlanOptions,
+): Promise<TaskApprovePlanResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  if (opts.plan) {
+    task.plan = opts.plan;
+  } else if (!task.plan || task.plan.kind !== "adopt") {
+    task.plan = await buildAdoptStoredPlanFromArtifacts(root);
+  }
+
+  assertTaskApproveAdoptPlanAllowed(task);
+
+  await approveAdoptPlan({ root, by: opts.by });
+
+  const now = new Date().toISOString();
+  task.planApprovedAt = now;
+  task.phaseStatus = "done";
+
+  const planStep = task.steps.find((s) => s.id === "plan");
+  if (planStep) {
+    planStep.status = "done";
+    planStep.completedAt = now;
+    planStep.blocker = null;
+  }
+
+  const nextStep = task.steps.find((s) => s.id === "apply");
+  if (nextStep) {
+    nextStep.status = "in-progress";
+    task.currentStepId = nextStep.id;
+    task.phase = nextStep.phase;
+    task.phaseStatus = "in_progress";
+    task.nextAction = defaultNextAction("adopt", "apply");
+  }
+
+  if (task.status === "blocked") {
+    task.status = "active";
+    task.blockers = [];
+  }
+
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+  await recordWorkflowFromTask(root, task);
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskApprovePlanWorkflowGuidance(task),
+  };
+}
+
+/** Build adopt StoredPlan from on-disk plan.json + scan-result.json. */
+export async function buildAdoptStoredPlanFromArtifacts(root: string): Promise<StoredPlan> {
+  const paths = adoptArtifactPaths(root);
+  const plan = await readJson<import("../adopt/types.js").AdoptPlan>(paths.plan);
+  const scan = await readJson<AdoptScanResult>(paths.scanResult);
+  return {
+    kind: "adopt",
+    plan: buildAdoptPlanSummary(plan, scan.classification),
   };
 }
 

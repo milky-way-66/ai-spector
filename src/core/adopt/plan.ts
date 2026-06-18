@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { basename, join } from "node:path";
 import {
   loadBasicDesignListManifest,
+  loadDetailDesignListManifest,
   loadDocflowConfig,
   loadDocumentsManifest,
 } from "../config/load.js";
@@ -46,14 +47,41 @@ function isPerDomainPath(relativePath: string): boolean {
   return PER_DOMAIN_PATH.test(norm);
 }
 
+const DD_PER_DOMAIN_PATH = /(?:^|\/)features(?:\/|$)/i;
+
 function inventoryToClassifyFile(item: AdoptInventoryItem): AdoptClassifyFile {
-  const prefix =
-    item.layer === "srs" ? /^docs\/srs\// : /^docs\/basic-design\//;
+  let relativePath = item.path.replace(/\\/g, "/");
+  if (item.layer === "srs") {
+    relativePath = relativePath.replace(/^docs\/srs\//, "");
+  } else if (item.layer === "basic-design") {
+    relativePath = relativePath.replace(/^docs\/basic-design\//, "");
+  } else if (item.layer === "detail-design") {
+    relativePath = relativePath
+      .replace(/^docs\/detail-design\//, "")
+      .replace(/^docs\/dd\//, "")
+      .replace(/^docs\/detail_design\//, "");
+  }
   return {
-    relativePath: item.path.replace(prefix, ""),
+    relativePath,
     headings: item.signals.headings,
     ids: item.signals.ids,
   };
+}
+
+function resolveDetailDesignTarget(fromPath: string, primaryLang: string): string {
+  const norm = fromPath.replace(/\\/g, "/");
+  const ddLocale = /^docs\/detail-design\/([a-z]{2,3}(?:-[a-z]{2})?)\//i;
+  if (ddLocale.test(norm)) {
+    return norm;
+  }
+  const withoutLegacy = norm
+    .replace(/^docs\/dd\//, "docs/detail-design/")
+    .replace(/^docs\/detail_design\//, "docs/detail-design/");
+  const rest = withoutLegacy.match(/^docs\/detail-design\/(.+)$/i)?.[1];
+  if (rest) {
+    return `docs/detail-design/${primaryLang}/${rest}`;
+  }
+  return `docs/detail-design/${primaryLang}/${basename(norm)}`;
 }
 
 function resolveTargetPath(fromPath: string, primaryLang: string): string {
@@ -66,10 +94,16 @@ function resolveTargetPath(fromPath: string, primaryLang: string): string {
 
 function perDomainDocumentId(
   fromPath: string,
-  layer: "srs" | "basic-design",
+  layer: "srs" | "basic-design" | "detail-design",
   docs: ManifestDocument[],
 ): string | undefined {
   const name = basename(fromPath).toLowerCase();
+  if (layer === "detail-design") {
+    if (name.startsWith("f-") || DD_PER_DOMAIN_PATH.test(fromPath.replace(/\\/g, "/"))) {
+      return docs.find((doc) => doc.perDomain === "featureDetail")?.documentId;
+    }
+    return undefined;
+  }
   if (name.startsWith("uc-")) {
     return docs.find((doc) => doc.perDomain === "useCase")?.documentId;
   }
@@ -85,12 +119,16 @@ function perDomainDocumentId(
   return undefined;
 }
 
-async function loadManifestDocuments(layer: "srs" | "basic-design") {
+async function loadManifestDocuments(layer: "srs" | "basic-design" | "detail-design") {
   if (layer === "srs") {
     const { manifest } = await loadDocumentsManifest();
     return manifest.documents;
   }
-  const manifest = await loadBasicDesignListManifest();
+  if (layer === "basic-design") {
+    const manifest = await loadBasicDesignListManifest();
+    return manifest.documents;
+  }
+  const manifest = await loadDetailDesignListManifest();
   return manifest.documents;
 }
 
@@ -156,12 +194,19 @@ async function buildMoves(
   const warnings: string[] = [];
 
   for (const item of scan.inventory) {
-    if (item.layer !== "srs" && item.layer !== "basic-design") {
+    if (
+      item.layer !== "srs" &&
+      item.layer !== "basic-design" &&
+      item.layer !== "detail-design"
+    ) {
       continue;
     }
 
     const from = item.path.replace(/\\/g, "/");
-    const to = resolveTargetPath(from, primaryLang);
+    const to =
+      item.layer === "detail-design"
+        ? resolveDetailDesignTarget(from, primaryLang)
+        : resolveTargetPath(from, primaryLang);
     if (from === to) {
       continue;
     }

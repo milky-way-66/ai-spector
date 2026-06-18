@@ -29,6 +29,7 @@ const SKILL_BY_WORKFLOW: Record<WorkflowId, string> = {
   "lang-status": "ai-spector-lang-status",
   "resolve-translation": "ai-spector-resolve-translation",
   "template-import": "ai-spector-template-import",
+  adopt: "ai-spector-adopt",
 };
 
 export interface WorkflowActiveContext {

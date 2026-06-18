@@ -19,16 +19,18 @@ import { pathExists, readJson, writeJsonAtomic } from "../util/fs.js";
 
 const RECENT_MAX = 20;
 
-type AdoptDocType = "srs" | "basic-design";
+type AdoptDocType = "srs" | "basic-design" | "detail-design";
 
 const CANONICAL_DOC_RE: Record<AdoptDocType, RegExp> = {
   srs: /^docs\/srs\/[^/]+\/.+\.md$/i,
   "basic-design": /^docs\/basic-design\/[^/]+\/.+\.md$/i,
+  "detail-design": /^docs\/detail-design\/[^/]+\/.+\.md$/i,
 };
 
 const WORKFLOW_FOR_DOC: Record<AdoptDocType, WorkflowId> = {
   srs: "generate-srs",
   "basic-design": "generate-basic-design",
+  "detail-design": "generate-detail-design",
 };
 
 async function resolveRoot(root?: string): Promise<string> {
@@ -145,10 +147,11 @@ async function createCompletedAdoptTask(
 export async function createAdoptCompletedTasks(opts: { root: string }): Promise<{
   srs?: string;
   basicDesign?: string;
+  detailDesign?: string;
 }> {
   const root = await resolveRoot(opts.root);
   const index = await loadIndex(root);
-  const result: { srs?: string; basicDesign?: string } = {};
+  const result: { srs?: string; basicDesign?: string; detailDesign?: string } = {};
 
   const srsPaths = await listCanonicalDocPaths(root, "srs");
   if (srsPaths.length > 0) {
@@ -165,7 +168,17 @@ export async function createAdoptCompletedTasks(opts: { root: string }): Promise
     );
   }
 
-  if (result.srs || result.basicDesign) {
+  const detailDesignPaths = await listCanonicalDocPaths(root, "detail-design");
+  if (detailDesignPaths.length > 0) {
+    result.detailDesign = await createCompletedAdoptTask(
+      root,
+      index,
+      "detail-design",
+      detailDesignPaths,
+    );
+  }
+
+  if (result.srs || result.basicDesign || result.detailDesign) {
     await writeJsonAtomic(taskIndexPath(root), index);
   }
 

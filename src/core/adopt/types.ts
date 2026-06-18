@@ -10,9 +10,11 @@ export interface AdoptQuestion {
   blocking: boolean;
 }
 
+export type AdoptDocLayer = "srs" | "basic-design" | "detail-design" | "prototype" | "data-source";
+
 export interface AdoptInventoryItem {
   path: string;
-  layer: "srs" | "basic-design" | "prototype" | "data-source";
+  layer: AdoptDocLayer;
   signals: { headings: Array<{ depth: number; text: string }>; ids: string[] };
 }
 
@@ -21,6 +23,7 @@ export interface AdoptScanResult {
   classification: {
     srs: AdoptLayerClass;
     basicDesign: AdoptLayerClass;
+    detailDesign: AdoptLayerClass;
     prototype: AdoptPrototypeClass;
     languages: { detected: string[]; strategy: AdoptLangStrategy };
     dataSource: "present" | "partial" | "absent";
@@ -33,7 +36,7 @@ export interface AdoptScanResult {
 export interface AdoptMove {
   from: string;
   to: string;
-  layer: "srs" | "basic-design" | "prototype";
+  layer: "srs" | "basic-design" | "detail-design" | "prototype";
   documentId?: string;
   confidence: AdoptMoveConfidence;
   reason: string;

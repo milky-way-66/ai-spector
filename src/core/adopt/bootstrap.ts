@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
+import type { TaskState } from "../operations/task.js";
+import { assertAdoptBootstrapAllowed } from "../operations/adopt-gates.js";
 import { runIndex } from "../operations/index.js";
 import {
   buildPrototypeManifest,
@@ -78,9 +80,12 @@ export async function runAdoptBootstrap(
   opts: {
     root?: string;
     skipAnalyze?: boolean;
+    legacy?: boolean;
+    activeTask?: TaskState | null;
   } = {},
 ): Promise<{ steps: BootstrapStep[] }> {
   const { root } = await loadDocflowConfig(opts.root);
+  assertAdoptBootstrapAllowed(opts.activeTask ?? null, { legacy: opts.legacy });
   const paths = adoptArtifactPaths(root);
   const steps: BootstrapStep[] = [];
 

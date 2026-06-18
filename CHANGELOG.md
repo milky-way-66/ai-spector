@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Adopt v2 (gated legacy alignment)** — adopt is a first-class task workflow (`kind: adopt`) with `task_approve_adopt_plan` and server gates on `adopt_apply` / `adopt_bootstrap`. Detail design (`docs/detail-design/`, legacy `docs/dd/`) included in scan/plan/apply. Custom pack still hard-forks to `ai-spector-template-import`.
+
 ### Changed
 
 - **Skills-only Cursor bundle** — removed `.cursor/commands/`; runbooks live under each skill’s `references/`; shared docs under `ai-spector/references/`; pipeline in `.cursor/WORKFLOW.md`. Users describe tasks in natural language; agents route via skill descriptions.

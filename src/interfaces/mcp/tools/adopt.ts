@@ -6,6 +6,7 @@ import { runAdoptPlan, approveAdoptPlan } from "@/core/adopt/plan.js";
 import { runAdoptScan } from "@/core/adopt/scan.js";
 import { markAdoptSetupItem, recordAdoptAnswer } from "@/core/adopt/setup.js";
 import { validateAdopt } from "@/core/adopt/validate.js";
+import { getActiveTaskForSlot } from "@/core/operations/task.js";
 import type {
   AdoptApplySchema,
   AdoptBootstrapSchema,
@@ -34,11 +35,25 @@ export async function toolAdoptPlan(input: z.infer<typeof AdoptPlanSchema>) {
 }
 
 export async function toolAdoptApply(input: z.infer<typeof AdoptApplySchema>) {
-  return runAdoptApply({ root: input.root, dryRun: input.dryRun });
+  const root = await resolveRoot(input.root);
+  const activeTask = input.legacy ? null : await getActiveTaskForSlot(root, "adopt");
+  return runAdoptApply({
+    root: input.root,
+    dryRun: input.dryRun,
+    legacy: input.legacy,
+    activeTask,
+  });
 }
 
 export async function toolAdoptBootstrap(input: z.infer<typeof AdoptBootstrapSchema>) {
-  return runAdoptBootstrap({ root: input.root, skipAnalyze: input.skipAnalyze });
+  const root = await resolveRoot(input.root);
+  const activeTask = input.legacy ? null : await getActiveTaskForSlot(root, "adopt");
+  return runAdoptBootstrap({
+    root: input.root,
+    skipAnalyze: input.skipAnalyze,
+    legacy: input.legacy,
+    activeTask,
+  });
 }
 
 export async function toolAdoptValidate(input: z.infer<typeof AdoptValidateSchema>) {

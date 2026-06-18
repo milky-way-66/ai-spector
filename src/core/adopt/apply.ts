@@ -3,6 +3,11 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { loadDocflowConfig } from "../config/load.js";
+import type { TaskState } from "../operations/task.js";
+import {
+  assertAdoptApplyAllowed,
+  assertAdoptPlanApprovedOnDisk,
+} from "../operations/adopt-gates.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { adoptArtifactPaths } from "./paths.js";
 import { markAdoptSetupItem } from "./setup.js";
@@ -90,20 +95,27 @@ async function rollbackMoves(
 export async function runAdoptApply(opts: {
   root?: string;
   dryRun?: boolean;
+  legacy?: boolean;
+  activeTask?: TaskState | null;
 } = {}): Promise<{
   moved: number;
   dryRun: boolean;
   moves: Array<{ from: string; to: string }>;
 }> {
   const { root } = await loadDocflowConfig(opts.root);
+  assertAdoptApplyAllowed(opts.activeTask ?? null, { legacy: opts.legacy });
   const paths = adoptArtifactPaths(root);
 
   if (!(await pathExists(paths.plan))) {
     throw new Error("No adopt plan — run: npx ai-spector adopt plan");
   }
 
+  if (!opts.legacy) {
+    await assertAdoptPlanApprovedOnDisk(root);
+  }
+
   const plan = await readJson<AdoptPlan>(paths.plan);
-  if (plan.status !== "approved") {
+  if (plan.status !== "approved" && plan.status !== "applied") {
     throw new Error(`Plan must be approved before apply — current status: ${plan.status}`);
   }
 

@@ -51,6 +51,7 @@ import {
   runTaskAbandon,
   runTaskApprovePlan,
   runTaskApproveImportPlan,
+  runTaskApproveAdoptPlan,
   runTaskApprovePackDesign,
   runTaskComplete,
   runTaskCreate,
@@ -586,6 +587,24 @@ task
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatTaskSimple("Approved import manifest plan for", result));
+  });
+
+task
+  .command("approve-adopt-plan <taskId>")
+  .description("Adopt task: approve migration move plan after user yes (not task approve)")
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--by <email>", "Approver identity")
+  .option("--plan <json>", "AdoptPlanSummary JSON (StoredPlan kind adopt) if not already on task")
+  .option("--json", "JSON output")
+  .action(async (taskId, opts) => {
+    const result = await runTaskApproveAdoptPlan({
+      root: resolve(opts.cwd ?? process.cwd()),
+      taskId,
+      plan: opts.plan ? JSON.parse(opts.plan as string) : undefined,
+      by: opts.by,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatTaskSimple("Approved adopt migration plan for", result));
   });
 
 task

@@ -61,7 +61,7 @@ describe("runAdoptApply", () => {
       };
       await writeJson(paths.plan, draftPlan);
 
-      await expect(runAdoptApply({ root })).rejects.toThrow(/approved/i);
+      await expect(runAdoptApply({ root, legacy: true })).rejects.toThrow(/approved/i);
     });
   });
 
@@ -71,7 +71,7 @@ describe("runAdoptApply", () => {
       await writeApprovedPlanWithMove(root);
       const paths = adoptArtifactPaths(root);
 
-      const result = await runAdoptApply({ root });
+      const result = await runAdoptApply({ root, legacy: true });
 
       expect(result.moved).toBe(1);
       expect(result.dryRun).toBe(false);
@@ -91,7 +91,7 @@ describe("runAdoptApply", () => {
       await scaffoldInit(root);
       await writeApprovedPlanWithMove(root);
 
-      const result = await runAdoptApply({ root, dryRun: true });
+      const result = await runAdoptApply({ root, dryRun: true, legacy: true });
 
       expect(result.dryRun).toBe(true);
       expect(result.moved).toBe(0);

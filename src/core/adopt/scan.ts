@@ -23,7 +23,13 @@ import type {
 const SCAN_LAYER_DIRS = [
   { relativeDir: "docs/srs", layer: "srs" as const },
   { relativeDir: "docs/basic-design", layer: "basic-design" as const },
+  { relativeDir: "docs/detail-design", layer: "detail-design" as const },
   { relativeDir: "docs/data-source", layer: "data-source" as const },
+];
+
+const LEGACY_ALIAS_DIRS = [
+  { relativeDir: "docs/dd", layer: "detail-design" as const },
+  { relativeDir: "docs/detail_design", layer: "detail-design" as const },
 ];
 
 async function collectMdFiles(root: string, relativeDir: string): Promise<string[]> {
@@ -129,6 +135,17 @@ export async function runAdoptScan(opts: { root?: string } = {}): Promise<AdoptS
     }
   }
 
+  for (const { relativeDir, layer } of LEGACY_ALIAS_DIRS) {
+    const files = await collectMdFiles(root, relativeDir);
+    for (const absPath of files) {
+      const item = await parseInventoryFile(root, absPath, layer);
+      if (!inventory.some((existing) => existing.path === item.path)) {
+        inventory.push(item);
+        layoutPaths.push(item.path);
+      }
+    }
+  }
+
   const srsFiles: AdoptClassifyFile[] = inventory
     .filter((item) => item.layer === "srs")
     .map((item) => ({
@@ -141,6 +158,17 @@ export async function runAdoptScan(opts: { root?: string } = {}): Promise<AdoptS
     .filter((item) => item.layer === "basic-design")
     .map((item) => ({
       relativePath: item.path.replace(/^docs\/basic-design\//, ""),
+      headings: item.signals.headings,
+      ids: item.signals.ids,
+    }));
+
+  const detailDesignFiles: AdoptClassifyFile[] = inventory
+    .filter((item) => item.layer === "detail-design")
+    .map((item) => ({
+      relativePath: item.path
+        .replace(/^docs\/detail-design\//, "")
+        .replace(/^docs\/dd\//, "")
+        .replace(/^docs\/detail_design\//, ""),
       headings: item.signals.headings,
       ids: item.signals.ids,
     }));
@@ -159,6 +187,7 @@ export async function runAdoptScan(opts: { root?: string } = {}): Promise<AdoptS
     classification: {
       srs: classifyLayer(srsFiles, "srs"),
       basicDesign: classifyLayer(basicDesignFiles, "basic-design"),
+      detailDesign: classifyLayer(detailDesignFiles, "detail-design"),
       prototype: await classifyPrototype(root),
       languages,
       dataSource: classifyDataSource(srsMdCount, dataSourceMdCount),

@@ -38,6 +38,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 |--------------|----------------|-------|---------------------------|
 | **Learn / open course** | "open the course", "learn ai-spector" | `ai-spector-course` | `course serve --open` → link lesson |
 | **Setup project** | "setup ai-spector", "initialize project", "bootstrap project" | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
+| **Align legacy docs** | "align my legacy docs", "migrate existing SRS", "wrong SRS folder", "continue adopt" | `ai-spector-adopt` | `task_create` (adopt) → gated scan → `task_approve_adopt_plan` → apply → bootstrap (index) → validate |
 | **Check workspace** | "check my workspace", "why did pre-commit block me", "stale clarifications" | `ai-spector-check` | `workspace_check({})` → findings table → optional `fix: true` |
 | **Resume / manage tasks** | "resume my SRS", "continue generation", "active tasks", "pause task" | `ai-spector-task` | `task_list` → `task_resume` / `task_get` → route to generate or resolve skill |
 | Ingest sources | "analyze my data source", "build the knowledge graph" | `ai-spector-graph` | `index({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |

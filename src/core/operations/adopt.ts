@@ -32,6 +32,8 @@ export type {
 } from "../adopt/types.js";
 export type { AdoptValidationResult, AdoptValidationGap } from "../adopt/validate.js";
 
+import { getActiveTaskForSlot } from "./task.js";
+
 async function projectRoot(cwd?: string): Promise<string> {
   const { root } = await loadDocflowConfig(cwd ? resolve(cwd) : undefined);
   return root;
@@ -82,11 +84,16 @@ export function registerAdoptCommand(program: Command): void {
     .description("Execute approved migration plan (git mv when in a git repo)")
     .option("-C, --cwd <path>", "Project root", process.cwd())
     .option("--dry-run", "Preview moves without changing files")
+    .option("--legacy", "Bypass adopt task gates (scripts/CI only)")
     .option("--json", "JSON output")
-    .action(async (opts: { cwd?: string; dryRun?: boolean; json?: boolean }) => {
+    .action(async (opts: { cwd?: string; dryRun?: boolean; legacy?: boolean; json?: boolean }) => {
+      const root = resolve(opts.cwd ?? process.cwd());
+      const activeTask = opts.legacy ? null : await getActiveTaskForSlot(root, "adopt");
       const result = await runAdoptApply({
-        root: resolve(opts.cwd ?? process.cwd()),
+        root,
         dryRun: opts.dryRun,
+        legacy: opts.legacy,
+        activeTask,
       });
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -101,10 +108,15 @@ export function registerAdoptCommand(program: Command): void {
     .option("-C, --cwd <path>", "Project root", process.cwd())
     .option("--json", "JSON output")
     .option("--skip-analyze", "Skip optional analyze step")
-    .action(async (opts: { cwd?: string; json?: boolean; skipAnalyze?: boolean }) => {
+    .option("--legacy", "Bypass adopt task gates (scripts/CI only)")
+    .action(async (opts: { cwd?: string; json?: boolean; skipAnalyze?: boolean; legacy?: boolean }) => {
+      const root = resolve(opts.cwd ?? process.cwd());
+      const activeTask = opts.legacy ? null : await getActiveTaskForSlot(root, "adopt");
       const result = await runAdoptBootstrap({
-        root: resolve(opts.cwd ?? process.cwd()),
+        root,
         skipAnalyze: opts.skipAnalyze,
+        legacy: opts.legacy,
+        activeTask,
       });
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));

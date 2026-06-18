@@ -216,6 +216,17 @@ export function assertTaskApprovePlanAllowed(
     );
   }
 
+  if (task.kind === "adopt") {
+    throw new TaskPreconditionError(
+      "step_premature",
+      `Task "${task.id}" is an adopt task — use task_approve_adopt_plan for migration plan approval.`,
+      "Present mapping table, wait for explicit yes, then task_approve_adopt_plan (not task_approve_plan).",
+      ["task_approve_adopt_plan"],
+      task,
+      "plan",
+    );
+  }
+
   if (task.planApprovedAt) {
     throw new TaskPreconditionError(
       "plan_already_approved",
@@ -543,6 +554,16 @@ export function assertTaskStepUpdateAllowed(
   if (nextStatus !== "done" && nextStatus !== "skipped") return;
 
   if (stepId === "plan" && nextStatus === "done" && !task.planApprovedAt) {
+    if (task.kind === "adopt") {
+      throw new TaskPreconditionError(
+        "step_premature",
+        `Cannot mark plan step done on adopt task "${task.id}" via task_update — use task_approve_adopt_plan after user yes.`,
+        "Show mapping table, wait for explicit yes, then call task_approve_adopt_plan.",
+        ["task_approve_adopt_plan"],
+        task,
+        "plan",
+      );
+    }
     throw new TaskPreconditionError(
       "step_premature",
       `Cannot mark plan step done on task "${task.id}" via task_update — use task_approve_plan after user yes.`,
@@ -599,6 +620,30 @@ export function assertTaskStepUpdateAllowed(
           "clarify",
         );
       }
+    }
+    return;
+  }
+
+  if (task.kind === "adopt") {
+    if (stepId === "clarify" && nextStatus === "done" && !task.snapshot.adoptClarifyCompleteAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark clarify done on adopt task "${task.id}" until blocking scan questions are resolved.`,
+        "Run adopt_scan, resolve questions via adopt_context_record, set adoptClarifyCompleteAt.",
+        ["adopt_scan", "adopt_context_record", "task_update"],
+        task,
+        "clarify",
+      );
+    }
+    if (stepId === "validate" && nextStatus === "done" && !task.snapshot.adoptValidateReadyAt) {
+      throw new TaskPreconditionError(
+        "snapshot_missing",
+        `Cannot mark validate done on adopt task "${task.id}" until adopt_validate reports ready.`,
+        "Run adopt_validate until ready: true, set adoptValidateReadyAt.",
+        ["adopt_validate", "task_update"],
+        task,
+        "validate",
+      );
     }
     return;
   }

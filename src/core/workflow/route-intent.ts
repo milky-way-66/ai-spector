@@ -17,7 +17,8 @@ export type WorkflowId =
   | "course"
   | "lang-status"
   | "resolve-translation"
-  | "template-import";
+  | "template-import"
+  | "adopt";
 
 export interface WorkflowRouteActiveTask {
   id: string;
@@ -89,6 +90,7 @@ const SKILL_TO_WORKFLOW: Record<string, WorkflowId> = {
   "ai-spector-lang-status": "lang-status",
   "ai-spector-resolve-translation": "resolve-translation",
   "ai-spector-template-import": "template-import",
+  "ai-spector-adopt": "adopt",
 };
 
 const APPROVE_DISAMBIGUATION: WorkflowRouteAskOption[] = [
@@ -426,6 +428,18 @@ function isResolveTranslationIntent(msg: string): boolean {
   );
 }
 
+function isAdoptIntent(msg: string): boolean {
+  return (
+    /\bcontinue adopt\b/.test(msg) ||
+    /\badopt\b/.test(msg) ||
+    /\balign\b.*\blegacy\b/.test(msg) ||
+    /\bmigrate\b.*\b(existing|legacy)\b/.test(msg) ||
+    /\bwrong srs folder\b/.test(msg) ||
+    /\blegacy srs\b/.test(msg) ||
+    /\bmigrate\b.*\bai-?spector\b.*\bstructure\b/.test(msg)
+  );
+}
+
 function isTemplateImportIntent(msg: string): boolean {
   return (
     /\b(import|install) template\b/.test(msg) ||
@@ -681,6 +695,20 @@ export function classifyWorkflowIntent(
       {
         nextTools: ["review_check", "review_queue"],
         avoidTools: [...REVIEW_AVOID_TOOLS],
+      },
+    );
+  }
+
+  if (isAdoptIntent(msg)) {
+    return result(
+      "ai-spector-adopt",
+      "high",
+      "adopt_legacy",
+      "Legacy doc alignment — gated adopt task: scan → task_approve_adopt_plan → apply → index.",
+      ctx,
+      {
+        nextTools: ["task_create", "workspace_check", "adopt_scan"],
+        avoidTools: ["task_approve_plan", "review_approve"],
       },
     );
   }
