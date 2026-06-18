@@ -29,9 +29,14 @@ import {
   assertTaskStepUpdateAllowed,
   effectiveResolveTier,
 } from "./task-gates.js";
+import {
+  assertTaskApproveImportPlanAllowed,
+  assertTaskApprovePackDesignAllowed,
+} from "./template-import-gates.js";
 
 export type { TaskKind, WorkflowId };
-export type { GoalSpec, TaskPlan } from "./resolve-task.js";
+import type { ImportPlan } from "./import-plan.js";
+export type { ImportPlan, ImportManifestRow } from "./import-plan.js";
 
 export type TaskStatus =
   | "draft"
@@ -94,7 +99,8 @@ export interface GeneratePlan {
 
 export type StoredPlan =
   | { kind: "resolve"; plan: TaskPlan }
-  | { kind: "generate"; plan: GeneratePlan };
+  | { kind: "generate"; plan: GeneratePlan }
+  | { kind: "import"; plan: ImportPlan };
 
 export interface TaskContextRefs {
   docType?: string;
@@ -182,6 +188,21 @@ export interface TaskSnapshot {
   implementationPlanPath?: string;
   /** Standard/Full tier: inline or subagent execution after plan approval. */
   executionMode?: ResolveExecutionMode;
+  /** Import task — pack design spec under docs/superpowers/specs/ */
+  packDesignSpecPath?: string;
+  packDesignSpecApprovedAt?: string;
+  importPlanPath?: string;
+  scanResultHash?: string;
+  scanConfirmedAt?: string;
+  manifestPlanPresentedAt?: string;
+  manifestPlanApprovedAt?: string;
+  skillBriefingConfirmedAt?: string;
+  stagedSkillPath?: string;
+  contextMapResolvedAt?: string;
+  readinessReviewedAt?: string;
+  packValidateReadyAt?: string;
+  /** Import clarify — aspect coverage confirmed */
+  aspectCoverageConfirmedAt?: string;
 }
 
 export interface TaskState {
@@ -256,6 +277,20 @@ async function loadTask(root: string, taskId: string): Promise<TaskState> {
     throw new Error(`Task "${taskId}" not found`);
   }
   return readJson<TaskState>(path);
+}
+
+/** Active in-flight task for a workflow slot (e.g. `import`, `resolve`). */
+export async function getActiveTaskForSlot(root: string, slot: string): Promise<TaskState | null> {
+  const index = await loadIndex(root);
+  const taskId = index.active[slot];
+  if (!taskId) return null;
+  try {
+    const task = parseTask(await loadTask(root, taskId));
+    if (task.status === "complete" || task.status === "abandoned") return null;
+    return task;
+  } catch {
+    return null;
+  }
 }
 
 async function saveTask(root: string, task: TaskState): Promise<string> {
@@ -892,6 +927,12 @@ export async function runTaskApprovePlan(
   const root = await resolveRoot(opts.root);
   const task = parseTask(await loadTask(root, opts.taskId));
 
+  if (task.kind === "import") {
+    throw new Error(
+      'Import tasks use task_approve_import_plan, not task_approve_plan.',
+    );
+  }
+
   if (opts.plan) {
     task.plan = opts.plan;
   }
@@ -961,6 +1002,105 @@ export async function runTaskApprovePlan(
     task,
     taskPath,
     workflowGuidance: buildTaskApprovePlanWorkflowGuidance(task),
+  };
+}
+
+export interface TaskApproveImportPlanOptions {
+  root?: string;
+  taskId: string;
+  plan?: StoredPlan;
+}
+
+export async function runTaskApproveImportPlan(
+  opts: TaskApproveImportPlanOptions,
+): Promise<TaskApprovePlanResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  if (opts.plan) {
+    task.plan = opts.plan;
+  }
+
+  assertTaskApproveImportPlanAllowed(task);
+
+  const now = new Date().toISOString();
+  task.planApprovedAt = now;
+  task.snapshot.manifestPlanApprovedAt = now;
+  task.phaseStatus = "done";
+
+  const planStep = task.steps.find((s) => s.id === "manifest-plan");
+  if (planStep) {
+    planStep.status = "done";
+    planStep.completedAt = now;
+    planStep.blocker = null;
+  }
+
+  const nextStep = task.steps.find(
+    (s) => s.id === "refine-templates" || (s.status === "pending" && s.id !== "manifest-plan"),
+  );
+  if (nextStep) {
+    nextStep.status = "in-progress";
+    task.currentStepId = nextStep.id;
+    task.phase = nextStep.phase;
+    task.phaseStatus = "in_progress";
+    task.nextAction = defaultNextAction(task.workflow, nextStep.id);
+  }
+
+  if (task.status === "blocked") {
+    task.status = "active";
+    task.blockers = [];
+  }
+
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+  await recordWorkflowFromTask(root, task);
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskApprovePlanWorkflowGuidance(task),
+  };
+}
+
+export interface TaskApprovePackDesignOptions {
+  root?: string;
+  taskId: string;
+  designSpecPath: string;
+}
+
+export async function runTaskApprovePackDesign(
+  opts: TaskApprovePackDesignOptions,
+): Promise<TaskGetResult> {
+  const root = await resolveRoot(opts.root);
+  const task = parseTask(await loadTask(root, opts.taskId));
+
+  assertTaskApprovePackDesignAllowed(task);
+
+  const now = new Date().toISOString();
+  task.snapshot.packDesignSpecPath = opts.designSpecPath.replace(/\\/g, "/");
+  task.snapshot.packDesignSpecApprovedAt = now;
+
+  const designStep = task.steps.find((s) => s.id === "design");
+  if (designStep && designStep.status !== "done") {
+    designStep.status = "done";
+    designStep.completedAt = now;
+  }
+
+  const next = task.steps.find((s) => s.id === "manifest-briefing" && s.status === "pending");
+  if (next) {
+    next.status = "in-progress";
+    task.currentStepId = next.id;
+    task.phase = next.phase;
+    task.phaseStatus = "in_progress";
+    task.nextAction = defaultNextAction(task.workflow, next.id);
+  }
+
+  touchTask(task);
+  const taskPath = await saveTask(root, task);
+  await recordWorkflowFromTask(root, task);
+  return {
+    task,
+    taskPath,
+    workflowGuidance: buildTaskWorkflowGuidance(task),
   };
 }
 

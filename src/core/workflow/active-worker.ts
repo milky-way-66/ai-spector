@@ -239,16 +239,29 @@ export async function recordWorkflowFromTask(
   task: TaskState,
 ): Promise<WorkflowActiveFile> {
   const workflowId: WorkflowId =
-    task.kind === "resolve"
-      ? "resolve-task"
-      : task.workflow === "generate-basic-design"
-        ? "generate-basic-design"
-        : task.workflow === "generate-detail-design"
-          ? "generate-detail-design"
-          : task.workflow === "generate-prototype"
-            ? "generate-prototype"
-            : "generate-srs";
-  const phase = task.planApprovedAt ? "plan_approved" : task.plan ? "awaiting_plan_approval" : "planning";
+    task.kind === "import"
+      ? "template-import"
+      : task.kind === "resolve"
+        ? "resolve-task"
+        : task.workflow === "generate-basic-design"
+          ? "generate-basic-design"
+          : task.workflow === "generate-detail-design"
+            ? "generate-detail-design"
+            : task.workflow === "generate-prototype"
+              ? "generate-prototype"
+              : "generate-srs";
+  const phase =
+    task.kind === "import"
+      ? task.planApprovedAt
+        ? "plan_approved"
+        : task.currentStepId === "clarify"
+          ? "clarify"
+          : "planning"
+      : task.planApprovedAt
+        ? "plan_approved"
+        : task.plan
+          ? "awaiting_plan_approval"
+          : "planning";
 
   return recordWorkflowActive(projectRoot, {
     workflowId,

@@ -25,6 +25,9 @@ import {
   TemplateInspectSchema,
   TemplateValidateSchema,
   TemplateSetupMarkSchema,
+  TemplateInferSchema,
+  TemplateScanSchema,
+  TemplateInstallSchema,
   ReadinessAssessSchema,
   ReadinessConfigSchema,
   ReadinessScanSchema,
@@ -74,6 +77,8 @@ import {
   TaskApprovePlanSchema,
   TaskConfirmTierSchema,
   TaskApproveDesignSpecSchema,
+  TaskApproveImportPlanSchema,
+  TaskApprovePackDesignSchema,
   TaskSetExecutionModeSchema,
   TaskPauseSchema,
   TaskResumeSchema,
@@ -102,6 +107,9 @@ import {
   toolTemplateInspect,
   toolTemplateValidate,
   toolTemplateSetupMark,
+  toolTemplateInfer,
+  toolTemplateScan,
+  toolTemplateInstall,
 } from "./tools/template.js";
 import {
   toolReadinessAssess,
@@ -128,6 +136,8 @@ import { toolSpecList, toolSpecRecord, toolSpecApprove, toolSpecReject } from ".
 import {
   toolTaskAbandon,
   toolTaskApproveDesignSpec,
+  toolTaskApproveImportPlan,
+  toolTaskApprovePackDesign,
   toolTaskApprovePlan,
   toolTaskComplete,
   toolTaskConfirmTier,
@@ -405,7 +415,8 @@ server.registerTool(
 server.registerTool(
   "template_list",
   {
-    description: "List installed template packs and show which is active",
+    description:
+      "List template packs (active SRS/basic-design), per-pack setup status, staging artifacts, active import task, and suggestedNextTools for agents.",
     inputSchema: TemplateListSchema.shape,
   },
   async (input) => {
@@ -448,6 +459,45 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolTemplateSetupMark(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "template_scan",
+  {
+    description:
+      "Scan a folder of .md templates → scan-result.json in staging. Prefer this over CLI template scan when MCP is available.",
+    inputSchema: TemplateScanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTemplateScan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "template_infer",
+  {
+    description:
+      "Derive import aspect coverage from scan-result.json — smart clarify input. Writes clarify-profile.json to staging.",
+    inputSchema: TemplateInferSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTemplateInfer(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "template_install",
+  {
+    description:
+      "Install staged template pack to .ai-spector/packs/ and activate SRS pack. Requires active import task + task_approve_import_plan unless legacy:true.",
+    inputSchema: TemplateInstallSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTemplateInstall(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1148,6 +1198,32 @@ server.registerTool(
 );
 
 server.registerTool(
+  "task_approve_import_plan",
+  {
+    description:
+      "Import task only: approve manifest plan after user yes — sets planApprovedAt, marks manifest-plan done. NOT task_approve_plan.",
+    inputSchema: TaskApproveImportPlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskApproveImportPlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "task_approve_pack_design",
+  {
+    description:
+      "Import task only: record approved pack design spec path after user yes — sets packDesignSpecApprovedAt, marks design done.",
+    inputSchema: TaskApprovePackDesignSchema.shape,
+  },
+  async (input) => {
+    const result = await toolTaskApprovePackDesign(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
   "task_set_execution_mode",
   {
     description:
@@ -1236,7 +1312,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "lang_queue", "index",
     "comments_list", "comments_facets", "comments_inbox", "comments_batch_plan",
     "comments_batch_resolve", "comments_show", "comments_resolve",
-    "template_list", "template_inspect", "template_validate", "template_setup_mark",
+    "template_list", "template_inspect", "template_validate", "template_setup_mark", "template_scan", "template_infer", "template_install",
     "readiness_config", "readiness_profiles_list", "readiness_get_criteria",
     "readiness_assess", "readiness_scan", "readiness_output_checklist",
     "adopt_scan", "adopt_plan", "adopt_apply", "adopt_bootstrap", "adopt_validate", "adopt_setup_mark", "adopt_context_record",
@@ -1249,6 +1325,7 @@ if (process.env["AI_SPECTOR_MCP_DEBUG"] !== "0") {
     "context_list", "context_record", "context_resolve",
     "spec_list", "spec_record", "spec_approve", "spec_reject",
     "task_create", "task_list", "task_status", "task_get", "task_update", "task_approve_plan",
+    "task_approve_import_plan", "task_approve_pack_design",
     "task_confirm_tier", "task_approve_design_spec", "task_set_execution_mode",
     "task_pause", "task_resume", "task_complete", "task_abandon", "task_record_wave",
   ];

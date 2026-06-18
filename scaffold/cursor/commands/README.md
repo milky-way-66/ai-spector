@@ -18,6 +18,7 @@ When routing picks the **wrong workflow**, use a slash command. **The command wi
 | `/graph` | `ai-spector-graph` | Analyze data source, index, validate graph |
 | `/resolve-comments` | `ai-spector-resolve-comments` | Comment inbox → plan → commit |
 | `/adopt` | `ai-spector-adopt` | Migrate legacy docs into ai-spector layout |
+| `/template-import` | `ai-spector-template-import` | Gated custom template pack import (scan → install) |
 
 Still unsure? Say **"help me approve"** or ask the agent to call **`workflow_route({ message })`**.
 

@@ -1,6 +1,6 @@
 {
   "name": "ai-spector",
-  "version": "0.8.81",
+  "version": "0.8.83",
   "description": "Cursor-first documentation workflow: traceability graph, SRS/basic/detail design templates, and ai-spector CLI",
   "type": "module",
   "license": "MIT",

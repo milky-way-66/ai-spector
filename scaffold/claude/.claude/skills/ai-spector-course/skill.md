@@ -54,4 +54,4 @@ Natural language: *"open the course"*, *"learn ai-spector"*, *"show me the tutor
 | VI course | `website/docs/vi/` |
 | Project override | `docs/course/en/` or `docs/course/vi/` |
 
-Essentials: **9 lessons**. Advanced module ships later.
+Essentials: **9 lessons**. Advanced module ships later. |

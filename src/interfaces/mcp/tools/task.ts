@@ -3,6 +3,8 @@ import type {
   TaskAbandonSchema,
   TaskRecordWaveSchema,
   TaskApprovePlanSchema,
+  TaskApproveImportPlanSchema,
+  TaskApprovePackDesignSchema,
   TaskConfirmTierSchema,
   TaskApproveDesignSpecSchema,
   TaskSetExecutionModeSchema,
@@ -19,6 +21,8 @@ import type { WorkflowId } from "@/core/operations/task-templates.js";
 import {
   runTaskAbandon,
   runTaskApproveDesignSpec,
+  runTaskApproveImportPlan,
+  runTaskApprovePackDesign,
   runTaskApprovePlan,
   runTaskComplete,
   runTaskConfirmTier,
@@ -81,6 +85,26 @@ export async function toolTaskApprovePlan(input: z.infer<typeof TaskApprovePlanS
     by: input.by,
     username: input.username,
     role: input.role,
+  });
+}
+
+export async function toolTaskApproveImportPlan(
+  input: z.infer<typeof TaskApproveImportPlanSchema>,
+) {
+  return runTaskApproveImportPlan({
+    root: input.root,
+    taskId: input.taskId,
+    plan: input.plan as import("@/core/operations/task.js").StoredPlan | undefined,
+  });
+}
+
+export async function toolTaskApprovePackDesign(
+  input: z.infer<typeof TaskApprovePackDesignSchema>,
+) {
+  return runTaskApprovePackDesign({
+    root: input.root,
+    taskId: input.taskId,
+    designSpecPath: input.designSpecPath,
   });
 }
 

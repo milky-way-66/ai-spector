@@ -42,7 +42,11 @@ import {
 } from "../template/pack-setup.js";
 import { validateCustomPack } from "../template/pack-validate.js";
 import type { ScanResult } from "../template/scan.js";
+import { buildScanInference } from "../template/scan-inference.js";
 import { runTemplateRegen } from "./template-regen.js";
+import { getActiveTaskForSlot } from "./task.js";
+import { assertImportInstallAllowed } from "./template-import-gates.js";
+import { gatherTemplateListReport, type TemplateListReport } from "./template-list.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,42 +109,82 @@ async function listInstalledPackNames(root: string): Promise<string[]> {
 // template list
 // ---------------------------------------------------------------------------
 
-async function runTemplateList(opts: { cwd?: string }) {
-  const { root, config } = await loadConfigAndRoot(opts.cwd);
-  const srsPack = config.packs.srs;
-  const bdPack = config.packs.basicDesign;
-  const installed = await listInstalledPackNames(root);
+async function runTemplateList(opts: { cwd?: string; json?: boolean }) {
+  const { root } = await loadConfigAndRoot(opts.cwd);
+  const report = await gatherTemplateListReport(root);
 
-  console.log("Template packs:");
-  console.log("  (srs = SRS pack, bd = basic-design pack)\n");
-
-  // builtin entry
-  const srsBuiltin = srsPack === "builtin";
-  const bdBuiltin = bdPack === "builtin";
-  const builtinTags = [srsBuiltin ? "srs" : null, bdBuiltin ? "bd" : null].filter(Boolean).join(", ");
-  const builtinMarker = srsBuiltin || bdBuiltin ? "●" : "○";
-  const builtinStatus = builtinTags ? `(active for: ${builtinTags})` : "(inactive)";
-  console.log(`  ${builtinMarker} builtin        ${builtinStatus}`);
-
-  // installed custom packs
-  for (const name of installed) {
-    const srsActive = srsPack === name;
-    const bdActive = bdPack === name;
-    const tags = [srsActive ? "srs" : null, bdActive ? "bd" : null].filter(Boolean).join(", ");
-    const marker = srsActive || bdActive ? "●" : "○";
-    const status = tags ? `(active for: ${tags})` : "(inactive)";
-
-    let description = "";
-    try {
-      const manifestPath = join(root, ".ai-spector", "packs", name, "manifest.json");
-      const manifest = await readJson<PackManifest>(manifestPath);
-      description = manifest.description ? `  ${manifest.description}` : "";
-    } catch {
-      // ignore
-    }
-
-    console.log(`  ${marker} ${name.padEnd(16)}${status}${description}`);
+  if (opts.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
   }
+
+  printTemplateListReport(report);
+}
+
+export function printTemplateListReport(report: TemplateListReport): void {
+  console.log("Template packs\n");
+  console.log(`  Active SRS pack          : ${report.activeSrsPack}`);
+  console.log(`  Active basic-design pack : ${report.activeBasicDesignPack}`);
+  console.log();
+
+  const nameCol = 18;
+  const roleCol = 14;
+  const statusCol = 12;
+  console.log(
+    `${"Pack".padEnd(nameCol)}${"Active".padEnd(roleCol)}${"Setup".padEnd(statusCol)}Details`,
+  );
+  console.log("─".repeat(72));
+
+  for (const p of report.packs) {
+    const roles = [
+      p.activeSrs ? "srs" : null,
+      p.activeBasicDesign ? "bd" : null,
+    ]
+      .filter(Boolean)
+      .join("+") || "—";
+    const setup = p.type === "builtin" ? "—" : (p.setupStatus ?? "unknown");
+    const details = [
+      p.purpose,
+      p.documentCount != null ? `${p.documentCount} docs` : null,
+      p.description,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    console.log(
+      `${p.name.padEnd(nameCol)}${roles.padEnd(roleCol)}${String(setup).padEnd(statusCol)}${details}`,
+    );
+    if (p.setupBlockers?.length) {
+      console.log(`${"".padEnd(nameCol + roleCol + statusCol)}blockers: ${p.setupBlockers.join(", ")}`);
+    }
+  }
+
+  if (report.staging) {
+    const s = report.staging;
+    console.log("\nStaging (.ai-spector/packs/.staging/)");
+    const flags = [
+      s.hasScan ? "scan" : null,
+      s.hasClarifyProfile ? "clarify-profile" : null,
+      s.hasManifest ? "manifest" : null,
+      s.hasGenerateSkill ? "generate-skill" : null,
+      s.hasTemplates ? "templates" : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    console.log(`  Artifacts: ${flags || "(empty)"}`);
+    if (s.sourceDir) console.log(`  Source   : ${s.sourceDir}`);
+    if (s.scannedAt) console.log(`  Scanned  : ${s.scannedAt}`);
+    if (s.packNameHint) console.log(`  Pack hint: ${s.packNameHint}`);
+  }
+
+  if (report.importTask) {
+    const t = report.importTask;
+    console.log(`\nImport task: ${t.taskId} (${t.status}, step: ${t.currentStepId})`);
+  }
+
+  if (report.suggestedNextTools.length) {
+    console.log(`\nSuggested MCP tools: ${report.suggestedNextTools.join(" → ")}`);
+  }
+  console.log();
 }
 
 // ---------------------------------------------------------------------------
@@ -963,47 +1007,66 @@ async function runTemplateInspect(
 }
 
 // ---------------------------------------------------------------------------
-// template scan <path>
+// template scan <path> — shared by CLI + MCP template_scan
 // ---------------------------------------------------------------------------
 
-async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
-  const resolvedSource = resolve(opts.cwd ?? process.cwd(), sourcePath);
+export interface TemplateScanToStagingResult {
+  scanResult: ScanResult;
+  scanResultPath: string;
+  stagingDir: string;
+  fileCount: number;
+}
 
-  // Validate source is a directory
+export async function scanTemplatesToStaging(opts: {
+  cwd?: string;
+  sourcePath: string;
+}): Promise<TemplateScanToStagingResult> {
+  const resolvedSource = resolve(opts.cwd ?? process.cwd(), opts.sourcePath);
+
   if (!existsSync(resolvedSource)) {
-    console.error(`Error: path does not exist: ${resolvedSource}`);
-    process.exitCode = 1;
-    return;
+    throw new Error(`path does not exist: ${resolvedSource}`);
   }
   const { statSync } = await import("node:fs");
   if (!statSync(resolvedSource).isDirectory()) {
-    console.error(`Error: path is not a directory: ${resolvedSource}`);
-    process.exitCode = 1;
-    return;
+    throw new Error(`path is not a directory: ${resolvedSource}`);
   }
 
   const { root } = await loadConfigAndRoot(opts.cwd);
   const stagingDir = join(root, ".ai-spector", "packs", ".staging");
 
-  // Clear staging
   if (await pathExists(stagingDir)) {
     await rm(stagingDir, { recursive: true, force: true });
   }
   await mkdir(stagingDir, { recursive: true });
 
-  // Scan
-  const result = await scanTemplateFolder(resolvedSource, stagingDir);
-
-  // Write scan-result.json
+  const scanResult = await scanTemplateFolder(resolvedSource, stagingDir);
   const scanResultPath = join(stagingDir, "scan-result.json");
-  await writeJson(scanResultPath, result);
+  await writeJson(scanResultPath, scanResult);
 
-  // Print summary
+  return {
+    scanResult,
+    scanResultPath,
+    stagingDir,
+    fileCount: scanResult.files.length,
+  };
+}
+
+async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
+  let result: TemplateScanToStagingResult;
+  try {
+    result = await scanTemplatesToStaging({ cwd: opts.cwd, sourcePath });
+  } catch (err) {
+    console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const resolvedSource = result.scanResult.sourceDir;
   console.log(`\nScanned ${resolvedSource}:`);
-  console.log(`  ${result.files.length} template file${result.files.length === 1 ? "" : "s"} found`);
+  console.log(`  ${result.fileCount} template file${result.fileCount === 1 ? "" : "s"} found`);
   console.log();
 
-  if (result.files.length > 0) {
+  if (result.scanResult.files.length > 0) {
     const fileCol = 32;
     const headCol = 10;
     const header =
@@ -1011,7 +1074,7 @@ async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
     const divider = "─".repeat(header.length + 10);
     console.log(`  ${header}`);
     console.log(`  ${divider}`);
-    for (const f of result.files) {
+    for (const f of result.scanResult.files) {
       const name = f.relativePath.padEnd(fileCol);
       const headings = String(f.headings.length).padEnd(headCol);
       const placeholders = f.placeholders.join(", ") || "(none)";
@@ -1023,32 +1086,108 @@ async function runTemplateScan(sourcePath: string, opts: { cwd?: string }) {
   const relStaging = join(".ai-spector", "packs", ".staging", "scan-result.json");
   console.log(`Scan saved → ${relStaging}`);
   console.log();
-  console.log(`Next step: open your AI IDE and ask:`);
-  console.log(`  "set up template pack"`);
-  console.log(`The AI will read the scan result, ask you questions, refine`);
-  console.log(`the templates, and write them to staging for you to review.`);
+  console.log(`Next (agent — prefer MCP):`);
+  console.log(`  task_create({ kind: "import", workflow: "template-import", trigger: "import pack" })`);
+  console.log(`  template_infer({})`);
+  console.log(`Human CLI fallback: npx ai-spector template infer`);
 }
 
 // ---------------------------------------------------------------------------
-// template install [--name <name>] [--dry-run]
+// template infer [--json]
 // ---------------------------------------------------------------------------
 
-async function runTemplateInstall(opts: {
+async function runTemplateInfer(opts: { cwd?: string; json?: boolean }) {
+  const root = opts.cwd ?? findProjectRoot();
+  const stagingDir = join(root, ".ai-spector", "packs", ".staging");
+  const scanResultPath = join(stagingDir, "scan-result.json");
+  if (!(await pathExists(scanResultPath))) {
+    console.error(
+      'Error: scan-result.json not found. Run `npx ai-spector template scan <path>` first.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const scanResult = await readJson<ScanResult>(scanResultPath);
+  const { config } = await loadDocflowConfig(root);
+  const inference = buildScanInference(scanResult, {
+    languages: config.languages?.map((l) => l.code) ?? [],
+  });
+
+  const profilePath = join(stagingDir, "clarify-profile.json");
+  const profile = {
+    version: 1 as const,
+    scannedAt: scanResult.scannedAt,
+    sourceDir: scanResult.sourceDir,
+    ...inference,
+  };
+  await writeJson(profilePath, profile);
+
+  if (opts.json) {
+    console.log(JSON.stringify(profile, null, 2));
+    return;
+  }
+
+  console.log(`\nAspect coverage (${inference.aspectCoverage.length} required aspects):\n`);
+  const col = 22;
+  console.log(
+    `${"Aspect".padEnd(col)}${"Status".padEnd(12)}${"Confidence".padEnd(12)}Proposal`,
+  );
+  console.log("─".repeat(72));
+  for (const aspect of inference.aspectCoverage) {
+    const proposal =
+      aspect.proposal === null || aspect.proposal === undefined
+        ? "—"
+        : typeof aspect.proposal === "string"
+          ? aspect.proposal
+          : JSON.stringify(aspect.proposal);
+    const propShort = proposal.length > 36 ? `${proposal.slice(0, 33)}…` : proposal;
+    console.log(
+      `${aspect.aspectId.padEnd(col)}${aspect.status.padEnd(12)}${(aspect.confidence ?? "—").padEnd(12)}${propShort}`,
+    );
+  }
+  console.log(`Repeating candidates: ${inference.repeatingCandidates.length}`);
+  console.log(`Supplemental questions: ${inference.supplementalQuestions.length}`);
+  console.log(`Written → ${join(".ai-spector", "packs", ".staging", "clarify-profile.json")}`);
+  console.log(`\nNext (agent — prefer MCP): task_update import plan + resolve supplemental questions.`);
+}
+
+// ---------------------------------------------------------------------------
+// template install [--name <name>] [--dry-run] [--legacy]
+// ---------------------------------------------------------------------------
+
+export interface TemplateInstallResult {
+  packName: string;
+  documents: number;
+  sections: number;
+  graphNodes: number;
+  graphEdges: number;
+  destDir: string;
+  breakoutDomains: string[];
+}
+
+export async function installTemplateFromStaging(opts: {
   cwd?: string;
   name?: string;
   dryRun?: boolean;
-}) {
+  legacy?: boolean;
+}): Promise<TemplateInstallResult> {
   const { root, config, configFile } = await loadConfigAndRoot(opts.cwd);
   const stagingDir = join(root, ".ai-spector", "packs", ".staging");
+
+  if (!opts.dryRun && !opts.legacy) {
+    try {
+      const importTask = await getActiveTaskForSlot(root, "import");
+      await assertImportInstallAllowed(importTask, { root, legacy: opts.legacy, stagingDir });
+    } catch (err) {
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+  }
 
   // Check scan-result.json exists
   const scanResultPath = join(stagingDir, "scan-result.json");
   if (!(await pathExists(scanResultPath))) {
-    console.error(
-      'Error: scan-result.json not found in staging. Run `template scan` first.',
-    );
-    process.exitCode = 1;
-    return;
+    throw new Error("scan-result.json not found in staging. Run template_scan or template scan first.");
   }
 
   // Check staleness (> 24h)
@@ -1065,23 +1204,13 @@ async function runTemplateInstall(opts: {
   // Check manifest.json exists
   const stagingManifestPath = join(stagingDir, "manifest.json");
   if (!(await pathExists(stagingManifestPath))) {
-    console.error(
-      'Error: manifest.json not found in staging. Ask the AI to complete the setup workflow.',
-    );
-    process.exitCode = 1;
-    return;
+    throw new Error("manifest.json not found in staging. Complete manifest-plan before install.");
   }
 
-  // Load + validate manifest
   const rawManifest = await readJson<unknown>(stagingManifestPath);
   const { valid, errors } = validatePackManifest(rawManifest);
   if (!valid) {
-    console.error("manifest.json validation failed:");
-    for (const err of errors) {
-      console.error(`  - ${err}`);
-    }
-    process.exitCode = 1;
-    return;
+    throw new Error(`manifest.json validation failed: ${errors.join("; ")}`);
   }
 
   const manifest = rawManifest as PackManifest;
@@ -1099,18 +1228,19 @@ async function runTemplateInstall(opts: {
     }
   }
   if (missing.length > 0) {
-    console.error("Error: the following template files are missing from staging:");
-    for (const f of missing) {
-      console.error(`  - ${f}`);
-    }
-    process.exitCode = 1;
-    return;
+    throw new Error(`missing staging templates: ${missing.join(", ")}`);
   }
 
-  // Dry run — stop here
   if (opts.dryRun) {
-    console.log(`Dry run complete — all checks passed. Pack: ${packName}`);
-    return;
+    return {
+      packName,
+      documents: manifest.documents.length,
+      sections: 0,
+      graphNodes: 0,
+      graphEdges: 0,
+      destDir: join(root, ".ai-spector", "packs", packName),
+      breakoutDomains: manifest.documents.filter((d) => d.perDomain).map((d) => d.perDomain!),
+    };
   }
 
   // Destination
@@ -1209,7 +1339,39 @@ async function runTemplateInstall(opts: {
   }
 
   console.log();
-  console.log(`Next: ask your AI to "generate <document>" to use the new template.`);
+  console.log(`Next: template_validate({ pack: "${packName}", sync: true }) then continue import task.`);
+  console.log();
+
+  const breakoutDomains = finalManifest.documents
+    .filter((d) => d.perDomain)
+    .map((d) => d.perDomain!);
+
+  return {
+    packName,
+    documents: stats.documents,
+    sections: stats.sections,
+    graphNodes: stats.graphNodes,
+    graphEdges: stats.graphEdges,
+    destDir,
+    breakoutDomains,
+  };
+}
+
+async function runTemplateInstall(opts: {
+  cwd?: string;
+  name?: string;
+  dryRun?: boolean;
+  legacy?: boolean;
+}) {
+  try {
+    const result = await installTemplateFromStaging(opts);
+    if (opts.dryRun) {
+      console.log(`Dry run complete — all checks passed. Pack: ${result.packName}`);
+    }
+  } catch (err) {
+    console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1599,10 +1761,16 @@ export function registerTemplateCommand(program: Command) {
 
   template
     .command("list")
-    .description("List installed template packs and show which is active")
+    .description(
+      "List template packs, staging artifacts, active import task, and suggested next MCP tools",
+    )
     .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--json", "Full report as JSON (same shape as template_list MCP)")
     .action(async (opts) => {
-      await runTemplateList({ cwd: resolve(opts.cwd ?? process.cwd()) });
+      await runTemplateList({
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        json: Boolean(opts.json),
+      });
     });
 
   template
@@ -1647,11 +1815,27 @@ export function registerTemplateCommand(program: Command) {
     .option("-C, --cwd <path>", "Project root", process.cwd())
     .option("--name <name>", "Override pack name from manifest")
     .option("--dry-run", "Validate and print without writing anything")
+    .option("--legacy", "Bypass import-task gates (escape hatch for in-flight staging)")
     .action(async (opts) => {
       await runTemplateInstall({
         cwd: resolve(opts.cwd ?? process.cwd()),
         name: opts.name as string | undefined,
         dryRun: Boolean(opts.dryRun),
+        legacy: Boolean(opts.legacy),
+      });
+    });
+
+  template
+    .command("infer")
+    .description(
+      "Derive import aspect coverage from scan-result.json (smart clarify input).",
+    )
+    .option("-C, --cwd <path>", "Project root", process.cwd())
+    .option("--json", "Print clarify-profile.json to stdout")
+    .action(async (opts) => {
+      await runTemplateInfer({
+        cwd: resolve(opts.cwd ?? process.cwd()),
+        json: Boolean(opts.json),
       });
     });
 

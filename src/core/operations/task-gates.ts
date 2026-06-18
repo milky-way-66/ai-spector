@@ -1,4 +1,5 @@
 import type { ResolveTier, StoredPlan, TaskState } from "./task.js";
+import { isImportClarifyComplete } from "../template/import-aspects.js";
 
 type StepStatus = TaskState["steps"][number]["status"];
 
@@ -204,6 +205,17 @@ export function listApprovedTaskGateViolations(task: TaskState): string[] {
 export function assertTaskApprovePlanAllowed(
   task: TaskState,
 ): asserts task is TaskState & { plan: StoredPlan } {
+  if (task.kind === "import") {
+    throw new TaskPreconditionError(
+      "step_premature",
+      `Task "${task.id}" is an import task — use task_approve_import_plan for manifest plan approval.`,
+      "Present manifest table, wait for explicit yes, then task_approve_import_plan (not task_approve_plan).",
+      ["task_approve_import_plan"],
+      task,
+      "manifest-plan",
+    );
+  }
+
   if (task.planApprovedAt) {
     throw new TaskPreconditionError(
       "plan_already_approved",
@@ -539,6 +551,56 @@ export function assertTaskStepUpdateAllowed(
       task,
       "plan",
     );
+  }
+
+  if (task.kind === "import") {
+    if (stepId === "manifest-plan" && nextStatus === "done" && !task.planApprovedAt) {
+      throw new TaskPreconditionError(
+        "step_premature",
+        `Cannot mark manifest-plan done on import task "${task.id}" via task_update — use task_approve_import_plan.`,
+        "Show manifest table, wait for explicit yes, then task_approve_import_plan.",
+        ["task_approve_import_plan"],
+        task,
+        "manifest-plan",
+      );
+    }
+    if (stepId === "design" && nextStatus === "done" && !task.snapshot.packDesignSpecApprovedAt) {
+      throw new TaskPreconditionError(
+        "step_premature",
+        `Cannot mark design done on import task "${task.id}" via task_update — use task_approve_pack_design.`,
+        "Write pack design spec, get user yes, then task_approve_pack_design with designSpecPath.",
+        ["task_approve_pack_design"],
+        task,
+        "design",
+      );
+    }
+    if (stepId === "clarify" && nextStatus === "done") {
+      const coverage =
+        task.plan?.kind === "import" ? task.plan.plan.aspectCoverage : undefined;
+      const supplemental =
+        task.plan?.kind === "import" ? task.plan.plan.supplementalQuestions : undefined;
+      if (!coverage?.length) {
+        throw new TaskPreconditionError(
+          "snapshot_missing",
+          `Import task "${task.id}" has no aspect coverage — run template_infer first.`,
+          "Call template_infer({}), store aspect coverage in import plan via task_update.",
+          ["template_infer", "task_update"],
+          task,
+          "clarify",
+        );
+      }
+      if (!isImportClarifyComplete({ aspectCoverage: coverage, supplementalQuestions: supplemental })) {
+        throw new TaskPreconditionError(
+          "step_incomplete",
+          `Import task "${task.id}" clarify incomplete — resolve aspect gaps and supplemental questions.`,
+          "Confirm each aspect with user, resolve supplementalQuestions, then mark clarify done.",
+          ["template_infer", "task_update"],
+          task,
+          "clarify",
+        );
+      }
+    }
+    return;
   }
 
   if (task.kind !== "generate" && task.kind !== "resolve") return;

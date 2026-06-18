@@ -2,11 +2,12 @@ export type BuiltinWorkflowId =
   | "generate-srs"
   | "generate-basic-design"
   | "generate-detail-design"
-  | "resolve";
+  | "resolve"
+  | "template-import";
 /** Builtin workflows or custom pack workflows (`generate-<pack-name>`). */
 export type WorkflowId = BuiltinWorkflowId | `generate-${string}`;
 
-export type TaskKind = "generate" | "resolve";
+export type TaskKind = "generate" | "resolve" | "import";
 
 export interface TemplateStep {
   id: string;
@@ -41,6 +42,22 @@ const RESOLVE_STEPS: TemplateStep[] = [
   { id: "report", phase: "report", description: "Summarize state update" },
 ];
 
+const IMPORT_STEPS: TemplateStep[] = [
+  { id: "check", phase: "check", description: "Validate workspace + scan result" },
+  { id: "clarify", phase: "clarify", description: "Aspect coverage from scan — confirm gaps only" },
+  { id: "design", phase: "design", description: "Pack design spec — user approves" },
+  { id: "manifest-briefing", phase: "briefing", description: "Per-document manifest briefing" },
+  { id: "manifest-plan", phase: "plan", description: "Manifest table — user approves" },
+  { id: "refine-templates", phase: "execute", description: "Normalize templates → staging" },
+  { id: "skill-briefing", phase: "briefing", description: "Review generate skill outline with user" },
+  { id: "write-skill", phase: "execute", description: "Write generate-skill.md + validate gated flow" },
+  { id: "install", phase: "install", description: "template install" },
+  { id: "context-map", phase: "clarify", description: "Resolve all context-map TODOs with user" },
+  { id: "readiness", phase: "readiness", description: "Review/adjust readiness criteria" },
+  { id: "verify", phase: "verify", description: "template verify --sync until ready" },
+  { id: "complete", phase: "report", description: "Import complete — pack ready for generate" },
+];
+
 export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
   "generate-srs": { id: "generate-srs", kind: "generate", steps: GENERATE_STEPS },
   "generate-basic-design": {
@@ -54,6 +71,7 @@ export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
     steps: GENERATE_STEPS,
   },
   resolve: { id: "resolve", kind: "resolve", steps: RESOLVE_STEPS },
+  "template-import": { id: "template-import", kind: "import", steps: IMPORT_STEPS },
 };
 
 const CUSTOM_GENERATE_RE = /^generate-[a-z0-9][a-z0-9-]*$/;
@@ -77,6 +95,7 @@ export function defaultNextAction(workflow: WorkflowId, stepId: string): string 
 }
 
 export function activeSlotFor(kind: TaskKind, workflow: string, docType?: string): string {
+  if (kind === "import") return "import";
   if (kind === "resolve") return "resolve";
   if (workflow === "generate-srs") return "generate:srs";
   if (workflow === "generate-basic-design") return "generate:basic-design";

@@ -454,12 +454,13 @@ export const ReviewListSchema = RootSchema.extend({
 
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
-export const TaskKindEnum = z.enum(["generate", "resolve"]);
+export const TaskKindEnum = z.enum(["generate", "resolve", "import"]);
 export const BuiltinWorkflowIdEnum = z.enum([
   "generate-srs",
   "generate-basic-design",
   "generate-detail-design",
   "resolve",
+  "template-import",
 ]);
 /** Custom template packs use `generate-<pack-name>` (same gated steps as generate-srs). */
 export const WorkflowIdEnum = z.union([
@@ -523,9 +524,50 @@ export const GeneratePlanSchema = z.object({
     .optional(),
 });
 
+export const ImportManifestRowSchema = z.object({
+  file: z.string(),
+  documentId: z.string(),
+  output: z.string(),
+  type: z.union([z.literal("single"), z.string()]),
+});
+
+export const ImportAspectCoverageSchema = z.object({
+  aspectId: z.string(),
+  label: z.string(),
+  status: z.enum(["resolved", "inferred", "ambiguous", "unknown"]),
+  neededFor: z.array(z.string()),
+  proposal: z.unknown().nullable(),
+  confidence: z.enum(["high", "medium", "low"]).nullable(),
+  scanEvidence: z.array(z.string()),
+  scanSignals: z.array(z.string()),
+  confirmedAt: z.string().optional(),
+  userValue: z.unknown().optional(),
+});
+
+export const ImportSupplementalQuestionSchema = z.object({
+  id: z.string(),
+  scanTrigger: z.string(),
+  neededFor: z.array(z.string()),
+  status: z.enum(["open", "resolved"]),
+  answer: z.string().optional(),
+  resolvedAt: z.string().optional(),
+});
+
+export const ImportPlanSchema = z.object({
+  packName: z.string(),
+  sourceDir: z.string(),
+  documentCount: z.number().int(),
+  rows: z.array(ImportManifestRowSchema),
+  waves: z.array(z.object({ wave: z.number().int(), documentIds: z.array(z.string()) })),
+  clarifyAnswers: z.record(z.string(), z.string()),
+  aspectCoverage: z.array(ImportAspectCoverageSchema).optional(),
+  supplementalQuestions: z.array(ImportSupplementalQuestionSchema).optional(),
+});
+
 export const StoredPlanSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("resolve"), plan: FullTaskPlanSchema }),
   z.object({ kind: z.literal("generate"), plan: GeneratePlanSchema }),
+  z.object({ kind: z.literal("import"), plan: ImportPlanSchema }),
 ]);
 
 export const TaskStepPatchSchema = z.object({
@@ -597,6 +639,19 @@ export const TaskUpdatePatchSchema = z.object({
       executionMode: ResolveExecutionModeEnum.optional().describe(
         "Standard/Full tier after plan approval: inline or subagent execution",
       ),
+      packDesignSpecPath: z.string().optional(),
+      packDesignSpecApprovedAt: z.string().optional(),
+      importPlanPath: z.string().optional(),
+      scanResultHash: z.string().optional(),
+      scanConfirmedAt: z.string().optional(),
+      manifestPlanPresentedAt: z.string().optional(),
+      manifestPlanApprovedAt: z.string().optional(),
+      skillBriefingConfirmedAt: z.string().optional(),
+      stagedSkillPath: z.string().optional(),
+      contextMapResolvedAt: z.string().optional(),
+      readinessReviewedAt: z.string().optional(),
+      packValidateReadyAt: z.string().optional(),
+      aspectCoverageConfirmedAt: z.string().optional(),
     })
     .optional(),
   step: z.object({ id: z.string(), patch: TaskStepPatchSchema }).optional(),
@@ -666,6 +721,19 @@ export const TaskApproveDesignSpecSchema = RootSchema.extend({
     .describe("Relative path to approved design spec, e.g. docs/superpowers/specs/2026-06-17-topic-design.md"),
 });
 
+export const TaskApproveImportPlanSchema = RootSchema.extend({
+  taskId: z.string().describe("Import task id"),
+  plan: StoredPlanSchema.optional().describe("ImportPlan to approve; omit if already set via task_update"),
+  ...AuditActorOverrideSchema,
+});
+
+export const TaskApprovePackDesignSchema = RootSchema.extend({
+  taskId: z.string().describe("Import task id"),
+  designSpecPath: z
+    .string()
+    .describe("Relative path to approved pack design spec, e.g. docs/superpowers/specs/2026-06-18-my-pack-design.md"),
+});
+
 export const TaskSetExecutionModeSchema = RootSchema.extend({
   taskId: z.string().describe("Resolve task id with approved plan"),
   mode: ResolveExecutionModeEnum.describe("inline or subagent — Standard/Full only"),
@@ -721,6 +789,23 @@ export const TemplateSetupMarkSchema = RootSchema.extend({
   itemId: z
     .string()
     .describe('pack-setup.json item id, e.g. "readiness.reviewed"'),
+});
+
+export const TemplateInferSchema = RootSchema.extend({
+  json: z.boolean().optional().describe("Return full clarify-profile as JSON"),
+});
+
+export const TemplateScanSchema = RootSchema.extend({
+  sourcePath: z.string().describe("Path to folder of .md template files"),
+});
+
+export const TemplateInstallSchema = RootSchema.extend({
+  name: z.string().optional().describe("Override pack name (default: manifest packName)"),
+  dryRun: z.boolean().optional().describe("Validate staging without copying to packs/"),
+  legacy: z
+    .boolean()
+    .optional()
+    .describe("Bypass import-task gates (human CLI escape hatch)"),
 });
 
 // ── Readiness assessment ──────────────────────────────────────────────────────
