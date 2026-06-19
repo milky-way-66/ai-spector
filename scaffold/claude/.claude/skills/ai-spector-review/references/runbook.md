@@ -21,6 +21,7 @@ Legacy `reviews/` is migrated automatically on first review command, or via `npx
 | **Start review (preferred)** | `review_begin({ logicalPath? })` | `npx ai-spector review begin [path] --json` |
 | Detect + queue first reviews | `review_check({})` | `npx ai-spector review check --json` |
 | Show review queue | `review_queue({ track: "internal", showDiff: true })` | `npx ai-spector review queue --track internal --json` |
+| Fast queue list (no diff/impact) | `review_queue({ track: "internal", enrich: false, showDiff: false })` | `npx ai-spector review queue --no-enrich --json` |
 | Load status + diff + history | `review_status({ logicalPath, showDiff: true })` | `npx ai-spector review status <path> --json --history` |
 | Ack review summary written | `review_session_ack_review({ logicalPath })` | `npx ai-spector review session ack <path> --json` |
 | List all docs with review status | `review_list({ prefix?, status? })` | `npx ai-spector review list --json` |
@@ -80,7 +81,9 @@ Present as a table — never raw JSON:
 | 1 | `srs/01-overview` | first | 2026-06-11 | — | — | first_review |
 | 2 | `srs/02-scope` | changed | 2026-06-10 | +12 | -5 | content_changed |
 
-Use `reason` from queue (`first_review` | `content_changed`). Diff lines apply to re-reviews only.
+Use `reason` from queue (`first_review` | `content_changed`). Diff lines apply to re-reviews only — read from `enrichments[logicalPath].linesAdded` / `linesRemoved` when `enrich: true` (default with `showDiff`).
+
+**Downstream re-review candidates:** when enrichment is present, surface `enrichments[logicalPath].impact.review` in the queue summary (paths only — do not invent). Example: "2 downstream doc(s) may need re-review: `srs/03-requirements`, `basic-design/02-api`."
 
 **Stop and ask:** "Which document should I review? Reply with a number or path."
 
@@ -97,6 +100,13 @@ review_begin({ logicalPath: "<picked or named>", showDiff: true })
 Or `review_status({ logicalPath, showDiff: true })` — both auto-register never-reviewed docs.
 
 Use `reviewKind` / `reviewTemplate` from the response (`first` | `re_review` | `client_signoff`).
+
+**Enrichment:** `review_status` and `review_queue` (with `showDiff` / default enrich) return `enrichment` on pending jobs:
+- `enrichment.diff` — git-anchored diff since last approval (`diffSource`: `git`, `legacy_snapshot`, or `legacy_content`)
+- `enrichment.impact.review` — downstream documents that may need re-review after approving this change
+- `enrichment.impact.regenerate` — nodes/docs that may need regeneration
+
+Use `enrichment.impact.review` paths only — do not invent downstream docs.
 
 Then read the **full** document file (`docPath` in the response — e.g. `docs/srs/en/1-introduction.md`).
 
@@ -121,7 +131,9 @@ Custom team checklists: [custom-checklists.md](./custom-checklists.md).
 graph_impact({ file: "<docPath>", change: "content updated — reviewing for approval" })
 ```
 
-Note which downstream nodes or documents are affected. This tells you whether approving this change will require regenerating other docs.
+Note which downstream nodes or documents are affected. Prefer `enrichment.impact.review` and `enrichment.impact.regenerate` from `review_status` when present — they are pre-computed for the pending change. Use `graph_impact` for additional context or when enrichment is omitted (`--no-enrich`).
+
+This tells you whether approving this change will require regenerating or re-reviewing other docs.
 
 ---
 
@@ -159,7 +171,7 @@ Branch on `reviewTemplate` from `review_begin` / `review_status`:
 <2-4 sentences on scope, structure, and overall quality.>
 
 **Impact**
-<From graph_impact. If none: "No downstream impact detected.">
+<From enrichment.impact when available; otherwise graph_impact. If none: "No downstream impact detected.">
 
 **Readiness compliance**
 <Structural scan + compliance table — see readiness-compliance.md.>
@@ -181,10 +193,10 @@ Omit **Summary of changes** and **Diff** — show "N/A — first sign-off" if ne
 <2-4 sentences in plain language — what changed and why it matters.>
 
 **Diff**
-<From review_status. Cap at 30 lines.>
+<From review_status enrichment.diff or legacy diff. Cap at 30 lines.>
 
 **Impact**
-<From graph_impact.>
+<From enrichment.impact.review + enrichment.impact.regenerate when available; otherwise graph_impact.>
 
 **Readiness compliance**
 <Table per readiness-compliance.md.>
@@ -209,7 +221,7 @@ Not a list of line numbers — explain the meaning of the change.>
 "{n} -" are removals. Cap at 30 lines; show count if more.>
 
 **Impact**
-<What downstream documents or graph nodes are affected, from graph_impact.
+<What downstream documents or graph nodes are affected — prefer enrichment.impact; otherwise graph_impact.
 If none: "No downstream impact detected.">
 
 **Open comment threads**
