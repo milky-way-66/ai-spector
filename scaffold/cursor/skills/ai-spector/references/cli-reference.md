@@ -140,7 +140,7 @@ Translation sync job queue (file-level, bidirectional). State files under `.ai-s
 | `change-history.json` | Append-only log of all file edits (lang, version, hashes) |
 
 ```bash
-npx ai-spector lang queue pending [--lang jp] [--json]
+npx ai-spector lang queue pending [--lang jp] [--no-enrich] [--json]
 npx ai-spector lang queue resolved [--limit 20] [--json]
 npx ai-spector lang queue failed [--limit 20] [--json]
 npx ai-spector lang queue scan
@@ -148,13 +148,33 @@ npx ai-spector lang queue fail <jobId> [--reason dismissed] [--message <text>]
 npx ai-spector lang queue retry <jobId>
 ```
 
+**Enrichment (default on `pending --json`):** each job includes `enrichment` with git-anchored `diff`, `impact` buckets (`intraDocTargets`, `regenerate`, `syncUpstream`, `review`), and optional `layerDrift`. Use `--no-enrich` for fast listing without diff/graph compute.
+
 Reconciliation runs automatically at the end of `npx ai-spector index` when multiple languages are configured.
 
 **Job directions:**
 - `outbound` — primary changed → sync to secondary languages
 - `inbound` — secondary changed → sync back to primary + other languages
 
-**Merge resolution:** read `changes/{docType}--{relativePath}.json` for per-lang diffs and edit order. When `origin.mergedLangs` is set, merge using each lang's `diff` (latest file is default origin). Full audit: `change-history.json`.
+**Merge resolution:** read `enrichment.diff` from `lang queue pending --json` for line-level context. Per-lang edit order: `changes/{docType}--{relativePath}.json` (`sequence`, `mtimeMs`). When `origin.mergedLangs` is set, merge using enrichment diff plus changes metadata. Full audit: `change-history.json`.
+
+---
+
+## `review queue`
+
+Two-track document review (internal → client). State under `.ai-spector/.docflow/review-queue/`.
+
+```bash
+npx ai-spector review queue [--track internal|client|all] [--no-enrich] [--no-diff] [--json]
+npx ai-spector review status <logicalPath> [--json] [--history]
+npx ai-spector review begin [logicalPath] [--json]
+npx ai-spector review check [--json]
+npx ai-spector review approve <logicalPath> --by <name>
+```
+
+**Enrichment (default when diff shown):** pending entries include `enrichments[logicalPath]` with git-anchored `diff`, `impact.review` (downstream re-review candidates), and `impact.regenerate`. Use `--no-enrich` for fast queue listing.
+
+**Anchors:** internal quorum writes `baselineAnchor` (git ref + hash) instead of eager snapshot diffs; legacy snapshots still work as fallback until re-approve.
 
 ---
 

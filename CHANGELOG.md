@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **Queue drift engine** — translation and review queues store git-anchored `DocAnchor` on reconcile/approval; `lang queue pending` and `review queue` enrich on read with git diff, graph impact, and optional `layerDrift`. Legacy fingerprint content and review snapshots fall back until resolve. MCP: `lang_queue({ enrich: false })`, `review_queue({ enrich: false })`. CLI: `--no-enrich` on both queue commands.
 - **Layer sync audit** — `npx ai-spector sync snapshot` records a baseline (per-file hashes, graph hash, git ref) when SRS, basic design, and detail design are aligned; `sync audit` detects drift since baseline with git diffs, merged graph impact, and traceability gap hints. MCP: `sync_snapshot`, `sync_audit`. CI: `--fail-on-drift`. Skill: `ai-spector-sync-audit`. `workspace_check` emits `SYNC-001` when drift is detected.
 
 ## [0.8.90] - 2026-06-19
