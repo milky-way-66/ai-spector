@@ -28,8 +28,11 @@ import { listApprovedTaskGateViolations } from "./task-gates.js";
 import type { TaskState } from "./task.js";
 import type { SourceMode } from "./derive.js";
 import { evaluateWorkflowStep } from "../workflow/dependencies.js";
+import { loadBaseline } from "../sync/baseline.js";
+import { discoverDesignLayerFiles } from "../sync/discover.js";
+import { quickHasDesignLayerDrift } from "../sync/hash-diff.js";
 
-export type CheckSeverity = "error" | "warning";
+export type CheckSeverity = "error" | "warning" | "info";
 
 export interface CheckFinding {
   ruleId: string;
@@ -94,6 +97,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "READY-001", severity: "warning" },
   { id: "READY-002", severity: "warning" },
   { id: "ADOPT-001", severity: "warning" },
+  { id: "SYNC-001", severity: "info" },
 ];
 
 interface TaskIndexForCheck {
@@ -717,6 +721,22 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
           message: `graph.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
           path: graphRel,
           fix: "Re-run analyze/merge or restore from a known-good graph.",
+        });
+      }
+    }
+  }
+
+  // SYNC-001 — lightweight design-layer drift hint when a sync baseline exists.
+  if (enabled(rules, "SYNC-001")) {
+    const baseline = await loadBaseline(root);
+    if (baseline) {
+      const currentLayers = await discoverDesignLayerFiles(root);
+      if (quickHasDesignLayerDrift(baseline, currentLayers)) {
+        add({
+          ruleId: "SYNC-001",
+          severity: severityOf(rules, "SYNC-001", "info"),
+          message: "Design layer drift detected — run sync audit",
+          fix: "npx ai-spector sync audit --json",
         });
       }
     }
