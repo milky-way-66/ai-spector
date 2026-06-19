@@ -1,6 +1,6 @@
 # Queue Drift Engine — Git Anchors + Lazy Enrichment + Graph Impact — Design Spec
 
-> **Status:** Approved (brainstorming)  
+> **Status:** Approved — implementation plan written  
 > **Date:** 2026-06-19  
 > **Scope:** ai-spector core, translation queue, review queue, CLI/MCP, agent skills  
 > **Approach:** 1 — Shared drift engine in `src/core/sync/`  
