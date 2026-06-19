@@ -27,6 +27,12 @@ Optional filter:
 npx ai-spector lang queue pending --lang jp --json
 ```
 
+Fast listing without git diff / graph impact (large queues):
+
+```bash
+npx ai-spector lang queue pending --no-enrich --json
+```
+
 For each job note:
 
 | Field | Use |
@@ -35,12 +41,29 @@ For each job note:
 | `origin.path` | Default source file (latest by mtime when merged) |
 | `origin.mergedLangs` | Multiple langs edited same logical file — read merge context |
 | `targets[]` | Langs with `status: "pending"` still need writes |
+| `enrichment` | **Primary diff + impact source** (git-anchored on read) |
+
+### Enrichment fields
+
+Each pending job includes `enrichment` (unless `--no-enrich`):
+
+| Field | Use |
+|-------|-----|
+| `enrichment.diff` | Line-level change since last reconcile (`diffSource`: `git`, `legacy_content`, or `legacy_snapshot`) |
+| `enrichment.linesAdded` / `linesRemoved` | Summary counts for queue tables |
+| `enrichment.impact.intraDocTargets` | Pending target paths still needing writes |
+| `enrichment.impact.regenerate` | Cross-doc nodes that may need regeneration |
+| `enrichment.impact.syncUpstream` | Upstream SRS/docs to sync after this change |
+| `enrichment.impact.review` | Downstream docs that may need re-review |
+| `enrichment.layerDrift` | When set, paths modified since last `sync snapshot` — hand off to `ai-spector-sync-audit` or cross-layer resolve-task |
+
+**Do not invent impact paths** — use `enrichment.impact` arrays only.
 
 **Status-only table:** use `ai-spector-lang-status` — this runbook is for **writes**.
 
 ## Phase 2 — Merge context (when needed)
 
-When `origin.mergedLangs` is set, or edits may overlap, read the per-document changes file:
+When `origin.mergedLangs` is set, or edits may overlap, read the per-document changes file for edit order:
 
 ```
 .ai-spector/.docflow/translation-queue/changes/{docType}--{relativePath with / → --}.json
@@ -48,9 +71,10 @@ When `origin.mergedLangs` is set, or edits may overlap, read the per-document ch
 
 Use `changes[]`:
 
-- **`sequence` + `mtimeMs`** — edit order
-- **`diff`** — line-level `{n} -` / `{n} +` for each lang
-- Non-overlapping line ranges → combine into one logical update before translating
+- **`sequence` + `mtimeMs`** — edit order across languages
+- **`enrichment.diff`** on the job — primary line-level context (replaces legacy `changes[].diff` reads)
+
+For multi-lang merge detail, prefer `enrichment.diff` from `lang queue pending --json`. The `changes/` file still records per-lang edit metadata (`sequence`, `mtimeMs`, `anchor`).
 
 If diffs conflict (same lines changed differently), **stop** and ask the user how to merge, or:
 
@@ -84,6 +108,14 @@ From [generate-workflow.md](../../ai-spector/references/generate-workflow.md):
 4. Translate structural labels (e.g. `## Overview` → `## 概要`).
 
 **Whole file only** — do not partial-patch unless user explicitly asked for a section-only fix.
+
+### Cross-layer impact
+
+When `enrichment.layerDrift.modified` is non-empty:
+
+1. Tell the user which design-layer paths drifted since baseline.
+2. Offer `npx ai-spector sync audit --json` or `ai-spector-sync-audit` skill.
+3. Do not auto-regenerate — suggest resolve-task if user wants fixes.
 
 ## Phase 4 — Reconcile
 
@@ -120,6 +152,7 @@ Then re-run this runbook from Phase 3.
 
 - Do not invent queue jobs — they come from index/scan only.
 - Do not skip `npx ai-spector index` after writes — resolution is automatic there.
+- Read `enrichment.diff` and `enrichment.impact` — not legacy inline `changes[].diff`.
 - On CLI failure → [cli-failures.md](../../ai-spector/references/cli-failures.md).
 - Multi-lang merge conflicts → fail job or ask user; do not silently overwrite.
 

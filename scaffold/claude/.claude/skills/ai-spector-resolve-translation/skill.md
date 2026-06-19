@@ -21,8 +21,8 @@ description: >-
 
 ```
 - [ ] docflow.config.json → languages[]
-- [ ] lang queue pending --json (optional --lang <code>)
-- [ ] per job: read changes/{docType}--{path}.json if merged or fine-grained merge needed
+- [ ] lang queue pending --json (optional --lang <code>; use --no-enrich for fast list)
+- [ ] per job: read enrichment.diff + enrichment.impact (not changes[].diff)
 - [ ] write target file(s) — whole file, translation rules enforced
 - [ ] npx ai-spector index → jobs move to resolved
 ```
