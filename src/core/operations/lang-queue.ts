@@ -1,5 +1,5 @@
-import { resolve } from "node:path";
-import { loadDocflowConfig } from "../config/load.js";
+import { join, resolve } from "node:path";
+import { bundledRulesImpactPath, loadDocflowConfig } from "../config/load.js";
 import type { FailReason } from "../lang/queue-types.js";
 import {
   ensureQueueDir,
@@ -7,6 +7,7 @@ import {
   loadPendingQueue,
   loadResolvedQueue,
   retryFailedJob,
+  savePendingQueue,
 } from "../lang/queue-store.js";
 import {
   failPendingJob,
@@ -14,6 +15,8 @@ import {
   reconcileTranslationQueue,
 } from "../lang/queue.js";
 import type { TranslationJob } from "../lang/queue-types.js";
+import type { EnrichmentCache } from "../sync/drift-types.js";
+import { enrichTranslationJob } from "../sync/enrich.js";
 
 export interface LangQueueOptions {
   root?: string;
@@ -39,11 +42,41 @@ export async function runLangQueueScan(opts: LangQueueOptions = {}): Promise<Que
   return { skipped: false, pendingCount: result.pendingCount, enqueued: result.enqueued, resolved: result.resolved, failed: result.failed };
 }
 
-export async function runLangQueuePending(opts: LangQueueOptions = {}): Promise<TranslationJob[]> {
-  const projectRoot = resolve(opts.root ?? (await loadDocflowConfig()).root);
+export interface LangQueuePendingResult {
+  job: TranslationJob;
+  enrichment?: EnrichmentCache;
+}
+
+export async function runLangQueuePending(
+  opts: LangQueueOptions & { enrich?: boolean } = {},
+): Promise<LangQueuePendingResult[]> {
+  const enrich = opts.enrich !== false;
+  const { root: projectRoot, config } = await loadDocflowConfig(
+    opts.root ? resolve(opts.root) : undefined,
+  );
   const paths = await ensureQueueDir(projectRoot);
   const pending = await loadPendingQueue(paths);
-  return filterJobsByLang(pending.jobs, opts.lang);
+  const graphPath = join(projectRoot, config.paths.graph);
+  const rulesPath = bundledRulesImpactPath();
+
+  const results: LangQueuePendingResult[] = [];
+  for (const job of filterJobsByLang(pending.jobs, opts.lang)) {
+    if (!enrich) {
+      results.push({ job });
+      continue;
+    }
+    const enrichment = await enrichTranslationJob(projectRoot, job, {
+      graphPath,
+      rulesPath,
+      persist: true,
+    });
+    job.enrichment = enrichment;
+    results.push({ job, enrichment });
+  }
+  if (enrich && results.length > 0) {
+    await savePendingQueue(paths, pending);
+  }
+  return results;
 }
 
 export async function runLangQueueResolved(opts: LangQueueOptions = {}): Promise<unknown[]> {

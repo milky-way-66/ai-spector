@@ -18,7 +18,7 @@ export async function toolLangQueue(input: z.infer<typeof LangQueueSchema>) {
 
   let jobs: unknown[] = [];
   if (status === "pending" || status === "all") {
-    jobs = [...jobs, ...(await runLangQueuePending(opts))];
+    jobs = [...jobs, ...(await runLangQueuePending(opts)).map((r) => r.job)];
   }
   if (status === "failed" || status === "all") {
     jobs = [...jobs, ...(await runLangQueueFailed(opts))];

@@ -768,9 +768,12 @@ langQueue
   .option("--lang <code>", "Filter jobs affecting a language")
   .option("--json", "JSON output")
   .action(async (opts) => {
-    const jobs = await runLangQueuePending({ root: resolve(opts.cwd ?? process.cwd()), lang: opts.lang });
-    if (opts.json) console.log(JSON.stringify({ jobs }, null, 2));
-    else console.log(formatPendingTable(jobs));
+    const results = await runLangQueuePending({
+      root: resolve(opts.cwd ?? process.cwd()),
+      lang: opts.lang,
+    });
+    if (opts.json) console.log(JSON.stringify(results, null, 2));
+    else console.log(formatPendingTable(results.map((r) => r.job)));
   });
 
 langQueue

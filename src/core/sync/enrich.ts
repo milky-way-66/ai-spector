@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { TranslationJob } from "../lang/queue-types.js";
+import { loadFingerprints, queuePaths } from "../lang/queue-store.js";
 import { computeLineDiff } from "../util/diff.js";
 import { loadBaseline } from "./baseline.js";
 import { DESIGN_LAYERS } from "./constants.js";
@@ -7,6 +9,7 @@ import type { DocAnchor, DiffSource, EnrichmentCache, LayerDriftSummary } from "
 import { discoverDesignLayerFiles } from "./discover.js";
 import { gitDiffFromRef } from "./git-diff.js";
 import { diffLayerFileMaps } from "./hash-diff.js";
+import { computeAuditImpact } from "./impact.js";
 
 export interface ResolveDiffResult {
   diff: string;
@@ -102,4 +105,70 @@ export async function linkLayerDrift(
     baselineCreatedAt: baseline.createdAt,
     modified,
   };
+}
+
+export async function loadLegacyFingerprintContent(
+  projectRoot: string,
+  originPath: string,
+): Promise<LegacyDiffOptions | undefined> {
+  const paths = queuePaths(projectRoot);
+  const fp = await loadFingerprints(paths.fingerprints);
+  const content = fp.files[originPath]?.content;
+  if (content === undefined) {
+    return undefined;
+  }
+  return { legacyContent: content };
+}
+
+export async function enrichTranslationJob(
+  projectRoot: string,
+  job: TranslationJob,
+  opts: { graphPath: string; rulesPath: string; persist?: boolean },
+): Promise<EnrichmentCache> {
+  const originPath = job.origin.path;
+  const currentHash = job.origin.hash;
+
+  if (job.enrichment) {
+    const valid = invalidateEnrichmentIfStale(job.enrichment, currentHash);
+    if (valid) {
+      return valid;
+    }
+  }
+
+  const latestChange = job.changes[job.changes.length - 1];
+  const anchor = latestChange?.anchor ?? {
+    path: originPath,
+    hash: latestChange?.previousHash ?? "",
+    gitRef: null,
+    anchoredAt: latestChange?.changedAt ?? "",
+  };
+
+  const legacy = latestChange?.diff
+    ? { legacyContent: undefined, inlineDiff: latestChange.diff }
+    : await loadLegacyFingerprintContent(projectRoot, originPath);
+
+  const diffResult = await resolveDiffFromAnchor(projectRoot, anchor, legacy);
+
+  const changedPaths = [originPath];
+  const impactRaw = await computeAuditImpact({
+    graphPath: opts.graphPath,
+    rulesPath: opts.rulesPath,
+    changedPaths,
+    direction: "both",
+  });
+
+  const enrichment: EnrichmentCache = {
+    ...diffResult,
+    impact: {
+      intraDocTargets: job.targets.filter((t) => t.status === "pending").map((t) => t.path),
+      regenerate: impactRaw.regenerate,
+      syncUpstream: impactRaw.syncUpstream ?? [],
+      review: impactRaw.review,
+    },
+    layerDrift: await linkLayerDrift(projectRoot, changedPaths),
+    computedAt: new Date().toISOString(),
+    anchorHash: currentHash,
+  };
+
+  return enrichment;
 }
