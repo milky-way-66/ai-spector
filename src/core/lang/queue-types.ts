@@ -1,3 +1,5 @@
+import type { DocAnchor, EnrichmentCache } from "../sync/drift-types.js";
+
 export type SyncDirection = "outbound" | "inbound";
 export type FailReason = "conflict" | "dismissed" | "sync_error" | "timeout";
 
@@ -19,10 +21,12 @@ export interface FileChangeRecord {
   mtimeMs: number;
   /** Order within this reconcile batch (1 = earliest by mtime) */
   sequence: number;
-  /** Line-oriented diff from previous snapshot (`{line} -` / `{line} +`) */
-  diff: string;
-  linesAdded: number;
-  linesRemoved: number;
+  /** v2: git anchor at previous version (replaces eager diff as source of truth) */
+  anchor?: DocAnchor;
+  /** @deprecated v1 — kept for legacy read; enrich uses when anchor missing */
+  diff?: string;
+  linesAdded?: number;
+  linesRemoved?: number;
 }
 
 export interface TranslationTarget {
@@ -51,6 +55,7 @@ export interface TranslationJob {
   targets: TranslationTarget[];
   /** Per-language edits that created or updated this job (compare versions when merging) */
   changes: FileChangeRecord[];
+  enrichment?: EnrichmentCache;
   createdAt: string;
   updatedAt: string;
 }

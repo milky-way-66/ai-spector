@@ -198,7 +198,8 @@ describe("translation queue (file-level)", () => {
       for (const change of pending.jobs[0]!.changes) {
         expect(change.version).toBe(change.previousVersion + 1);
         expect(change.previousHash).not.toBe(change.hash);
-        expect(change.diff.length).toBeGreaterThan(0);
+        expect(change.anchor).toBeDefined();
+        expect(change.anchor!.hash).toBeTruthy();
         expect(change.sequence).toBeGreaterThan(0);
         expect(change.mtimeMs).toBeGreaterThan(0);
       }
@@ -239,7 +240,9 @@ describe("translation queue (file-level)", () => {
       expect(fileDoc).not.toBeNull();
       expect(fileDoc!.jobId).toBeTruthy();
       expect(fileDoc!.changes).toHaveLength(1);
-      expect(fileDoc!.changes[0]!.diff).toContain("Updated English overview.");
+      expect(fileDoc!.changes[0]!.anchor).toBeDefined();
+      expect(fileDoc!.changes[0]!.anchor!.hash).toBeTruthy();
+      expect(fileDoc!.changes[0]!.diff).toBeUndefined();
     });
   });
 

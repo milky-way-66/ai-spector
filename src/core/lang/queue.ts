@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { primaryLanguage } from "../config/load.js";
 import type { DocflowConfig } from "../config/types.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
+import { resolveGitRef } from "../sync/git-diff.js";
+import type { DocAnchor } from "../sync/drift-types.js";
 import type {
   DocType,
   FailedTranslationJob,
@@ -25,7 +27,6 @@ import {
   saveFingerprints,
   savePendingQueue,
 } from "./queue-store.js";
-import { computeLineDiff } from "./diff.js";
 import {
   jobGroupKey,
   parseDocFilePath,
@@ -43,7 +44,6 @@ interface FileScan {
   filePath: string;
   hash: string;
   mtimeMs: number;
-  content: string;
 }
 
 interface FileChange {
@@ -56,9 +56,7 @@ interface FileChange {
   previousVersion: number;
   version: number;
   mtimeMs: number;
-  diff: string;
-  linesAdded: number;
-  linesRemoved: number;
+  anchor: DocAnchor;
 }
 
 const DOC_TYPES: DocType[] = ["srs", "basic-design"];
@@ -86,7 +84,7 @@ export async function reconcileTranslationQueue(
   const primary = primaryLanguage(config);
 
   const scans = await scanAllFiles(root, config);
-  const changes = detectChanges(scans, fingerprints);
+  const changes = await detectChanges(root, scans, fingerprints);
 
   let enqueued = 0;
   const scanByPath = new Map(scans.map((s) => [s.filePath, s]));
@@ -253,7 +251,6 @@ async function scanAllFiles(projectRoot: string, config: DocflowConfig): Promise
           continue;
         }
         const st = await stat(file.absolutePath);
-        const content = await readFile(file.absolutePath, "utf8");
         scans.push({
           docType,
           lang: lang.code,
@@ -261,7 +258,6 @@ async function scanAllFiles(projectRoot: string, config: DocflowConfig): Promise
           filePath: file.relativePath.replace(/\\/g, "/"),
           hash: file.contentHash,
           mtimeMs: st.mtimeMs,
-          content,
         });
       }
     }
@@ -270,8 +266,14 @@ async function scanAllFiles(projectRoot: string, config: DocflowConfig): Promise
   return scans;
 }
 
-function detectChanges(scans: FileScan[], fingerprints: FingerprintsFile): FileChange[] {
+async function detectChanges(
+  projectRoot: string,
+  scans: FileScan[],
+  fingerprints: FingerprintsFile,
+): Promise<FileChange[]> {
   const changes: FileChange[] = [];
+  const gitRef = await resolveGitRef(projectRoot, "HEAD");
+  const anchoredAt = new Date().toISOString();
 
   for (const scan of scans) {
     const previous = fingerprints.files[scan.filePath];
@@ -280,7 +282,6 @@ function detectChanges(scans: FileScan[], fingerprints: FingerprintsFile): FileC
     }
     if (previous.hash !== scan.hash) {
       const previousVersion = previous.version ?? 1;
-      const { diff, linesAdded, linesRemoved } = computeLineDiff(previous.content, scan.content);
       changes.push({
         docType: scan.docType,
         relativePath: scan.relativePath,
@@ -291,9 +292,12 @@ function detectChanges(scans: FileScan[], fingerprints: FingerprintsFile): FileC
         previousVersion,
         version: previousVersion + 1,
         mtimeMs: scan.mtimeMs,
-        diff,
-        linesAdded,
-        linesRemoved,
+        anchor: {
+          path: scan.filePath,
+          hash: previous.hash,
+          gitRef,
+          anchoredAt,
+        },
       });
     }
   }
@@ -355,9 +359,7 @@ function buildChangeRecords(changes: FileChange[], changedAt: string): FileChang
     changedAt,
     mtimeMs: c.mtimeMs,
     sequence: index + 1,
-    diff: c.diff,
-    linesAdded: c.linesAdded,
-    linesRemoved: c.linesRemoved,
+    anchor: c.anchor,
   }));
 }
 
@@ -389,7 +391,6 @@ function updateFingerprints(
       hash: scan.hash,
       scannedAt: now,
       version,
-      content: scan.content,
     };
   }
 }
