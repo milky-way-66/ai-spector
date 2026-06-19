@@ -1,10 +1,11 @@
 import { join } from "node:path";
-import { loadDocflowConfig } from "../config/load.js";
+import { bundledRulesImpactPath, loadDocflowConfig } from "../config/load.js";
 import { DESIGN_LAYERS } from "./constants.js";
 import { loadBaseline, hashGraphFile } from "./baseline.js";
 import { discoverDesignLayerFiles } from "./discover.js";
 import { diffLayerFileMaps } from "./hash-diff.js";
 import { gitDiffFromRef } from "./git-diff.js";
+import { computeAuditImpact } from "./impact.js";
 import type { DesignLayer, DriftFileEntry, SyncAuditResult } from "./types.js";
 
 export interface SyncAuditOptions {
@@ -77,6 +78,14 @@ export async function runSyncAudit(opts: SyncAuditOptions = {}): Promise<SyncAud
   const hasFileDrift = allChangedPaths.length > 0;
   const hasDrift = hasFileDrift || graphChanged;
 
+  const direction = opts.direction ?? defaultDirection(allChangedPaths);
+  const impact = await computeAuditImpact({
+    graphPath,
+    rulesPath: bundledRulesImpactPath(),
+    changedPaths: allChangedPaths,
+    direction,
+  });
+
   const result: SyncAuditResult = {
     baseline: {
       createdAt: baseline.createdAt,
@@ -86,7 +95,12 @@ export async function runSyncAudit(opts: SyncAuditOptions = {}): Promise<SyncAud
     },
     drift: { hasDrift, graphChanged, byLayer },
     traceabilityGaps: { missingDownstream: [], missingUpstream: [], orphanFiles: [] },
-    impact: { regenerate: [], syncUpstream: [], review: [] },
+    impact: {
+      regenerate: impact.regenerate,
+      syncUpstream: impact.syncUpstream ?? [],
+      review: impact.review,
+      noTraceabilityImpact: impact.noTraceabilityImpact,
+    },
     suggestedNext:
       "Review drift and impact buckets; run resolve-task or generate for affected paths; then sync snapshot",
     warnings,
