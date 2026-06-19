@@ -1598,6 +1598,7 @@ review
       root: projectRootOpt(cmd),
       track: opts.track as "internal" | "client" | "all" | undefined,
       showDiff: opts.diff !== false,
+      enrich: opts.json || opts.diff !== false,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewQueue(result));

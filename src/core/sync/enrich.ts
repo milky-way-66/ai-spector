@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { TranslationJob } from "../lang/queue-types.js";
 import { loadFingerprints, queuePaths } from "../lang/queue-store.js";
+import { readSnapshot } from "../reviews/storage.js";
+import type { ApprovalRecord, ReviewJob } from "../reviews/types.js";
+import { resolveReviewDocPath } from "../reviews/doc-resolve.js";
 import { computeLineDiff } from "../util/diff.js";
 import { loadBaseline } from "./baseline.js";
 import { DESIGN_LAYERS } from "./constants.js";
@@ -161,6 +164,73 @@ export async function enrichTranslationJob(
     ...diffResult,
     impact: {
       intraDocTargets: job.targets.filter((t) => t.status === "pending").map((t) => t.path),
+      regenerate: impactRaw.regenerate,
+      syncUpstream: impactRaw.syncUpstream ?? [],
+      review: impactRaw.review,
+    },
+    layerDrift: await linkLayerDrift(projectRoot, changedPaths),
+    computedAt: new Date().toISOString(),
+    anchorHash: currentHash,
+  };
+
+  return enrichment;
+}
+
+export async function enrichReviewJob(
+  projectRoot: string,
+  logicalPath: string,
+  opts: {
+    approval: ApprovalRecord;
+    job?: ReviewJob | null;
+    graphPath: string;
+    rulesPath: string;
+  },
+): Promise<EnrichmentCache> {
+  const { approval, job } = opts;
+  const currentHash = job?.currentHash ?? approval.contentHash;
+
+  if (job?.enrichment) {
+    const valid = invalidateEnrichmentIfStale(job.enrichment, currentHash);
+    if (valid) {
+      return valid;
+    }
+  }
+
+  let docPath = approval.docPath;
+  if (!docPath) {
+    ({ docPath } = await resolveReviewDocPath(projectRoot, logicalPath));
+  }
+
+  const baselineAnchor =
+    job?.baselineAnchor ??
+    approval.baselineAnchor ?? {
+      path: docPath,
+      hash: job?.baselineHash ?? approval.contentHash,
+      gitRef: null,
+      anchoredAt: approval.lastEventAt ?? "",
+    };
+
+  const legacySnapshot = approval.snapshotRef
+    ? await readSnapshot(projectRoot, logicalPath)
+    : null;
+  const legacy =
+    legacySnapshot != null
+      ? { legacySnapshot }
+      : undefined;
+
+  const diffResult = await resolveDiffFromAnchor(projectRoot, baselineAnchor, legacy);
+
+  const changedPaths = [docPath];
+  const impactRaw = await computeAuditImpact({
+    graphPath: opts.graphPath,
+    rulesPath: opts.rulesPath,
+    changedPaths,
+    direction: "downstream",
+  });
+
+  const enrichment: EnrichmentCache = {
+    ...diffResult,
+    impact: {
       regenerate: impactRaw.regenerate,
       syncUpstream: impactRaw.syncUpstream ?? [],
       review: impactRaw.review,

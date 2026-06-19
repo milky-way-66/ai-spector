@@ -7,6 +7,10 @@ import { resolveProjectPaths } from "../util/paths.js";
 import { normalizeLogicalPath } from "../comments/paths.js";
 import { resolveReviewDocPath } from "../reviews/doc-resolve.js";
 import { docTypeFromLogicalPath } from "../reviews/doc-type.js";
+import { bundledRulesImpactPath, loadDocflowConfig } from "../config/load.js";
+import { enrichReviewJob } from "../sync/enrich.js";
+import { resolveGitRef } from "../sync/git-diff.js";
+import type { EnrichmentCache } from "../sync/drift-types.js";
 import {
   runReadinessOutputChecklist,
   runReadinessScan,
@@ -28,11 +32,14 @@ import {
   loadQueueIndex,
   loadDiff,
   saveDiff,
-  deleteDiff,
   deriveOverallStatus,
   discoverApprovals,
   readHistory,
   updateFingerprint,
+  deleteSnapshot,
+  purgeReviewLegacyOnResolve,
+  findPendingJob,
+  updatePendingJobEnrichment,
 } from "../reviews/storage.js";
 import { reconcileReviews } from "../reviews/reconcile.js";
 import { ensureApprovalForReview, runReviewDiscovery } from "../reviews/register.js";
@@ -238,12 +245,14 @@ export interface ReviewQueueOptions {
   root?: string;
   track?: "internal" | "client" | "all";
   showDiff?: boolean;
+  enrich?: boolean;
 }
 
 export interface ReviewQueueResult {
   internal: { pending: QueueEntry[]; resolved: QueueEntry[]; rejected: QueueEntry[]; failed: QueueEntry[] };
   client: { pending: QueueEntry[]; resolved: QueueEntry[]; rejected: QueueEntry[] };
   diffs: Record<string, DiffFile | null>;
+  enrichments: Record<string, EnrichmentCache | null>;
   session?: ReviewSessionFile;
   workflowGuidance?: WorkflowToolGuidance;
 }
@@ -401,8 +410,22 @@ async function finalizeInternalQuorum(
   actor: { by: string; username: string; role: "user" | "client" },
   quorum: QuorumSummary,
 ): Promise<void> {
-  const snapshotRef = await writeSnapshot(projectRoot, lp, content);
-  approval.snapshotRef = snapshotRef;
+  const config = await loadReviewQueueConfig(projectRoot);
+  const gitRef = await resolveGitRef(projectRoot);
+
+  approval.baselineAnchor = {
+    path: docPath,
+    hash: contentHash,
+    gitRef,
+    anchoredAt: now,
+  };
+
+  if (config.writeLegacySnapshots !== false) {
+    const snapshotRef = await writeSnapshot(projectRoot, lp, content);
+    approval.snapshotRef = snapshotRef;
+  } else {
+    await deleteSnapshot(projectRoot, lp);
+  }
 
   await updateFingerprint(projectRoot, lp, {
     hash: contentHash,
@@ -413,7 +436,9 @@ async function finalizeInternalQuorum(
   const entry = await removeFromQueue(projectRoot, "internal", lp);
   if (entry) {
     await archiveQueueEntry(projectRoot, "internal", "resolved", { ...entry, queuedAt: entry.queuedAt });
-    await deleteDiff(projectRoot, "internal", lp);
+    await purgeReviewLegacyOnResolve(projectRoot, lp, {
+      deleteSnapshot: config.writeLegacySnapshots === false,
+    });
   }
 
   await addToQueue(projectRoot, "client", {
@@ -857,7 +882,7 @@ export async function runClose(opts: ReviewCloseOptions): Promise<ReviewCloseRes
   const entry = await removeFromQueue(projectRoot, "internal", lp);
   if (entry) {
     await archiveQueueEntry(projectRoot, "internal", "rejected", entry);
-    await deleteDiff(projectRoot, "internal", lp);
+    await purgeReviewLegacyOnResolve(projectRoot, lp);
   }
 
   await appendHistory(projectRoot, lp, {
@@ -999,6 +1024,7 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
   await runReviewDiscovery(projectRoot);
   const session = await setReviewSessionPhase(projectRoot, "queue");
   const track = opts.track ?? "all";
+  const shouldEnrich = opts.enrich ?? opts.showDiff !== false;
 
   const [iPending, iResolved, iRejected, iFailed, cPending, cResolved, cRejected] =
     await Promise.all([
@@ -1011,9 +1037,58 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
       track !== "internal" ? loadQueueIndex(projectRoot, "client", "rejected") : Promise.resolve({ version: 1 as const, entries: [] }),
     ]);
 
-  // Load diffs for pending entries if requested
   const diffs: Record<string, DiffFile | null> = {};
-  if (opts.showDiff !== false) {
+  const enrichments: Record<string, EnrichmentCache | null> = {};
+
+  if (shouldEnrich) {
+    let graphPath: string;
+    let rulesPath: string;
+    try {
+      const { config } = await loadDocflowConfig(projectRoot);
+      graphPath = join(projectRoot, config.paths.graph);
+      rulesPath = bundledRulesImpactPath();
+    } catch {
+      graphPath = "";
+      rulesPath = bundledRulesImpactPath();
+    }
+
+    const pendingPaths = [
+      ...iPending.entries.map((e) => ({ lp: e.logicalPath, t: "internal" as const, entry: e })),
+      ...cPending.entries.map((e) => ({ lp: e.logicalPath, t: "client" as const, entry: e })),
+    ];
+
+    await Promise.all(
+      pendingPaths.map(async ({ lp, t, entry }) => {
+        const approval = await getApproval(projectRoot, lp);
+        if (!approval) {
+          enrichments[lp] = null;
+          return;
+        }
+
+        const job = await findPendingJob(projectRoot, t, lp);
+        const enrichment = await enrichReviewJob(projectRoot, lp, {
+          approval,
+          job,
+          graphPath,
+          rulesPath,
+        });
+        enrichments[lp] = enrichment;
+        await updatePendingJobEnrichment(projectRoot, t, lp, enrichment);
+
+        if (opts.showDiff !== false) {
+          diffs[lp] = {
+            logicalPath: lp,
+            approvedHash: entry.approvedHash,
+            currentHash: entry.currentHash,
+            diff: enrichment.diff,
+            linesAdded: enrichment.linesAdded,
+            linesRemoved: enrichment.linesRemoved,
+            computedAt: enrichment.computedAt,
+          };
+        }
+      }),
+    );
+  } else if (opts.showDiff !== false) {
     const pendingPaths = [
       ...iPending.entries.map((e) => ({ lp: e.logicalPath, t: "internal" as const })),
       ...cPending.entries.map((e) => ({ lp: e.logicalPath, t: "client" as const })),
@@ -1038,6 +1113,7 @@ export async function runReviewQueue(opts: ReviewQueueOptions): Promise<ReviewQu
       rejected: cRejected.entries,
     },
     diffs,
+    enrichments,
     session,
     workflowGuidance: buildReviewSessionWorkflowGuidance(session, {
       pendingCount: iPending.entries.length,
@@ -1186,7 +1262,7 @@ export async function runReviewReject(opts: ReviewRejectOptions): Promise<Review
   }
 
   await archiveQueueEntry(projectRoot, "internal", "rejected", entry);
-  await deleteDiff(projectRoot, "internal", lp);
+  await purgeReviewLegacyOnResolve(projectRoot, lp);
 
   // Reset approval back to approved (dismiss the change) — preserve quorum votes
   const approval = await getApproval(projectRoot, lp);

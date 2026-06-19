@@ -22,6 +22,7 @@ import type {
   ReviewJob,
   ReviewFingerprint,
 } from "./types.js";
+import type { DocAnchor, EnrichmentCache } from "../sync/drift-types.js";
 import { jobToQueueEntry, reviewJobId } from "./types.js";
 
 import { emptyClientTrack, emptyInternalTrack } from "./votes.js";
@@ -185,6 +186,44 @@ export async function writeSnapshot(
   return rel.replace(/\\/g, "/");
 }
 
+export async function deleteSnapshot(
+  projectRoot: string,
+  logicalPath: string,
+): Promise<void> {
+  const { unlink } = await import("node:fs/promises");
+  const paths = reviewQueuePaths(projectRoot);
+  const approval = await getApproval(projectRoot, logicalPath);
+  const candidates = new Set<string>();
+  if (approval?.snapshotRef) {
+    candidates.add(join(projectRoot, approval.snapshotRef).replace(/\\/g, "/"));
+  }
+  candidates.add(join(projectRoot, snapshotPath(paths, logicalPath)).replace(/\\/g, "/"));
+
+  for (const p of candidates) {
+    if (await pathExists(p)) {
+      await unlink(p);
+    }
+  }
+
+  if (approval?.snapshotRef) {
+    approval.snapshotRef = undefined;
+    await saveApproval(projectRoot, approval);
+  }
+}
+
+/** Remove legacy diff files and optionally snapshot on queue resolve. */
+export async function purgeReviewLegacyOnResolve(
+  projectRoot: string,
+  logicalPath: string,
+  opts: { deleteSnapshot?: boolean } = {},
+): Promise<void> {
+  if (opts.deleteSnapshot) {
+    await deleteSnapshot(projectRoot, logicalPath);
+  }
+  await deleteDiff(projectRoot, "internal", logicalPath);
+  await deleteDiff(projectRoot, "client", logicalPath);
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 
 export async function appendHistory(
@@ -271,10 +310,16 @@ export async function saveQueueIndex(
   await writeJson(archivePath(paths, track, kind), index);
 }
 
+export interface QueueEntryExtras {
+  baselineAnchor?: DocAnchor;
+  enrichment?: EnrichmentCache;
+}
+
 export async function addToQueue(
   projectRoot: string,
   track: "internal" | "client",
   entry: QueueEntry,
+  extras?: QueueEntryExtras,
 ): Promise<void> {
   const pending = await loadPending(projectRoot);
   const id = reviewJobId(entry.logicalPath, track);
@@ -287,8 +332,34 @@ export async function addToQueue(
     queuedAt: entry.queuedAt,
     baselineHash: entry.approvedHash,
     currentHash: entry.currentHash,
+    baselineAnchor: extras?.baselineAnchor,
+    enrichment: extras?.enrichment,
   });
   await savePending(projectRoot, pending);
+}
+
+export async function updatePendingJobEnrichment(
+  projectRoot: string,
+  track: ReviewTrack,
+  logicalPath: string,
+  enrichment: EnrichmentCache,
+): Promise<void> {
+  const pending = await loadPending(projectRoot);
+  const id = reviewJobId(logicalPath, track);
+  const job = pending.jobs.find((j) => j.id === id);
+  if (!job) return;
+  job.enrichment = enrichment;
+  await savePending(projectRoot, pending);
+}
+
+export async function findPendingJob(
+  projectRoot: string,
+  track: ReviewTrack,
+  logicalPath: string,
+): Promise<ReviewJob | null> {
+  const pending = await loadPending(projectRoot);
+  const id = reviewJobId(logicalPath, track);
+  return pending.jobs.find((j) => j.id === id) ?? null;
 }
 
 export async function removeFromQueue(
