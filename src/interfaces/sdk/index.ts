@@ -280,6 +280,13 @@ export {
 } from "../../core/operations/template.js";
 export type { TemplateInstallResult } from "../../core/operations/template.js";
 
+// Design layer sync baseline and audit
+export { runSyncSnapshot } from "../../core/sync/snapshot.js";
+export type { SyncSnapshotOptions, SyncSnapshotResult } from "../../core/sync/snapshot.js";
+export { runSyncAudit, SyncAuditError } from "../../core/sync/audit.js";
+export type { SyncAuditOptions } from "../../core/sync/audit.js";
+export type { SyncAuditResult } from "../../core/sync/types.js";
+
 // Workspace check
 export { runCheck } from "../../core/operations/check.js";
 export type {

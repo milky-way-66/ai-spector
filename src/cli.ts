@@ -184,6 +184,8 @@ import {
   runPrototypeAuth,
 } from "./core/operations/prototype.js";
 import { runCourseServe, formatCourseServeStarted } from "./core/operations/course.js";
+import { runSyncSnapshot } from "./core/sync/snapshot.js";
+import { runSyncAudit, SyncAuditError } from "./core/sync/audit.js";
 import type { SectionRegistry } from "./types.js";
 
 const program = new Command();
@@ -921,6 +923,77 @@ program
     console.log(formatIndexReport(report));
     if (report.failed) {
       process.exitCode = 1;
+    }
+  });
+
+const syncCmd = program.command("sync").description("Design layer sync baseline and audit");
+
+syncCmd
+  .command("snapshot")
+  .description("Record sync baseline when SRS, basic-design, and detail-design are aligned")
+  .option("--label <text>", "Human label for this baseline")
+  .option("--git-ref <ref>", "Git ref to store (default: HEAD)")
+  .option("--force", "Overwrite existing baseline")
+  .option("--json", "JSON output")
+  .action(async (opts, cmd) => {
+    const root = projectRootOpt(cmd);
+    try {
+      const result = await runSyncSnapshot({
+        root,
+        label: opts.label,
+        gitRef: opts.gitRef,
+        force: opts.force,
+      });
+      if (opts.json) {
+        process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      } else {
+        process.stdout.write(
+          `Sync baseline saved: ${result.totals.files} files, graph ${result.graphHash.slice(0, 8)}…, git ${result.gitRef?.slice(0, 7) ?? "none"}\n`,
+        );
+        for (const w of result.warnings) process.stdout.write(`  warn: ${w}\n`);
+      }
+    } catch (err) {
+      process.stderr.write(err instanceof Error ? err.message : String(err));
+      process.stderr.write("\n");
+      process.exit(1);
+    }
+  });
+
+syncCmd
+  .command("audit")
+  .description("Audit design layers against sync baseline")
+  .option("--json", "JSON output")
+  .option("--fail-on-drift", "Exit 1 when drift detected (CI)")
+  .option("--direction <dir>", "downstream | upstream | both")
+  .option("--verify-git-ref", "Warn if HEAD is not descendant of baseline gitRef")
+  .action(async (opts, cmd) => {
+    const root = projectRootOpt(cmd);
+    try {
+      const result = await runSyncAudit({
+        root,
+        direction: opts.direction,
+        failOnDrift: opts.failOnDrift,
+        verifyGitRef: opts.verifyGitRef,
+      });
+      if (opts.json) {
+        process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      } else {
+        process.stdout.write(
+          result.drift.hasDrift
+            ? `Drift detected (${result.drift.graphChanged ? "graph + files" : "files"})\n`
+            : "Aligned with baseline\n",
+        );
+      }
+    } catch (err) {
+      if (err instanceof SyncAuditError) {
+        if (opts.json) {
+          process.stdout.write(JSON.stringify({ error: err.message }, null, 2) + "\n");
+        } else {
+          process.stderr.write(err.message + "\n");
+        }
+        process.exit(err.exitCode);
+      }
+      throw err;
     }
   });
 
