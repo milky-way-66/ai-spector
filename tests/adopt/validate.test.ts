@@ -154,4 +154,27 @@ describe("validateAdopt", () => {
       expect(v.gaps.filter((g) => g.severity === "blocking")).toHaveLength(0);
     });
   });
+
+  it("suggests derive-downstream when basic + detail exist but SRS is missing", async () => {
+    await withTempDir(async (root) => {
+      await scaffoldValidateProject(root);
+      await writeAppliedPlan(root);
+      await mkdir(join(root, "docs/basic-design/en"), { recursive: true });
+      await mkdir(join(root, "docs/detail-design/en"), { recursive: true });
+      await writeFile(join(root, "docs/basic-design/en/screen-list.md"), "# Screens\n", "utf8");
+      await writeFile(join(root, "docs/detail-design/en/feature-list.md"), "# Features\n", "utf8");
+      await markAdoptSetupItem(root, "bootstrap.done");
+      await createAdoptCompletedTasks({ root });
+
+      const v = await validateAdopt({ root });
+
+      const deriveGap = v.gaps.find((g) => g.id === "derive.srs-missing");
+      expect(deriveGap).toMatchObject({
+        severity: "warning",
+        suggestion: "generate-srs",
+        deriveFrom: ["basic-design", "detail-design"],
+      });
+      expect(v.questionsForUser.some((q) => /backfill|derive-downstream/i.test(q))).toBe(true);
+    });
+  });
 });

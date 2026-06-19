@@ -72,7 +72,24 @@ npx ai-spector graph impact <originId> --change content_change --json
 npx ai-spector graph impact --git --change content_change --json
 ```
 
-Merge `regenerate` / `review` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
+Merge `regenerate` / `review` / `syncUpstream` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
+
+### Upstream sync (layer drift)
+
+When editing **basic design** or **detail design**, upstream SRS may also need review:
+
+```bash
+npx ai-spector graph impact --git --direction both --change content_change --json
+```
+
+```text
+graph_impact({ git: true, change: "content_change", direction: "both" })
+```
+
+- **`regenerate`** / **`review`** — downstream docs to regen or review (existing behavior)
+- **`syncUpstream`** — upstream SRS sections that may be stale (suggest-only)
+
+If `syncUpstream` is non-empty, offer **`ai-spector-resolve-task`** (Standard tier) spanning affected SRS paths — do not auto-regenerate upstream docs.
 
 ## Resolve change → graph seed (agent)
 

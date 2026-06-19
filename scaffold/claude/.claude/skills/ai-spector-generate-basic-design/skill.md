@@ -26,6 +26,27 @@ task_list({
   → bootstrapped   → continue with new task id
 ```
 
+### Derive-downstream mode (from detail design)
+
+When the user says **generate basic design from detail design** or detail exists but basic design is missing:
+
+```
+task_list({
+  bootstrap: {
+    kind: "generate",
+    workflow: "generate-basic-design",
+    docType: "basic-design",
+    trigger: "<user request>",
+    sourceMode: "derive-downstream",
+    deriveFrom: ["detail-design"],
+    derivePhase: "extract"
+  }
+})
+```
+
+- `workspace_check({ workflow: "generate-basic-design", sourceMode: "derive-downstream" })`
+- `readiness_assess({ docType: "basic-design", sourceMode: "derive-downstream", workflow: "generate-basic-design" })`
+
 ### Forbidden before `task_approve_plan`
 
 - Edit / Write under `docs/basic-design/`

@@ -14,6 +14,8 @@ description: >-
 | User intent | Route to |
 |-------------|----------|
 | add / update / change one feature, section, API, screen | `ai-spector-resolve-task` |
+| backfill SRS / generate SRS from basic or detail design / expand SRS gaps | `ai-spector-generate-srs` with `sourceMode: derive-downstream` |
+| generate basic design from detail design only | `ai-spector-generate-basic-design` with `sourceMode: derive-downstream`, `deriveFrom: ["detail-design"]` |
 | generate SRS / basic design / detail design / full chapter from graph | continue below |
 
 ## Step 1 — Check active packs (always first)

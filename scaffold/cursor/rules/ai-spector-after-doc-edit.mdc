@@ -41,6 +41,12 @@ Then:
 npx ai-spector graph impact --git --change content_change --json
 ```
 
+When edits are under **`docs/basic-design/`** or **`docs/detail-design/`**, also check upstream SRS drift:
+
+```bash
+npx ai-spector graph impact --git --direction both --change content_change --json
+```
+
 For a single aggregate SRS file (e.g. `docs/srs/3-use-cases.md`):
 
 ```bash
@@ -51,7 +57,7 @@ npx ai-spector graph impact --file <repo-relative-path> --json
 > `--file` alone may not resolve — prefer `--git`, or add `--heading "<section heading>"`,
 > or pass the domain node id directly (e.g. `graph impact UC-10 --json`).
 
-Parse `regenerate` / `review` buckets with `projectionPath`. If `noTraceabilityImpact: true`, tell the user no doc traceability impact was found. Do not invent regen lists — use CLI output only.
+Parse `regenerate` / `review` / `syncUpstream` buckets with `projectionPath`. If `syncUpstream` is non-empty, offer **`ai-spector-resolve-task`** (Standard tier) for affected SRS paths — suggest-only, no auto-regen. If `noTraceabilityImpact: true`, tell the user no doc traceability impact was found. Do not invent regen lists — use CLI output only.
 
 Full runbook: `.cursor/skills/ai-spector-graph/references/impact.md`
 

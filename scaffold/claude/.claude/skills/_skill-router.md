@@ -10,6 +10,7 @@ Agents use this when intent is ambiguous.
 1.5. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector-upgrade`**. Not greenfield setup (`ai-spector-setup`), not doc migration (`ai-spector-adopt`).
 2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
 2.5. **Migrate / adopt existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *wrong SRS*, *legacy SRS*, *move docs to ai-spector structure*, *continue adopt* → **`ai-spector-adopt`**. Not greenfield setup (`ai-spector-setup`), not empty template import (`ai-spector-template-import`), not full generate.
+2.6. **Backfill upstream docs** — *backfill SRS*, *generate SRS from basic design*, *derive SRS from detail design*, *expand SRS to full* → **`ai-spector-generate-srs`** with `sourceMode: derive-downstream` on task bootstrap (extract pass, then optional expand). Not resolve-task (bulk chapters).
 3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
 4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
 5. **Natural language** — match skill `description`; then read that skill's `references/` runbook.
