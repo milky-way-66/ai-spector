@@ -10,12 +10,15 @@ export interface ReviewQueueConfig {
   version: 1;
   internal: ReviewTrackConfig;
   client: ReviewTrackConfig;
+  /** When false, skip writing snapshot files and purge on resolve (v2 drift model). */
+  writeLegacySnapshots?: boolean;
 }
 
 const DEFAULT_CONFIG: ReviewQueueConfig = {
   version: 1,
   internal: { minApprovals: 1 },
   client: { minApprovals: 1 },
+  writeLegacySnapshots: true,
 };
 
 function configPath(projectRoot: string): string {
@@ -39,6 +42,11 @@ export function normalizeReviewQueueConfig(raw: unknown): ReviewQueueConfig {
   const obj = raw as Record<string, unknown>;
   const internal = (obj.internal ?? {}) as Record<string, unknown>;
   const client = (obj.client ?? {}) as Record<string, unknown>;
+  const writeLegacySnapshots =
+    obj.writeLegacySnapshots === undefined
+      ? DEFAULT_CONFIG.writeLegacySnapshots
+      : Boolean(obj.writeLegacySnapshots);
+
   return {
     version: 1,
     internal: {
@@ -55,6 +63,7 @@ export function normalizeReviewQueueConfig(raw: unknown): ReviewQueueConfig {
         DEFAULT_CONFIG.client.minApprovals,
       ),
     },
+    writeLegacySnapshots,
   };
 }
 

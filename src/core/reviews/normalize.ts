@@ -111,6 +111,7 @@ export function normalizeApprovalRecord(raw: ApprovalRecord & {
     internal: normalizeInternalTrack(raw.internal ?? {}),
     client: normalizeClientTrack(raw.client ?? {}),
     snapshotRef: raw.snapshotRef,
+    baselineAnchor: raw.baselineAnchor,
     lastEventAt: raw.lastEventAt,
   };
 }

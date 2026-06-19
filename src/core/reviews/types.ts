@@ -26,6 +26,7 @@ export type HistoryEvent =
   | "client_reset";
 export type ReviewTrack = "internal" | "client";
 import type { AuditActorRole } from "../util/audit-actor.js";
+import type { DocAnchor, EnrichmentCache } from "../sync/drift-types.js";
 export type ReviewActorRole = AuditActorRole;
 
 export interface ReviewVote {
@@ -77,6 +78,8 @@ export interface ApprovalRecord {
   internal: InternalTrack;
   client: ClientTrack;
   snapshotRef?: string;
+  /** Git anchor at last internal quorum (replaces snapshot as source of truth). */
+  baselineAnchor?: DocAnchor;
   lastEventAt?: string;
 }
 
@@ -105,6 +108,8 @@ export interface ReviewJob {
   queuedAt: string;
   baselineHash: string | null;
   currentHash: string;
+  baselineAnchor?: DocAnchor;
+  enrichment?: EnrichmentCache;
 }
 
 export interface PendingQueueFile {

@@ -1,20 +1,19 @@
 import { readFile } from "node:fs/promises";
-import { computeLineDiff } from "../util/diff.js";
+import { resolveGitRef } from "../sync/git-diff.js";
 import { contentHash, resolveApprovalDocPath } from "./staleness.js";
 import {
   discoverApprovals,
   getApproval,
   saveApproval,
-  readSnapshot,
   addToQueue,
   removeFromQueue,
-  saveDiff,
   appendHistory,
   deriveOverallStatus,
   updateFingerprint,
 } from "./storage.js";
 import { emptyClientTrack } from "./votes.js";
 import { ensureReviewQueueMigrated } from "./migrate.js";
+import type { DocAnchor } from "../sync/drift-types.js";
 
 export interface ReconcileReviewsResult {
   scanned: number;
@@ -61,26 +60,23 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
 
       if (currentHash === approval.contentHash) continue;
 
-      // Content changed — compute diff against snapshot
-      const snapshot = await readSnapshot(projectRoot, logicalPath);
-      const diffResult = snapshot
-        ? computeLineDiff(snapshot, currentContent)
-        : { diff: "(snapshot missing — cannot compute diff)", linesAdded: 0, linesRemoved: 0 };
-
-      // Save diff file for internal queue
-      await saveDiff(projectRoot, "internal", {
-        logicalPath,
-        approvedHash: approval.contentHash,
-        currentHash,
-        diff: diffResult.diff,
-        linesAdded: diffResult.linesAdded,
-        linesRemoved: diffResult.linesRemoved,
-        computedAt: new Date().toISOString(),
-      });
-
-      // Invalidate approval — reset votes, re-queue internal review
       const now = new Date().toISOString();
       const prevHash = approval.contentHash;
+      const gitRef = await resolveGitRef(projectRoot);
+
+      const baselineAnchor: DocAnchor =
+        approval.baselineAnchor?.hash === prevHash
+          ? approval.baselineAnchor
+          : {
+              path: docPath,
+              hash: prevHash,
+              gitRef,
+              anchoredAt: now,
+            };
+
+      approval.baselineAnchor = baselineAnchor;
+
+      // Invalidate approval — reset votes, re-queue internal review
       approval.contentHash = currentHash;
       approval.docPath = docPath;
       approval.internal = {
@@ -100,14 +96,19 @@ export async function reconcileReviews(projectRoot: string): Promise<ReconcileRe
       // Remove from client queue if present
       await removeFromQueue(projectRoot, "client", logicalPath);
 
-      // Add to internal queue
-      await addToQueue(projectRoot, "internal", {
-        logicalPath,
-        queuedAt: now,
-        reason: "content_changed",
-        approvedHash: prevHash,
-        currentHash,
-      });
+      // Add to internal queue — diff deferred to enrich on read
+      await addToQueue(
+        projectRoot,
+        "internal",
+        {
+          logicalPath,
+          queuedAt: now,
+          reason: "content_changed",
+          approvedHash: prevHash,
+          currentHash,
+        },
+        { baselineAnchor },
+      );
 
       await appendHistory(projectRoot, logicalPath, {
         event: "invalidated",
