@@ -1018,6 +1018,29 @@ export const UpgradeSetupMarkSchema = RootSchema.extend({
     .describe('Upgrade item id, e.g. "UPG-030", "upgrade.confirmed", "upgrade.complete"'),
 });
 
+// ── Design layer sync ─────────────────────────────────────────────────────────
+
+export const SyncSnapshotSchema = RootSchema.extend({
+  label: z.string().optional().describe("Human label for this baseline"),
+  gitRef: z.string().optional().describe("Git ref to store (default: HEAD)"),
+  force: z.boolean().optional().describe("Overwrite existing baseline"),
+});
+
+export const SyncAuditSchema = RootSchema.extend({
+  failOnDrift: z
+    .boolean()
+    .optional()
+    .describe("Return error when drift detected (CI gate)"),
+  direction: z
+    .enum(["downstream", "upstream", "both"])
+    .optional()
+    .describe("Impact direction — default both when basic/detail design changed"),
+  verifyGitRef: z
+    .boolean()
+    .optional()
+    .describe("Warn if HEAD is not descendant of baseline gitRef"),
+});
+
 // ── Workflow routing ──────────────────────────────────────────────────────────
 
 export const WorkflowRouteSchema = RootSchema.extend({

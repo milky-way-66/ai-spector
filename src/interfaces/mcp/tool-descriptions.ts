@@ -240,3 +240,25 @@ export const UPGRADE_TOOL_DESCRIPTIONS = {
 } as const;
 
 export type AdoptToolName = keyof typeof ADOPT_TOOL_DESCRIPTIONS;
+
+export const SYNC_TOOL_DESCRIPTIONS = {
+  sync_snapshot: [
+    "Record sync baseline when SRS, basic-design, and detail-design are aligned.",
+    "",
+    "WHEN: User confirms design layers are in sync — start of ai-spector-sync-audit workflow.",
+    "NOT WHEN: Checking drift (use sync_audit); doc migration (adopt_scan); index rebuild only (index).",
+    "Stores per-file hashes, graph hash, and gitRef under .ai-spector/.docflow/sync/baseline.json.",
+    "Use force:true to overwrite an existing baseline after completing drift remediation.",
+  ].join("\n"),
+
+  sync_audit: [
+    "Audit design layers against sync baseline — hash diff, git diffs, graph impact, traceability gaps.",
+    "",
+    "WHEN: Proactive drift check after edits or before planning cross-layer updates (ai-spector-sync-audit).",
+    "NOT WHEN: No baseline yet (run sync_snapshot first); uncommitted-only impact (graph_impact --git).",
+    "Returns drift by layer, impact buckets (regenerate, syncUpstream, review), and suggestedNext.",
+    "Set failOnDrift:true for CI — returns error when any file or graph hash differs from baseline.",
+  ].join("\n"),
+} as const;
+
+export type SyncToolName = keyof typeof SYNC_TOOL_DESCRIPTIONS;

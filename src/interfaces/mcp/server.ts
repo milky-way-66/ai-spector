@@ -45,6 +45,8 @@ import {
   UpgradeApplySchema,
   UpgradeValidateSchema,
   UpgradeSetupMarkSchema,
+  SyncSnapshotSchema,
+  SyncAuditSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -139,6 +141,7 @@ import {
   toolUpgradeValidate,
   toolUpgradeSetupMark,
 } from "./tools/upgrade.js";
+import { toolSyncSnapshot, toolSyncAudit } from "./tools/sync.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
@@ -186,6 +189,7 @@ import {
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
   ADOPT_TOOL_DESCRIPTIONS,
   UPGRADE_TOOL_DESCRIPTIONS,
+  SYNC_TOOL_DESCRIPTIONS,
 } from "./tool-descriptions.js";
 import { MCP_TOOL_NAMES } from "./tool-names.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
@@ -726,6 +730,32 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolUpgradeSetupMark(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Design layer sync ─────────────────────────────────────────────────────────
+
+server.registerTool(
+  "sync_snapshot",
+  {
+    description: SYNC_TOOL_DESCRIPTIONS.sync_snapshot,
+    inputSchema: SyncSnapshotSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSyncSnapshot(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "sync_audit",
+  {
+    description: SYNC_TOOL_DESCRIPTIONS.sync_audit,
+    inputSchema: SyncAuditSchema.shape,
+  },
+  async (input) => {
+    const result = await toolSyncAudit(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
