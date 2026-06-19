@@ -175,12 +175,6 @@ Present `ready`, `gaps[]`, and any `questionsForUser`. For each **blocking** gap
 - Work with the user to fix (path edits, manual index, resolve-task follow-ups)
 - Re-run validate
 
-When `gaps` includes **`derive.srs-missing`** (basic + detail design exist, SRS missing), tell the user:
-
-> Migration complete. SRS is missing but basic + detail design are indexed. Say **"generate SRS from basic design"** to backfill (extract pass first).
-
-Route to **`ai-spector-generate-srs`** with `sourceMode: derive-downstream` — not a new adopt phase.
-
 ```bash
 npx ai-spector adopt validate --json --sync
 # MCP: adopt_validate({ sync: true })
