@@ -12,6 +12,7 @@ Agents use this when intent is ambiguous.
 2.5. **Migrate / adopt existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *wrong SRS*, *legacy SRS*, *move docs to ai-spector structure*, *continue adopt* → **`ai-spector-adopt`**. Not greenfield setup (`ai-spector-setup`), not empty template import (`ai-spector-template-import`), not full generate.
 2.6. **Backfill upstream docs** — *backfill SRS*, *generate SRS from basic design*, *derive SRS from detail design*, *expand SRS to full* → **`ai-spector-generate-srs`** with `sourceMode: derive-downstream` on task bootstrap (extract pass, then optional expand). Not resolve-task (bulk chapters).
 3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
+3.5. **Layer sync audit** — *sync audit*, *check doc drift*, *what changed since baseline*, *layer sync* → **`ai-spector-sync-audit`**. NOT document sign-off (`ai-spector-review` — "since approval"); NOT uncommitted-only impact (`ai-spector-graph` / `graph_impact --git`).
 4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
 5. **Natural language** — match skill `description`; then read that skill's `references/` runbook.
 6. **Still unclear** — call MCP `workflow_route({ message })` → read `handoff.readBrief` skill runbook; if `askUser`, ask in chat first (see approve disambiguation below).
@@ -72,6 +73,7 @@ When in doubt: if the user names a document and asks about approval/status → `
 | index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
 | validate graph | `ai-spector-graph` | `references/validate-graph.md` |
 | impact, what to regenerate | `ai-spector-graph` | `references/impact.md` |
+| sync audit, check doc drift, what changed since baseline, layer sync | `ai-spector-sync-audit` | `references/runbook.md` |
 | semantic search, find docs about a concept | `ai-spector-search` | `skill.md` |
 | fuzzy graph lookup, find node by name | `ai-spector-search` | `skill.md` |
 | CocoIndex, embeddings, docs_search, graph_query_fuzzy | `ai-spector-search` | `skill.md` |
