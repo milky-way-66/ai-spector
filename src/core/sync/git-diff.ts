@@ -25,6 +25,20 @@ export async function resolveGitRef(cwd: string, ref = "HEAD"): Promise<string |
   }
 }
 
+/** Last commit touching `path` — used to backfill anchors missing gitRef. */
+export async function resolveGitRefForPath(cwd: string, path: string): Promise<string | null> {
+  if (!(await isGitRepo(cwd))) return null;
+  try {
+    const { stdout } = await exec("git", ["log", "-1", "--format=%H", "--", path], {
+      cwd,
+      encoding: "utf8",
+    });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export function countUnifiedDiffLines(diff: string): { linesAdded: number; linesRemoved: number } {
   let linesAdded = 0;
   let linesRemoved = 0;

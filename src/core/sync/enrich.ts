@@ -10,7 +10,7 @@ import { loadBaseline } from "./baseline.js";
 import { DESIGN_LAYERS } from "./constants.js";
 import type { DocAnchor, DiffSource, EnrichmentCache, LayerDriftSummary } from "./drift-types.js";
 import { discoverDesignLayerFiles } from "./discover.js";
-import { gitDiffFromRef } from "./git-diff.js";
+import { gitDiffFromRef, resolveGitRefForPath } from "./git-diff.js";
 import { diffLayerFileMaps } from "./hash-diff.js";
 import { computeAuditImpact } from "./impact.js";
 
@@ -35,20 +35,25 @@ async function readCurrentContent(projectRoot: string, relativePath: string): Pr
   }
 }
 
-export async function resolveDiffFromAnchor(
+function countInlineDiffLines(inlineDiff: string): { linesAdded: number; linesRemoved: number } {
+  let linesAdded = 0;
+  let linesRemoved = 0;
+  for (const line of inlineDiff.split("\n")) {
+    if (/^\{\d+\} \+/.test(line)) linesAdded++;
+    else if (/^\{\d+\} -/.test(line)) linesRemoved++;
+  }
+  return { linesAdded, linesRemoved };
+}
+
+function hasGitDiff(diff: string, linesAdded: number, linesRemoved: number): boolean {
+  return diff.trim().length > 0 || linesAdded > 0 || linesRemoved > 0;
+}
+
+async function resolveLegacyDiff(
   projectRoot: string,
   anchor: DocAnchor,
   legacy?: LegacyDiffOptions,
 ): Promise<ResolveDiffResult> {
-  if (anchor.gitRef) {
-    const { diff, linesAdded, linesRemoved } = await gitDiffFromRef(
-      projectRoot,
-      anchor.gitRef,
-      anchor.path,
-    );
-    return { diff, linesAdded, linesRemoved, diffSource: "git" };
-  }
-
   const currentContent = await readCurrentContent(projectRoot, anchor.path);
 
   if (legacy?.legacySnapshot !== undefined) {
@@ -62,15 +67,33 @@ export async function resolveDiffFromAnchor(
   }
 
   if (legacy?.inlineDiff) {
+    const { linesAdded, linesRemoved } = countInlineDiffLines(legacy.inlineDiff);
     return {
       diff: legacy.inlineDiff,
-      linesAdded: 0,
-      linesRemoved: 0,
+      linesAdded,
+      linesRemoved,
       diffSource: "legacy_content",
     };
   }
 
   return { diff: "", linesAdded: 0, linesRemoved: 0, diffSource: "none" };
+}
+
+export async function resolveDiffFromAnchor(
+  projectRoot: string,
+  anchor: DocAnchor,
+  legacy?: LegacyDiffOptions,
+): Promise<ResolveDiffResult> {
+  const gitRef = anchor.gitRef ?? (await resolveGitRefForPath(projectRoot, anchor.path));
+
+  if (gitRef) {
+    const { diff, linesAdded, linesRemoved } = await gitDiffFromRef(projectRoot, gitRef, anchor.path);
+    if (hasGitDiff(diff, linesAdded, linesRemoved)) {
+      return { diff, linesAdded, linesRemoved, diffSource: "git" };
+    }
+  }
+
+  return resolveLegacyDiff(projectRoot, anchor, legacy);
 }
 
 export function invalidateEnrichmentIfStale(
