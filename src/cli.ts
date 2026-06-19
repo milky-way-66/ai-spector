@@ -766,11 +766,13 @@ langQueue
   .description("List pending translation sync jobs")
   .option("-C, --cwd <path>", "Project root", process.cwd())
   .option("--lang <code>", "Filter jobs affecting a language")
+  .option("--no-enrich", "Skip git diff and graph impact (fast listing)")
   .option("--json", "JSON output")
   .action(async (opts) => {
     const results = await runLangQueuePending({
       root: resolve(opts.cwd ?? process.cwd()),
       lang: opts.lang,
+      enrich: opts.enrich,
     });
     if (opts.json) console.log(JSON.stringify(results, null, 2));
     else console.log(formatPendingTable(results.map((r) => r.job)));
@@ -1592,13 +1594,14 @@ review
   .description("List documents pending review across internal and client queues")
   .option("--track <track>", "internal | client | all (default: all)")
   .option("--no-diff", "Skip diff content")
+  .option("--no-enrich", "Skip git diff and graph impact (fast listing)")
   .option("--json", "JSON output for agents")
   .action(async (opts, cmd) => {
     const result = await runReviewQueue({
       root: projectRootOpt(cmd),
       track: opts.track as "internal" | "client" | "all" | undefined,
       showDiff: opts.diff !== false,
-      enrich: opts.json || opts.diff !== false,
+      enrich: opts.enrich,
     });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewQueue(result));

@@ -206,6 +206,10 @@ export const LangQueueSchema = RootSchema.extend({
     .enum(["pending", "failed", "resolved", "all"])
     .optional()
     .describe("Which queue to read (default: pending)"),
+  enrich: z
+    .boolean()
+    .optional()
+    .describe("Compute git diff and graph impact on pending jobs (default: true)"),
 });
 
 // ── Resolve Task ─────────────────────────────────────────────────────────────
@@ -315,6 +319,10 @@ export const ReviewQueueSchema = RootSchema.extend({
     .optional()
     .describe("Which queue to show (default: all)"),
   showDiff: z.boolean().optional().describe("Include diff content for pending entries (default: true)"),
+  enrich: z
+    .boolean()
+    .optional()
+    .describe("Compute git diff and graph impact on pending entries (default: true when showDiff)"),
 });
 
 export const ReviewCheckSchema = RootSchema;

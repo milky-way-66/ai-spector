@@ -8,7 +8,8 @@ import type { LangQueueSchema } from "../schemas.js";
 import type { z } from "zod";
 
 export async function toolLangQueue(input: z.infer<typeof LangQueueSchema>) {
-  const opts = { root: input.root, lang: input.lang, limit: input.limit };
+  const enrich = input.enrich !== false;
+  const opts = { root: input.root, lang: input.lang, limit: input.limit, enrich };
   const status = input.status ?? "pending";
 
   const scan = await runLangQueueScan(opts);

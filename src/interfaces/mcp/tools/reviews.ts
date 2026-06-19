@@ -77,7 +77,13 @@ export async function toolReviewStatus(input: z.infer<typeof ReviewStatusSchema>
 }
 
 export async function toolReviewQueue(input: z.infer<typeof ReviewQueueSchema>) {
-  return runReviewQueue({ root: input.root, track: input.track, showDiff: input.showDiff });
+  const enrich = input.enrich ?? input.showDiff !== false;
+  return runReviewQueue({
+    root: input.root,
+    track: input.track,
+    showDiff: input.showDiff,
+    enrich,
+  });
 }
 
 export async function toolReviewCheck(input: z.infer<typeof ReviewCheckSchema>) {
