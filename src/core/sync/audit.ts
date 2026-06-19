@@ -5,7 +5,9 @@ import { loadBaseline, hashGraphFile } from "./baseline.js";
 import { discoverDesignLayerFiles } from "./discover.js";
 import { diffLayerFileMaps } from "./hash-diff.js";
 import { gitDiffFromRef } from "./git-diff.js";
+import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { computeAuditImpact } from "./impact.js";
+import { scanTraceabilityGaps } from "./gaps.js";
 import type { DesignLayer, DriftFileEntry, SyncAuditResult } from "./types.js";
 
 export interface SyncAuditOptions {
@@ -86,6 +88,18 @@ export async function runSyncAudit(opts: SyncAuditOptions = {}): Promise<SyncAud
     direction,
   });
 
+  let traceabilityGaps = {
+    missingDownstream: [],
+    missingUpstream: [],
+    orphanFiles: [],
+  } as SyncAuditResult["traceabilityGaps"];
+  try {
+    const graph = await loadInMemoryGraph(graphPath);
+    traceabilityGaps = scanTraceabilityGaps({ graph, layerFiles: currentLayers });
+  } catch {
+    warnings.push("Graph unavailable for traceability gap scan");
+  }
+
   const result: SyncAuditResult = {
     baseline: {
       createdAt: baseline.createdAt,
@@ -94,7 +108,7 @@ export async function runSyncAudit(opts: SyncAuditOptions = {}): Promise<SyncAud
       totals: baseline.totals,
     },
     drift: { hasDrift, graphChanged, byLayer },
-    traceabilityGaps: { missingDownstream: [], missingUpstream: [], orphanFiles: [] },
+    traceabilityGaps,
     impact: {
       regenerate: impact.regenerate,
       syncUpstream: impact.syncUpstream ?? [],
