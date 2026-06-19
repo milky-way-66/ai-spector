@@ -4,6 +4,28 @@ All notable changes to [ai-spector](https://github.com/milky-way-66/ai-spector) 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.8.90] - 2026-06-19
+
+### Added
+
+- **Derive-downstream generate mode** — backfill upstream docs from existing design layers via `sourceMode: derive-downstream` on generate task bootstrap (`task_list`, `task_create`). Primary path: SRS from indexed basic + detail design without `knowledge.json` or prior analyze.
+- **Two-pass SRS derive** — `derivePhase: extract` (default) restructures downstream content with `[DERIVE-GAP]` markers and `tracesTo` links; optional `derivePhase: expand` resumes after extract (`priorDeriveTaskId`, `assertExpandDeriveAllowed`).
+- **Basic-design derive** — `deriveFrom: ["detail-design"]` on `generate-basic-design` when detail design exists but basic design is thin or missing.
+- **Derive readiness profile** — `derive-from-downstream` tailoring overlay (DER-001..003): `downstreamDocsIndexed`, `graphDomainNodesFromDownstream`, `dataSourcePresent`. Auto-selected when `sourceMode: derive-downstream` on `readiness_assess`.
+- **Workflow dependency modes** — `workflow.dependencies.json` `modes.derive-downstream` for `generate-srs` and `generate-basic-design`; `workspace_check` emits `DERIVE-001-*` findings when prerequisites fail.
+- **SRS overwrite guard** — derive bootstrap blocked when SRS minimum files already exist (`assertDeriveNotBlockedByCompleteSrs`).
+- **Upstream graph impact** — `syncUpstream` bucket for layer drift; `graph impact --direction upstream|downstream|both` (CLI + MCP `graph_impact`). Suggest-only — offer resolve-task, no auto-regen.
+- **Spec provenance** — `provenance: "derive-downstream"` on `spec_record` and extracted specs for audit trail after derive extract waves.
+- **Adopt derive handoff** — `adopt validate` emits `derive.srs-missing` warning when basic + detail design exist but SRS is missing; runbook routes to `ai-spector-generate-srs` with derive mode.
+- **CLI** — `npx ai-spector check --workflow generate-srs --source-mode derive-downstream`.
+
+### Changed
+
+- **Route intent** — phrases like *backfill SRS*, *generate SRS from basic design*, *expand SRS to full* route to `ai-spector-generate-srs` (not basic-design skill).
+- **Agent scaffold** — WORKFLOW rows, `_skill-router` priority 2.6, generate/generate-srs/generate-basic-design skills, graph impact `syncUpstream` guidance, after-doc-edit `--direction both` for basic/detail edits (Cursor + Claude mirrors).
+
 ## [0.8.89] - 2026-06-19
 
 ### Fixed
@@ -18,7 +40,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Dynamic path classification** — nested subfolders and locale segments (e.g. `en/api/v2/auth.md`, `modules/f-01-*.md`) classify without hardcoded folder checks.
 - **Cross-doc `references` edges** — detail-design and SRS detail files parse markdown links to `srs/`, `basic-design/`, and `detail-design/` paths into graph references.
 
-## [Unreleased]
+## [0.8.89 backlog]
+
+The items below were tracked before per-release changelog sections; see [0.8.90] for derive-downstream and [0.8.89] for index/doc-extract fixes.
 
 ### Added
 
