@@ -25,6 +25,9 @@ Complete command reference for AI agents. Run all commands from the project root
 | List review comments | `npx ai-spector comments list --json` |
 | Comment triage inbox | `npx ai-spector comments inbox --json` |
 | Resolve a comment thread | `npx ai-spector comments resolve <threadId>` |
+| Record design-layer sync baseline | `npx ai-spector sync snapshot --label "…"` |
+| Audit drift since baseline | `npx ai-spector sync audit --json` |
+| CI gate for layer drift | `npx ai-spector sync audit --fail-on-drift` |
 | Refresh Cursor skills | `npx ai-spector sync-cursor` |
 | Bootstrap template-import task | `npx ai-spector task create -k import -w template-import -t "…"` |
 | Approve import manifest plan | `npx ai-spector task approve-import-plan <taskId>` |
@@ -419,6 +422,63 @@ Installed automatically by `init` when the project is already a git repo.
 
 ---
 
+## `sync snapshot`
+
+Record a baseline when SRS, basic design, and detail design are aligned. Writes `.ai-spector/.docflow/sync/baseline.json` with per-file content hashes, graph hash, and git ref.
+
+```bash
+npx ai-spector sync snapshot [options]
+
+Options:
+  --label <text>    Human label for this baseline (e.g. sprint name)
+  --git-ref <ref>   Git ref to store (default: HEAD)
+  --force           Overwrite existing baseline
+  --json            JSON output
+```
+
+**Examples:**
+```bash
+npx ai-spector sync snapshot --label "sprint-12"
+npx ai-spector sync snapshot --force          # re-baseline after updates
+npx ai-spector sync snapshot --json
+```
+
+Run after `index` when layers are confirmed aligned. Baseline already exists without `--force` → error (run audit first or force overwrite).
+
+---
+
+## `sync audit`
+
+Compare live design layers against the sync baseline. Reports file-level drift (modified/added/deleted), git unified diffs from baseline `gitRef`, merged graph impact buckets, and traceability gap hints.
+
+```bash
+npx ai-spector sync audit [options]
+
+Options:
+  --json              JSON output (required for agent use)
+  --fail-on-drift     Exit 1 when drift detected (CI gate)
+  --direction <dir>   downstream | upstream | both (default: both when basic/detail changed)
+  --verify-git-ref    Warn if HEAD is not descendant of baseline gitRef
+```
+
+**Examples:**
+```bash
+npx ai-spector sync audit --json
+npx ai-spector sync audit --fail-on-drift   # CI — exit 0 when aligned
+npx ai-spector sync audit --direction upstream --json
+```
+
+**Exit codes:** `0` aligned (or drift with no `--fail-on-drift`); `1` drift with `--fail-on-drift`; `2` no baseline — run `sync snapshot` first.
+
+**CI example:**
+```yaml
+- run: npx ai-spector sync audit --fail-on-drift --json
+```
+
+After resolving drift: `index` → `sync snapshot --force` to reset baseline.
+
+---
+
 ## `sync-cursor`
 
 Refresh `.claude/skills/` from the bundled scaffold without re-initializing the whole project.
@@ -515,4 +575,13 @@ npx ai-spector graph merge patch.json
 ```bash
 npx ai-spector graph impact --git --json
 # → inspect staleTranslations[] in output
+```
+
+**Layer sync baseline + drift audit:**
+```bash
+npx ai-spector sync snapshot --label "sprint-12"
+# … edits to docs/basic-design/ or docs/detail-design/ …
+npx ai-spector sync audit --json
+# → resolve drift, then:
+npx ai-spector index && npx ai-spector sync snapshot --force
 ```

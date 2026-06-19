@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Layer sync audit** — `npx ai-spector sync snapshot` records a baseline (per-file hashes, graph hash, git ref) when SRS, basic design, and detail design are aligned; `sync audit` detects drift since baseline with git diffs, merged graph impact, and traceability gap hints. MCP: `sync_snapshot`, `sync_audit`. CI: `--fail-on-drift`. Skill: `ai-spector-sync-audit`. `workspace_check` emits `SYNC-001` when drift is detected.
+
 ## [0.8.90] - 2026-06-19
 
 ### Added

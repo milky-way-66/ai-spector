@@ -196,6 +196,7 @@ npx ai-spector setup --check
 npx ai-spector graph validate
 npx ai-spector graph visualize --open
 npx ai-spector graph impact --git
+npx ai-spector sync audit --fail-on-drift   # CI: design-layer drift since baseline
 npx ai-spector prototype validate --strict
 ```
 
