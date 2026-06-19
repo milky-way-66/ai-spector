@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "nodes": [
+    { "id": "feat.login", "type": "feature", "name": "Login" },
+    { "id": "doc.bd.screen", "type": "document", "projectionPath": "docs/basic-design/en/screen-list.md" },
+    { "id": "doc.dd.features", "type": "document", "projectionPath": "docs/detail-design/en/feature-list.md" }
+  ],
+  "edges": [
+    { "type": "definedIn", "from": "feat.login", "to": "doc.dd.features" },
+    { "type": "listedIn", "from": "feat.login", "to": "doc.bd.screen" }
+  ]
+}

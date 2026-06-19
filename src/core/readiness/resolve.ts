@@ -61,6 +61,27 @@ export async function loadMergedReadinessCriteria(opts: {
     };
   }
 
+  if (profileId === "derive-from-downstream") {
+    const deriveProfile = await loadTailoringProfile("derive-from-downstream");
+    if (!deriveProfile) {
+      throw new Error("derive-from-downstream tailoring profile not found in bundle");
+    }
+    base = mergeTailoringProfile(
+      { version: 1, docType: resolved.docType, globalCriteria: [], targets: [] },
+      deriveProfile,
+    );
+    return {
+      root,
+      config,
+      docType: resolved.docType,
+      packName: resolved.packName,
+      profileId,
+      criteriaPath: "readiness/profiles/derive-from-downstream.json",
+      criteria: base,
+      appliedProfiles: base.appliedProfiles ?? ["derive-from-downstream"],
+    };
+  }
+
   if (!(await pathExists(resolved.path))) {
     throw new Error(`Readiness criteria not found: ${resolved.path.replace(root + "/", "")}`);
   }

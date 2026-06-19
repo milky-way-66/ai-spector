@@ -1,0 +1,32 @@
+{
+  "id": "derive-from-downstream",
+  "title": "Derive from downstream design",
+  "description": "Input gates when generating SRS or basic design from existing lower layers (extract pass).",
+  "replaceBase": true,
+  "docType": "srs",
+  "globalCriteria": [
+    {
+      "id": "DER-001",
+      "dimension": "inputs",
+      "severity": "blocking",
+      "question": "Are downstream design documents indexed?",
+      "graphProbe": "downstreamDocsIndexed"
+    },
+    {
+      "id": "DER-002",
+      "dimension": "graph",
+      "severity": "blocking",
+      "question": "Does the graph contain domain nodes from downstream docs?",
+      "graphProbe": "graphDomainNodesFromDownstream",
+      "minGraphCount": 1
+    },
+    {
+      "id": "DER-003",
+      "dimension": "inputs",
+      "severity": "should-ask",
+      "question": "Is docs/data-source/ available to supplement gaps in expand pass?",
+      "graphProbe": "dataSourcePresent"
+    }
+  ],
+  "targets": []
+}

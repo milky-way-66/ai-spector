@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "paths": {
+    "graph": ".ai-spector/graph/traceability.graph.json"
+  },
+  "languages": [{ "code": "en", "label": "English" }]
+}

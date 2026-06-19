@@ -37,6 +37,7 @@ export interface GraphImpactCliOptions {
   git?: boolean;
   change: string;
   output?: string;
+  direction?: "downstream" | "upstream" | "both";
 }
 
 const PER_DOMAIN_FILE_RE = /(?:\/|^)(uc|f|ent)-\d+[_-]/i;
@@ -188,7 +189,7 @@ export async function runGraphImpactFromGit(
   }
 
   const results = [...uniqueSeeds.values()].map((seed) => {
-    const r = computeImpact(g, seed.id, opts.change, rules);
+    const r = computeImpact(g, seed.id, opts.change, rules, opts.direction ?? "downstream");
     r.resolvedFrom = seed;
     return r;
   });
@@ -275,7 +276,7 @@ export async function runGraphImpact(opts: GraphImpactCliOptions): Promise<Graph
   if (opts.git) return runGraphImpactFromGit(g, opts);
   const { originId, resolved } = resolveImpactOriginId(g, opts);
   const rules = await loadImpactRules(opts.rulesPath);
-  const formal = computeImpact(g, originId, opts.change, rules);
+  const formal = computeImpact(g, originId, opts.change, rules, opts.direction ?? "downstream");
   if (resolved) formal.resolvedFrom = resolved;
   const result = await addSemanticSuggestions(formal, opts);
   if (opts.output) {

@@ -1,5 +1,6 @@
 import type { InMemoryGraph } from "../graph/InMemoryGraph.js";
 import type { ContextEntry } from "../operations/context.js";
+import type { DeriveLayer } from "../operations/derive.js";
 import type { ReadinessCriterion, ReadinessStatus } from "./types.js";
 
 export interface ProbeInventory {
@@ -8,6 +9,8 @@ export interface ProbeInventory {
   contextEntries: ContextEntry[];
   dataSourceFiles: number;
   analysisGaps: number;
+  deriveFrom?: DeriveLayer[];
+  downstreamDocFiles?: number;
 }
 
 export interface ProbeResult {
@@ -176,6 +179,45 @@ export function evaluateCriterion(
     if (edgeCount > 0) {
       return { status: "met", evidence: [`graph:${edgeCount} traceability edge(s)`] };
     }
+  }
+
+  if (criterion.graphProbe === "downstreamDocsIndexed") {
+    const count = inventory.downstreamDocFiles ?? 0;
+    if (count > 0) {
+      return { status: "met", evidence: [`downstream-docs:${count} file(s)`] };
+    }
+    const layers = inventory.deriveFrom?.join(", ") ?? "basic-design, detail-design";
+    return {
+      status: "missing",
+      evidence: [],
+      gap: `No markdown under ${layers}`,
+    };
+  }
+
+  if (criterion.graphProbe === "graphDomainNodesFromDownstream") {
+    const types = ["useCase", "feature", "actor", "screen", "api"];
+    const count = types.reduce((n, t) => n + (inventory.nodeCounts[t] ?? 0), 0);
+    const min = criterion.minGraphCount ?? 1;
+    if (count >= min) {
+      return { status: "met", evidence: [`graph:${count} downstream domain node(s)`], graphCount: count };
+    }
+    return {
+      status: "missing",
+      evidence: [],
+      gap: `Need ≥${min} domain nodes from downstream docs in graph (found ${count})`,
+      graphCount: count,
+    };
+  }
+
+  if (criterion.graphProbe === "dataSourcePresent") {
+    if (inventory.dataSourceFiles > 0) {
+      return { status: "met", evidence: [`data-source:${inventory.dataSourceFiles} file(s)`] };
+    }
+    return {
+      status: "partial",
+      evidence: [],
+      gap: "No data-source files — expand pass may rely on user clarify only",
+    };
   }
 
   if (/definedIn|data-source|rendersTo/i.test(probe) && inventory.dataSourceFiles > 0) {

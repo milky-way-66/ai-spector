@@ -278,11 +278,24 @@ program
     "-p, --path <paths...>",
     "Validate specific doc output path(s) after writing (repeatable)",
   )
+  .option("--workflow <stepId>", "Evaluate workflow.dependencies prerequisites (e.g. generate-srs)")
+  .option(
+    "--source-mode <mode>",
+    "forward or derive-downstream (with --workflow)",
+  )
   .option("--json", "JSON output")
   .action(async (opts) => {
     const root = resolve(opts.cwd ?? process.cwd());
     const paths = opts.path as string[] | undefined;
-    const result = await runCheck({ root, fix: opts.fix, paths });
+    const sourceMode =
+      opts.sourceMode === "derive-downstream" ? "derive-downstream" : opts.sourceMode === "forward" ? "forward" : undefined;
+    const result = await runCheck({
+      root,
+      fix: opts.fix,
+      paths,
+      workflow: opts.workflow,
+      sourceMode,
+    });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatCheck(result));
     if (!result.ok) process.exitCode = 1;
@@ -988,6 +1001,10 @@ graph
   .option("--file <path>", "Resolve origin from repo-relative doc path")
   .option("--heading <text>", "Resolve section by heading (optionally scoped with --file)")
   .option("--git", "Resolve seeds from current git diff (staged + unstaged) and merge impact")
+  .option(
+    "--direction <mode>",
+    "downstream (default), upstream, or both — upstream populates syncUpstream bucket",
+  )
   .option("-o, --output <path>", "Write impact report JSON")
   .option("--json", "Print JSON")
   .action(async (id: string | undefined, opts, cmd) => {
@@ -999,6 +1016,10 @@ graph
       process.exitCode = 1;
       return;
     }
+    const direction =
+      opts.direction === "upstream" || opts.direction === "both"
+        ? opts.direction
+        : undefined;
     const result = await runGraphImpact({
       graphPath: paths.graph,
       rulesPath: paths.rulesImpact,
@@ -1009,6 +1030,7 @@ graph
       git: opts.git,
       change: "content_change",
       output: opts.output,
+      direction,
     });
     if (opts.json || opts.output) console.log(JSON.stringify(result, null, 2));
     else console.log(formatGraphImpact(result, opts.git));

@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import { runCheck, type CheckFinding } from "../operations/check.js";
 import { validateGraph } from "../operations/validate.js";
@@ -6,6 +7,8 @@ import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { resolveProjectPaths } from "../util/paths.js";
 import { adoptArtifactPaths } from "./paths.js";
 import { loadAdoptSetup } from "./setup.js";
+import { discoverMarkdownFiles } from "../index/docs-build.js";
+import { SRS_MINIMUM_PATHS } from "../operations/derive.js";
 import type { AdoptPlan } from "./types.js";
 
 export interface AdoptValidationGap {
@@ -13,6 +16,9 @@ export interface AdoptValidationGap {
   severity: "blocking" | "warning";
   message: string;
   fix?: string;
+  layer?: string;
+  suggestion?: string;
+  deriveFrom?: string[];
 }
 
 export interface AdoptValidationResult {
@@ -131,6 +137,31 @@ export async function validateAdopt(
   }
 
   const blockingCount = gaps.filter((g) => g.severity === "blocking").length;
+
+  const srsFiles = await discoverMarkdownFiles(root, "docs/srs");
+  const bdFiles = await discoverMarkdownFiles(root, "docs/basic-design");
+  const ddFiles = await discoverMarkdownFiles(root, "docs/detail-design");
+  const hasSrsMinimum = (
+    await Promise.all(
+      SRS_MINIMUM_PATHS.map((p) => pathExists(join(root, p))),
+    )
+  ).every(Boolean);
+
+  if (bdFiles.length > 0 && ddFiles.length > 0 && srsFiles.length === 0 && !hasSrsMinimum) {
+    gaps.push({
+      id: "derive.srs-missing",
+      severity: "warning",
+      message: "SRS missing but basic + detail design exist.",
+      fix: 'Say "generate SRS from basic design" (sourceMode: derive-downstream, extract pass)',
+      layer: "srs",
+      suggestion: "generate-srs",
+      deriveFrom: ["basic-design", "detail-design"],
+    });
+    questionsForUser.push(
+      "SRS is missing — backfill with generate SRS from basic design (derive-downstream extract pass)?",
+    );
+  }
+
   return {
     ready: blockingCount === 0,
     blockingCount,

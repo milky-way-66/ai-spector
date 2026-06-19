@@ -2,6 +2,8 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadInMemoryGraph } from "../graph/loadGraph.js";
 import { runContextList } from "../operations/context.js";
+import { defaultDeriveFromForWorkflow, type DeriveLayer, type DerivePhase, type SourceMode } from "../operations/derive.js";
+import { discoverMarkdownFiles } from "../index/docs-build.js";
 import { pathExists, readJson } from "../util/fs.js";
 import { loadMergedReadinessCriteria } from "./resolve.js";
 import { checkStandardsAlignment } from "./standards-align.js";
@@ -22,6 +24,11 @@ export interface ReadinessAssessOptions {
   targets?: string[];
   /** Assess all targets in criteria file */
   targetAll?: boolean;
+  sourceMode?: SourceMode;
+  deriveFrom?: DeriveLayer[];
+  derivePhase?: DerivePhase;
+  /** Workflow id for default deriveFrom when not specified */
+  workflow?: string;
 }
 
 function collectCriteriaInScope(
@@ -119,11 +126,31 @@ function buildRequirementQualitySummary(
   };
 }
 
+async function countDownstreamDocFiles(
+  root: string,
+  layers: DeriveLayer[],
+): Promise<number> {
+  let total = 0;
+  for (const layer of layers) {
+    const rel = `docs/${layer}`;
+    if (await pathExists(join(root, rel))) {
+      total += (await discoverMarkdownFiles(root, rel)).length;
+    }
+  }
+  return total;
+}
+
 export async function assessReadiness(opts: ReadinessAssessOptions): Promise<ReadinessAssessResult> {
+  const deriveExtract =
+    opts.sourceMode === "derive-downstream" && opts.derivePhase !== "expand";
+  const profileOverride =
+    opts.profile ??
+    (deriveExtract ? "derive-from-downstream" : undefined);
+
   const resolved = await loadMergedReadinessCriteria({
     root: opts.root,
     docType: opts.docType,
-    profile: opts.profile,
+    profile: profileOverride,
   });
 
   const { root, config, criteria, profileId, criteriaPath, packName, docType } = resolved;
@@ -138,12 +165,22 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
   const contextEntries = contextResult.stores.flatMap((s) => s.entries);
 
   const nodeCounts = countNodesByType(graph);
+  const deriveFrom =
+    opts.deriveFrom ??
+    (opts.workflow ? defaultDeriveFromForWorkflow(opts.workflow) : undefined);
+  const downstreamDocFiles =
+    deriveFrom?.length && deriveExtract
+      ? await countDownstreamDocFiles(root, deriveFrom)
+      : undefined;
+
   const inventory: ProbeInventory = {
     graph,
     nodeCounts,
     contextEntries,
     dataSourceFiles: await countDataSourceFiles(root),
     analysisGaps: await countAnalysisGaps(root),
+    ...(deriveFrom?.length ? { deriveFrom } : {}),
+    ...(downstreamDocFiles != null ? { downstreamDocFiles } : {}),
   };
 
   const targetAll = Boolean(opts.targetAll) || !opts.targets?.length;

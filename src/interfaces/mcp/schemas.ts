@@ -420,6 +420,12 @@ export const SpecRejectSchema = RootSchema.extend({
   note: z.string().optional().describe("Why the spec was rejected"),
 });
 
+// ── Derive / task enums (shared by workspace check + task bootstrap) ─────────
+
+export const SourceModeEnum = z.enum(["forward", "derive-downstream"]);
+export const DeriveLayerEnum = z.enum(["basic-design", "detail-design"]);
+export const DerivePhaseEnum = z.enum(["extract", "expand"]);
+
 // ── Workspace check ─────────────────────────────────────────────────────────
 
 export const WorkspaceCheckSchema = RootSchema.extend({
@@ -433,6 +439,13 @@ export const WorkspaceCheckSchema = RootSchema.extend({
     .describe(
       "Validate specific doc output paths after writing (e.g. ['docs/srs/en/3-use-cases.md'])",
     ),
+  workflow: z
+    .string()
+    .optional()
+    .describe("Workflow step id for prerequisite checks (e.g. generate-srs)"),
+  sourceMode: SourceModeEnum.optional().describe(
+    "forward or derive-downstream when evaluating workflow prerequisites",
+  ),
 });
 
 export const ReviewRejectSchema = RootSchema.extend({
@@ -455,6 +468,23 @@ export const ReviewListSchema = RootSchema.extend({
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
 export const TaskKindEnum = z.enum(["generate", "resolve", "import", "adopt"]);
+
+const DeriveBootstrapFields = {
+  sourceMode: SourceModeEnum.optional().describe(
+    "forward (default) or derive-downstream when backfilling from basic/detail design",
+  ),
+  deriveFrom: z
+    .array(DeriveLayerEnum)
+    .optional()
+    .describe("Downstream layers to derive from (required when sourceMode is derive-downstream)"),
+  derivePhase: DerivePhaseEnum.optional().describe(
+    "extract (default) or expand after reviewing extract output",
+  ),
+  priorDeriveTaskId: z
+    .string()
+    .optional()
+    .describe("Completed extract task id — required for derivePhase expand"),
+};
 export const BuiltinWorkflowIdEnum = z.enum([
   "generate-srs",
   "generate-basic-design",
@@ -693,6 +723,7 @@ export const TaskCreateSchema = RootSchema.extend({
     .boolean()
     .optional()
     .describe("Replace existing active task in the same slot (abandons the previous task)"),
+  ...DeriveBootstrapFields,
 });
 
 const TaskListBootstrapSchema = z.object({
@@ -706,6 +737,7 @@ const TaskListBootstrapSchema = z.object({
     .boolean()
     .optional()
     .describe("Replace existing active task in the slot (abandons the previous task)"),
+  ...DeriveBootstrapFields,
 });
 
 export const TaskListSchema = RootSchema.extend({
@@ -896,6 +928,10 @@ export const ReadinessAssessSchema = RootSchema.extend({
     .boolean()
     .optional()
     .describe("Assess all targets in criteria file (default true when targets omitted)"),
+  sourceMode: SourceModeEnum.optional(),
+  deriveFrom: z.array(DeriveLayerEnum).optional(),
+  derivePhase: DerivePhaseEnum.optional(),
+  workflow: z.string().optional().describe("Workflow id for default deriveFrom layers"),
 });
 
 export const ReadinessOutputChecklistSchema = RootSchema.extend({

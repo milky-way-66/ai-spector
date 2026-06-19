@@ -22,6 +22,13 @@ import {
 import { recordWorkflowFromTask } from "../workflow/active-worker.js";
 import { resolveAuditActor } from "../util/audit-actor.js";
 import {
+  validateDeriveBootstrap,
+  assertDeriveNotBlockedByCompleteSrs,
+  type DeriveLayer,
+  type DerivePhase,
+  type SourceMode,
+} from "./derive.js";
+import {
   assertGenerateExecutionAllowed,
   assertResolveExecutionAllowed,
   assertGeneratePlanStoreAllowed,
@@ -227,6 +234,13 @@ export interface TaskSnapshot {
   adoptValidateReadyAt?: string;
   /** Adopt task — handed off to template-import */
   adoptForkedToImportAt?: string;
+  /** Generate task — forward (default) or derive from downstream docs */
+  sourceMode?: SourceMode;
+  deriveFrom?: DeriveLayer[];
+  derivePhase?: DerivePhase;
+  priorDeriveTaskId?: string;
+  /** Set when extract pass completes and expand pass is offered */
+  deriveExpandOfferedAt?: string;
 }
 
 export interface TaskState {
@@ -366,6 +380,10 @@ export interface TaskCreateOptions {
   docType?: string;
   /** Replace an existing active task in the same slot (marks it abandoned). */
   force?: boolean;
+  sourceMode?: SourceMode;
+  deriveFrom?: DeriveLayer[];
+  derivePhase?: DerivePhase;
+  priorDeriveTaskId?: string;
 }
 
 export interface TaskCreateResult {
@@ -407,6 +425,18 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
     }
   }
 
+  const derive = validateDeriveBootstrap({
+    sourceMode: opts.sourceMode,
+    workflow: opts.workflow,
+    deriveFrom: opts.deriveFrom,
+    derivePhase: opts.derivePhase,
+    priorDeriveTaskId: opts.priorDeriveTaskId,
+  });
+
+  if (derive.sourceMode === "derive-downstream") {
+    await assertDeriveNotBlockedByCompleteSrs(root, opts.workflow);
+  }
+
   const now = new Date().toISOString();
   const steps = stepsFromTemplate(opts.workflow);
   const first = steps[0]!;
@@ -433,7 +463,12 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
     contextRefs: opts.docType
       ? { docType: opts.docType, contextFile: `context/${opts.docType}.json` }
       : {},
-    snapshot: {},
+    snapshot: {
+      sourceMode: derive.sourceMode,
+      ...(derive.deriveFrom ? { deriveFrom: derive.deriveFrom } : {}),
+      derivePhase: derive.derivePhase,
+      ...(derive.priorDeriveTaskId ? { priorDeriveTaskId: derive.priorDeriveTaskId } : {}),
+    },
   };
 
   const taskPath = await saveTask(root, task);
@@ -473,6 +508,10 @@ export interface TaskListBootstrap {
   trigger: string;
   docType?: string;
   force?: boolean;
+  sourceMode?: SourceMode;
+  deriveFrom?: DeriveLayer[];
+  derivePhase?: DerivePhase;
+  priorDeriveTaskId?: string;
 }
 
 export interface TaskListActiveSlot {
@@ -547,6 +586,10 @@ async function maybeBootstrapFromList(
     trigger: bootstrap.trigger,
     docType: bootstrap.docType,
     force: bootstrap.force,
+    sourceMode: bootstrap.sourceMode,
+    deriveFrom: bootstrap.deriveFrom,
+    derivePhase: bootstrap.derivePhase,
+    priorDeriveTaskId: bootstrap.priorDeriveTaskId,
   });
   return {
     index: await loadIndex(root),
@@ -1425,6 +1468,13 @@ export async function runTaskComplete(opts: TaskCompleteOptions): Promise<TaskCo
   }
   if (opts.summary) {
     task.nextAction = opts.summary;
+  } else if (
+    task.snapshot.sourceMode === "derive-downstream" &&
+    task.snapshot.derivePhase === "extract"
+  ) {
+    task.snapshot.deriveExpandOfferedAt = new Date().toISOString();
+    task.nextAction =
+      "Extract pass complete. Review SRS, then say expand SRS to full for Pass 2.";
   } else {
     task.nextAction = "Task complete";
   }

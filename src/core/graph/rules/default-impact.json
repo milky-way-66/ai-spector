@@ -17,8 +17,14 @@
     "describedIn": { "direction": "out", "depth": "unbounded" },
     "partOf":      { "direction": "out", "depth": "unbounded" }
   },
+  "pass1_upstream": {
+    "satisfies":   { "direction": "out", "depth": 1 },
+    "tracesTo":    { "direction": "out", "depth": "unbounded" },
+    "listedIn":    { "direction": "in",  "depth": 1 }
+  },
   "buckets": {
     "regenerate": ["section", "document"],
-    "review":     ["useCase", "feature", "requirement", "nfr", "actor", "dataEntity"]
+    "review":     ["useCase", "feature", "requirement", "nfr", "actor", "dataEntity"],
+    "syncUpstream": ["requirement", "useCase", "feature", "section"]
   }
 }

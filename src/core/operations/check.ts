@@ -26,6 +26,8 @@ import { hasAdoptTaskCoverage } from "../adopt/tasks.js";
 import { loadAdoptSetup } from "../adopt/setup.js";
 import { listApprovedTaskGateViolations } from "./task-gates.js";
 import type { TaskState } from "./task.js";
+import type { SourceMode } from "./derive.js";
+import { evaluateWorkflowStep } from "../workflow/dependencies.js";
 
 export type CheckSeverity = "error" | "warning";
 
@@ -57,6 +59,10 @@ export interface CheckOptions {
   fix?: boolean;
   /** Validate specific output paths (e.g. after writing a generated doc). */
   paths?: string[];
+  /** Workflow step id from workflow.dependencies.json (e.g. generate-srs). */
+  workflow?: string;
+  /** forward (default) or derive-downstream when evaluating workflow prerequisites. */
+  sourceMode?: SourceMode;
 }
 
 /** A single structural rule. `severity` may be overridden by config. */
@@ -713,6 +719,24 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
           fix: "Re-run analyze/merge or restore from a known-good graph.",
         });
       }
+    }
+  }
+
+  if (opts.workflow) {
+    const wf = await evaluateWorkflowStep(root, {
+      stepId: opts.workflow,
+      sourceMode: opts.sourceMode,
+    });
+    for (const failure of wf.failures) {
+      add({
+        ruleId: `DERIVE-001-${failure.id}`,
+        severity: "error",
+        message: failure.message,
+        fix:
+          opts.sourceMode === "derive-downstream"
+            ? "Index downstream design docs and ensure graph has domain nodes."
+            : "Complete upstream workflow steps before generate.",
+      });
     }
   }
 

@@ -8,9 +8,16 @@ export interface ImpactRulesFile {
   version: 2;
   pass1_expand: Record<string, EdgeRule>;
   pass2_downstream: Record<string, EdgeRule>;
-  buckets: { regenerate: NodeType[]; review: NodeType[] };
+  pass1_upstream?: Record<string, EdgeRule>;
+  buckets: {
+    regenerate: NodeType[];
+    review: NodeType[];
+    syncUpstream?: NodeType[];
+  };
   maxNodes?: number;
 }
+
+export type ImpactDirection = "downstream" | "upstream" | "both";
 
 const defaultImpactRules: ImpactRulesFile = {
   version: 2,
@@ -30,9 +37,15 @@ const defaultImpactRules: ImpactRulesFile = {
     describedIn: { direction: "out", depth: "unbounded" },
     partOf:      { direction: "out", depth: "unbounded" },
   },
+  pass1_upstream: {
+    satisfies:   { direction: "out", depth: 1 },
+    tracesTo:    { direction: "out", depth: "unbounded" },
+    listedIn:    { direction: "in",  depth: 1 },
+  },
   buckets: {
     regenerate: ["section", "document"] as NodeType[],
     review:     ["useCase", "feature", "requirement", "nfr", "actor", "dataEntity"] as NodeType[],
+    syncUpstream: ["requirement", "useCase", "feature", "section"] as NodeType[],
   },
 };
 
@@ -47,6 +60,7 @@ export interface ImpactResult {
   origin: { id: string; type: string; change: string };
   regenerate: ImpactEntry[];
   review: ImpactEntry[];
+  syncUpstream?: ImpactEntry[];
   affectedOutputPaths: string[];
   staleTranslations?: ImpactEntry[];
   resolvedFrom?: { id: string; type: string; reason: string };
@@ -141,6 +155,7 @@ export function computeImpact(
   originId: string,
   change: string,
   rules: ImpactRulesFile,
+  direction: ImpactDirection = "downstream",
 ): ImpactResult {
   const origin = g.nodesById.get(originId);
   if (!origin) throw new Error(`Unknown node: ${originId}`);
@@ -160,6 +175,7 @@ export function computeImpact(
 
   const maxNodes = rules.maxNodes ?? 500;
 
+  if (direction !== "upstream") {
   const { provenance: p1, capped: c1 } = runBfs(
     g,
     [originId],
@@ -242,6 +258,41 @@ export function computeImpact(
     staleTranslations.sort((a, b) => a.id.localeCompare(b.id));
     result.staleTranslations = staleTranslations;
   }
+  }
+
+  if (
+    (direction === "upstream" || direction === "both") &&
+    rules.pass1_upstream &&
+    rules.buckets.syncUpstream?.length
+  ) {
+    const upstreamTypes = new Set<string>(rules.buckets.syncUpstream);
+    const upstreamSeen = new Set<string>([originId]);
+    const { provenance: upProv } = runBfs(
+      g,
+      [originId],
+      rules.pass1_upstream,
+      upstreamSeen,
+      maxNodes,
+    );
+    const syncUpstream: ImpactEntry[] = [];
+    for (const [id, prov] of upProv) {
+      const node = g.nodesById.get(id);
+      if (!node) continue;
+      if (upstreamTypes.has(node.type)) {
+        syncUpstream.push(makeEntry(g, id, prov));
+      }
+    }
+    if (syncUpstream.length > 0) {
+      syncUpstream.sort((a, b) => a.id.localeCompare(b.id));
+      result.syncUpstream = syncUpstream;
+    }
+  }
+
+  if (direction === "upstream") {
+    result.regenerate = [];
+    result.review = [];
+    result.affectedOutputPaths = [];
+  }
 
   return result;
 }
@@ -278,16 +329,19 @@ export function mergeImpactResults(
   if (results.some((r) => r.truncated)) merged.truncated = true;
 
   const seen = new Set<string>();
-  for (const key of ["regenerate", "review"] as const) {
+  for (const key of ["regenerate", "review", "syncUpstream"] as const) {
     for (const r of results) {
-      for (const e of r[key]) {
+      const bucket = r[key];
+      if (!bucket) continue;
+      for (const e of bucket) {
         const dk = `${key}:${e.id}`;
         if (seen.has(dk)) continue;
         seen.add(dk);
-        merged[key].push(e);
+        if (!merged[key]) merged[key] = [];
+        merged[key]!.push(e);
       }
     }
-    merged[key].sort((a, b) => a.id.localeCompare(b.id));
+    if (merged[key]) merged[key]!.sort((a, b) => a.id.localeCompare(b.id));
   }
 
   const pathSeen = new Set<string>();

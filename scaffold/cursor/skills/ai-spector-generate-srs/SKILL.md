@@ -31,6 +31,30 @@ task_list({
 
 An empty `tasks/index.json` (`active: {}`) is **not** “ready” — `bootstrap` creates the task in the same call.
 
+### Derive-downstream mode (backfill SRS)
+
+When the user says **generate SRS from basic design**, **backfill SRS**, or similar:
+
+```
+task_list({
+  bootstrap: {
+    kind: "generate",
+    workflow: "generate-srs",
+    docType: "srs",
+    trigger: "<user request>",
+    sourceMode: "derive-downstream",
+    deriveFrom: ["basic-design", "detail-design"],
+    derivePhase: "extract"
+  }
+})
+```
+
+- `workspace_check({ workflow: "generate-srs", sourceMode: "derive-downstream" })` — no `knowledge.json` required
+- `readiness_assess({ docType: "srs", sourceMode: "derive-downstream", workflow: "generate-srs" })` — uses `derive-from-downstream` profile
+- Plan table **must** include columns: `Mode | Sources | Gaps expected`
+- Extract pass: restructure downstream content only; use `[DERIVE-GAP: reason]` when silent; add `tracesTo` to basic/detail sources
+- After `task_complete` on extract pass, offer **expand SRS to full** (`derivePhase: "expand"`, `priorDeriveTaskId`)
+
 ### Forbidden before `task_approve_plan`
 
 - Edit / Write under `docs/srs/`
