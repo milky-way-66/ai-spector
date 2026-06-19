@@ -718,10 +718,15 @@ export async function runIndex(
   }
 
   if (failed) {
-    const first = steps.find((s) => s.status === "failed");
-    throw new Error(
-      `Index refresh incomplete${first ? ` (${first.label})` : ""}. Fix errors above and re-run: npx ai-spector index`,
-    );
+    return {
+      steps,
+      failed,
+      sources,
+      nextAction: indexNextAction(sources, reviewQueueSummary),
+      cocoindexUpdated: undefined,
+      cocoindexSkipped: undefined,
+      reviewQueue: reviewQueueSummary,
+    };
   }
 
   // CocoIndex auto-sync (opt-in via cocoindexSync option or config flag)

@@ -5,6 +5,8 @@ import {
   classifySrsDetailFile,
   detailFileToPatch,
   documentIdForBasicDesignDetail,
+  documentIdForBasicDesignFile,
+  documentIdForSrsFile,
   documentIdForDomainDetail,
   extractBasicDesignDetailMeta,
   extractDetailDomainMeta,
@@ -60,15 +62,32 @@ describe("extractDomainFromMarkdown", () => {
 });
 
 describe("classifySrsDetailFile", () => {
-  it("detects per-domain paths and skips list chapters", () => {
+  it("detects UC/F detail paths and skips registry list chapters", () => {
     expect(classifySrsDetailFile("docs/srs/3-use-cases.md")).toBeNull();
     expect(classifySrsDetailFile("docs/srs/4-system-features.md")).toBeNull();
+    expect(classifySrsDetailFile("docs/srs/en/1-introduction.md")).toBeNull();
     expect(classifySrsDetailFile("docs/srs/03-use-cases/uc-01-place-order.md")).toBe(
       "useCaseDetail",
     );
     expect(
       classifySrsDetailFile("docs/srs/04-system-features/f-02-checkout.md"),
     ).toBe("featureDetail");
+  });
+
+  it("classifies nested and locale-scoped detail paths", () => {
+    expect(
+      classifySrsDetailFile("docs/srs/en/use-cases/uc-03-login.md"),
+    ).toBe("useCaseDetail");
+    expect(
+      classifySrsDetailFile("docs/srs/vi/04-system-features/f-01-auth.md"),
+    ).toBe("featureDetail");
+  });
+
+  it("indexes other srs markdown as documentDetail", () => {
+    expect(classifySrsDetailFile("docs/srs/en/appendix/glossary.md")).toBe("documentDetail");
+    expect(documentIdForSrsFile("docs/srs/en/appendix/glossary.md")).toBe(
+      "doc.srs.doc-en-appendix-glossary",
+    );
   });
 });
 
@@ -278,9 +297,12 @@ describe("classifyBasicDesignDetailFile", () => {
     ).toBe("screenDetail");
   });
 
-  it("classifies locale-scoped detail paths correctly", () => {
+  it("classifies locale-scoped and nested subfolder paths", () => {
     expect(
       classifyBasicDesignDetailFile("docs/basic-design/en/api/get-trips.md"),
+    ).toBe("apiDetail");
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/api/v2/auth.md"),
     ).toBe("apiDetail");
     expect(
       classifyBasicDesignDetailFile("docs/basic-design/en/screens/trip-editor.md"),
@@ -291,6 +313,15 @@ describe("classifyBasicDesignDetailFile", () => {
     expect(
       classifyBasicDesignDetailFile("docs/basic-design/en/list-screens.md"),
     ).toBeNull();
+  });
+
+  it("indexes other basic-design markdown as documentDetail", () => {
+    expect(
+      classifyBasicDesignDetailFile("docs/basic-design/en/integration/webhooks.md"),
+    ).toBe("documentDetail");
+    expect(documentIdForBasicDesignFile("docs/basic-design/en/integration/webhooks.md")).toBe(
+      "doc.bd.doc-en-integration-webhooks",
+    );
   });
 });
 

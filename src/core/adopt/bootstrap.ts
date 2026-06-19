@@ -114,8 +114,17 @@ export async function runAdoptBootstrap(
   }
 
   try {
-    await runIndex({ root });
-    steps.push({ id: "index", status: "ok" });
+    const report = await runIndex({ root });
+    if (report.failed) {
+      const first = report.steps.find((s) => s.status === "failed");
+      steps.push({
+        id: "index",
+        status: "failed",
+        detail: first?.detail ?? "index refresh failed",
+      });
+    } else {
+      steps.push({ id: "index", status: "ok" });
+    }
   } catch (error) {
     steps.push({
       id: "index",

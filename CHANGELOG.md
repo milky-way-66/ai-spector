@@ -4,6 +4,20 @@ All notable changes to [ai-spector](https://github.com/milky-way-66/ai-spector) 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.89] - 2026-06-19
+
+### Fixed
+
+- **Doc-extract basic-design link slugs** — non-greedy path parsing no longer turns `auth.md` into `doc.bd.api-a`; links resolve to `doc.bd.api-auth` and merge succeeds on detail-design → basic-design references.
+- **`ai-spector index` failure output** — returns the full step report (with failed-step detail) instead of throwing before `formatIndexReport`; CLI sets exit code 1 when `report.failed`.
+- **Merge missing-node errors** — suggest similar graph ids when a truncated slug likely caused the failure (e.g. `doc.bd.api-a` → `doc.bd.api-auth`).
+
+### Changed
+
+- **Index all markdown under doc trees** — SRS, basic-design, and detail-design scan every `.md` except registry list chapters; non-api/screen/UC/F paths become `doc.*.doc-{path-slug}` instance nodes.
+- **Dynamic path classification** — nested subfolders and locale segments (e.g. `en/api/v2/auth.md`, `modules/f-01-*.md`) classify without hardcoded folder checks.
+- **Cross-doc `references` edges** — detail-design and SRS detail files parse markdown links to `srs/`, `basic-design/`, and `detail-design/` paths into graph references.
+
 ## [Unreleased]
 
 ### Added

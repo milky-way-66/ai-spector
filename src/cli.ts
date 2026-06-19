@@ -906,6 +906,9 @@ program
       cocoindexSync: opts.cocoindexSync,
     });
     console.log(formatIndexReport(report));
+    if (report.failed) {
+      process.exitCode = 1;
+    }
   });
 
 const graph = program.command("graph").description("Traceability graph operations");

@@ -91,33 +91,81 @@ function isRealDomainId(id: string): boolean {
   return /^(UC|F)-\d+$/i.test(id) && !/XX$/i.test(id);
 }
 
-export type DetailFileKind = "useCaseDetail" | "featureDetail";
-export type BasicDesignDetailKind = "apiDetail" | "screenDetail";
-export type DetailDesignDetailKind = "featureDetail";
+export type DetailFileKind = "useCaseDetail" | "featureDetail" | "documentDetail";
+export type BasicDesignDetailKind = "apiDetail" | "screenDetail" | "documentDetail";
+export type DetailDesignDetailKind = "featureDetail" | "documentDetail";
+
+/** Builtin SRS list-chapter outputs (registry/bootstrap — not doc-extract instances). */
+const SRS_REGISTRY_CHAPTER_BASENAMES = new Set([
+  "1-introduction.md",
+  "2-overall-description.md",
+  "3-use-cases.md",
+  "4-system-features.md",
+  "5-data-requirements.md",
+  "6-external-interfaces.md",
+  "7-quality-attributes.md",
+  "8-internationalization.md",
+  "9-other-requirements.md",
+]);
+
+/** Detail-design common chapter outputs (registry — not per-feature instances). */
+const DD_REGISTRY_COMMON_BASENAMES = new Set([
+  "architecture-overview.md",
+  "security-patterns.md",
+  "error-handling-patterns.md",
+  "performance-standards.md",
+  "integration-patterns.md",
+  "deployment-infrastructure.md",
+]);
 
 function normalizeRelativePath(relativePath: string): string {
   return relativePath.replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
-/** Classify markdown under docs/srs as list chapter vs per-domain detail file. */
-export function classifySrsDetailFile(relativePath: string): DetailFileKind | null {
-  const p = normalizeRelativePath(relativePath).toLowerCase();
-  if (p.endsWith("/3-use-cases.md") || p === "docs/srs/3-use-cases.md") {
-    return null;
-  }
-  if (p.endsWith("/4-system-features.md") || p === "docs/srs/4-system-features.md") {
-    return null;
-  }
-  if (/\/03-use-cases\//.test(p) || /\/uc-\d+/.test(p)) {
-    return "useCaseDetail";
-  }
-  if (/\/04-system-features\/f-\d+/.test(p)) {
-    return "featureDetail";
-  }
-  return null;
+function isSrsRegistryChapterPath(relativePath: string): boolean {
+  const base = normalizeRelativePath(relativePath).split("/").pop()?.toLowerCase() ?? "";
+  return SRS_REGISTRY_CHAPTER_BASENAMES.has(base);
 }
 
-/** Classify markdown under docs/basic-design as list chapter vs per-endpoint/per-screen detail. */
+function isDetailDesignRegistryCommonPath(relativePath: string): boolean {
+  const p = normalizeRelativePath(relativePath).toLowerCase();
+  if (!p.includes("/common/")) {
+    return false;
+  }
+  const base = p.split("/").pop() ?? "";
+  return DD_REGISTRY_COMMON_BASENAMES.has(base);
+}
+
+function slugFromDocTreeRelativePath(relativePath: string, rootPrefix: string): string {
+  const rel = normalizeRelativePath(relativePath)
+    .slice(rootPrefix.length)
+    .replace(/\.md$/i, "");
+  return rel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 96);
+}
+
+/** Classify markdown under docs/srs as list chapter vs detail instance. */
+export function classifySrsDetailFile(relativePath: string): DetailFileKind | null {
+  const p = normalizeRelativePath(relativePath).toLowerCase();
+  if (!p.startsWith("docs/srs/") || !p.endsWith(".md")) {
+    return null;
+  }
+  if (isSrsRegistryChapterPath(relativePath)) {
+    return null;
+  }
+  if (/\/uc-\d+/.test(p) || /\/03-use-cases\//.test(p) || /\/use-cases\//.test(p)) {
+    return "useCaseDetail";
+  }
+  if (/\/f-\d+/.test(p) || /\/04-system-features\//.test(p)) {
+    return "featureDetail";
+  }
+  return "documentDetail";
+}
+
+/** Classify markdown under docs/basic-design as list chapter vs detail instance. */
 export function classifyBasicDesignDetailFile(
   relativePath: string,
 ): BasicDesignDetailKind | null {
@@ -133,16 +181,19 @@ export function classifyBasicDesignDetailFile(
   ) {
     return null;
   }
-  if (/\/api\/[^/]+\.md$/.test(p)) {
+  if (!p.startsWith("docs/basic-design/") || !p.endsWith(".md")) {
+    return null;
+  }
+  if (p.includes("/api/")) {
     return "apiDetail";
   }
-  if (/\/screens\/[^/]+\.md$/.test(p)) {
+  if (p.includes("/screens/")) {
     return "screenDetail";
   }
-  return null;
+  return "documentDetail";
 }
 
-/** Classify markdown under docs/detail-design as list/common vs per-feature detail. */
+/** Classify markdown under docs/detail-design as list/common vs detail instance. */
 export function classifyDetailDesignDetailFile(
   relativePath: string,
 ): DetailDesignDetailKind | null {
@@ -150,13 +201,16 @@ export function classifyDetailDesignDetailFile(
   if (p.endsWith("/feature-list.md") || p === "docs/detail-design/feature-list.md") {
     return null;
   }
-  if (/\/common\/[^/]+\.md$/.test(p) || p.includes("/detail-design/common/")) {
+  if (isDetailDesignRegistryCommonPath(relativePath)) {
     return null;
   }
-  if (/\/features\/f-\d+[^/]*\.md$/.test(p)) {
+  if (!p.startsWith("docs/detail-design/") || !p.endsWith(".md")) {
+    return null;
+  }
+  if (/\/f-\d+/.test(p) || /\/features\//.test(p)) {
     return "featureDetail";
   }
-  return null;
+  return "documentDetail";
 }
 
 export function documentIdForDomainDetail(
@@ -166,9 +220,46 @@ export function documentIdForDomainDetail(
 ): string {
   const prefix = nodePrefix ?? "doc.srs";
   const norm = normalizeDomainId(domainId);
+  if (kind === "documentDetail") {
+    throw new Error("documentIdForDomainDetail requires useCaseDetail or featureDetail");
+  }
   return kind === "useCaseDetail"
     ? `${prefix}.uc-${norm}`
     : `${prefix}.f-${norm}`;
+}
+
+function primaryDomainIdFromSrsPath(
+  relativePath: string,
+  kind: "useCaseDetail" | "featureDetail",
+): { id: string; title?: string } | null {
+  const p = normalizeRelativePath(relativePath);
+  if (kind === "useCaseDetail") {
+    const m = p.match(/\/uc-(\d+)/i);
+    if (m?.[1] && isRealDomainId(`UC-${m[1]}`)) {
+      return { id: normalizeDomainId(`UC-${m[1]}`) };
+    }
+  } else {
+    const m = p.match(/\/f-(\d+)/i);
+    if (m?.[1] && isRealDomainId(`F-${m[1]}`)) {
+      return { id: normalizeDomainId(`F-${m[1]}`) };
+    }
+  }
+  return null;
+}
+
+export function documentIdForSrsFile(relativePath: string): string | null {
+  const kind = classifySrsDetailFile(relativePath);
+  if (!kind) {
+    return null;
+  }
+  if (kind === "documentDetail") {
+    return `doc.srs.doc-${slugFromDocTreeRelativePath(relativePath, "docs/srs/")}`;
+  }
+  const fromPath = primaryDomainIdFromSrsPath(relativePath, kind);
+  if (!fromPath) {
+    return null;
+  }
+  return documentIdForDomainDetail(kind, fromPath.id);
 }
 
 function slugFromFilename(relativePath: string): string {
@@ -184,12 +275,35 @@ function slugFromFilename(relativePath: string): string {
     .slice(0, 64);
 }
 
+function slugFromBasicDesignRelativePath(relativePath: string): string {
+  const rel = normalizeRelativePath(relativePath)
+    .slice("docs/basic-design/".length)
+    .replace(/\.md$/i, "");
+  return rel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 96);
+}
+
 export function documentIdForBasicDesignDetail(
   kind: BasicDesignDetailKind,
   relativePath: string,
 ): string {
+  if (kind === "documentDetail") {
+    return `doc.bd.doc-${slugFromBasicDesignRelativePath(relativePath)}`;
+  }
   const slug = slugFromFilename(relativePath);
   return kind === "apiDetail" ? `doc.bd.api-${slug}` : `doc.bd.screen-${slug}`;
+}
+
+/** Resolve graph document id for any basic-design markdown path (list chapters excluded). */
+export function documentIdForBasicDesignFile(relativePath: string): string | null {
+  const kind = classifyBasicDesignDetailFile(relativePath);
+  if (!kind) {
+    return null;
+  }
+  return documentIdForBasicDesignDetail(kind, relativePath);
 }
 
 function featureIdFromDetailDesignFilename(relativePath: string): string | null {
@@ -207,10 +321,14 @@ function featureIdFromDetailDesignFilename(relativePath: string): string | null 
 }
 
 export function documentIdForDetailDesignDetail(
-  _kind: DetailDesignDetailKind,
+  kind: DetailDesignDetailKind,
   relativePath: string,
   content: string,
 ): string {
+  if (kind === "documentDetail") {
+    return `doc.dd.doc-${slugFromDocTreeRelativePath(relativePath, "docs/detail-design/")}`;
+  }
+
   const fromFilename = featureIdFromDetailDesignFilename(relativePath);
   if (fromFilename) {
     return `doc.dd.${fromFilename.toLowerCase()}`;
@@ -231,6 +349,15 @@ export function documentIdForDetailDesignDetail(
   }
 
   return `doc.dd.f-${slugFromFilename(relativePath)}`;
+}
+
+/** Resolve graph document id for any detail-design markdown path (list/registry chapters excluded). */
+export function documentIdForDetailDesignFile(relativePath: string): string | null {
+  const kind = classifyDetailDesignDetailFile(relativePath);
+  if (!kind) {
+    return null;
+  }
+  return documentIdForDetailDesignDetail(kind, relativePath, "");
 }
 
 const DD_DETAIL_TITLE = /^#\s*Detail Design:\s*(.+)/im;
@@ -276,26 +403,36 @@ export function extractDetailDesignDetailMeta(
   return { title: slugFromFilename(relativePath), featureIds: [...featureIds] };
 }
 
-function slugFromLinkBasename(name: string): string {
-  const base = name.split("/").pop()?.replace(/\.md$/i, "") ?? name;
-  return base
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 64);
+function normalizeDocTreeLinkPath(docRoot: "srs" | "basic-design" | "detail-design", rawTail: string): string {
+  const tail = normalizeRelativePath(rawTail).replace(new RegExp(`^${docRoot}/`, "i"), "");
+  const withExt = /\.md$/i.test(tail) ? tail : `${tail}.md`;
+  return `docs/${docRoot}/${withExt}`;
 }
 
-function extractBasicDesignReferenceDocIds(content: string): string[] {
+function documentIdForDocTreeFile(relativePath: string): string | null {
+  const p = normalizeRelativePath(relativePath).toLowerCase();
+  if (p.startsWith("docs/srs/")) {
+    return documentIdForSrsFile(relativePath);
+  }
+  if (p.startsWith("docs/basic-design/")) {
+    return documentIdForBasicDesignFile(relativePath);
+  }
+  if (p.startsWith("docs/detail-design/")) {
+    return documentIdForDetailDesignFile(relativePath);
+  }
+  return null;
+}
+
+function extractDocReferenceDocIds(content: string): string[] {
   const ids = new Set<string>();
   for (const m of content.matchAll(
-    /basic-design\/(?:[a-z]{2}\/)?api\/([^)\s"'#]+?)(?:\.md)?/gi,
+    /(?:docs\/)?(srs|basic-design|detail-design)\/([^)\s"'#]+)(?:\.md)?/gi,
   )) {
-    ids.add(`doc.bd.api-${slugFromLinkBasename(m[1]!)}`);
-  }
-  for (const m of content.matchAll(
-    /basic-design\/(?:[a-z]{2}\/)?screens\/([^)\s"'#]+?)(?:\.md)?/gi,
-  )) {
-    ids.add(`doc.bd.screen-${slugFromLinkBasename(m[1]!)}`);
+    const root = m[1]!.toLowerCase() as "srs" | "basic-design" | "detail-design";
+    const docId = documentIdForDocTreeFile(normalizeDocTreeLinkPath(root, m[2]!));
+    if (docId) {
+      ids.add(docId);
+    }
   }
   return [...ids];
 }
@@ -304,6 +441,7 @@ function buildDetailDesignDetailInstancePatch(opts: {
   relativePath: string;
   content: string;
   docId: string;
+  kind: DetailDesignDetailKind;
   title: string;
   description?: string;
   featureIds: string[];
@@ -317,24 +455,29 @@ function buildDetailDesignDetailInstancePatch(opts: {
       id: opts.docId,
       type: "document",
       output: path,
-      perDomain: "featureDetail",
+      perDomain: opts.kind,
       title: opts.title,
       ...(opts.description ? { description: opts.description } : {}),
     },
   ];
-  const edges: GraphEdge[] = [
-    { type: "rendersTo", from: opts.docId, to: path },
-    { type: "rendersTo", from: templateDocId, to: path },
-    { type: "partOf", from: opts.docId, to: templateDocId },
-    { type: "contains", from: listAnchorId, to: opts.docId },
-  ];
+  const edges: GraphEdge[] = [{ type: "rendersTo", from: opts.docId, to: path }];
+
+  if (opts.kind !== "documentDetail") {
+    edges.push(
+      { type: "rendersTo", from: templateDocId, to: path },
+      { type: "partOf", from: opts.docId, to: templateDocId },
+      { type: "contains", from: listAnchorId, to: opts.docId },
+    );
+  }
 
   for (const featureId of opts.featureIds) {
     edges.push({ type: "tracesTo", from: featureId, to: opts.docId });
   }
 
-  for (const refDocId of extractBasicDesignReferenceDocIds(opts.content)) {
-    edges.push({ type: "references", from: opts.docId, to: refDocId });
+  for (const refDocId of extractDocReferenceDocIds(opts.content)) {
+    if (refDocId !== opts.docId) {
+      edges.push({ type: "references", from: opts.docId, to: refDocId });
+    }
   }
 
   const sections = parseDetailSections(opts.content, opts.docId);
@@ -406,15 +549,6 @@ function buildBasicDesignDetailInstancePatch(opts: {
   featureIds: string[];
 }): ExtractPatch {
   const path = normalizeRelativePath(opts.relativePath);
-  const templateDocId =
-    opts.kind === "apiDetail"
-      ? PER_DOMAIN_TEMPLATE_DOC_BD.api
-      : PER_DOMAIN_TEMPLATE_DOC_BD.screen;
-  const listAnchorId =
-    opts.kind === "apiDetail"
-      ? DEFAULT_BD_LIST_DOC.apiList
-      : DEFAULT_BD_LIST_DOC.screenList;
-
   const nodes: GraphNode[] = [
     {
       id: opts.docId,
@@ -425,12 +559,23 @@ function buildBasicDesignDetailInstancePatch(opts: {
       ...(opts.description ? { description: opts.description } : {}),
     },
   ];
-  const edges: GraphEdge[] = [
-    { type: "rendersTo", from: opts.docId, to: path },
-    { type: "rendersTo", from: templateDocId, to: path },
-    { type: "partOf", from: opts.docId, to: templateDocId },
-    { type: "contains", from: listAnchorId, to: opts.docId },
-  ];
+  const edges: GraphEdge[] = [{ type: "rendersTo", from: opts.docId, to: path }];
+
+  if (opts.kind !== "documentDetail") {
+    const templateDocId =
+      opts.kind === "apiDetail"
+        ? PER_DOMAIN_TEMPLATE_DOC_BD.api
+        : PER_DOMAIN_TEMPLATE_DOC_BD.screen;
+    const listAnchorId =
+      opts.kind === "apiDetail"
+        ? DEFAULT_BD_LIST_DOC.apiList
+        : DEFAULT_BD_LIST_DOC.screenList;
+    edges.push(
+      { type: "rendersTo", from: templateDocId, to: path },
+      { type: "partOf", from: opts.docId, to: templateDocId },
+      { type: "contains", from: listAnchorId, to: opts.docId },
+    );
+  }
 
   for (const featureId of opts.featureIds) {
     edges.push({ type: "tracesTo", from: featureId, to: opts.docId });
@@ -448,6 +593,9 @@ function primaryDomainIdFromDetailContent(
   content: string,
   kind: DetailFileKind,
 ): { id: string; title?: string } | null {
+  if (kind === "documentDetail") {
+    return null;
+  }
   const root = parseMarkdown(content);
 
   if (kind === "useCaseDetail") {
@@ -503,6 +651,9 @@ export function extractDetailDomainMeta(
   content: string,
   kind: DetailFileKind,
 ): DetailDomainMeta | null {
+  if (kind === "documentDetail") {
+    return null;
+  }
   const primary = primaryDomainIdFromDetailContent(content, kind);
   if (!primary) return null;
 
@@ -738,10 +889,12 @@ export function extractDomainFromMarkdown(
 
   // --- 6. Rich metadata from SRS detail files ---
   const srsDetailKind = classifySrsDetailFile(relativePath);
-  if (srsDetailKind) {
+  if (srsDetailKind === "useCaseDetail" || srsDetailKind === "featureDetail") {
     const rich = extractDetailDomainMeta(content, srsDetailKind);
     if (rich) {
-      const primary = primaryDomainIdFromDetailContent(content, srsDetailKind);
+      const primary =
+        primaryDomainIdFromDetailContent(content, srsDetailKind) ??
+        primaryDomainIdFromSrsPath(relativePath, srsDetailKind);
       if (primary) {
         if (srsDetailKind === "useCaseDetail") {
           addUseCase(parsed, primary.id, rich);
@@ -911,7 +1064,55 @@ function buildDetailInstancePatch(opts: {
     to: sections[0]?.id ?? opts.docId,
   });
 
+  for (const refDocId of extractDocReferenceDocIds(opts.content)) {
+    if (refDocId !== opts.docId) {
+      edges.push({ type: "references", from: opts.docId, to: refDocId });
+    }
+  }
+
   return { version: 1, nodes, edges };
+}
+
+function buildSrsDocumentDetailInstancePatch(opts: {
+  relativePath: string;
+  content: string;
+  docId: string;
+  title: string;
+  description?: string;
+}): ExtractPatch {
+  const path = normalizeRelativePath(opts.relativePath);
+  const nodes: GraphNode[] = [
+    {
+      id: opts.docId,
+      type: "document",
+      output: path,
+      perDomain: "documentDetail",
+      title: opts.title,
+      ...(opts.description ? { description: opts.description } : {}),
+    },
+  ];
+  const edges: GraphEdge[] = [{ type: "rendersTo", from: opts.docId, to: path }];
+
+  for (const refDocId of extractDocReferenceDocIds(opts.content)) {
+    if (refDocId !== opts.docId) {
+      edges.push({ type: "references", from: opts.docId, to: refDocId });
+    }
+  }
+
+  const sections = parseDetailSections(opts.content, opts.docId);
+  const sectionPatch = detailSectionsToPatch(opts.docId, sections, opts.content);
+  nodes.push(...sectionPatch.nodes);
+  edges.push(...sectionPatch.edges);
+
+  return { version: 1, nodes, edges };
+}
+
+function srsDocumentDetailTitle(content: string, relativePath: string): string {
+  const titleLine = content.match(/^#\s+(.+)/m);
+  if (titleLine?.[1]?.trim()) {
+    return titleLine[1].trim();
+  }
+  return slugFromFilename(relativePath);
 }
 
 function srsDetailFileToPatch(
@@ -924,7 +1125,19 @@ function srsDetailFileToPatch(
     return { version: 1, nodes: [], edges: [] };
   }
 
-  const primary = primaryDomainIdFromDetailContent(content, kind);
+  if (kind === "documentDetail") {
+    return buildSrsDocumentDetailInstancePatch({
+      relativePath,
+      content,
+      docId: documentIdForSrsFile(relativePath)!,
+      title: srsDocumentDetailTitle(content, relativePath),
+    });
+  }
+
+  let primary = primaryDomainIdFromDetailContent(content, kind);
+  if (!primary) {
+    primary = primaryDomainIdFromSrsPath(relativePath, kind);
+  }
   if (!primary) {
     return { version: 1, nodes: [], edges: [] };
   }
@@ -990,6 +1203,7 @@ export function detailDesignDetailFileToPatch(
     relativePath,
     content,
     docId: documentIdForDetailDesignDetail(kind, relativePath, content),
+    kind,
     title: meta.title,
     featureIds: meta.featureIds,
   });
@@ -1242,10 +1456,15 @@ export async function buildDocExtractPatch(
         allNodesMap.set(n.id, n);
         if (n.type === "document" && n.output && !n.outputPattern) {
           const isBdInstance =
-            n.perDomain === "apiDetail" || n.perDomain === "screenDetail";
-          const isDdInstance = n.perDomain === "featureDetail";
+            n.perDomain === "apiDetail" ||
+            n.perDomain === "screenDetail" ||
+            n.perDomain === "documentDetail";
+          const isDdInstance =
+            n.perDomain === "featureDetail" || n.perDomain === "documentDetail";
           const isSrsInstance =
-            n.perDomain === "useCase" || n.perDomain === "feature";
+            n.perDomain === "useCase" ||
+            n.perDomain === "feature" ||
+            n.perDomain === "documentDetail";
           if (isBdInstance) {
             detailDocuments++;
             bdDetailDocuments++;

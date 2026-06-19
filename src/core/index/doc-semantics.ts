@@ -121,7 +121,7 @@ export async function runDocSemanticMerge(
   ).length;
   const detailGapWarning =
     bdDetailOnDisk > 0 && stats.bdDetailDocuments === 0
-      ? `\n      ⚠ ${bdDetailOnDisk} basic-design detail file(s) on disk (screens/, api/) produced 0 graph detail nodes — check sources in ${configPath}`
+      ? `\n      ⚠ ${bdDetailOnDisk} basic-design detail file(s) on disk produced 0 graph detail nodes — check sources in ${configPath}`
       : ddDetailOnDisk > 0 && stats.ddDetailDocuments === 0
         ? `\n      ⚠ ${ddDetailOnDisk} detail-design feature file(s) on disk produced 0 graph detail nodes — check sources in ${configPath}`
         : "";

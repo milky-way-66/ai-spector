@@ -286,6 +286,26 @@ describe("mergePatch", () => {
     ).toBe(true);
   });
 
+  it("suggests similar node ids when a references target is truncated", () => {
+    const g = loadGraph(
+      [
+        node("doc.dd.f-01", "document"),
+        node("doc.bd.api-auth", "document", {
+          output: "docs/basic-design/vi/api/auth.md",
+        }),
+      ],
+      [],
+    );
+
+    expect(() =>
+      mergePatch(g, {
+        version: 1,
+        nodes: [],
+        edges: [{ type: "references", from: "doc.dd.f-01", to: "doc.bd.api-a" }],
+      }),
+    ).toThrow(/Did you mean: doc\.bd\.api-auth/);
+  });
+
   it("rejects edges that target structure nodes with disallowed types", () => {
     const g = loadGraph(
       [node("doc.srs", "document"), node("sec.a", "section")],
