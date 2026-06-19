@@ -286,6 +286,13 @@ export type { SyncSnapshotOptions, SyncSnapshotResult } from "../../core/sync/sn
 export { runSyncAudit, SyncAuditError } from "../../core/sync/audit.js";
 export type { SyncAuditOptions } from "../../core/sync/audit.js";
 export type { SyncAuditResult } from "../../core/sync/types.js";
+export type {
+  DocAnchor,
+  DiffSource,
+  EnrichmentCache,
+  ImpactBuckets,
+  LayerDriftSummary,
+} from "../../core/sync/drift-types.js";
 
 // Workspace check
 export { runCheck } from "../../core/operations/check.js";
