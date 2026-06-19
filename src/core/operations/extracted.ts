@@ -28,6 +28,8 @@ export interface ExtractedSpec {
   reviewedByRole?: AuditActorRole;
   /** Reviewer note on approve/reject. */
   note?: string;
+  /** How the spec was produced — derive-downstream when backfilled from lower layers. */
+  provenance?: "forward" | "derive-downstream";
 }
 
 export interface SpecStore {
@@ -57,6 +59,7 @@ export interface SpecRecordOptions {
     statement: string;
     extractedFrom: string[];
     patch?: ExtractPatch;
+    provenance?: "forward" | "derive-downstream";
   }>;
 }
 
@@ -201,6 +204,7 @@ export async function runSpecRecord(opts: SpecRecordOptions): Promise<SpecRecord
       status: "pending",
       createdAt: now,
       ...(input.patch ? { patch: input.patch } : {}),
+      ...(input.provenance ? { provenance: input.provenance } : {}),
     };
     store.specs.push(spec);
     recorded.push(spec);

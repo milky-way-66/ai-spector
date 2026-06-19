@@ -372,6 +372,21 @@ function parseTask(raw: TaskState): TaskState {
 
 // ── create ────────────────────────────────────────────────────────────────────
 
+async function assertExpandDeriveAllowed(root: string, priorTaskId: string): Promise<void> {
+  const task = parseTask(await loadTask(root, priorTaskId));
+  if (task.status !== "complete") {
+    throw new Error(
+      `priorDeriveTaskId ${priorTaskId} is not complete — finish extract pass before expand`,
+    );
+  }
+  if (task.snapshot.sourceMode !== "derive-downstream") {
+    throw new Error(`priorDeriveTaskId ${priorTaskId} was not a derive-downstream task`);
+  }
+  if (task.snapshot.derivePhase !== "extract") {
+    throw new Error(`priorDeriveTaskId ${priorTaskId} must be an extract pass task`);
+  }
+}
+
 export interface TaskCreateOptions {
   root?: string;
   kind: TaskKind;
@@ -435,6 +450,10 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
 
   if (derive.sourceMode === "derive-downstream") {
     await assertDeriveNotBlockedByCompleteSrs(root, opts.workflow);
+  }
+
+  if (derive.derivePhase === "expand" && derive.priorDeriveTaskId) {
+    await assertExpandDeriveAllowed(root, derive.priorDeriveTaskId);
   }
 
   const now = new Date().toISOString();

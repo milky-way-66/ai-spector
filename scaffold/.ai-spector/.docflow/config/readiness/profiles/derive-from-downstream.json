@@ -3,7 +3,6 @@
   "title": "Derive from downstream design",
   "description": "Input gates when generating SRS or basic design from existing lower layers (extract pass).",
   "replaceBase": true,
-  "docType": "srs",
   "globalCriteria": [
     {
       "id": "DER-001",

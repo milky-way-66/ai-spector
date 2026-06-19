@@ -87,8 +87,9 @@ export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) 
       };
     }
 
+    const direction = input.direction ?? "downstream";
     const results = origins.map((o) =>
-      computeImpact(g, o.id, input.change, rules),
+      computeImpact(g, o.id, input.change, rules, direction),
     );
     return mergeImpactResults(results, origins);
   }
@@ -105,7 +106,7 @@ export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) 
     );
   }
 
-  return computeImpact(g, primary.id, input.change, rules);
+  return computeImpact(g, primary.id, input.change, rules, input.direction ?? "downstream");
 }
 
 export async function toolGraphValidate(input: z.infer<typeof GraphValidateSchema>) {

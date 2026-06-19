@@ -45,6 +45,7 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/
 | Check graph health | "validate the graph", "graph errors", "graph report" | `ai-spector-graph` | `graph_validate({})` · `graph_report({})` |
 | Refresh after edits | "re-index", "sync the graph" | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
 | Write SRS | "generate SRS", "write use cases" | `ai-spector-generate-srs` | `task_create` → **gated**: check → clarify → briefing + plan → `task_approve_plan` → `task_record_wave` per wave → `spec_record` → `task_complete` |
+| **Backfill SRS** | "generate SRS from basic design", "backfill SRS", "expand SRS to full" | `ai-spector-generate-srs` | same gates with `sourceMode: derive-downstream` — extract pass first, optional expand pass |
 | Basic design | "screen list", "API design", "wireframes" | `ai-spector-generate-basic-design` | same task-state flow → docs/basic-design → index each wave |
 | Detail design | "generate detail design", "I want to generate detail design", "feature-level design" | `ai-spector-generate-detail-design` | **gated generate**: check → clarify → briefing → plan → `task_approve_plan` → waves → index each wave |
 | Review extracted specs | "pending specs", "approve SPEC-001" | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |

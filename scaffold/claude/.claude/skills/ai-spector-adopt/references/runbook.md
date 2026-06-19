@@ -14,7 +14,7 @@ Three-factor: **Human + AI + MCP/CLI**. Follow adopt **task steps** in order.
 | `validate` | `ready: true` | `adopt_validate({ sync: true })` |
 | `complete` | migration.complete | `adopt_setup_mark migration.complete`, `task_complete` |
 
-**Forbidden:** `task_approve_plan` (use `task_approve_adopt_plan`); `adopt_apply` before plan approval; template-import nested in adopt task — pause adopt → template-import → new adopt task.
+**Forbidden:** `task_approve_plan` (use `task_approve_adopt_plan`); `adopt_apply` before plan approval; `adopt_plan --approve` without adopt task (use `task_approve_adopt_plan`); template-import nested in adopt task — pause adopt → `/template-import` → new adopt task.
 
 **Custom pack:** scan classifies `custom` + no installed pack → pause adopt task → `ai-spector-template-import` → start **new** adopt task after install.
 
@@ -174,6 +174,12 @@ Present `ready`, `gaps[]`, and any `questionsForUser`. For each **blocking** gap
 - Explain what failed (workspace check, graph validate, STRUCT rules, etc.)
 - Work with the user to fix (path edits, manual index, resolve-task follow-ups)
 - Re-run validate
+
+When `gaps` includes **`derive.srs-missing`** (basic + detail design exist, SRS missing), tell the user:
+
+> Migration complete. SRS is missing but basic + detail design are indexed. Say **"generate SRS from basic design"** to backfill (extract pass first).
+
+Route to **`ai-spector-generate-srs`** with `sourceMode: derive-downstream` — not a new adopt phase.
 
 ```bash
 npx ai-spector adopt validate --json --sync

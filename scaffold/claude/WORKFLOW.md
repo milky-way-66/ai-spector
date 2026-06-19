@@ -39,12 +39,14 @@ Then: add files under `docs/data-source/`, enable **all** skills under `.claude/
 |--------------|----------------|-------|---------------------------|
 | **Learn / open course** | "open the course", "learn ai-spector" | `ai-spector-course` | `course serve --open` → link lesson |
 | **Setup project** | "setup ai-spector", "initialize project", "bootstrap project" | `ai-spector-setup` | `setup --check` → `setup -y` → enable skills checklist |
+| **Align legacy docs** | "align my legacy docs", "migrate existing SRS", "wrong SRS folder", "continue adopt" | `ai-spector-adopt` | `task_create` (adopt) → gated scan → `task_approve_adopt_plan` → apply → bootstrap (index) → validate |
 | **Check workspace** | "check my workspace", "why did pre-commit block me", "stale clarifications" | `ai-spector-check` | `workspace_check({})` → findings table → optional `fix: true` |
 | **Resume / manage tasks** | "resume my SRS", "continue generation", "active tasks", "pause task" | `ai-spector-task` | `task_list` → `task_resume` / `task_get` → route to generate or resolve skill |
 | Ingest sources | "analyze my data source", "build the knowledge graph" | `ai-spector-graph` | `index({})` → agent extracts → `knowledge_validate` → `graph_merge` → `graph_validate` |
 | Check graph health | "validate the graph", "graph errors", "graph report" | `ai-spector-graph` | `graph_validate({})` · `graph_report({})` |
 | Refresh after edits | "re-index", "sync the graph" | `ai-spector-graph` | `index({ cocoindexSync: true })` (or `index({})` if no CocoIndex) |
 | Write SRS | "generate SRS", "write use cases" | `ai-spector-generate-srs` | `task_create` → **gated**: check → clarify → briefing + plan → `task_approve_plan` → `task_record_wave` per wave → `spec_record` → `task_complete` |
+| **Backfill SRS** | "generate SRS from basic design", "backfill SRS", "expand SRS to full" | `ai-spector-generate-srs` | same gates with `sourceMode: derive-downstream` — extract pass first, optional expand pass |
 | Basic design | "screen list", "API design", "wireframes" | `ai-spector-generate-basic-design` | same task-state flow → docs/basic-design → index each wave |
 | Detail design | "generate detail design", "I want to generate detail design", "feature-level design" | `ai-spector-generate-detail-design` | **gated generate**: check → clarify → briefing → plan → `task_approve_plan` → waves → index each wave |
 | Review extracted specs | "pending specs", "approve SPEC-001" | (generate skills, stage 6) | `spec_list` → `spec_approve` (merges to graph) / `spec_reject` |

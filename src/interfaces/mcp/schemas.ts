@@ -42,6 +42,10 @@ export const GraphImpactSchema = RootSchema.extend({
   file: z.string().optional().describe("File path of the changed element"),
   heading: z.string().optional().describe("Section heading within the file"),
   git: z.boolean().optional().describe("Derive origin from staged git diff"),
+  direction: z
+    .enum(["downstream", "upstream", "both"])
+    .optional()
+    .describe("Impact direction — both adds syncUpstream bucket for upstream SRS sync hints"),
   output: z.string().optional().describe("Write impact report JSON to this path"),
 });
 
@@ -399,6 +403,10 @@ export const SpecRecordSchema = RootSchema.extend({
           .array(z.string())
           .describe("Generated document(s) the spec came from (relative paths)"),
         patch: SpecPatchSchema.optional(),
+        provenance: z
+          .enum(["forward", "derive-downstream"])
+          .optional()
+          .describe("derive-downstream when spec was extracted during backfill from lower layers"),
       }),
     )
     .min(1)

@@ -375,8 +375,27 @@ function isIncrementalChangeIntent(msg: string): boolean {
   );
 }
 
+function isDeriveSrsIntent(msg: string): boolean {
+  return (
+    /\bbackfill srs\b/.test(msg) ||
+    /\bgenerate srs from\b/.test(msg) ||
+    /\bexpand srs\b/.test(msg) ||
+    /\bderive srs\b/.test(msg) ||
+    /\bfill srs gaps\b/.test(msg)
+  );
+}
+
+function isDeriveBasicDesignIntent(msg: string): boolean {
+  return (
+    /\bgenerate basic design from detail\b/.test(msg) ||
+    /\bbackfill basic design\b/.test(msg) ||
+    /\bderive basic design\b/.test(msg)
+  );
+}
+
 function isGenerateSrsIntent(msg: string): boolean {
   return (
+    isDeriveSrsIntent(msg) ||
     /\bgenerate\b.*\bsrs\b/.test(msg) ||
     /\bwrite (chapter|use cases?)\b/.test(msg) ||
     /\bdag wave\b/.test(msg)
@@ -384,7 +403,11 @@ function isGenerateSrsIntent(msg: string): boolean {
 }
 
 function isGenerateBasicDesignIntent(msg: string): boolean {
+  if (isDeriveSrsIntent(msg)) {
+    return false;
+  }
   return (
+    isDeriveBasicDesignIntent(msg) ||
     /\bgenerate basic design\b/.test(msg) ||
     /\b(screen list|api design|wireframes?|basic design)\b/.test(msg) ||
     /\bgenerate\b.*\b(screens?|apis?|wireframes?)\b/.test(msg)
