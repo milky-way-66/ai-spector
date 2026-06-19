@@ -320,12 +320,33 @@ export async function moveJobToResolved(
   const syncedLangs = job.targets.filter((t) => t.status === "synced").map((t) => t.lang);
   const resolvedJob: ResolvedTranslationJob = {
     ...job,
+    enrichment: undefined,
+    changes: (job.changes ?? []).map(({ diff: _diff, ...change }) => change),
     resolvedAt: now,
     syncedLangs,
   };
   pending.jobs = pending.jobs.filter((j) => j.id !== job.id);
   await savePendingQueue(paths, pending);
   await deleteFileChangesDocument(paths, job.docType, job.relativePath);
+
+  const pathsToPurge = new Set<string>([
+    job.origin.path,
+    ...job.targets.map((t) => t.path),
+    ...(job.changes ?? []).map((c) => c.path),
+  ]);
+  const fingerprints = await loadFingerprints(paths.fingerprints);
+  let fingerprintsChanged = false;
+  for (const path of pathsToPurge) {
+    const entry = fingerprints.files[path];
+    if (entry?.content !== undefined) {
+      delete entry.content;
+      fingerprintsChanged = true;
+    }
+  }
+  if (fingerprintsChanged) {
+    await saveFingerprints(paths.fingerprints, fingerprints);
+  }
+
   await writeResolvedJob(paths, resolvedJob);
 }
 

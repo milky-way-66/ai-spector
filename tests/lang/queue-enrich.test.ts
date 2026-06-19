@@ -5,8 +5,11 @@ import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { loadDocflowConfig } from "@/core/config/load.js";
 import {
+  loadFingerprints,
   loadPendingQueue,
+  moveJobToResolved,
   queuePaths,
+  saveFingerprints,
 } from "@/core/lang/queue-store.js";
 import { reconcileTranslationQueue } from "@/core/lang/queue.js";
 import { runLangQueuePending } from "@/core/operations/lang-queue.js";
@@ -177,6 +180,67 @@ describe("translation queue enrich on pending read", () => {
       expect(results).toHaveLength(1);
       expect(results[0]!.enrichment).toBeUndefined();
       expect(results[0]!.job.enrichment).toBeUndefined();
+    });
+  });
+});
+
+describe("translation queue purge on resolve", () => {
+  it("purges legacy fingerprint content and clears enrichment", async () => {
+    await withTempProject(async (root) => {
+      await initGitRepo(root);
+      await setupMultiLangProject(root, [
+        { code: "en", label: "English" },
+        { code: "jp", label: "Japanese" },
+      ]);
+      await writeDoc(root, "srs", "en", "01-overview.md", EN_DOC);
+      await writeDoc(root, "srs", "jp", "01-overview.md", JP_DOC);
+      await exec("git", ["add", "."], { cwd: root });
+      await exec("git", ["commit", "-m", "init docs"], { cwd: root });
+
+      const { config } = await loadDocflowConfig(root);
+      await reconcileTranslationQueue(root, config);
+      await writeDoc(
+        root,
+        "srs",
+        "en",
+        "01-overview.md",
+        EN_DOC.replace("English overview text.", "Updated English overview."),
+      );
+      await reconcileTranslationQueue(root, config);
+
+      const paths = queuePaths(root);
+      const pending = await loadPendingQueue(paths);
+      const job = pending.jobs[0]!;
+      const originPath = job.origin.path;
+      const targetPath = job.targets[0]!.path;
+
+      const fingerprints = await loadFingerprints(paths.fingerprints);
+      fingerprints.files[originPath] = {
+        ...fingerprints.files[originPath]!,
+        content: EN_DOC,
+      };
+      fingerprints.files[targetPath] = {
+        hash: fingerprints.files[targetPath]?.hash ?? "legacy",
+        scannedAt: new Date().toISOString(),
+        version: 1,
+        content: JP_DOC,
+      };
+      await saveFingerprints(paths.fingerprints, fingerprints);
+
+      const enriched = await runLangQueuePending({ root });
+      const enrichedJob = enriched[0]!.job;
+      enrichedJob.targets[0]!.status = "synced";
+      enrichedJob.targets[0]!.hash = enrichedJob.targets[0]!.baselineHash;
+      enrichedJob.targets[0]!.syncedAt = new Date().toISOString();
+
+      await moveJobToResolved(paths, enrichedJob);
+
+      const fpAfter = await loadFingerprints(paths.fingerprints);
+      expect(fpAfter.files[originPath]?.content).toBeUndefined();
+      expect(fpAfter.files[targetPath]?.content).toBeUndefined();
+
+      const pendingAfter = await loadPendingQueue(paths);
+      expect(pendingAfter.jobs).toHaveLength(0);
     });
   });
 });
