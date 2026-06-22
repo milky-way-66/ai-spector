@@ -17,6 +17,7 @@ import {
   mergeDocopsPaths,
 } from "./paths.js";
 import { resolvedPluginsFromDocflow, syncCapabilitiesFromPlugins } from "./capabilities.js";
+import { initDocopsContract } from "./init.js";
 
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
@@ -245,41 +246,9 @@ export async function writePrototypeScreenMap(
 }
 
 export async function scaffoldDocopsTree(projectRoot: string): Promise<string> {
-  const { config: docflow } = await loadDocflowConfig(projectRoot);
-  const docTypes = await inferDocTypesFromTree(projectRoot);
-  const docops = docopsConfigFromDocflow(
-    docflow,
-    Object.keys(docTypes).length
-      ? docTypes
-      : {
-          srs: {
-            enabled: true,
-            path: "srs",
-            label: "SRS",
-            templatesPath: ".docops/templates/srs",
-          },
-          basicDesign: {
-            enabled: true,
-            path: "basic-design",
-            label: "Basic Design",
-            templatesPath: ".docops/templates/basic-design",
-          },
-        },
-  );
-
-  const dirs = [
-    DOCOPS_ROOT,
-    docops.paths.comments,
-    docops.paths.reviewQueue,
-    ".docops/prototype",
-    ".docops/templates/srs",
-    ".docops/templates/basic-design",
-    ".docops/templates/detail-design",
-  ];
-
-  for (const rel of dirs) {
-    await mkdir(join(projectRoot, rel), { recursive: true });
-  }
-
-  return writeDocopsConfig(projectRoot, docops);
+  const { configPath } = await initDocopsContract({
+    projectRoot,
+    force: true,
+  });
+  return configPath;
 }
