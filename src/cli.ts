@@ -10,7 +10,7 @@ import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
 import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
-import { runDocopsMigrate } from "./core/operations/docops.js";
+import { runDocopsInit, runDocopsMigrate, runDocopsStatus } from "./core/operations/docops.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
@@ -1675,11 +1675,44 @@ review
 const docops = program.command("docops").description("Writer-owned .docops/ contract helpers");
 
 docops
+  .command("status")
+  .description("Assess .docops/ layout and Writer readiness")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsStatus({ root: projectRootOpt(cmd), json: opts.json });
+    process.exitCode = code;
+  });
+
+docops
+  .command("init")
+  .description("Scaffold Writer-ready .docops/ contract")
+  .option("--lang <codes>", "Comma-separated language codes", "en")
+  .option("--layers <keys>", "Comma-separated doc type keys (srs,basicDesign,detailDesign)")
+  .option("--dry-run", "Print planned actions without writing files")
+  .option("--force", "Fill missing files when config already exists")
+  .action(async (opts, cmd) => {
+    await runDocopsInit({
+      root: projectRootOpt(cmd),
+      lang: opts.lang,
+      layers: opts.layers,
+      dryRun: opts.dryRun,
+      force: opts.force,
+    });
+  });
+
+docops
   .command("migrate")
   .description("Migrate legacy ai-spector layout to .docops/ contract")
   .option("--dry-run", "Print planned actions without writing files")
+  .option("--repair", "Fill gaps in existing .docops/ without overwriting")
+  .option("--templates-only", "Copy templates only")
   .action(async (opts, cmd) => {
-    await runDocopsMigrate({ root: projectRootOpt(cmd), dryRun: opts.dryRun });
+    await runDocopsMigrate({
+      root: projectRootOpt(cmd),
+      dryRun: opts.dryRun,
+      repair: opts.repair,
+      templatesOnly: opts.templatesOnly,
+    });
   });
 
 const reviewSession = review.command("session").description("Persisted review session gate for sign-off");
