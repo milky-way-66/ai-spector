@@ -14,6 +14,8 @@ describe("initDocopsContract", () => {
       expect(await pathExists(join(root, DOCOPS_CONFIG_REL))).toBe(true);
       expect(await pathExists(join(root, ".docops/review.config.json"))).toBe(true);
       expect(await pathExists(join(root, ".docops/review-queue/registry.json"))).toBe(true);
+      expect(await pathExists(join(root, ".docops/README.md"))).toBe(true);
+      expect(await pathExists(join(root, ".docops/modules/review.md"))).toBe(true);
       const md = await countMarkdownInDir(join(root, ".docops/templates/srs"));
       expect(md).toBeGreaterThan(0);
     });

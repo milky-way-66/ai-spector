@@ -64,7 +64,6 @@ When in doubt: if the user names a document and asks about approval/status → `
 | resume task, continue SRS, active tasks, pause task, list tasks | `ai-spector-task` | `references/runbook.md` |
 | learn, course, tutorial, walkthrough, "how do I", open course, mở khóa học, khóa học tiếng Việt | `ai-spector-course` | `references/course-guide.md` |
 | setup, init, bootstrap, get started *(run setup)* | `ai-spector-setup` | `references/runbook.md` |
-| docops init/migrate, Writer contract, Kari Writer templates empty, legacy layout, .docops setup | `ai-spector-docops` | `references/runbook.md` |
 | upgrade ai-spector, update ai-spector, sync after update, stale scaffold, continue upgrade | `ai-spector-upgrade` | `references/runbook.md` |
 | migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt | `ai-spector-adopt` | `references/runbook.md` |
 | check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `skill.md` |

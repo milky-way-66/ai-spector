@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "1.0",
+  "extends": "kaopiz-default",
+  "meta": { "source": "docops-init" }
+}

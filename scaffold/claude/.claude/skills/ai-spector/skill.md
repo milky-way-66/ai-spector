@@ -90,6 +90,7 @@ When `npx ai-spector` exits non-zero, required `--json` is invalid, or a require
 |--------|-------|
 | Learn / open course / tutorials | `ai-spector-course` |
 | Setup / bootstrap project | `ai-spector-setup` |
+| docops init/migrate, Writer contract, Kari Writer templates empty | `ai-spector-docops` |
 | Analyze, index, validate, impact, visualize | `ai-spector-graph` |
 | Add/update one feature or section ("I want to add…") | `ai-spector-resolve-task` |
 | Generate SRS (full chapter / DAG) | `ai-spector-generate-srs` |

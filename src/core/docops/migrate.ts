@@ -224,6 +224,18 @@ async function repairDocopsGaps(
   await copyLegacyArtifacts(projectRoot, actions, dryRun);
   await seedMissingReviewFiles(projectRoot, config, actions, dryRun);
 
+  const readmePath = join(projectRoot, ".docops/README.md");
+  if (!(await pathExists(readmePath))) {
+    const { copyBootstrapDocs, resolveBootstrapRoot } = await import("./bootstrap.js");
+    await copyBootstrapDocs({
+      projectRoot,
+      bundleRoot: resolveBootstrapRoot(),
+      dryRun,
+      skipExisting: true,
+      actions,
+    });
+  }
+
   let next = await patchMissingTemplatesPaths(projectRoot, config, actions, dryRun);
   const docflow = await loadDocflowIfPresent(projectRoot);
   await copyTemplatesForEnabledDocTypes(projectRoot, next, docflow, actions, dryRun);

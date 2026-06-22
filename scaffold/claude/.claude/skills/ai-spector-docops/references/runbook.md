@@ -8,6 +8,16 @@ Run all commands from **project repo root**.
 
 ---
 
+## Phase 0a — In-repo guide (no CLI)
+
+If `.docops/README.md` exists in the project repo, **read it first**. It explains the contract, folder map, and links to `modules/*.md` without requiring ai-spector.
+
+## Phase 0b — Web init (admins)
+
+Project admins with Bitbucket linked: **Settings → Docops → Initialize .docops** in Kari Writer.
+
+---
+
 ## Phase 0 — Assess
 
 ```bash

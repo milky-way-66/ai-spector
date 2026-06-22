@@ -1,6 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { packageBundleRoot } from "../config/load.js";
+import { join } from "node:path";
 import { pathExists, writeJson } from "../util/fs.js";
 import { DOCOPS_CONFIG_REL } from "./paths.js";
 import {
@@ -9,7 +8,12 @@ import {
   readDocopsConfig,
   writeDocopsConfig,
 } from "./config.js";
-import { copyTemplates } from "./templates.js";
+import {
+  copyBootstrapConfig,
+  copyBootstrapDocs,
+  copyBootstrapTemplates,
+  resolveBootstrapRoot,
+} from "./bootstrap.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
@@ -24,12 +28,6 @@ const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
     label: "Detail Design",
     templatesPath: ".docops/templates/detail-design",
   },
-};
-
-const BUILTIN_TEMPLATE_DIRS: Record<string, string> = {
-  srs: "templates/srs",
-  basicDesign: "templates/basic_design",
-  detailDesign: "templates/detail_design",
 };
 
 function parseLanguages(codes?: string[]): Array<{ code: string; label: string; path: string }> {
@@ -81,6 +79,7 @@ export async function initDocopsContract(opts: {
   const { projectRoot, dryRun = false, force = false } = opts;
   const actions: string[] = [];
   const configPath = join(projectRoot, DOCOPS_CONFIG_REL).replace(/\\/g, "/");
+  const skipExisting = !force;
 
   const existing = await readDocopsConfig(projectRoot);
   if (existing && !force) {
@@ -110,24 +109,12 @@ export async function initDocopsContract(opts: {
     }
   }
 
-  const reviewConfigRel = config.paths.reviewConfig;
-  const registryRel = join(config.paths.reviewQueue, "registry.json").replace(/\\/g, "/");
-  const pendingRel = join(config.paths.reviewQueue, "pending.json").replace(/\\/g, "/");
+  const bundleRoot = resolveBootstrapRoot();
+  const copyOpts = { projectRoot, bundleRoot, dryRun, skipExisting, actions };
 
-  for (const [rel, payload] of [
-    [reviewConfigRel, { schemaVersion: "1.0", extends: "kaopiz-default", meta: { source: "docops-init" } }],
-    [registryRel, { version: 3, documents: {} }],
-    [pendingRel, []],
-  ] as const) {
-    const absPath = join(projectRoot, rel);
-    if (!(await pathExists(absPath))) {
-      actions.push(`${dryRun ? "would write" : "write"} ${rel}`);
-      if (!dryRun) {
-        await mkdir(dirname(absPath), { recursive: true });
-        await writeJson(absPath, payload);
-      }
-    }
-  }
+  await copyBootstrapConfig({ ...copyOpts, config });
+  await copyBootstrapDocs(copyOpts);
+  await copyBootstrapTemplates({ ...copyOpts, docTypes });
 
   for (const dir of [
     config.paths.comments,
@@ -138,21 +125,6 @@ export async function initDocopsContract(opts: {
     if (!dir) continue;
     actions.push(`${dryRun ? "would mkdir" : "mkdir"} ${dir}`);
     if (!dryRun) await mkdir(join(projectRoot, dir), { recursive: true });
-  }
-
-  const bundle = packageBundleRoot();
-  for (const [key, dt] of Object.entries(docTypes)) {
-    const builtinSub = BUILTIN_TEMPLATE_DIRS[key];
-    if (!builtinSub || !dt.templatesPath) continue;
-    const src = join(bundle, builtinSub);
-    const copyResult = await copyTemplates({
-      projectRoot,
-      layerKey: key,
-      destRel: dt.templatesPath,
-      sources: [src],
-      dryRun,
-    });
-    actions.push(...copyResult.actions);
   }
 
   for (const dt of Object.values(docTypes)) {

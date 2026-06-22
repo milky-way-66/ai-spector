@@ -117,6 +117,18 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
           docopsPathsFound.push(tpl);
         }
       }
+
+      const readmeRel = ".docops/README.md";
+      if (!(await fileExists(projectRoot, readmeRel))) {
+        gaps.push({
+          id: "DOCOPS-DOC-001",
+          severity: "warning",
+          message: `Missing ${readmeRel}`,
+          fix: "Run docops migrate --repair or docops init --force",
+        });
+      } else {
+        docopsPathsFound.push(readmeRel);
+      }
     }
   } else {
     gaps.push({
