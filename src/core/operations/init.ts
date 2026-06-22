@@ -44,6 +44,8 @@ export interface InitOptions {
   languages?: string[];
   /** Client-preferred language code — must be one of `languages`. */
   clientLanguage?: string;
+  /** Internal team language code for review — must be one of `languages`. */
+  internalLanguage?: string;
   /** Which AI agent scaffold to install. Prompted interactively when not set. */
   target?: AgentTarget;
   /** Skip all prompts and use defaults / provided flags. */
@@ -225,6 +227,14 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   const { target, langCodes, clientLanguageCode, installHook, cocoindexMode } = await runWizard(opts, alreadyInitialized);
   const languages = buildLanguageConfigs(langCodes);
+  let internalLanguageCode: SupportedLanguageCode | undefined = opts.internalLanguage
+    ? assertSupportedLanguageCode(opts.internalLanguage)
+    : undefined;
+  if (internalLanguageCode && !langCodes.includes(internalLanguageCode)) {
+    throw new Error(
+      `Internal language "${internalLanguageCode}" must be one of the configured languages: ${langCodes.join(", ")}`,
+    );
+  }
 
   process.stdout.write("\nSetting up…\n");
 
@@ -236,6 +246,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   await writeJson(configPath, {
     ...existingConfig,
     languages,
+    ...(internalLanguageCode ? { internalLanguage: internalLanguageCode } : {}),
     ...(clientLanguageCode ? { clientLanguage: clientLanguageCode } : {}),
     packs: (existingConfig.packs as Record<string, unknown>) ?? { srs: "builtin", basicDesign: "builtin" },
   });

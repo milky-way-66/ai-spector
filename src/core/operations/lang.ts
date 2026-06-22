@@ -51,6 +51,16 @@ export interface LangSetClientResult {
   previousCode: string | null;
 }
 
+export interface LangSetInternalOptions {
+  root?: string;
+}
+
+export interface LangSetInternalResult {
+  code: string;
+  label: string;
+  previousCode: string | null;
+}
+
 export async function runLangAdd(code: string, opts: LangAddOptions = {}): Promise<LangAddResult> {
   const { root: projectRoot, config, configFile } = await loadDocflowConfig(
     opts.root ? resolve(opts.root) : undefined,
@@ -143,6 +153,35 @@ export async function runLangSetClient(
   const previousCode = config.clientLanguage ?? null;
   const raw = await readJson<Record<string, unknown>>(configFile);
   await writeJson(configFile, { ...raw, clientLanguage: normalized });
+
+  return {
+    code: normalized,
+    label: match.label,
+    previousCode,
+  };
+}
+
+export async function runLangSetInternal(
+  code: string,
+  opts: LangSetInternalOptions = {},
+): Promise<LangSetInternalResult> {
+  const { config, configFile } = await loadDocflowConfig(
+    opts.root ? resolve(opts.root) : undefined,
+  );
+
+  const normalized = assertSupportedLanguageCode(code);
+  const match = config.languages.find((l) => l.code === normalized);
+  if (!match) {
+    const configured = config.languages.map((l) => l.code).join(", ");
+    throw new Error(
+      `Language "${normalized}" is not configured. Add it first with: npx ai-spector lang add ${normalized}. ` +
+        `Configured languages: ${configured || "(none)"}`,
+    );
+  }
+
+  const previousCode = config.internalLanguage ?? null;
+  const raw = await readJson<Record<string, unknown>>(configFile);
+  await writeJson(configFile, { ...raw, internalLanguage: normalized });
 
   return {
     code: normalized,

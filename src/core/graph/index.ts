@@ -48,6 +48,7 @@ export type {
 export {
   parseDocflowConfig,
   primaryLanguage,
+  internalLanguage,
   clientLanguage,
   languageCodes,
 } from "./config.js";

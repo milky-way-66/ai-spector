@@ -3,7 +3,7 @@ import type { SyncCursorResult } from "@/core/operations/sync-cursor.js";
 import type { HooksInstallResult } from "@/core/operations/hooks.js";
 import type { PreCommitReport } from "@/core/operations/hooks.js";
 import type { SetupAudit } from "@/core/operations/setup.js";
-import type { LangAddResult, LangSetClientResult } from "@/core/operations/lang.js";
+import type { LangAddResult, LangSetClientResult, LangSetInternalResult } from "@/core/operations/lang.js";
 import type { QueueScanResult } from "@/core/operations/lang-queue.js";
 import type { ResolveTaskResult } from "@/core/operations/resolve-task.js";
 
@@ -82,6 +82,16 @@ export function formatLangSetClient(result: LangSetClientResult): string {
         ? " (unchanged)"
         : "";
   return `Client language preference: ${result.label} (${result.code})${prev}`;
+}
+
+export function formatLangSetInternal(result: LangSetInternalResult): string {
+  const prev =
+    result.previousCode && result.previousCode !== result.code
+      ? ` (was ${result.previousCode})`
+      : result.previousCode === result.code
+        ? " (unchanged)"
+        : "";
+  return `Internal language preference: ${result.label} (${result.code})${prev}`;
 }
 
 export function formatQueueScan(result: QueueScanResult): string {

@@ -12,6 +12,7 @@ export interface LanguageConfig {
 export interface DocflowConfig {
   version: number;
   languages: LanguageConfig[];
+  internalLanguage?: string;
   clientLanguage?: string;
   paths: DocflowProjectPaths;
 }
@@ -34,6 +35,10 @@ export function parseDocflowConfig(json: unknown): DocflowConfig {
       ? raw.languages
       : [DEFAULT_LANGUAGE];
   const languageCodes = new Set(languages.map((l) => l.code));
+  const internalLanguage =
+    raw.internalLanguage && languageCodes.has(raw.internalLanguage)
+      ? raw.internalLanguage
+      : undefined;
   const clientLanguage =
     raw.clientLanguage && languageCodes.has(raw.clientLanguage)
       ? raw.clientLanguage
@@ -42,6 +47,7 @@ export function parseDocflowConfig(json: unknown): DocflowConfig {
   return {
     version: raw.version ?? 1,
     languages,
+    ...(internalLanguage ? { internalLanguage } : {}),
     ...(clientLanguage ? { clientLanguage } : {}),
     paths: {
       graph: raw.paths?.graph ?? DEFAULT_PATHS.graph,
@@ -53,6 +59,14 @@ export function parseDocflowConfig(json: unknown): DocflowConfig {
 
 export function primaryLanguage(config: DocflowConfig): LanguageConfig {
   return config.languages[0] ?? DEFAULT_LANGUAGE;
+}
+
+export function internalLanguage(config: DocflowConfig): LanguageConfig {
+  if (config.internalLanguage) {
+    const match = config.languages.find((l) => l.code === config.internalLanguage);
+    if (match) return match;
+  }
+  return primaryLanguage(config);
 }
 
 export function clientLanguage(config: DocflowConfig): LanguageConfig {

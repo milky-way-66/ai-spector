@@ -95,6 +95,11 @@ export async function loadDocflowConfig(
       : [DEFAULT_LANGUAGE];
 
   const languageCodes = new Set(languages.map((l) => l.code));
+  let internalLanguage: DocflowConfig["internalLanguage"];
+  if (raw.internalLanguage) {
+    const code = assertSupportedLanguageCode(raw.internalLanguage);
+    internalLanguage = languageCodes.has(code) ? code : undefined;
+  }
   let clientLanguage: DocflowConfig["clientLanguage"];
   if (raw.clientLanguage) {
     const code = assertSupportedLanguageCode(raw.clientLanguage);
@@ -107,6 +112,7 @@ export async function loadDocflowConfig(
     version: raw.version ?? 1,
     ...(raw.scaffoldVersion ? { scaffoldVersion: raw.scaffoldVersion } : {}),
     languages,
+    ...(internalLanguage ? { internalLanguage } : {}),
     ...(clientLanguage ? { clientLanguage } : {}),
     ...(readinessRaw && Object.keys(readinessRaw).length > 0 ? { readiness: readinessRaw } : {}),
     paths: {
@@ -187,6 +193,15 @@ export function primaryLanguage(config: DocflowConfig): LanguageConfig {
   return config.languages[0] ?? DEFAULT_LANGUAGE;
 }
 
+/** Returns the internal team language, falling back to primary. */
+export function internalLanguage(config: DocflowConfig): LanguageConfig {
+  if (config.internalLanguage) {
+    const match = config.languages.find((l) => l.code === config.internalLanguage);
+    if (match) return match;
+  }
+  return primaryLanguage(config);
+}
+
 /** Returns the client-preferred language, falling back to primary. */
 export function clientLanguage(config: DocflowConfig): LanguageConfig {
   if (config.clientLanguage) {
@@ -201,7 +216,7 @@ export function preferredLanguageCode(
   config: DocflowConfig,
   track: "internal" | "client" = "internal",
 ): string {
-  return track === "client" ? clientLanguage(config).code : primaryLanguage(config).code;
+  return track === "client" ? clientLanguage(config).code : internalLanguage(config).code;
 }
 
 /** Resolved absolute path to project-local templates (`.ai-spector/templates`). */

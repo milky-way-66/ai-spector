@@ -67,6 +67,11 @@ export interface DocflowConfig {
   /** Readiness tailoring — see readiness/profiles/ in docflow config. */
   readiness?: ReadinessConfig;
   /**
+   * Language code for internal team review and internal-facing UI.
+   * Must be one of `languages[].code`. Defaults to the primary language when unset.
+   */
+  internalLanguage?: SupportedLanguageCode;
+  /**
    * Language code the client prefers for document review and delivery.
    * Must be one of `languages[].code`. Defaults to the primary language when unset.
    */

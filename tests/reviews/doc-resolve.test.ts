@@ -60,6 +60,31 @@ describe("resolveReviewDocPath", () => {
     });
   });
 
+  it("prefers internalLanguage for internal track when both exist", async () => {
+    await withTempProject(async (root) => {
+      await writeJson(join(root, ".ai-spector/docflow.config.json"), {
+        version: 1,
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        internalLanguage: "vi",
+        paths: {
+          graph: ".ai-spector/graph/traceability.graph.json",
+          registry: ".ai-spector/registry/section-registry.json",
+          templates: ".ai-spector/templates",
+        },
+      });
+      await mkdir(join(root, "docs/srs/en"), { recursive: true });
+      await mkdir(join(root, "docs/srs/vi"), { recursive: true });
+      await writeFile(join(root, "docs/srs/en/1-introduction.md"), "# Intro EN", "utf8");
+      await writeFile(join(root, "docs/srs/vi/1-introduction.md"), "# Intro VI", "utf8");
+
+      const internal = await resolveReviewDocPath(root, "srs/1-introduction", { track: "internal" });
+      expect(internal.docPath).toBe("docs/srs/vi/1-introduction.md");
+    });
+  });
+
   it("prefers clientLanguage for client track when both exist", async () => {
     await withTempProject(async (root) => {
       await writeJson(join(root, ".ai-spector/docflow.config.json"), {

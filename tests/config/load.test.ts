@@ -4,11 +4,12 @@ import { withTempProject } from "../helpers/temp-project.js";
 import { writeJson } from "@/core/util/fs.js";
 import {
   clientLanguage,
+  internalLanguage,
   loadDocflowConfig,
   preferredLanguageCode,
   primaryLanguage,
 } from "@/core/config/load.js";
-import { runLangSetClient } from "@/core/operations/lang.js";
+import { runLangSetClient, runLangSetInternal } from "@/core/operations/lang.js";
 
 async function writeConfig(
   root: string,
@@ -24,6 +25,55 @@ async function writeConfig(
     ...body,
   });
 }
+
+describe("loadDocflowConfig internalLanguage", () => {
+  it("loads internalLanguage when it matches a configured language", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        internalLanguage: "vi",
+        clientLanguage: "en",
+      });
+
+      const { config } = await loadDocflowConfig(root);
+      expect(config.internalLanguage).toBe("vi");
+      expect(internalLanguage(config).code).toBe("vi");
+      expect(preferredLanguageCode(config, "internal")).toBe("vi");
+      expect(preferredLanguageCode(config, "client")).toBe("en");
+      expect(primaryLanguage(config).code).toBe("en");
+    });
+  });
+
+  it("ignores internalLanguage when it is not in languages[]", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [{ code: "en", label: "English" }],
+        internalLanguage: "vi",
+      });
+
+      const { config } = await loadDocflowConfig(root);
+      expect(config.internalLanguage).toBeUndefined();
+      expect(internalLanguage(config).code).toBe("en");
+    });
+  });
+
+  it("falls back to primary when internalLanguage is unset", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
+
+      const { config } = await loadDocflowConfig(root);
+      expect(internalLanguage(config).code).toBe(primaryLanguage(config).code);
+    });
+  });
+});
 
 describe("loadDocflowConfig clientLanguage", () => {
   it("loads clientLanguage when it matches a configured language", async () => {
@@ -68,6 +118,36 @@ describe("loadDocflowConfig clientLanguage", () => {
 
       const { config } = await loadDocflowConfig(root);
       expect(clientLanguage(config).code).toBe(primaryLanguage(config).code);
+    });
+  });
+});
+
+describe("runLangSetInternal", () => {
+  it("persists internalLanguage in docflow.config.json", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
+
+      const result = await runLangSetInternal("vi", { root });
+      expect(result.code).toBe("vi");
+      expect(result.previousCode).toBeNull();
+
+      const { config } = await loadDocflowConfig(root);
+      expect(config.internalLanguage).toBe("vi");
+    });
+  });
+
+  it("throws when language is not configured", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [{ code: "en", label: "English" }],
+      });
+
+      await expect(runLangSetInternal("vi", { root })).rejects.toThrow(/not configured/);
     });
   });
 });

@@ -25,7 +25,7 @@ export interface ResolvedDocPath {
  *
  * Tries in order:
  *   1. Flat path: `docs/srs/1-introduction.md`
- *   2. Preferred-language subfolder (primary for internal, clientLanguage for client track)
+ *   2. Preferred-language subfolder (internalLanguage for internal, clientLanguage for client track)
  *   3. Primary-language subfolder (when preferred differs from primary)
  *   4. Any other configured language subfolder (first match)
  *
