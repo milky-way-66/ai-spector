@@ -109,7 +109,7 @@ describe.sequential("review queue storage", () => {
   it("writes snapshots under review-queue/snapshots", async () => {
     await withTempProject(async (root) => {
       const ref = await writeSnapshot(root, "srs/1-introduction", "# Snapshot");
-      expect(ref).toContain(".ai-spector/.docflow/review-queue/snapshots/");
+      expect(ref).toContain(".docops/review-queue/snapshots/");
       expect(await readSnapshot(root, "srs/1-introduction")).toBe("# Snapshot");
     });
   });

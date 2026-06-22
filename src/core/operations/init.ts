@@ -16,6 +16,7 @@ import type { LanguageConfig, SupportedLanguageCode } from "../config/types.js";
 import { assertSupportedLanguageCode } from "../config/types.js";
 import { installedPackageVersion } from "../upgrade/package-version.js";
 import { stampScaffoldVersion } from "../upgrade/stamp.js";
+import { scaffoldDocopsTree } from "../docops/config.js";
 
 const MCP_SERVER_ENTRY = {
   command: "npx",
@@ -252,6 +253,8 @@ export async function runInit(opts: InitOptions): Promise<void> {
   });
   await stampScaffoldVersion(root, installedPackageVersion());
 
+  const docopsConfigPath = await scaffoldDocopsTree(root);
+
   // Templates
   const projectTemplates = join(root, ".ai-spector", "templates");
   await mkdir(projectTemplates, { recursive: true });
@@ -334,6 +337,7 @@ export async function runInit(opts: InitOptions): Promise<void> {
   process.stdout.write("\n");
   process.stdout.write(`Initialized at ${root}\n`);
   process.stdout.write("\n");
+  process.stdout.write(`  docops    -> ${docopsConfigPath}\n`);
   process.stdout.write(`  editor    -> ${target}\n`);
   process.stdout.write(`  languages -> ${langCodes.join(", ")}\n`);
   process.stdout.write(`  gitignore -> ${gitignorePath}\n`);

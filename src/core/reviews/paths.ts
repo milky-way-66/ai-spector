@@ -1,7 +1,8 @@
 import { join } from "node:path";
+import { DEFAULT_DOCOPS_PATHS, LEGACY_DOCOPS_PATHS, docopsDualWriteEnabled } from "../docops/paths.js";
+import type { DualWriteRoots } from "../docops/dual-write.js";
 
 const LEGACY_REVIEWS_ROOT = "reviews";
-const REVIEW_QUEUE_REL = ".ai-spector/.docflow/review-queue";
 
 /** Convert a logical path like "srs/01-overview" to a safe filename segment "srs__01-overview". */
 export function safeFileName(logicalPath: string): string {
@@ -29,23 +30,46 @@ export interface ReviewQueuePaths {
   clientRejected: string;
 }
 
-export function reviewQueuePaths(projectRoot: string): ReviewQueuePaths {
-  const dir = join(projectRoot, REVIEW_QUEUE_REL).replace(/\\/g, "/");
+function buildReviewQueuePaths(dir: string): ReviewQueuePaths {
+  const normalized = dir.replace(/\\/g, "/");
   return {
-    dir,
-    fingerprints: join(dir, "fingerprints.json").replace(/\\/g, "/"),
-    registry: join(dir, "registry.json").replace(/\\/g, "/"),
-    pending: join(dir, "pending.json").replace(/\\/g, "/"),
-    history: join(dir, "history.jsonl").replace(/\\/g, "/"),
-    snapshots: join(dir, "snapshots").replace(/\\/g, "/"),
-    changes: join(dir, "changes").replace(/\\/g, "/"),
-    session: join(dir, ".session.json").replace(/\\/g, "/"),
-    internalResolved: join(dir, "internal-resolved.json").replace(/\\/g, "/"),
-    internalRejected: join(dir, "internal-rejected.json").replace(/\\/g, "/"),
-    internalFailed: join(dir, "internal-failed.json").replace(/\\/g, "/"),
-    clientResolved: join(dir, "client-resolved.json").replace(/\\/g, "/"),
-    clientRejected: join(dir, "client-rejected.json").replace(/\\/g, "/"),
+    dir: normalized,
+    fingerprints: join(normalized, "fingerprints.json").replace(/\\/g, "/"),
+    registry: join(normalized, "registry.json").replace(/\\/g, "/"),
+    pending: join(normalized, "pending.json").replace(/\\/g, "/"),
+    history: join(normalized, "history.jsonl").replace(/\\/g, "/"),
+    snapshots: join(normalized, "snapshots").replace(/\\/g, "/"),
+    changes: join(normalized, "changes").replace(/\\/g, "/"),
+    session: join(normalized, ".session.json").replace(/\\/g, "/"),
+    internalResolved: join(normalized, "internal-resolved.json").replace(/\\/g, "/"),
+    internalRejected: join(normalized, "internal-rejected.json").replace(/\\/g, "/"),
+    internalFailed: join(normalized, "internal-failed.json").replace(/\\/g, "/"),
+    clientResolved: join(normalized, "client-resolved.json").replace(/\\/g, "/"),
+    clientRejected: join(normalized, "client-rejected.json").replace(/\\/g, "/"),
   };
+}
+
+export function reviewQueuePathsFromRel(queueRootRel: string, projectRoot: string): ReviewQueuePaths {
+  return buildReviewQueuePaths(join(projectRoot, queueRootRel).replace(/\\/g, "/"));
+}
+
+/** Primary review queue paths — `.docops/review-queue/` by default. */
+export function reviewQueuePaths(projectRoot: string): ReviewQueuePaths {
+  return reviewQueuePathsFromRel(DEFAULT_DOCOPS_PATHS.reviewQueue, projectRoot);
+}
+
+/** Legacy review queue paths for dual-read/write during migration. */
+export function legacyReviewQueuePaths(projectRoot: string): ReviewQueuePaths {
+  return reviewQueuePathsFromRel(LEGACY_DOCOPS_PATHS.reviewQueue, projectRoot);
+}
+
+export function resolveReviewQueueWriteRoots(): DualWriteRoots {
+  const primary = DEFAULT_DOCOPS_PATHS.reviewQueue;
+  if (!docopsDualWriteEnabled()) {
+    return { primary };
+  }
+  const legacy = LEGACY_DOCOPS_PATHS.reviewQueue;
+  return { primary, legacy };
 }
 
 export function legacyReviewsRoot(projectRoot: string): string {

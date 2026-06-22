@@ -14,6 +14,7 @@ import {
 } from "./resolve-default-screen.js";
 import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
+import { writePrototypeScreenMap } from "../docops/config.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
 import { toDeployBasePath, toDeployPrototypePath, toSpaScreenPrototypePath } from "./deploy-path.js";
@@ -241,8 +242,10 @@ export async function writePrototypeManifestFiles(
   result: BuildPrototypeManifestResult,
 ): Promise<{ manifestPath: string; screenMapPath: string }> {
   const manifestPath = join(projectRoot, config.prototypeDir, "manifest.json");
-  const screenMapPath = join(projectRoot, config.prototypeDir, "screen-map.json");
   await writeJson(manifestPath, result.manifest);
-  await writeJson(screenMapPath, result.screenMap);
-  return { manifestPath, screenMapPath };
+  const screenMapRoots = await writePrototypeScreenMap(projectRoot, result.screenMap);
+  return {
+    manifestPath,
+    screenMapPath: join(projectRoot, screenMapRoots.primary).replace(/\\/g, "/"),
+  };
 }

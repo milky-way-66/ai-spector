@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
@@ -7,9 +7,12 @@ import {
   logicalPathToTargetPath,
   normalizeLogicalPath,
   threadDirRel,
-  threadEventsRel,
   threadMetaRel,
+  commentsRootRel,
+  legacyCommentsRootRel,
 } from "./paths.js";
+import { docopsDualWriteEnabled } from "../docops/paths.js";
+import { loadOrDeriveDocopsConfig } from "../docops/config.js";
 import type { CommentListFilters } from "./filters.js";
 import { threadMatchesFilters } from "./filters.js";
 import type {
@@ -166,41 +169,62 @@ function toSummary(
   };
 }
 
+async function commentReadRoots(projectRoot: string): Promise<string[]> {
+  const config = await loadOrDeriveDocopsConfig(projectRoot);
+  const roots = [config.paths.comments];
+  if (docopsDualWriteEnabled()) {
+    const legacy = legacyCommentsRootRel();
+    if (legacy !== config.paths.comments && !roots.includes(legacy)) {
+      roots.push(legacy);
+    }
+  }
+  return roots;
+}
+
 async function discoverThreadMetas(
   projectRoot: string,
 ): Promise<Array<{ logicalPath: string; threadId: string; metaPath: string }>> {
-  const commentsRoot = join(projectRoot, "comments");
-  if (!(await pathExists(commentsRoot))) {
-    return [];
+  const roots = await commentReadRoots(projectRoot);
+  const found: Array<{ logicalPath: string; threadId: string; metaPath: string }> = [];
+  const seen = new Set<string>();
+
+  for (const commentsRootRelPath of roots) {
+    const commentsRoot = join(projectRoot, commentsRootRelPath);
+    if (!(await pathExists(commentsRoot))) {
+      continue;
+    }
+
+    async function walk(dir: string): Promise<void> {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const ent of entries) {
+        const abs = join(dir, ent.name);
+        if (ent.isDirectory()) {
+          await walk(abs);
+          continue;
+        }
+        if (ent.name !== "meta_data.json") {
+          continue;
+        }
+        const threadDir = dirname(abs);
+        const threadId = basename(threadDir);
+        const logicalPath = relative(commentsRoot, dirname(threadDir)).replace(/\\/g, "/");
+        const key = `${logicalPath}\0${threadId}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        found.push({ logicalPath, threadId, metaPath: abs });
+      }
+    }
+
+    await walk(commentsRoot);
   }
 
-  const found: Array<{ logicalPath: string; threadId: string; metaPath: string }> =
-    [];
-
-  async function walk(dir: string): Promise<void> {
-    let entries;
-    try {
-      entries = await readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const ent of entries) {
-      const abs = join(dir, ent.name);
-      if (ent.isDirectory()) {
-        await walk(abs);
-        continue;
-      }
-      if (ent.name !== "meta_data.json") {
-        continue;
-      }
-      const threadDir = dirname(abs);
-      const threadId = basename(threadDir);
-      const logicalPath = relative(commentsRoot, dirname(threadDir)).replace(/\\/g, "/");
-      found.push({ logicalPath, threadId, metaPath: abs });
-    }
-  }
-
-  await walk(commentsRoot);
   return found;
 }
 
@@ -252,15 +276,26 @@ export async function getThread(
   threadId: string,
 ): Promise<ThreadDetail | null> {
   const lp = normalizeLogicalPath(logicalPath);
-  const metaPath = join(projectRoot, threadMetaRel(lp, threadId));
-  if (!(await pathExists(metaPath))) {
+  const config = await loadOrDeriveDocopsConfig(projectRoot);
+  const roots = await commentReadRoots(projectRoot);
+  let metaPath: string | null = null;
+  let commentsRoot = config.paths.comments;
+  for (const rootRel of roots) {
+    const candidate = join(projectRoot, threadMetaRel(lp, threadId, rootRel));
+    if (await pathExists(candidate)) {
+      metaPath = candidate;
+      commentsRoot = rootRel;
+      break;
+    }
+  }
+  if (!metaPath) {
     return null;
   }
   const meta = await readJson<unknown>(metaPath);
   if (!isThreadMeta(meta)) {
     return null;
   }
-  const threadDir = join(projectRoot, threadDirRel(lp, threadId));
+  const threadDir = join(projectRoot, threadDirRel(lp, threadId, commentsRoot));
   const replyCount = await countCommentFiles(threadDir);
   const comments = await loadCommentBodies(threadDir);
   const events = await readEvents(join(threadDir, "events.jsonl"));
@@ -287,9 +322,22 @@ export async function resolveThread(
   opts: ResolveThreadOptions,
 ): Promise<ResolveThreadResult> {
   const lp = normalizeLogicalPath(opts.logicalPath);
-  const metaPath = join(opts.projectRoot, threadMetaRel(lp, opts.threadId));
-  if (!(await pathExists(metaPath))) {
-    throw new Error(`Thread not found: comments/${lp}/${opts.threadId}/meta_data.json`);
+  const config = await loadOrDeriveDocopsConfig(opts.projectRoot);
+  const roots = await commentReadRoots(opts.projectRoot);
+  let metaPath: string | null = null;
+  let commentsRoot = config.paths.comments;
+  for (const rootRel of roots) {
+    const candidate = join(opts.projectRoot, threadMetaRel(lp, opts.threadId, rootRel));
+    if (await pathExists(candidate)) {
+      metaPath = candidate;
+      commentsRoot = rootRel;
+      break;
+    }
+  }
+  if (!metaPath) {
+    throw new Error(
+      `Thread not found: ${commentsRootRel(commentsRoot)}/${lp}/${opts.threadId}/meta_data.json`,
+    );
   }
 
   const meta = await readJson<ThreadMeta>(metaPath);
@@ -333,8 +381,8 @@ export async function resolveThread(
     role: actor.role,
   };
 
-  const threadDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId));
-  const eventsPath = join(opts.projectRoot, threadEventsRel(lp, opts.threadId));
+  const threadDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId, commentsRoot));
+  const eventsPath = join(threadDir, "events.jsonl");
   const commitMessageSuggestion = isPrototypeAnchor(meta.anchor)
     ? `resolve prototype comment thread ${opts.threadId} on ${meta.anchor.url} (${meta.anchor.selector})`
     : `resolve comment thread ${opts.threadId} on ${meta.filePath} ` +
@@ -342,6 +390,29 @@ export async function resolveThread(
 
   if (!opts.dryRun) {
     await writeJson(metaPath, updated);
+    if (docopsDualWriteEnabled()) {
+      const primaryRoot = config.paths.comments;
+      const legacyRoot = legacyCommentsRootRel();
+      for (const rootRel of new Set([primaryRoot, legacyRoot])) {
+        if (rootRel === commentsRoot) {
+          continue;
+        }
+        const mirrorMeta = join(
+          opts.projectRoot,
+          threadMetaRel(lp, opts.threadId, rootRel),
+        );
+        const mirrorDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId, rootRel));
+        await mkdir(mirrorDir, { recursive: true });
+        await writeJson(mirrorMeta, updated);
+        const mirrorEvents = join(mirrorDir, "events.jsonl");
+        const line = `${JSON.stringify(event)}\n`;
+        if (await pathExists(mirrorEvents)) {
+          await writeFile(mirrorEvents, line, { flag: "a" });
+        } else {
+          await writeFile(mirrorEvents, line, "utf8");
+        }
+      }
+    }
     const line = `${JSON.stringify(event)}\n`;
     if (await pathExists(eventsPath)) {
       await writeFile(eventsPath, line, { flag: "a" });

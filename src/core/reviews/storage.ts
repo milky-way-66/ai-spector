@@ -3,6 +3,9 @@ import { join } from "node:path";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import {
   reviewQueuePaths,
+  legacyReviewQueuePaths,
+  reviewQueuePathsFromRel,
+  resolveReviewQueueWriteRoots,
   snapshotPath,
   changePath,
   legacyApprovalJsonPath,
@@ -52,8 +55,39 @@ async function ensureQueueDirs(paths: ReviewQueuePaths): Promise<void> {
   await mkdir(paths.changes, { recursive: true });
 }
 
+async function queuePathsForRead(
+  projectRoot: string,
+  filePick: (paths: ReviewQueuePaths) => string = (paths) => paths.registry,
+): Promise<ReviewQueuePaths> {
+  const primary = reviewQueuePaths(projectRoot);
+  if (await pathExists(filePick(primary))) {
+    return primary;
+  }
+  const legacy = legacyReviewQueuePaths(projectRoot);
+  if (await pathExists(filePick(legacy))) {
+    return legacy;
+  }
+  return primary;
+}
+
+async function writeQueueJson(
+  projectRoot: string,
+  pickPath: (paths: ReviewQueuePaths) => string,
+  data: unknown,
+): Promise<void> {
+  const roots = resolveReviewQueueWriteRoots();
+  const primary = reviewQueuePathsFromRel(roots.primary, projectRoot);
+  const legacy = roots.legacy ? reviewQueuePathsFromRel(roots.legacy, projectRoot) : undefined;
+  await ensureQueueDirs(primary);
+  await writeJson(pickPath(primary), data);
+  if (legacy) {
+    await ensureQueueDirs(legacy);
+    await writeJson(pickPath(legacy), data);
+  }
+}
+
 export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot);
   if (!(await pathExists(paths.registry))) return { ...EMPTY_REGISTRY };
   const raw = await readJson<Partial<RegistryFile>>(paths.registry).catch(() => EMPTY_REGISTRY);
   const documents: Record<string, ApprovalRecord> = {};
@@ -72,21 +106,17 @@ export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
 }
 
 export async function saveRegistry(projectRoot: string, registry: RegistryFile): Promise<void> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  await writeJson(paths.registry, registry);
+  await writeQueueJson(projectRoot, (paths) => paths.registry, registry);
 }
 
 export async function loadFingerprints(projectRoot: string): Promise<FingerprintsFile> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot, (p) => p.fingerprints);
   if (!(await pathExists(paths.fingerprints))) return { ...EMPTY_FINGERPRINTS };
   return readJson<FingerprintsFile>(paths.fingerprints).catch(() => ({ ...EMPTY_FINGERPRINTS }));
 }
 
 export async function saveFingerprints(projectRoot: string, fingerprints: FingerprintsFile): Promise<void> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  await writeJson(paths.fingerprints, fingerprints);
+  await writeQueueJson(projectRoot, (paths) => paths.fingerprints, fingerprints);
 }
 
 export async function updateFingerprint(
@@ -100,15 +130,13 @@ export async function updateFingerprint(
 }
 
 async function loadPending(projectRoot: string): Promise<PendingQueueFile> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot, (p) => p.pending);
   if (!(await pathExists(paths.pending))) return { ...EMPTY_PENDING };
   return readJson<PendingQueueFile>(paths.pending).catch(() => ({ ...EMPTY_PENDING }));
 }
 
 async function savePending(projectRoot: string, pending: PendingQueueFile): Promise<void> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  await writeJson(paths.pending, pending);
+  await writeQueueJson(projectRoot, (paths) => paths.pending, pending);
 }
 
 // ── Approval ──────────────────────────────────────────────────────────────────
@@ -163,7 +191,7 @@ export async function readSnapshot(
   projectRoot: string,
   logicalPath: string,
 ): Promise<string | null> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot, (p) => snapshotPath(p, logicalPath));
   const approval = await getApproval(projectRoot, logicalPath);
   const p = approval?.snapshotRef
     ? join(projectRoot, approval.snapshotRef).replace(/\\/g, "/")
@@ -177,13 +205,24 @@ export async function writeSnapshot(
   logicalPath: string,
   content: string,
 ): Promise<string> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  const rel = join(".ai-spector/.docflow/review-queue/snapshots", `${logicalPath.replace(/\//g, "__")}.md`);
+  const roots = resolveReviewQueueWriteRoots();
+  const primaryPaths = reviewQueuePathsFromRel(roots.primary, projectRoot);
+  const legacyPaths = roots.legacy
+    ? reviewQueuePathsFromRel(roots.legacy, projectRoot)
+    : undefined;
+  const rel = join(roots.primary, "snapshots", `${logicalPath.replace(/\//g, "__")}.md`).replace(
+    /\\/g,
+    "/",
+  );
   const abs = join(projectRoot, rel);
-  await mkdir(join(projectRoot, paths.snapshots), { recursive: true });
+  await mkdir(primaryPaths.snapshots, { recursive: true });
   await writeFile(abs, content, "utf8");
-  return rel.replace(/\\/g, "/");
+  if (legacyPaths) {
+    const legacyAbs = snapshotPath(legacyPaths, logicalPath);
+    await mkdir(legacyPaths.snapshots, { recursive: true });
+    await writeFile(legacyAbs, content, "utf8");
+  }
+  return rel;
 }
 
 export async function deleteSnapshot(
@@ -231,10 +270,17 @@ export async function appendHistory(
   logicalPath: string,
   line: HistoryLine,
 ): Promise<void> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
+  const roots = resolveReviewQueueWriteRoots();
   const entry: HistoryLine = { ...line, logicalPath };
-  await writeFile(paths.history, `${JSON.stringify(entry)}\n`, { flag: "a" });
+  const payload = `${JSON.stringify(entry)}\n`;
+  const primary = reviewQueuePathsFromRel(roots.primary, projectRoot);
+  await ensureQueueDirs(primary);
+  await writeFile(primary.history, payload, { flag: "a" });
+  if (roots.legacy) {
+    const legacy = reviewQueuePathsFromRel(roots.legacy, projectRoot);
+    await ensureQueueDirs(legacy);
+    await writeFile(legacy.history, payload, { flag: "a" });
+  }
 }
 
 export async function readHistory(
@@ -242,7 +288,7 @@ export async function readHistory(
   logicalPath: string,
   opts?: { limit?: number; since?: string },
 ): Promise<HistoryLine[]> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot, (p) => p.history);
   if (!(await pathExists(paths.history))) return [];
 
   const content = await readFile(paths.history, "utf8");
@@ -276,7 +322,10 @@ export async function loadQueueIndex(
     return { version: 1, entries };
   }
 
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(
+    projectRoot,
+    (p) => archivePath(p, track, kind),
+  );
   const p = archivePath(paths, track, kind);
   if (!(await pathExists(p))) return { ...EMPTY_INDEX };
   return readJson<QueueIndex>(p).catch(() => ({ ...EMPTY_INDEX }));
@@ -305,9 +354,7 @@ export async function saveQueueIndex(
     return;
   }
 
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  await writeJson(archivePath(paths, track, kind), index);
+  await writeQueueJson(projectRoot, (paths) => archivePath(paths, track, kind), index);
 }
 
 export interface QueueEntryExtras {
@@ -396,7 +443,7 @@ export async function loadDiff(
   track: "internal" | "client",
   logicalPath: string,
 ): Promise<DiffFile | null> {
-  const paths = reviewQueuePaths(projectRoot);
+  const paths = await queuePathsForRead(projectRoot, (p) => changePath(p, logicalPath));
   const p = changePath(paths, logicalPath);
   if (!(await pathExists(p))) return null;
   return readJson<DiffFile>(p).catch(() => null);
@@ -407,9 +454,7 @@ export async function saveDiff(
   _track: "internal" | "client",
   diff: DiffFile,
 ): Promise<void> {
-  const paths = reviewQueuePaths(projectRoot);
-  await ensureQueueDirs(paths);
-  await writeJson(changePath(paths, diff.logicalPath), diff);
+  await writeQueueJson(projectRoot, (paths) => changePath(paths, diff.logicalPath), diff);
 }
 
 export async function deleteDiff(
@@ -418,9 +463,17 @@ export async function deleteDiff(
   logicalPath: string,
 ): Promise<void> {
   const { unlink } = await import("node:fs/promises");
-  const paths = reviewQueuePaths(projectRoot);
-  const p = changePath(paths, logicalPath);
-  if (await pathExists(p)) await unlink(p);
+  const roots = resolveReviewQueueWriteRoots();
+  const targets = [
+    reviewQueuePathsFromRel(roots.primary, projectRoot),
+    ...(roots.legacy ? [reviewQueuePathsFromRel(roots.legacy, projectRoot)] : []),
+  ];
+  for (const paths of targets) {
+    const p = changePath(paths, logicalPath);
+    if (await pathExists(p)) {
+      await unlink(p);
+    }
+  }
 }
 
 // ── Discovery ─────────────────────────────────────────────────────────────────

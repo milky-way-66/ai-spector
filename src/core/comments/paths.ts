@@ -1,6 +1,5 @@
 import { join } from "node:path";
-
-const COMMENTS_ROOT = "comments";
+import { DEFAULT_DOCOPS_PATHS, LEGACY_DOCOPS_PATHS } from "../docops/paths.js";
 
 /** Strip leading/trailing slashes and `docs/` prefix from logical paths. */
 export function normalizeLogicalPath(filePath: string): string {
@@ -81,19 +80,36 @@ export function matchesFilePathFilter(logicalPath: string, fileFilter: string): 
   return lp === ff;
 }
 
-export function commentsRootRel(): string {
-  return COMMENTS_ROOT;
+/** Default comments root under the Writer `.docops/` contract. */
+export function commentsRootRel(commentsRoot: string = DEFAULT_DOCOPS_PATHS.comments): string {
+  return commentsRoot;
 }
 
-export function threadDirRel(logicalPath: string, threadId: string): string {
+export function legacyCommentsRootRel(): string {
+  return LEGACY_DOCOPS_PATHS.comments;
+}
+
+export function threadDirRel(
+  logicalPath: string,
+  threadId: string,
+  commentsRoot: string = DEFAULT_DOCOPS_PATHS.comments,
+): string {
   const lp = normalizeLogicalPath(logicalPath);
-  return join(COMMENTS_ROOT, lp, threadId).replace(/\\/g, "/");
+  return join(commentsRoot, lp, threadId).replace(/\\/g, "/");
 }
 
-export function threadMetaRel(logicalPath: string, threadId: string): string {
-  return `${threadDirRel(logicalPath, threadId)}/meta_data.json`;
+export function threadMetaRel(
+  logicalPath: string,
+  threadId: string,
+  commentsRoot: string = DEFAULT_DOCOPS_PATHS.comments,
+): string {
+  return `${threadDirRel(logicalPath, threadId, commentsRoot)}/meta_data.json`;
 }
 
-export function threadEventsRel(logicalPath: string, threadId: string): string {
-  return `${threadDirRel(logicalPath, threadId)}/events.jsonl`;
+export function threadEventsRel(
+  logicalPath: string,
+  threadId: string,
+  commentsRoot: string = DEFAULT_DOCOPS_PATHS.comments,
+): string {
+  return `${threadDirRel(logicalPath, threadId, commentsRoot)}/events.jsonl`;
 }

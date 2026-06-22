@@ -44,10 +44,20 @@ The init wizard prompts for editor (Cursor, Claude Code, or both), languages, gi
 Creates:
 
 - `.ai-spector/` — config, graph, templates
+- `.docops/` — Writer contract (`docops.config.json`, comments, review-queue, prototype metadata)
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
 - **Cursor:** `.cursor/` — skills, rules, `mcp.json`
 - **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
 - Pre-commit hook (when git is available)
+
+**Writer contract:** Kari Writer reads `.docops/docops.config.json` for capabilities and paths (see `kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). ai-spector `init` scaffolds `.docops/` alongside legacy `.ai-spector/` during transition (`DOCOPS_DUAL_WRITE=1` by default). Migrate an existing project:
+
+```bash
+npx ai-spector docops migrate
+npx ai-spector docops migrate --dry-run
+```
+
+Plugin registry (`docflow.config.json` → `plugins.resolved`) still gates **CLI/MCP** only; Writer web uses `capabilities` from the `.docops/` contract as authoritative.
 
 ### Upgrade (guided workflow)
 

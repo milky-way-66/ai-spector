@@ -10,6 +10,7 @@ import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
 import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
+import { runDocopsMigrate } from "./core/operations/docops.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
@@ -1669,6 +1670,16 @@ review
     const result = await runReviewMigrate({ root: projectRootOpt(cmd) });
     if (opts.json) console.log(JSON.stringify(result, null, 2));
     else console.log(formatReviewMigrate(result));
+  });
+
+const docops = program.command("docops").description("Writer-owned .docops/ contract helpers");
+
+docops
+  .command("migrate")
+  .description("Migrate legacy ai-spector layout to .docops/ contract")
+  .option("--dry-run", "Print planned actions without writing files")
+  .action(async (opts, cmd) => {
+    await runDocopsMigrate({ root: projectRootOpt(cmd), dryRun: opts.dryRun });
   });
 
 const reviewSession = review.command("session").description("Persisted review session gate for sign-off");

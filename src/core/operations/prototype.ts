@@ -1,6 +1,7 @@
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { copyTree, pathExists, writeJson } from "../util/fs.js";
+import { resolvePrototypeScreenMapRel, writePrototypeScreenMap } from "../docops/config.js";
 import { scaffoldBundleRoot } from "../config/load.js";
 import {
   isPrototypeBasicAuthConfigured,
@@ -252,18 +253,19 @@ export async function runPrototypeSetup(opts: PrototypeSetupOptions = {}): Promi
     manifestDetail = `${built.screenCount} screen(s) → ${paths.manifestPath}`;
   } else if (!(await pathExists(manifestPath))) {
     const generatedAt = new Date().toISOString();
+    const emptyScreenMap = {
+      schemaVersion: 1,
+      themeName: theme,
+      generatedAt,
+      screens: [],
+    };
     await writeJson(manifestPath, {
       schemaVersion: 1,
       themeName: theme,
       generatedAt,
       screens: [],
     });
-    await writeJson(join(prototypeRoot, "screen-map.json"), {
-      schemaVersion: 1,
-      themeName: theme,
-      generatedAt,
-      screens: [],
-    });
+    await writePrototypeScreenMap(projectRoot, emptyScreenMap);
     manifestDetail = "empty manifest (add list-screens.md, then: npx ai-spector prototype manifest)";
   }
 
@@ -429,7 +431,8 @@ export async function runPrototypeMap(opts: PrototypeMapOptions = {}): Promise<v
     reviewUrl: reviewUrlOpts(opts),
   });
 
-  const screenMapPath = join(projectRoot, config.prototypeDir, "screen-map.json");
+  const screenMapRoots = await resolvePrototypeScreenMapRel(projectRoot);
+  const screenMapPath = join(projectRoot, screenMapRoots.primary).replace(/\\/g, "/");
 
   if (opts.dryRun || opts.json) {
     const payload = {
@@ -447,7 +450,7 @@ export async function runPrototypeMap(opts: PrototypeMapOptions = {}): Promise<v
     }
   }
 
-  await writeJson(screenMapPath, built.screenMap);
+  await writePrototypeScreenMap(projectRoot, built.screenMap);
 
   console.log(`Wrote ${screenMapPath} from ${fromRel} (${built.screenMap.screens.length} screen(s))`);
   if (pathMap.hosted) {

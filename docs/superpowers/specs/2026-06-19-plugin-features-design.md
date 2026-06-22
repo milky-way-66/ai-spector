@@ -1,6 +1,6 @@
 # Plugin Features — Selective Capability Gating — Design Spec
 
-> **Status:** Draft (brainstorming approved)  
+> **Status:** Draft (brainstorming approved) — **Web gating superseded** by Writer `.docops/docops.config.json` `capabilities` (see writer-spector decoupling design, 2026-06-22). Plugin registry below remains authoritative for **ai-spector CLI/MCP** only.
 > **Date:** 2026-06-19  
 > **Scope:** ai-spector core, CLI/MCP, agent scaffold, web handover  
 > **Approach:** Extend `docflow.config.json` + bundled registry; Option B agent gating (meta-rule + skill tags)  
