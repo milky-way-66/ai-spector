@@ -55,7 +55,12 @@ function buildDocTypes(
   for (const key of layerKeys) {
     const base = LAYER_DEFAULTS[key];
     if (!base) continue;
-    out[key] = { enabled: true, ...base, ...(inferred[key] ?? {}) };
+    const inferredLayer = inferred[key];
+    out[key] = {
+      ...base,
+      ...inferredLayer,
+      enabled: inferredLayer?.enabled ?? true,
+    };
   }
   return out;
 }
