@@ -50,14 +50,25 @@ Creates:
 - **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
 - Pre-commit hook (when git is available)
 
-**Writer contract:** Kari Writer reads `.docops/docops.config.json` for capabilities and paths (see `kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). ai-spector `init` scaffolds `.docops/` alongside legacy `.ai-spector/` during transition (`DOCOPS_DUAL_WRITE=1` by default). Migrate an existing project:
+**Writer contract:** Kari Writer reads `.docops/docops.config.json` for capabilities and paths (see `kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). ai-spector `init` scaffolds `.docops/` alongside legacy `.ai-spector/` during transition (`DOCOPS_DUAL_WRITE=1` by default).
+
+**Docops CLI** (Writer contract only — no full ai-spector scaffold):
 
 ```bash
-npx ai-spector docops migrate --dry-run   # preview
-npx ai-spector docops migrate
+npx ai-spector docops status              # human-readable layout + readiness
+npx ai-spector docops status --json       # machine-readable for agents
+
+npx ai-spector docops init --lang en      # scaffold Writer-ready .docops/
+npx ai-spector docops init --dry-run      # preview planned files
+npx ai-spector docops init --force        # fill gaps when config already exists
+
+npx ai-spector docops migrate --dry-run   # preview legacy → .docops/ migration
+npx ai-spector docops migrate             # migrate layout + copy templates
+npx ai-spector docops migrate --templates-only   # copy templates only
+npx ai-spector docops migrate --repair    # fill gaps without overwriting existing files
 ```
 
-After migrate, **manually copy pack templates** into `.docops/templates/` (the CLI creates empty folders only). Full steps, verification checklist, and `DOCOPS_LEGACY_PATHS` transition notes: [`kari-writer/contracts/MIGRATION.md`](../../kari-writer/contracts/MIGRATION.md) in the docs-ops meta-repo.
+Migrate an existing legacy project with `docops migrate`; use `--templates-only` or `--repair` if templates or contract files are still missing. Full steps, verification checklist, and `DOCOPS_LEGACY_PATHS` transition notes: [`kari-writer/contracts/MIGRATION.md`](../../kari-writer/contracts/MIGRATION.md) in the docs-ops meta-repo.
 
 Plugin registry (`docflow.config.json` → `plugins.resolved`) still gates **CLI/MCP** only; Writer web uses `capabilities` from the `.docops/` contract as authoritative.
 
@@ -205,6 +216,9 @@ Most users stay in chat. Useful commands:
 ```bash
 npx ai-spector course serve --open    # interactive course in browser
 npx ai-spector setup --check
+npx ai-spector docops status            # assess .docops/ layout and Writer readiness
+npx ai-spector docops init --lang en    # scaffold Writer-ready .docops/ contract
+npx ai-spector docops migrate           # legacy layout → .docops/ (+ templates)
 npx ai-spector graph validate
 npx ai-spector graph visualize --open
 npx ai-spector graph impact --git
