@@ -16,7 +16,7 @@ import type { LanguageConfig, SupportedLanguageCode } from "../config/types.js";
 import { assertSupportedLanguageCode } from "../config/types.js";
 import { installedPackageVersion } from "../upgrade/package-version.js";
 import { stampScaffoldVersion } from "../upgrade/stamp.js";
-import { scaffoldDocopsTree } from "../docops/config.js";
+import { initDocopsContract } from "../docops/init.js";
 
 const MCP_SERVER_ENTRY = {
   command: "npx",
@@ -253,7 +253,11 @@ export async function runInit(opts: InitOptions): Promise<void> {
   });
   await stampScaffoldVersion(root, installedPackageVersion());
 
-  const docopsConfigPath = await scaffoldDocopsTree(root);
+  const { configPath: docopsConfigPath } = await initDocopsContract({
+    projectRoot: root,
+    languages: langCodes,
+    force: alreadyInitialized && opts.force,
+  });
 
   // Templates
   const projectTemplates = join(root, ".ai-spector", "templates");
