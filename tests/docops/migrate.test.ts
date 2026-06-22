@@ -1,8 +1,10 @@
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { writeJson, readJson } from "@/core/util/fs.js";
 import { migrateDocopsLayout } from "@/core/docops/migrate.js";
 import { DOCOPS_CONFIG_REL } from "@/core/docops/paths.js";
+import { countMarkdownInDir } from "@/core/docops/templates.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 async function writeLegacyFixture(root: string): Promise<void> {
@@ -76,6 +78,55 @@ describe("docops migrate", () => {
 
       const { pathExists } = await import("@/core/util/fs.js");
       expect(await pathExists(join(root, DOCOPS_CONFIG_REL))).toBe(false);
+    });
+  });
+
+  it("full migrate copies templates from builtin bundle", async () => {
+    await withTempDir(async (root) => {
+      await writeLegacyFixture(root);
+
+      const result = await migrateDocopsLayout({ projectRoot: root });
+      expect(result.migrated).toBe(true);
+
+      const md = await countMarkdownInDir(join(root, ".docops/templates/srs"));
+      expect(md).toBeGreaterThan(0);
+    });
+  });
+
+  it("repair copies templates when config exists but templates empty", async () => {
+    await withTempDir(async (root) => {
+      await writeLegacyFixture(root);
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        docsRoot: "docs",
+        languages: [{ code: "en", label: "English", path: "en" }],
+        primaryLanguage: "en",
+        docTypes: {
+          srs: {
+            enabled: true,
+            path: "srs",
+            label: "SRS",
+            templatesPath: ".docops/templates/srs",
+          },
+        },
+        paths: {
+          comments: ".docops/comments",
+          reviewConfig: ".docops/review.config.json",
+          reviewQueue: ".docops/review-queue",
+          prototypeConfig: ".docops/prototype/config.json",
+          prototypeScreenMap: ".docops/prototype/screen-map.json",
+        },
+        capabilities: { review: false, comments: true, prototype: false },
+      });
+      await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+
+      const result = await migrateDocopsLayout({
+        projectRoot: root,
+        repair: true,
+      });
+      expect(result.migrated).toBe(true);
+      const md = await countMarkdownInDir(join(root, ".docops/templates/srs"));
+      expect(md).toBeGreaterThan(0);
     });
   });
 });

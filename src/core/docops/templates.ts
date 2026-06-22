@@ -1,6 +1,48 @@
 import { cp, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { packageBundleRoot } from "../config/load.js";
+import type { DocflowConfig } from "../config/types.js";
 import { pathExists } from "../util/fs.js";
+
+const LAYER_PACK_FIELD: Record<string, keyof DocflowConfig["packs"]> = {
+  srs: "srs",
+  basicDesign: "basicDesign",
+};
+
+const LAYER_PROJECT_TEMPLATE_DIR: Record<string, string> = {
+  srs: ".ai-spector/templates/srs",
+  basicDesign: ".ai-spector/templates/basic_design",
+  detailDesign: ".ai-spector/templates/detail_design",
+};
+
+export async function resolveTemplateSourcesForLayer(
+  projectRoot: string,
+  layerKey: string,
+  docflow?: DocflowConfig | null,
+): Promise<string[]> {
+  const sources: string[] = [];
+  const packField = LAYER_PACK_FIELD[layerKey];
+  if (docflow && packField) {
+    const packName = docflow.packs[packField];
+    if (packName && packName !== "builtin") {
+      sources.push(join(projectRoot, ".ai-spector/packs", packName, "templates"));
+    }
+  }
+  const projectTpl = LAYER_PROJECT_TEMPLATE_DIR[layerKey];
+  if (projectTpl) {
+    sources.push(join(projectRoot, projectTpl));
+  }
+  const builtinMap: Record<string, string> = {
+    srs: "templates/srs",
+    basicDesign: "templates/basic_design",
+    detailDesign: "templates/detail_design",
+  };
+  const builtin = builtinMap[layerKey];
+  if (builtin) {
+    sources.push(join(packageBundleRoot(), builtin));
+  }
+  return sources;
+}
 
 export async function countMarkdownInDir(absDir: string): Promise<number> {
   if (!(await pathExists(absDir))) return 0;
