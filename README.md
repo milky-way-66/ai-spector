@@ -53,9 +53,11 @@ Creates:
 **Writer contract:** Kari Writer reads `.docops/docops.config.json` for capabilities and paths (see `kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). ai-spector `init` scaffolds `.docops/` alongside legacy `.ai-spector/` during transition (`DOCOPS_DUAL_WRITE=1` by default). Migrate an existing project:
 
 ```bash
+npx ai-spector docops migrate --dry-run   # preview
 npx ai-spector docops migrate
-npx ai-spector docops migrate --dry-run
 ```
+
+After migrate, **manually copy pack templates** into `.docops/templates/` (the CLI creates empty folders only). Full steps, verification checklist, and `DOCOPS_LEGACY_PATHS` transition notes: [`kari-writer/contracts/MIGRATION.md`](../../kari-writer/contracts/MIGRATION.md) in the docs-ops meta-repo.
 
 Plugin registry (`docflow.config.json` → `plugins.resolved`) still gates **CLI/MCP** only; Writer web uses `capabilities` from the `.docops/` contract as authoritative.
 
