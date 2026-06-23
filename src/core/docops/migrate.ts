@@ -138,7 +138,7 @@ async function seedMissingReviewFiles(
   for (const [rel, payload] of [
     [reviewConfigRel, { schemaVersion: "1.0", extends: "kaopiz-default", meta: { source: "docops-migrate" } }],
     [registryRel, { version: 3, documents: {} }],
-    [pendingRel, []],
+    [pendingRel, { version: 2, jobs: [] }],
   ] as const) {
     const absPath = join(projectRoot, rel);
     if (!(await pathExists(absPath))) {
