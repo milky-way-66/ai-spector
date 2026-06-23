@@ -27,4 +27,4 @@ Set `capabilities.<module>: false` in `docops.config.json` when your adapter own
 
 ## Schema reference
 
-Full schemas and examples: `kari-writer/contracts/` in the docs-ops meta-repo, or `.docops/README.md` in this project after init.
+Full schemas and examples: `kari-writer/contracts/` in the docs-ops meta-repo, or `.docops/guide/README.md` in this project after init.

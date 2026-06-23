@@ -27,6 +27,20 @@ export function resolveBootstrapRoot(): string {
   );
 }
 
+export function resolveContractsRoot(bundleRoot: string): string {
+  const env = process.env.DOCOPS_CONTRACTS_ROOT?.trim();
+  if (env && existsSync(env)) return resolve(env);
+  const sibling = resolve(bundleRoot, "..");
+  if (existsSync(join(sibling, "schemas"))) return sibling;
+  const bundled = join(bundleRoot, "schemas");
+  if (existsSync(bundled)) return bundleRoot;
+  const monorepo = resolve(packageBundleRoot(), "../../kari-writer/contracts");
+  if (existsSync(join(monorepo, "schemas"))) return monorepo;
+  const siblingRepo = resolve(packageBundleRoot(), "../kari-writer/contracts");
+  if (existsSync(join(siblingRepo, "schemas"))) return siblingRepo;
+  throw new Error("docops contracts root not found — set DOCOPS_CONTRACTS_ROOT");
+}
+
 export function listBootstrapDocDestinations(bundleRoot: string): string[] {
   const docsRoot = join(bundleRoot, "docs");
   if (!existsSync(docsRoot)) return [];
@@ -35,7 +49,7 @@ export function listBootstrapDocDestinations(bundleRoot: string): string[] {
     for (const name of existsSync(dir) ? readdirSync(dir) : []) {
       const full = join(dir, name);
       if (statSync(full).isDirectory()) walk(full);
-      else out.push(".docops/" + relative(docsRoot, full).replace(/\\/g, "/"));
+      else out.push(".docops/guide/" + relative(docsRoot, full).replace(/\\/g, "/"));
     }
   };
   walk(docsRoot);
@@ -84,7 +98,47 @@ export async function copyBootstrapDocs(opts: {
   actions: string[];
 }): Promise<void> {
   const docsSrc = join(opts.bundleRoot, "docs");
-  await copyTreeFiles(docsSrc, join(opts.projectRoot, ".docops"), (rel) => `.docops/${rel}`, opts);
+  await copyTreeFiles(
+    docsSrc,
+    join(opts.projectRoot, ".docops/guide"),
+    (rel) => `.docops/guide/${rel}`,
+    opts,
+  );
+}
+
+export async function copyBootstrapContractAssets(opts: {
+  projectRoot: string;
+  bundleRoot: string;
+  dryRun: boolean;
+  skipExisting: boolean;
+  actions: string[];
+}): Promise<void> {
+  const contractsRoot = resolveContractsRoot(opts.bundleRoot);
+  const modulesSrc = join(contractsRoot, "modules");
+  await copyTreeFiles(
+    modulesSrc,
+    join(opts.projectRoot, ".docops/guide/modules"),
+    (rel) => `.docops/guide/modules/${rel}`,
+    opts,
+  );
+  const schemasSrc = existsSync(join(contractsRoot, "schemas"))
+    ? join(contractsRoot, "schemas")
+    : join(opts.bundleRoot, "schemas");
+  await copyTreeFiles(
+    schemasSrc,
+    join(opts.projectRoot, ".docops/guide/schemas"),
+    (rel) => `.docops/guide/schemas/${rel}`,
+    opts,
+  );
+  const examplesSrc = existsSync(join(contractsRoot, "examples"))
+    ? join(contractsRoot, "examples")
+    : join(opts.bundleRoot, "examples");
+  await copyTreeFiles(
+    examplesSrc,
+    join(opts.projectRoot, ".docops/guide/examples"),
+    (rel) => `.docops/guide/examples/${rel}`,
+    opts,
+  );
 }
 
 export async function copyBootstrapConfig(opts: {

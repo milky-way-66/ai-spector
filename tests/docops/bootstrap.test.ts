@@ -6,6 +6,6 @@ describe("docops bootstrap bundle", () => {
     const root = resolveBootstrapRoot();
     expect(root).toMatch(/contracts\/bootstrap$/);
     const dests = listBootstrapDocDestinations(root);
-    expect(dests).toContain(".docops/README.md");
+    expect(dests).toContain(".docops/guide/README.md");
   });
 });

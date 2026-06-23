@@ -118,7 +118,7 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
         }
       }
 
-      const readmeRel = ".docops/README.md";
+      const readmeRel = ".docops/guide/README.md";
       if (!(await fileExists(projectRoot, readmeRel))) {
         gaps.push({
           id: "DOCOPS-DOC-001",

@@ -10,6 +10,7 @@ import {
 } from "./config.js";
 import {
   copyBootstrapConfig,
+  copyBootstrapContractAssets,
   copyBootstrapDocs,
   copyBootstrapTemplates,
   resolveBootstrapRoot,
@@ -114,6 +115,7 @@ export async function initDocopsContract(opts: {
 
   await copyBootstrapConfig({ ...copyOpts, config });
   await copyBootstrapDocs(copyOpts);
+  await copyBootstrapContractAssets(copyOpts);
   await copyBootstrapTemplates({ ...copyOpts, docTypes });
 
   for (const dir of [

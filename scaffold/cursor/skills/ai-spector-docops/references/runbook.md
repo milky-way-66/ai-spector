@@ -10,7 +10,7 @@ Run all commands from **project repo root**.
 
 ## Phase 0a — In-repo guide (no CLI)
 
-If `.docops/README.md` exists in the project repo, **read it first**. It explains the contract, folder map, and links to `modules/*.md` without requiring ai-spector.
+If `.docops/guide/README.md` exists in the project repo, **read it first**. For legacy ai-spector layouts, read `.docops/guide/MIGRATION.md` before changing paths.
 
 ## Phase 0b — Web init (admins)
 
