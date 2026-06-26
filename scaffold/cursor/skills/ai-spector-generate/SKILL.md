@@ -1,51 +1,71 @@
 ---
 name: ai-spector-generate
 description: >-
-  Routes full document-generation requests to the correct skill based on active template packs.
-  Use for "generate docs", "generate SRS", "write chapter N" (DAG waves from graph). If the user
-  wants to add/update a single feature or section ("I want to add…"), route to ai-spector-resolve-task
-  instead. Checks packs.srs and packs.basicDesign; detail design uses builtin ai-spector-generate-detail-design.
+  All document generation: SRS, basic design, detail design, HTML prototype; incremental feature/section
+  changes (resolve-task); and template pack import. Use for "generate SRS/basic design/detail design",
+  "write chapter N", "add feature", "update section", "I want to add…", "HTML prototype",
+  "set up template pack". Capability-gated by docops.config.json capabilities.generate.
+paths:
+  - "docs/srs/**"
+  - "docs/basic-design/**"
+  - "docs/detail-design/**"
+  - "prototype/**"
+  - ".ai-spector/templates/**"
+  - ".ai-spector/packs/**"
+  - ".ai-spector/.docflow/tasks/**"
 ---
 
-# AI Spector — Generate (router)
+# AI Spector — Generate
+
+**Core:** [../ai-spector/SKILL.md](../ai-spector/SKILL.md) · **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md)
 
 ## Step 0 — Incremental vs full generate
 
 | User intent | Route to |
 |-------------|----------|
-| add / update / change one feature, section, API, screen | `ai-spector-resolve-task` |
-| backfill SRS / generate SRS from basic or detail design / expand SRS gaps | `ai-spector-generate-srs` with `sourceMode: derive-downstream` |
-| generate basic design from detail design only | `ai-spector-generate-basic-design` with `sourceMode: derive-downstream`, `deriveFrom: ["detail-design"]` |
-| generate SRS / basic design / detail design / full chapter from graph | continue below |
+| Add / update / change one feature, section, API, screen; "I want to…" | [Resolve-Task section](references/runbook.md#resolve-task) |
+| Set up / import a template pack | [Template-Import section](references/runbook.md#template-import) |
+| Backfill SRS from basic/detail design; derive upstream | [SRS section](references/runbook.md#srs) with `sourceMode: derive-downstream` |
+| Generate SRS / basic design / detail design / prototype from graph | Continue below |
 
-## Step 1 — Check active packs (always first)
+## Step 1 — Check active packs
 
-Read `.ai-spector/docflow.config.json`. Check `packs.srs` and `packs.basicDesign` independently.
+Read `docops.config.json`. Check `capabilities` for `generate`. Check `packs.srs` and `packs.basicDesign`.
 
-| Field | Value | Action |
-|-------|-------|--------|
-| `packs.srs` | `"builtin"` | Use `ai-spector-generate-srs` for SRS requests |
-| `packs.srs` | custom pack name (e.g. `"kaopiz-srs"`) | Use `ai-spector-generate-<packname>` for SRS requests |
-| `packs.basicDesign` | `"builtin"` | Use `ai-spector-generate-basic-design` for screens/APIs/DB requests |
-| `packs.basicDesign` | custom pack name | Use `ai-spector-generate-<packname>` for basic-design requests |
+| Pack field | Value | Action |
+|------------|-------|--------|
+| `packs.srs` | `"builtin"` | Use SRS runbook |
+| `packs.srs` | custom pack name | Use `ai-spector-generate-<packname>` skill (run `npx ai-spector template use <packname>` if missing) |
+| `packs.basicDesign` | `"builtin"` | Use basic-design runbook |
+| `packs.basicDesign` | custom pack name | Use `ai-spector-generate-<packname>` skill |
 
-Detail design is **builtin only** today (no `packs.detailDesign`). Route detail-design phrases directly to `ai-spector-generate-detail-design`.
-
-For custom packs, the dedicated `ai-spector-generate-<packname>` skill was written when the pack was installed. It loads `generate-hints.md` + the pack DAG and follows `generate-workflow.md`. Use it instead of the builtin layer skills.
-
-If the pack-specific skill does not exist yet (pack was installed before this version), run:
-```bash
-npx ai-spector template use <packname>
-```
-This regenerates the skill file.
+Detail design is builtin only today. Prototype routes directly to the prototype runbook.
 
 ## Route by layer (builtin only)
 
-Ask one question or infer from context, then switch skill:
+| Layer | Runbook section |
+|-------|-----------------|
+| SRS (requirements, use cases) | [references/runbook.md — SRS](references/runbook.md#srs) |
+| Basic design (screens, APIs, DB) | [references/runbook.md — Basic-Design](references/runbook.md#basic-design) |
+| Detail design (feature-level) | [references/runbook.md — Detail-Design](references/runbook.md#detail-design) |
+| HTML prototype / mockups | [references/runbook.md — Prototype](references/runbook.md#prototype) |
+| Incremental change | [references/runbook.md — Resolve-Task](references/runbook.md#resolve-task) |
+| Template pack import | [references/runbook.md — Template-Import](references/runbook.md#template-import) |
 
-| Layer | Skill |
-|-------|-------|
-| Requirements / SRS | `ai-spector-generate-srs` |
-| Screens, APIs, DB | `ai-spector-generate-basic-design` |
-| Detail design (feature-level) | `ai-spector-generate-detail-design` |
-| HTML mockups | `ai-spector-generate-prototype` |
+## Checklist
+
+```
+- [ ] Matched runbook section read completely
+- [ ] Work session bootstrapped (work_create / work_list with bootstrap)
+- [ ] Gated: workspace check → clarify → briefing → plan → work_approve_plan → waves
+- [ ] MCP first → CLI fallback — see ai-spector/SKILL.md#mcp-invocation-rule
+- [ ] On failure: pause → report → fix per ai-spector/references/cli-failures.md
+- [ ] No .docops/guide/ links
+```
+
+## Shared references
+
+- [../ai-spector/references/generate-workflow.md](../ai-spector/references/generate-workflow.md) — gated flow, translation prompt, guardrails
+- [../ai-spector/references/generate-graph.md](../ai-spector/references/generate-graph.md) — graph query, DAG hints
+- [../ai-spector/references/plan-and-briefing.md](../ai-spector/references/plan-and-briefing.md)
+- [../ai-spector/references/extract-specs.md](../ai-spector/references/extract-specs.md) — stage 6 spec queue

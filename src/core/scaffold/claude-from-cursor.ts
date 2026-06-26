@@ -317,22 +317,24 @@ ${afterDocEdit}
 
 | You want to… | Skill |
 |-------------|-------|
+| Setup / bootstrap project | \`ai-spector\` |
+| Upgrade ai-spector | \`ai-spector\` |
+| Adopt / migrate existing docs | \`ai-spector\` |
+| Check workspace / clarifications | \`ai-spector\` |
+| Docops / Writer contract bootstrap | \`ai-spector\` |
+| Resume / active work / pause | \`ai-spector\` |
+| Learn / open course | \`ai-spector\` |
 | Analyze data source / build graph | \`ai-spector-graph\` |
 | Check impact of changes | \`ai-spector-graph\` |
-| Semantic search / fuzzy graph lookup | \`ai-spector-search\` |
-| Import / set up custom template pack | \`ai-spector-template-import\` |
-| Generate documents (check active packs first) | \`ai-spector-generate\` |
-| HTML prototype | \`ai-spector-generate-prototype\` |
-| Translation status | \`ai-spector-lang-status\` |
-| Resolve translations | \`ai-spector-resolve-translation\` |
-| Resolve comments | \`ai-spector-resolve-comments\` |
-| **Review / approve documents** | \`ai-spector-review\` |
-| Resume / active tasks / pause task | \`ai-spector-task\` |
-| Add/update feature or section ("I want to add…") | \`ai-spector-resolve-task\` |
-| Generate SRS / basic design (full chapter) | \`ai-spector-generate-srs\` / \`ai-spector-generate-basic-design\` |
-| Check workspace / clarifications | \`ai-spector-check\` |
-| Setup / bootstrap project | \`ai-spector-setup\` |
-| Learn / open course | \`ai-spector-course\` |
+| Semantic search / fuzzy graph lookup | \`ai-spector-graph\` |
+| Layer sync audit / doc drift | \`ai-spector-graph\` |
+| Generate documents (SRS, BD, DD, prototype) | \`ai-spector-generate\` |
+| Add/update feature or section ("I want to add…") | \`ai-spector-generate\` |
+| Import / set up custom template pack | \`ai-spector-generate\` |
+| **Review / approve documents** | \`ai-spector-contract\` |
+| Resolve comment threads (C-NNN) | \`ai-spector-contract\` |
+| Resolve prototype comments (B-NNN) | \`ai-spector-contract\` |
+| Translation status / resolve translations | \`ai-spector-contract\` |
 
 ## Quick reference — MCP tools
 
@@ -353,16 +355,18 @@ ${afterDocEdit}
 | \`cocoindex_index({})\` | Rebuild semantic embeddings |
 | \`docs_search({ query })\` | Semantic doc search (CocoIndex) |
 | \`graph_query_fuzzy({ query })\` | Natural language graph lookup (CocoIndex) |
-| \`resolve_task({ taskId })\` | Execute approved resolve plan |
-| \`task_create\` / \`task_list\` / \`task_get\` / \`task_update\` / \`task_approve_plan\` | Workflow task state |
-| \`task_pause\` / \`task_resume\` / \`task_record_wave\` / \`task_complete\` | Pause, resume, record generate wave, finish |
+| \`work_create\` / \`work_list\` / \`work_get\` / \`work_update\` / \`work_approve_plan\` | Work session lifecycle |
+| \`work_pause\` / \`work_resume\` / \`work_record_step\` / \`work_complete\` | Pause, resume, record step, finish |
 | \`workspace_check({ fix? })\` | Structural workspace check |
 | \`context_list\` / \`context_record\` / \`context_resolve\` | Clarification store |
 | \`spec_list\` / \`spec_record\` / \`spec_approve\` / \`spec_reject\` | Extracted-spec review queue |
+| \`contract_review({ action, logicalPath, by? })\` | Document review: check/status/approve/decline/close/reject |
+| \`contract_comments({ action, ... })\` | Comment threads: inbox/show/resolve/batch_plan/batch_resolve |
+| \`contract_translate({ action, ... })\` | Translation queue: list/fail/retry |
 | \`review_begin\` / \`review_check\` / \`review_queue\` / \`review_status\` | Document review workflow (votes + quorum in status) |
 | \`review_session_ack_review\` | Ack review summary written (unlocks approve gate) |
-| \`review_approve\` / \`review_decline\` / \`review_close\` / \`review_reject\` | Cast approve/decline vote, close without quorum, or dismiss re-review |
-| \`review_list\` | List all docs with review status |
+| \`review_approve\` / \`review_decline\` / \`review_close\` / \`review_reject\` | Legacy review tools (deprecated — use contract_review) |
+| \`lang_queue({ status? })\` | Translation queue status |
 
 ### CLI (fallback)
 

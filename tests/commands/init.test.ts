@@ -37,50 +37,50 @@ describe("runInit", () => {
     );
   });
 
-  it("installs .cursor skills and WORKFLOW from scaffold/cursor/", async () => {
+  it("installs exactly 4 ai-spector* cursor skills and WORKFLOW from scaffold/cursor/", async () => {
     const root = await mkdtemp(join(tmpdir(), "ai-spector-init-cursor-"));
 
     await runInit({ targetDir: root });
 
     expect(await pathExists(join(root, ".cursor/WORKFLOW.md"))).toBe(true);
+
+    // The 4 expected skills
     expect(await pathExists(join(root, ".cursor/skills/ai-spector/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-graph/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-graph/references/analyze.md"))).toBe(
-      true,
-    );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-srs/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-srs/references/runbook.md"))).toBe(
-      true,
-    );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-basic-design/SKILL.md"))).toBe(
-      true,
-    );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-detail-design/SKILL.md"))).toBe(
-      true,
-    );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
-      true,
-    );
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-contract/SKILL.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-setup/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-lang-status/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-translation/SKILL.md"))).toBe(
-      true,
-    );
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-comments/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-task/SKILL.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-task/references/runbook.md"))).toBe(
-      true,
-    );
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-graph/SKILL.md"))).toBe(true);
+
+    // Graph skill still has existing references
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-graph/references/analyze.md"))).toBe(true);
+
+    // Generate skill has consolidated runbook
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate/references/runbook.md"))).toBe(true);
+
+    // Contract skill has consolidated runbook
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-contract/references/runbook.md"))).toBe(true);
+
+    // Retired skills must NOT exist
+    const retiredSkills = [
+      "ai-spector-generate-srs", "ai-spector-generate-basic-design",
+      "ai-spector-generate-detail-design", "ai-spector-generate-prototype",
+      "ai-spector-setup", "ai-spector-lang-status", "ai-spector-resolve-translation",
+      "ai-spector-resolve-comments", "ai-spector-resolve-task", "ai-spector-review",
+      "ai-spector-task", "ai-spector-check",
+    ];
+    for (const skill of retiredSkills) {
+      expect(
+        await pathExists(join(root, `.cursor/skills/${skill}`)),
+        `expected retired skill ${skill} to NOT exist`,
+      ).toBe(false);
+    }
+
     expect(await pathExists(join(root, ".cursor/rules/ai-spector-routing.mdc"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/README.md"))).toBe(true);
     expect(await pathExists(join(root, ".cursor/skills/_skill-router.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/commands/generate-detail-design.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/commands/resolve-task.md"))).toBe(true);
-    expect(await pathExists(join(root, ".cursor/commands/review.md"))).toBe(true);
 
     const workflow = await readFile(join(root, ".cursor/WORKFLOW.md"), "utf8");
     expect(workflow).toContain("ai-spector-graph");
+    expect(workflow).toContain("ai-spector-contract");
     expect(await pathExists(join(root, "cursor"))).toBe(false);
   });
 

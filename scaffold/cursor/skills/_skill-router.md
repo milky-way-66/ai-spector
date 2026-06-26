@@ -1,42 +1,44 @@
 # AI Spector skill router
 
-Agents use this when intent is ambiguous.
+Agents use this when intent is ambiguous. Read the matching skill's runbook before acting.
 
 ## Priority
 
-0. **Document sign-off** — *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-review`** first. **Not** resolve-task, generate, or comments unless user explicitly switches topic after disambiguation.
-0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` exists and `phase` is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic). Check session via last `review_status` response or `review_check`.
-1. **Resume / task state** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector-task`** (`task_list` → `task_resume`). Skip if message is clearly document sign-off (priority 0) or an active review session exists (priority 0.5).
-1.5. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector-upgrade`**. Not greenfield setup (`ai-spector-setup`), not doc migration (`ai-spector-adopt`).
-2. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-resolve-task`** before any generate-* skill. Example: "add login with Google" → resolve-task, **not** generate-srs.
-2.5. **Migrate / adopt existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *wrong SRS*, *legacy SRS*, *move docs to ai-spector structure*, *continue adopt* → **`ai-spector-adopt`**. Not greenfield setup (`ai-spector-setup`), not empty template import (`ai-spector-template-import`), not full generate.
-2.6. **Backfill upstream docs** — *backfill SRS*, *generate SRS from basic design*, *derive SRS from detail design*, *expand SRS to full* → **`ai-spector-generate-srs`** with `sourceMode: derive-downstream` on task bootstrap (extract pass, then optional expand). Not resolve-task (bulk chapters).
-3. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph* → `ai-spector-generate` or layer skill.
-3.5. **Layer sync audit** — *sync audit*, *check doc drift*, *what changed since baseline*, *layer sync* → **`ai-spector-sync-audit`**. NOT document sign-off (`ai-spector-review` — "since approval"); NOT uncommitted-only impact (`ai-spector-graph` / `graph_impact --git`).
-4. **File context** — `paths` in skill frontmatter (e.g. `prototype/**` → prototype skill) when intent is still ambiguous.
-5. **Natural language** — match skill `description`; then read that skill's `references/` runbook.
-6. **Still unclear** — call MCP `workflow_route({ message })` → read `handoff.readBrief` skill runbook; if `askUser`, ask in chat first (see approve disambiguation below).
+1. **Document sign-off** — *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-contract`** (Review section). Not resolve-task, generate, or comments unless user explicitly switches topic.
 
-`workflow_route` phrase coverage is enforced by `src/core/workflow/route-intent-examples.ts` (mirrors the WORKFLOW.md table).
+2. **Resume / active work** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector`** (`work_list` → `work_resume`). Skip if message is clearly document sign-off (priority 1).
+
+3. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector`** (Upgrade section). Not greenfield setup, not doc migration.
+
+4. **Adopt / migrate existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *legacy SRS*, *move docs* → **`ai-spector`** (Adopt section). Not greenfield setup, not empty template import, not full generate.
+
+5. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-generate`** (Resolve-Task section). Not full generate (priority 6).
+
+6. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph*, *generate SRS/basic design/detail design/prototype* → **`ai-spector-generate`** (matching layer section).
+
+7. **Graph / search / impact** — *analyze*, *index*, *validate*, *impact*, *visualize*, *sync audit*, *check doc drift*, *find docs about*, *semantic search* → **`ai-spector-graph`** (matching runbook section).
+
+8. **Comments / translation** — *resolve comments*, *C-001*, *B-001*, *prototype comments*, *resolve translations*, *stale languages*, *translation status* → **`ai-spector-contract`** (Comments or Translation section).
+
+9. **Fallback** — call `workflow_route({ message })` MCP tool; if `askUser`, ask one clarifying question.
 
 ## DISAMBIGUATION: "approve" means four different things
 
-| User context | Skill | MCP tool | NOT this |
+| User context | Skill section | MCP tool | NOT this |
 |---|---|---|---|
-| **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`), "what changed since approval" | `ai-spector-review` | `review_approve` | `spec_approve`, `task_approve_plan`, `comments_resolve` |
-| **Extracted spec** — SPEC-001, spec queue, graph patch from generate stage 6 | generate skills + [extract-specs.md](./ai-spector/references/extract-specs.md) | `spec_approve` | `review_approve` |
-| **Task plan** — user said yes to GoalSpec + TaskPlan table, "go ahead execute", plan approval | `ai-spector-resolve-task` or generate skills | `task_approve_plan` | `review_approve` |
-| **Comment thread done** — C-001, resolve thread, feedback on doc | `ai-spector-resolve-comments` | `comments_resolve` | `review_approve` |
-| **Prototype comment batch** — B-001, resolve login screen, prototype HTML feedback | `ai-spector-resolve-prototype-comments` | `comments_batch_plan`, `comments_batch_resolve` | `review_approve`, document resolve skill |
+| **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`) | `ai-spector-contract` → Review | `contract_review` (`action: "approve"`) | `spec_approve`, `work_approve_plan`, `contract_comments` |
+| **Extracted spec** — SPEC-001, spec queue | generate skills, stage 6 | `spec_approve` | `contract_review` |
+| **Work plan** — user said yes to plan table, "go ahead execute" | `ai-spector` or generate skills | `work_approve_plan` | `contract_review` |
+| **Comment thread done** — C-001, resolve thread | `ai-spector-contract` → Comments | `contract_comments` (`action: "resolve"`) | `contract_review` |
+| **Prototype comment batch** — B-001 | `ai-spector-contract` → Prototype-Comments | `contract_comments` (`action: "batch_resolve"`) | `contract_review` |
 
 **Routing rules:**
-
-- Logical path (`srs/01-overview`, `bd/api-design`) + *approve* → **`ai-spector-review`** (run full runbook phases before `review_approve`).
-- `SPEC-NNN` or "spec queue" + *approve* → **`spec_approve`**.
-- User just approved a **plan table** in chat → **`task_approve_plan`** only.
-- `C-NNN` or "comment thread" on **documents** → **`ai-spector-resolve-comments`**.
-- `B-NNN`, "prototype comments", "resolve login screen" → **`ai-spector-resolve-prototype-comments`**.
-- **Ambiguous** ("approve it", "looks good", "help me approve") → ask **one** question (user-facing, four options):
+- Logical path (`srs/01-overview`, `bd/api-design`) + *approve* → **`ai-spector-contract`** (Review section).
+- `SPEC-NNN` or "spec queue" + *approve* → **`spec_approve`** via generate skills stage 6.
+- User just approved a **plan table** in chat → **`work_approve_plan`** only.
+- `C-NNN` or "comment thread" on **documents** → **`ai-spector-contract`** (Comments section).
+- `B-NNN`, "prototype comments" → **`ai-spector-contract`** (Prototype-Comments section).
+- **Ambiguous** ("approve it", "looks good", "help me approve") → ask **one** question (four options):
 
   ```
   Which did you mean?
@@ -46,70 +48,47 @@ Agents use this when intent is ambiguous.
   4. Mark a comment thread done (e.g. C-012) — feedback addressed
   ```
 
-  Do not call any approve tool until answered. If chat context makes one option obvious (plan table just shown, spec list open, review summary written), pick that — no question needed.
-
 ## DISAMBIGUATION: "review" means two different things
 
-| "review" context | Correct skill |
+| "review" context | Correct skill section |
 |---|---|
-| Document **approval** — approve, status, queue, "which docs reviewed", "has this been approved", "pending client review" | `ai-spector-review` |
-| Comment **threads** — C-001, inbox, resolve, open threads, feedback on content | `ai-spector-resolve-comments` |
+| Document **approval** — approve, status, queue, "has this been approved", "pending client review" | `ai-spector-contract` → Review |
+| Comment **threads** — C-001, inbox, resolve, open threads, feedback on content | `ai-spector-contract` → Comments |
 
-When in doubt: if the user names a document and asks about approval/status → `ai-spector-review`. If the user mentions threads, comments, or C-00N → `ai-spector-resolve-comments`. Graph impact **review** bucket is informational only — not this skill.
-
-## Task → skill → runbook
+## Intent → skill → runbook
 
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
-| resume task, continue SRS, active tasks, pause task, list tasks | `ai-spector-task` | `references/runbook.md` |
-| learn, course, tutorial, walkthrough, "how do I", open course, mở khóa học, khóa học tiếng Việt | `ai-spector-course` | `references/course-guide.md` |
-| setup, init, bootstrap, get started *(run setup)* | `ai-spector-setup` | `references/runbook.md` |
-| upgrade ai-spector, update ai-spector, sync after update, stale scaffold, continue upgrade | `ai-spector-upgrade` | `references/runbook.md` |
-| migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt | `ai-spector-adopt` | `references/runbook.md` |
-| check workspace, valid check, structure check, "why did pre-commit block", stale clarifications | `ai-spector-check` | `SKILL.md` |
-| clarifications, open questions, context store, "what did I answer" | `ai-spector-check` → context tools | `ai-spector/references/context-store.md` |
-| extracted specs, spec queue, approve/reject spec | (generate skills, stage 6) | `ai-spector/references/extract-specs.md` |
-| analyze, ingest, data source, knowledge graph | `ai-spector-graph` | `references/analyze.md` |
+| setup, init, bootstrap, get started | `ai-spector` | `references/runbook.md#setup` |
+| upgrade ai-spector, sync after update | `ai-spector` | `references/runbook.md#upgrade` |
+| migrate project, adopt existing docs, wrong SRS folder | `ai-spector` | `references/runbook.md#adopt` |
+| check workspace, "why did pre-commit block" | `ai-spector` | `references/runbook.md#check` |
+| docops init/migrate, Writer contract | `ai-spector` | `references/runbook.md#docops` |
+| learn, course, tutorial, open course | `ai-spector` | `references/runbook.md#course` |
+| resume task, active tasks, pause, continue | `ai-spector` | `references/runbook.md#work-sessions` |
+| add feature, update section, "I want to add…" | `ai-spector-generate` | `references/runbook.md#resolve-task` |
+| set up template pack, import template | `ai-spector-generate` | `references/runbook.md#template-import` |
+| generate SRS (full chapter / DAG) | `ai-spector-generate` | `references/runbook.md#srs` |
+| generate basic design (full wave) | `ai-spector-generate` | `references/runbook.md#basic-design` |
+| generate detail design | `ai-spector-generate` | `references/runbook.md#detail-design` |
+| HTML prototype | `ai-spector-generate` | `references/runbook.md#prototype` |
+| analyze, ingest, data source | `ai-spector-graph` | `references/analyze.md` |
 | index, re-index, refresh graph | `ai-spector-graph` | `references/index.md` |
 | validate graph | `ai-spector-graph` | `references/validate-graph.md` |
 | impact, what to regenerate | `ai-spector-graph` | `references/impact.md` |
-| sync audit, check doc drift, what changed since baseline, layer sync | `ai-spector-sync-audit` | `references/runbook.md` |
-| semantic search, find docs about a concept | `ai-spector-search` | `SKILL.md` |
-| fuzzy graph lookup, find node by name | `ai-spector-search` | `SKILL.md` |
-| CocoIndex, embeddings, docs_search, graph_query_fuzzy | `ai-spector-search` | `SKILL.md` |
+| sync audit, check doc drift, what changed since baseline | `ai-spector-graph` | `references/sync-audit.md` |
+| semantic search, find docs about a concept | `ai-spector-graph` | `references/search.md` |
+| fuzzy graph lookup, find node by name | `ai-spector-graph` | `references/search.md` |
 | visualize graph | `ai-spector-graph` | `references/visualize-graph.md` |
 | link graph, semantic edges | `ai-spector-graph` | `references/link-graph.md` |
 | sync graph | `ai-spector-graph` | `references/sync-graph.md` |
 | doc summaries | `ai-spector-graph` | `references/summary.md` |
-| generate docs, write SRS (full chapter/DAG), generate use cases from graph | `ai-spector-generate` | `SKILL.md` (checks `packs.srs`, then routes) |
-| add feature, add requirement, update section, "I want to add…", "we need…" | `ai-spector-resolve-task` | `references/runbook.md` |
-| screens, APIs, wireframes, basic design | `ai-spector-generate` | `SKILL.md` (checks `packs.basicDesign`, then routes) |
-| detail design, feature-level design, implementation spec | `ai-spector-generate-detail-design` | `references/runbook.md` |
-| HTML prototype | `ai-spector-generate-prototype` | `references/runbook.md` |
-| set up template pack, import template, custom template, install template | `ai-spector-template-import` | `references/runbook.md` |
-| create task, new task, resolve task, change prototype | `ai-spector-resolve-task` | `references/runbook.md` |
-| comment threads, C-001, inbox, resolve comments, open threads | `ai-spector-resolve-comments` | `references/runbook.md` |
-| document approval, approve doc, review status, review queue, "which docs reviewed", "has X been approved", "pending review", "what changed since approval", "does all document has reviewed" | `ai-spector-review` | `references/runbook.md` |
-| translation status, stale langs | `ai-spector-lang-status` | `SKILL.md` |
-| resolve translations, sync JP/VI | `ai-spector-resolve-translation` | `references/runbook.md` |
-| "generate docs" (no layer named) | `ai-spector-generate` | `SKILL.md` |
+| document approval, approve doc, review queue, "pending review" | `ai-spector-contract` | `references/runbook.md#review` |
+| comment threads, C-001, inbox, resolve comments | `ai-spector-contract` | `references/runbook.md#comments` |
+| prototype comments, B-001, resolve login screen | `ai-spector-contract` | `references/runbook.md#prototype-comments` |
+| resolve translations, sync JP/VI | `ai-spector-contract` | `references/runbook.md#translation` |
+| translation status, stale langs | `ai-spector-contract` | `references/runbook.md#lang-status` |
 
-Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-failures.md), [generate-workflow.md](./ai-spector/references/generate-workflow.md), [generate-graph.md](./ai-spector/references/generate-graph.md).
-
-## Pipeline
-
-```text
-analyze → validate graph
-  → generate SRS        (gated: check → clarify → briefing → plan → waves → extract specs)
-  → index → spec review queue (approve → graph merge)
-  → generate basic design (same gates) → index
-  → generate detail design (same gates) → index each wave
-  → prototype setup → generate HTML screens
-```
-
-Every `generate` run is gated — workspace check, full clarification of gaps,
-context briefing, and plan confirmation come **before any write**; key-spec
-extraction with human review comes after. See
-[generate-workflow.md](./ai-spector/references/generate-workflow.md).
+Shared: [ai-spector/references/cli-failures.md](./ai-spector/references/cli-failures.md), [ai-spector/references/generate-workflow.md](./ai-spector/references/generate-workflow.md).
 
 See [../WORKFLOW.md](../WORKFLOW.md).

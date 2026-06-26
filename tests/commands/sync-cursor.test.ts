@@ -24,14 +24,14 @@ describe("sync-cursor", () => {
       join(root, ".cursor/skills/_skill-router.md"),
       "utf8",
     );
-    expect(router).toContain("ai-spector-resolve-comments");
-    expect(router).toContain("ai-spector-resolve-task");
-    expect(router).toContain("add login with Google");
-    expect(await pathExists(join(root, ".cursor/rules/ai-spector-routing.mdc"))).toBe(true);
+    // 4-skill router: contract handles comments/translation, generate handles resolve-task
+    expect(router).toContain("ai-spector-contract");
     expect(router).toContain("ai-spector-generate");
-    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype/SKILL.md"))).toBe(
-      true,
-    );
+    expect(router).toContain("ai-spector-graph");
+    expect(await pathExists(join(root, ".cursor/rules/ai-spector-routing.mdc"))).toBe(true);
+    // Retired skills must NOT exist
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-generate-prototype"))).toBe(false);
+    expect(await pathExists(join(root, ".cursor/skills/ai-spector-resolve-comments"))).toBe(false);
     expect(await pathExists(join(root, ".cursor/WORKFLOW.md"))).toBe(true);
     expect(router).toContain("workflow_route");
   });
