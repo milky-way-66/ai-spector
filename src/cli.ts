@@ -49,6 +49,7 @@ import {
   formatSpecReject,
 } from "./interfaces/cli/format/extracted.js";
 import { registerWorkCommands, registerTaskCommands } from "./core/operations/work.js";
+import { registerContractCommands } from "./core/operations/contract-cli.js";
 import { buildClaudeScaffoldFromCursor } from "./core/scaffold/claude-from-cursor.js";
 import { runSyncClaude } from "./core/operations/sync-claude.js";
 import { runSyncCursor } from "./core/operations/sync-cursor.js";
@@ -425,8 +426,17 @@ spec
 
 registerWorkCommands(program);
 registerTaskCommands(program);
+registerContractCommands(program);
 
-const lang = program.command("lang").description("Manage project languages");
+const LANG_DEPRECATION_WARNING =
+  "[deprecated] lang — use `npx ai-spector contract translate` for queue operations; language config remains here for now\n";
+
+const lang = program
+  .command("lang")
+  .description("Manage project languages (deprecated — prefer contract translate for queue)")
+  .hook("preAction", () => {
+    process.stderr.write(LANG_DEPRECATION_WARNING);
+  });
 
 lang
   .command("add <code>")
