@@ -211,8 +211,12 @@ server.registerTool(
     inputSchema: GraphQuerySchema.shape,
   },
   async (input) => {
-    const result = await toolGraphQuery(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphQuery(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -224,8 +228,12 @@ server.registerTool(
     inputSchema: GraphImpactSchema.shape,
   },
   async (input) => {
-    const result = await toolGraphImpact(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphImpact(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -236,8 +244,12 @@ server.registerTool(
     inputSchema: GraphValidateSchema.shape,
   },
   async (input) => {
-    const result = await toolGraphValidate(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphValidate(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -248,8 +260,12 @@ server.registerTool(
     inputSchema: GraphMergeSchema.shape,
   },
   async (input) => {
-    const result = await toolGraphMerge(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphMerge(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -261,8 +277,12 @@ server.registerTool(
     inputSchema: GraphReportSchema.shape,
   },
   async (input) => {
-    const result = await toolGraphReport(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphReport(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -331,8 +351,12 @@ server.registerTool(
     inputSchema: IndexSchema.shape,
   },
   async (input) => {
-    const result = await toolIndex(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolIndex(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -809,8 +833,12 @@ server.registerTool(
     inputSchema: DocsSearchSchema.shape,
   },
   async (input) => {
-    const result = await toolDocsSearch(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolDocsSearch(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 
@@ -822,8 +850,12 @@ server.registerTool(
     inputSchema: GraphQueryFuzzySchema.shape,
   },
   async (input) => {
-    const result = await toolGraphQueryFuzzy(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    try {
+      const result = await toolGraphQueryFuzzy(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 

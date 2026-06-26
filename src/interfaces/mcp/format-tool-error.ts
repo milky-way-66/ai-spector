@@ -1,5 +1,6 @@
 import { ReviewPreconditionError } from "@/core/reviews/errors.js";
 import { TaskPreconditionError } from "@/core/operations/task-gates.js";
+import { McpPreconditionError } from "./mcp-precondition.js";
 
 export interface McpToolErrorContent {
   content: Array<{ type: "text"; text: string }>;
@@ -17,6 +18,13 @@ export function mcpToolErrorContent(err: unknown): McpToolErrorContent {
   }
 
   if (err instanceof TaskPreconditionError) {
+    return {
+      content: [{ type: "text", text: JSON.stringify(err.toPayload(), null, 2) }],
+      isError: true,
+    };
+  }
+
+  if (err instanceof McpPreconditionError) {
     return {
       content: [{ type: "text", text: JSON.stringify(err.toPayload(), null, 2) }],
       isError: true,

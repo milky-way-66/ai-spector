@@ -18,8 +18,10 @@ import type {
   CocoindexIndexSchema,
 } from "../schemas.js";
 import type { z } from "zod";
+import { assertToolAllowed } from "../assert-tool-allowed.js";
 
 export async function toolDocsSearch(input: z.infer<typeof DocsSearchSchema>) {
+  await assertToolAllowed("docs_search", input.root);
   const root = input.root;
   const configured = await isCocoindexConfigured(root ?? process.cwd());
 
@@ -135,6 +137,7 @@ export async function toolCocoindexIndex(input: z.infer<typeof CocoindexIndexSch
 }
 
 export async function toolGraphQueryFuzzy(input: z.infer<typeof GraphQueryFuzzySchema>) {
+  await assertToolAllowed("graph_query_fuzzy", input.root);
   const configured = await isCocoindexConfigured(input.root ?? process.cwd());
 
   if (!configured) {

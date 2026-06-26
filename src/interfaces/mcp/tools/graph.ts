@@ -27,8 +27,10 @@ import type {
   GraphReportSchema,
 } from "../schemas.js";
 import type { z } from "zod";
+import { assertToolAllowed } from "../assert-tool-allowed.js";
 
 export async function toolGraphQuery(input: z.infer<typeof GraphQuerySchema>) {
+  await assertToolAllowed("graph_query", input.root);
   const paths = await resolveProjectPaths(input.root);
   const g = await loadInMemoryGraph(paths.graph);
 
@@ -65,6 +67,7 @@ export async function toolGraphQuery(input: z.infer<typeof GraphQuerySchema>) {
 }
 
 export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) {
+  await assertToolAllowed("graph_impact", input.root);
   const paths = await resolveProjectPaths(input.root);
   const g = await loadInMemoryGraph(paths.graph);
   const rules = await loadImpactRules(paths.rulesImpact);
@@ -110,6 +113,7 @@ export async function toolGraphImpact(input: z.infer<typeof GraphImpactSchema>) 
 }
 
 export async function toolGraphValidate(input: z.infer<typeof GraphValidateSchema>) {
+  await assertToolAllowed("graph_validate", input.root);
   const paths = await resolveProjectPaths(input.root);
   const issues = await validateGraph({
     graphPath: paths.graph,
@@ -123,6 +127,7 @@ export async function toolGraphValidate(input: z.infer<typeof GraphValidateSchem
 }
 
 export async function toolGraphMerge(input: z.infer<typeof GraphMergeSchema>) {
+  await assertToolAllowed("graph_merge", input.root);
   const paths = await resolveProjectPaths(input.root);
   await runGraphMerge({
     root: input.root,
@@ -134,5 +139,6 @@ export async function toolGraphMerge(input: z.infer<typeof GraphMergeSchema>) {
 }
 
 export async function toolGraphReport(input: z.infer<typeof GraphReportSchema>) {
+  await assertToolAllowed("graph_report", input.root);
   return runGraphReport({ root: input.root });
 }
