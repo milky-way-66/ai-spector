@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { packageBundleRoot } from "../config/load.js";
 import { pathExists, writeJson } from "../util/fs.js";
+import { resolveDocTypeRepoPath } from "./paths.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_TEMPLATE_SUBDIR: Record<string, string> = {
@@ -251,9 +252,10 @@ export async function applyDocopsBootstrap(opts: {
   const languages = opts.config.languages ?? [];
   for (const dt of Object.values(docTypes)) {
     if (dt?.enabled === false || !dt?.path) continue;
+    const repoFolder = resolveDocTypeRepoPath(dt.path);
     for (const lang of languages) {
       const langPath = lang.path ?? lang.code;
-      const relGitkeep = join(opts.config.docsRoot, dt.path, langPath, ".gitkeep").replace(/\\/g, "/");
+      const relGitkeep = join(repoFolder, langPath, ".gitkeep").replace(/\\/g, "/");
       const absGitkeep = join(opts.projectRoot, relGitkeep);
       if (opts.skipExisting && (await pathExists(absGitkeep))) {
         opts.actions.push(`skip — ${relGitkeep} exists`);

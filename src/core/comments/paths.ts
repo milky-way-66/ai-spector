@@ -17,30 +17,45 @@ export function normalizeLogicalPath(filePath: string): string {
 
 /**
  * Map comment logical_path (e.g. `srs/01-overview`) to repo-relative doc file.
- * Returns null when the prefix is unknown.
+ * When ``repoPrefixBySegment`` is set (from docops ``docTypes``), each layer uses
+ * its configured folder (e.g. ``docs/srs``, ``detail-design``).
  */
-export function logicalPathToDocPath(logicalPath: string): string | null {
+export function logicalPathToDocPath(
+  logicalPath: string,
+  repoPrefixBySegment?: Record<string, string>,
+): string | null {
   const p = normalizeLogicalPath(logicalPath);
   if (!p) {
     return null;
   }
+
+  const resolve = (segment: string, rest: string): string | null => {
+    const folder = repoPrefixBySegment?.[segment]?.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+    if (folder) {
+      const suffix = rest ? `${rest}.md` : ".md";
+      return `${folder}/${suffix}`.replace(/\/\.md$/, ".md");
+    }
+    return null;
+  };
+
   if (p.startsWith("srs/") || p === "srs") {
-    return `docs/srs/${p === "srs" ? "" : p.slice("srs/".length)}.md`.replace(
-      /\/\.md$/,
-      ".md",
+    const rest = p === "srs" ? "" : p.slice("srs/".length);
+    return (
+      resolve("srs", rest) ??
+      `docs/srs/${rest ? `${rest}.md` : ".md"}`.replace(/\/\.md$/, ".md")
     );
   }
   if (p.startsWith("basic-design/") || p.startsWith("bd/")) {
     const rest = p.startsWith("basic-design/")
       ? p.slice("basic-design/".length)
       : p.slice("bd/".length);
-    return `docs/basic-design/${rest}.md`;
+    return resolve("basic-design", rest) ?? `docs/basic-design/${rest}.md`;
   }
   if (p.startsWith("detail-design/") || p.startsWith("dd/")) {
     const rest = p.startsWith("detail-design/")
       ? p.slice("detail-design/".length)
       : p.slice("dd/".length);
-    return `docs/detail-design/${rest}.md`;
+    return resolve("detail-design", rest) ?? `docs/detail-design/${rest}.md`;
   }
   return null;
 }

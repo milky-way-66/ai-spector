@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import { pathExists } from "../util/fs.js";
 import { logicalPathToDocPath } from "../comments/paths.js";
+import { loadOrDeriveDocopsConfig } from "../docops/config.js";
+import { segmentRepoPrefixMap } from "../docops/paths.js";
 import {
   loadDocflowConfig,
   preferredLanguageCode,
@@ -36,7 +38,15 @@ export async function resolveReviewDocPath(
   logicalPath: string,
   options: ResolveReviewDocPathOptions = {},
 ): Promise<ResolvedDocPath> {
-  const flatRel = logicalPathToDocPath(logicalPath);
+  let repoPrefixBySegment: Record<string, string> | undefined;
+  try {
+    const docops = await loadOrDeriveDocopsConfig(projectRoot);
+    repoPrefixBySegment = segmentRepoPrefixMap(docops);
+  } catch {
+    repoPrefixBySegment = undefined;
+  }
+
+  const flatRel = logicalPathToDocPath(logicalPath, repoPrefixBySegment);
   if (!flatRel) {
     throw new Error(`Cannot resolve doc path for logical path: ${logicalPath}`);
   }
@@ -58,14 +68,16 @@ export async function resolveReviewDocPath(
   }
 
   const tried: string[] = [flatRel];
-  const prefixMatch = flatRel.match(/^(docs\/[^/]+\/)/);
+  const slash = flatRel.lastIndexOf("/");
+  const folderPrefix = slash >= 0 ? flatRel.slice(0, slash + 1) : "";
+  const fileName = slash >= 0 ? flatRel.slice(slash + 1) : flatRel;
   const track = options.track ?? "internal";
   const preferredLang = preferredLanguageCode(config, track);
   const primaryLang = primaryLanguage(config).code;
 
   const tryLangFolder = async (langCode: string): Promise<ResolvedDocPath | null> => {
-    if (!prefixMatch) return null;
-    const langRel = flatRel.replace(prefixMatch[0], `${prefixMatch[0]}${langCode}/`);
+    if (!folderPrefix || !fileName) return null;
+    const langRel = `${folderPrefix}${langCode}/${fileName}`;
     if (tried.includes(langRel)) return null;
     tried.push(langRel);
     const langAbs = join(projectRoot, langRel);
@@ -86,7 +98,7 @@ export async function resolveReviewDocPath(
   }
 
   // 4. Fallback: any other configured language subfolder
-  if (prefixMatch) {
+  if (folderPrefix && fileName) {
     for (const lang of config.languages) {
       if (lang.code === preferredLang || lang.code === primaryLang) continue;
       const match = await tryLangFolder(lang.code);

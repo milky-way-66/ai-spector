@@ -137,7 +137,7 @@ describe("docops migrate", () => {
         docTypes: {
           srs: {
             enabled: true,
-            path: "srs",
+            path: "docs/srs",
             label: "SRS",
             templatesPath: ".docops/templates/srs",
           },

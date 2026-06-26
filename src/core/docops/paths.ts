@@ -35,25 +35,75 @@ export const DOC_TYPE_INFERENCE: ReadonlyArray<{
   {
     docsPrefix: "docs/srs",
     key: "srs",
-    path: "srs",
+    path: "docs/srs",
     label: "SRS",
     templatesPath: ".docops/templates/srs",
   },
   {
     docsPrefix: "docs/basic-design",
     key: "basicDesign",
-    path: "basic-design",
+    path: "docs/basic-design",
     label: "Basic Design",
     templatesPath: ".docops/templates/basic-design",
   },
   {
     docsPrefix: "docs/detail-design",
     key: "detailDesign",
-    path: "detail-design",
+    path: "docs/detail-design",
     label: "Detail Design",
     templatesPath: ".docops/templates/detail-design",
   },
 ];
+
+const DOC_TYPE_KEY_TO_SEGMENT: Record<string, string> = {
+  srs: "srs",
+  basicDesign: "basic-design",
+  detailDesign: "detail-design",
+};
+
+const DEFAULT_DOC_TYPE_REPO_PATH: Record<string, string> = Object.fromEntries(
+  DOC_TYPE_INFERENCE.map((row) => [row.key, row.path]),
+);
+
+/**
+ * Normalize ``docTypes.<layer>.path`` as a repo-root-relative directory.
+ * Paths are used literally (e.g. ``docs/srs``) — short names like ``srs`` are not expanded.
+ */
+export function resolveDocTypeRepoPath(layerPath: string): string {
+  const raw = (layerPath ?? "").trim().replace(/\\/g, "/");
+  if (!raw) {
+    return "";
+  }
+  if (raw.includes("/") || raw.startsWith(".")) {
+    const parts: string[] = [];
+    for (const part of raw.split("/")) {
+      if (!part || part === ".") continue;
+      if (part === "..") {
+        if (parts.length) parts.pop();
+        continue;
+      }
+      parts.push(part);
+    }
+    return parts.length ? parts.join("/") : raw.replace(/^\/+|\/+$/g, "");
+  }
+  return raw;
+}
+
+/** Map logical segment (``srs``, ``basic-design``) → repo folder prefix from docops config. */
+export function segmentRepoPrefixMap(
+  config: { docsRoot?: string; docTypes?: Record<string, { enabled?: boolean; path?: string }> },
+): Record<string, string> {
+  const prefixes: Record<string, string> = {};
+  for (const [key, segment] of Object.entries(DOC_TYPE_KEY_TO_SEGMENT)) {
+    const layer = config.docTypes?.[key];
+    if (layer?.enabled === false) continue;
+    const configured = layer?.path?.trim();
+    prefixes[segment] = configured
+      ? resolveDocTypeRepoPath(configured)
+      : (DEFAULT_DOC_TYPE_REPO_PATH[key] ?? "");
+  }
+  return prefixes;
+}
 
 export const DEFAULT_CAPABILITIES = {
   review: true,

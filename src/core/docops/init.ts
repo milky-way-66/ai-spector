@@ -10,14 +10,14 @@ import { applyDocopsBootstrap } from "./bootstrap.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
-  srs: { path: "srs", label: "SRS", templatesPath: ".docops/templates/srs" },
+  srs: { path: "docs/srs", label: "SRS", templatesPath: ".docops/templates/srs" },
   basicDesign: {
-    path: "basic-design",
+    path: "docs/basic-design",
     label: "Basic Design",
     templatesPath: ".docops/templates/basic-design",
   },
   detailDesign: {
-    path: "detail-design",
+    path: "docs/detail-design",
     label: "Detail Design",
     templatesPath: ".docops/templates/detail-design",
   },
@@ -50,6 +50,8 @@ function buildDocTypes(
     out[key] = {
       ...base,
       ...inferredLayer,
+      // Keep an explicit configured path; defaults only fill gaps.
+      path: inferredLayer?.path?.trim() || base.path,
       enabled: inferredLayer?.enabled ?? true,
     };
   }

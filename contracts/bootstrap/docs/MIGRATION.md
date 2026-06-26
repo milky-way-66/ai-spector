@@ -8,6 +8,50 @@ This file is **committed to your repository** when you run **Writer → Project 
 
 ---
 
+## For AI agents (Cursor, ai-spector, Writer automation)
+
+Use this section when an agent migrates a repo **without** guessing paths.
+
+### Goals
+
+1. Commit `.docops/docops.config.json` and scaffold files **without overwriting** existing destination files.
+2. Set **Writer project storage layout** (`legacy` or `docops`) to match what is on the branch.
+3. Set **`docTypes.*.path`** to **repo-root-relative** folders that already hold markdown (e.g. `docs/srs`, not `srs`).
+
+### Agent workflow (ordered)
+
+```text
+1. Detect layout (§1 table) on the target branch.
+2. List existing docs folders under docs/ (or custom roots).
+3. Copy legacy contract files (§2 table) — skip if destination exists.
+4. Create or edit .docops/docops.config.json (§2.2, §3 Step 3).
+5. Copy templates into docTypes.*.templatesPath if empty.
+6. Commit + push.
+7. In Writer: Project Settings → set storage layout (§2.1) to match migration state.
+8. Run post-migration checklist (§5).
+```
+
+### ai-spector CLI (optional)
+
+```bash
+npx ai-spector docops migrate --dry-run    # preview legacy → contract
+npx ai-spector docops migrate              # full legacy migrate (no overwrite of existing)
+npx ai-spector docops migrate --repair     # fill gaps when config already exists
+npx ai-spector docops init                 # greenfield scaffold
+```
+
+### Hard rules for agents
+
+| Rule | Detail |
+|------|--------|
+| **Do not overwrite** | Never replace an existing file at a contract path. Migration **fills gaps** only. |
+| **Single layout path** | Writer reads **one** path per feature from **project storage layout** — no try-legacy-then-docops fallback. |
+| **Repo-root-relative `docTypes.path`** | Use full paths like `docs/srs`. Short names like `srs` are **not** expanded to `docs/srs`. |
+| **Do not move `docs/`** | Point `docTypes.*.path` at existing folders; keep markdown in place. |
+| **Match storage layout to git** | Until git is fully on `.docops/`, keep Writer `storage_layout: legacy`; switch to `docops` after migration commit is on the working branch. |
+
+---
+
 ## 1. Detect your situation (no CLI required)
 
 Open the repo in Bitbucket (or locally) and check which files exist on the **branch you will migrate**:
@@ -48,6 +92,62 @@ Use this table when copying files manually (git `mv` or copy + commit):
 
 **Rule:** never overwrite existing destination files. Migration only **fills gaps**.
 
+### 2.1 Storage layout (Writer project setting)
+
+Writer stores **which path family to read from git** on the **project** row (`storage_layout` in the database). This is **not** inferred by trying multiple paths.
+
+| `storage_layout` | When to use | Comments root | Review queue | Prototype screen-map | Prototype config |
+|------------------|-------------|---------------|--------------|----------------------|------------------|
+| `legacy` | Repo still uses `.ai-spector/` paths (default for old projects) | `comments/` | `.ai-spector/.docflow/review-queue/` | `prototype/screen-map.json` | `.ai-spector/.docflow/config/prototype/config.json` |
+| `docops` | Repo migrated to `.docops/` contract paths | `.docops/comments/` | `.docops/review-queue/` | `.docops/prototype/screen-map.json` | `.docops/prototype/config.json` |
+
+**Set in Writer:** Project Settings → Docops (or project update API: `storageLayout: "legacy"` \| `"docops"`).
+
+**After migration:** when `.docops/docops.config.json` and contract paths exist on the branch users work in, set **`storage_layout` to `docops`**.
+
+**Git vs DB:** `.docops/docops.config.json` may include `"layout": "docops"`. Writer still uses the **project `storage_layout`** for reads. Keep DB and git in sync.
+
+**Do not rely on:** `DOCOPS_LEGACY_PATHS` env dual-read (deprecated). One layout per project.
+
+### 2.2 Document folders (`docTypes.*.path`)
+
+Document markdown lives under **`docTypes.<layer>.path`** — a folder **relative to the repository root**.
+
+| `docTypes` key | Label | Example `path` | Typical on-disk layout |
+|----------------|-------|----------------|------------------------|
+| `srs` | SRS | `docs/srs` | `docs/srs/en/01-overview.md` |
+| `basicDesign` | Basic Design | `docs/basic-design` | `docs/basic-design/en/screen-list.md` |
+| `detailDesign` | Detail Design | `docs/detail-design` | `docs/detail-design/en/feature-list.md` |
+
+**Use full repo-root paths** in config:
+
+```json
+"docTypes": {
+  "srs": {
+    "enabled": true,
+    "path": "docs/srs",
+    "label": "SRS",
+    "templatesPath": ".docops/templates/srs"
+  },
+  "basicDesign": {
+    "enabled": true,
+    "path": "docs/basic-design",
+    "label": "Basic Design",
+    "templatesPath": ".docops/templates/basic-design"
+  }
+}
+```
+
+**Path rules:**
+
+- **`path` is literal** — `docs/srs` stays `docs/srs`. A short value like `srs` means a folder named `srs` at repo root, **not** `docs/srs`.
+- **`docsRoot`** (`"docs"` by default) is **not** prepended to `docTypes.path`. Put the full folder in `path`.
+- **Custom roots** are allowed (e.g. `"path": "detail-design"` at repo root) when that matches your tree.
+- **Logical paths** in review/comments stay without the docs prefix: `srs/01-overview`, `basic-design/screen-list`. Writer/ai-spector map them using `docTypes.*.path`.
+- **Do not overwrite** existing `docTypes.*.path` in config during repair — only fill missing `templatesPath` or scaffold files.
+
+**Infer from tree:** if `docs/srs/` exists, set `srs.path` to `docs/srs`. If `detail-design/` exists at repo root, set `detailDesign.path` to `detail-design`.
+
 ---
 
 ## Path A — Greenfield (Writer web only)
@@ -63,7 +163,7 @@ No legacy layout. **No ai-spector.**
 **What setup commits:**
 
 - `.docops/docops.config.json`, review scaffolding, templates
-- `docs/{layer}/{lang}/.gitkeep` placeholders
+- `{docTypes.*.path}/{lang}/.gitkeep` placeholders (e.g. `docs/srs/en/.gitkeep`)
 - `.docops/guide/` — this folder (README, MIGRATION, modules, schemas, examples)
 
 ---
@@ -115,12 +215,14 @@ Adjust paths if your project uses different legacy locations.
 
 | Field | What to set |
 |-------|-------------|
-| `languages[]` | Codes and folder names under `docs/` (e.g. `en`, `vi`) |
+| `layout` | `"docops"` when this repo uses contract paths (see §2.1) |
+| `languages[]` | Codes and folder names under each `docTypes.*.path` (e.g. `en`, `vi`) |
 | `primaryLanguage` | Main authoring language |
-| `docTypes` | Enabled layers (`srs`, `basicDesign`, …) and `path` matching `docs/` |
-| `docTypes.*.templatesPath` | `.docops/templates/srs`, etc. |
+| `docTypes` | Enabled layers (`srs`, `basicDesign`, `detailDesign`) — see §2.2 |
+| `docTypes.*.path` | **Repo-root-relative** folder (e.g. `docs/srs`, `docs/basic-design`) — must match existing markdown tree |
+| `docTypes.*.templatesPath` | `.docops/templates/srs`, `.docops/templates/basic-design`, etc. |
 | `capabilities` | `true` / `false` per Writer feature you use |
-| `paths` | Usually leave defaults (`.docops/comments`, …) |
+| `paths` | Contract paths for comments, review, prototype (usually defaults under `.docops/`) |
 
 Validate (optional):
 
@@ -215,10 +317,11 @@ This is optional — [Path B](#path-b--legacy-migration-without-ai-spector) cove
 Some teams only have `docs/` and custom tooling (no `.ai-spector/`).
 
 1. Follow [Path A](#path-a--greenfield-writer-web-only) — Writer setup scaffolds the contract
-2. Edit `.docops/docops.config.json` so `docTypes` paths match your existing `docs/` folders
-3. Do **not** move `docs/` — Writer reads markdown in place
-4. Enable only `capabilities` you need; see [modules/](modules/) for each feature's files
-5. External adapters: read [adapters/README.md](adapters/README.md) — integration is **git files only**, no Writer API
+2. Edit `.docops/docops.config.json` so `docTypes.*.path` matches your existing folders (§2.2), e.g. `docs/srs`
+3. Do **not** move `docs/` — Writer reads markdown in place via configured `path`
+4. Set Writer **`storage_layout` to `docops`** once contract files exist on the branch
+5. Enable only `capabilities` you need; see [modules/](modules/) for each feature's files
+6. External adapters: read [adapters/README.md](adapters/README.md) — integration is **git files only**, no Writer API
 
 ---
 
@@ -228,7 +331,9 @@ After any path, verify on the migrated branch (allow ~30s for Writer git cache):
 
 ### Contract
 
-- [ ] `.docops/docops.config.json` valid JSON; `languages` and `docTypes` match `docs/`
+- [ ] `.docops/docops.config.json` valid JSON; `languages` and `docTypes` match on-disk folders (§2.2)
+- [ ] `docTypes.*.path` uses repo-root-relative paths (e.g. `docs/srs`, not bare `srs` unless that folder exists at root)
+- [ ] Writer project **`storage_layout`** matches branch (`legacy` until `.docops/` paths are live, then `docops`)
 - [ ] `.docops/guide/README.md` and `guide/MIGRATION.md` present (this file)
 - [ ] Review: `.docops/review.config.json` + `.docops/review-queue/registry.json` (if `review: true`)
 - [ ] Comments: threads under `.docops/comments/` (if `comments: true`)
@@ -250,16 +355,24 @@ After any path, verify on the migrated branch (allow ~30s for Writer git cache):
 
 ---
 
-## 6. Writer admin: transition period
+## 6. Writer admin: storage layout per project
 
-If some projects still use legacy paths while others are migrated, your Writer admin can set:
+Each linked git project has **`storage_layout`** in the Writer database:
 
-| `DOCOPS_LEGACY_PATHS` | Behavior |
-|-----------------------|----------|
-| `0` (default) | Read `.docops/` only |
-| `1` | Dual-read legacy paths until all repos are migrated |
+| Value | Git paths Writer reads |
+|-------|-------------------------|
+| `legacy` (default) | `comments/`, `.ai-spector/.docflow/review-queue/`, `prototype/screen-map.json`, legacy prototype config |
+| `docops` | `.docops/comments/`, `.docops/review-queue/`, `.docops/prototype/screen-map.json`, `.docops/prototype/config.json` |
 
-After every project is on `.docops/`, set back to `0`.
+**Migration sequence:**
+
+1. While git still has only legacy paths → keep `storage_layout: legacy`
+2. After `.docops/` contract files are committed on the working branch → set `storage_layout: docops`
+3. Verify Documents, Review, Comments, Prototype on that branch
+
+Writer does **not** fall back from docops path to legacy path (or vice versa) when a file is missing.
+
+Deprecated: `DOCOPS_LEGACY_PATHS` environment dual-read. Use per-project `storage_layout` instead.
 
 ---
 
@@ -271,9 +384,10 @@ Check repo files (§1)
         ├─ greenfield ──────► Writer Set up repository (Path A)
         │
         ├─ legacy, no config ► copy legacy files (§2 table)
-        │                      create docops.config.json (§3)
-        │                      OR setup first, then edit + copy legacy
-        │                      commit + push → checklist (§5)
+        │                      create docops.config.json (§2.2, Step 3)
+        │                      commit + push
+        │                      set Writer storage_layout (§2.1)
+        │                      → checklist (§5)
         │
         └─ config exists ───► fill gaps manually (Path C)
                                or optional: ai-spector migrate --repair
@@ -287,3 +401,19 @@ Check repo files (§1)
 2. [modules/](modules/) — per-module schema, Writer flow, examples
 3. [schemas/](schemas/) — validate JSON locally
 4. [examples/](examples/) — copy-paste starting points
+
+---
+
+## 9. Agent quick reference (copy for prompts)
+
+```text
+Migrate repo to .docops contract:
+- Branch: docops/migrate (or user branch)
+- Copy legacy → contract (§2 table); skip existing destinations
+- docops.config.json: layout "docops", docTypes.*.path = repo-root-relative (docs/srs, docs/basic-design, …)
+- capabilities + paths per project needs
+- templates: .docops/templates/{layer}/*.md
+- gitkeep: {docTypes.path}/{lang}/.gitkeep for each language
+- Commit; then Writer storage_layout = docops
+- Never overwrite existing files; never use short docTypes.path expecting docs/ prefix
+```
