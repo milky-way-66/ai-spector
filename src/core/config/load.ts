@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import type { DocflowConfig, DocumentsManifest, LanguageConfig, PackManifest } from "./types.js";
 import { assertSupportedLanguageCode } from "./types.js";
 import { readJson } from "../util/fs.js";
+import { DOCOPS_CONFIG_REL } from "../docops/paths.js";
+import { ENGINE_CONFIG_REL } from "../engine/paths.js";
+import { loadEngineConfig } from "../engine/load.js";
+import type { DocopsConfig } from "../docops/types.js";
 
 export { bundledPrototypeConfigPath } from "./docflow-paths.js";
 
@@ -48,12 +52,10 @@ export function scaffoldClaudeBundleRoot(): string {
 export function findProjectRoot(start = process.cwd()): string {
   let dir = resolve(start);
   for (;;) {
-    if (existsSync(join(dir, ".ai-spector", CONFIG_NAME))) {
-      return dir;
-    }
-    if (existsSync(join(dir, CONFIG_NAME))) {
-      return dir;
-    }
+    if (existsSync(join(dir, ".ai-spector", CONFIG_NAME))) return dir;
+    if (existsSync(join(dir, CONFIG_NAME))) return dir;
+    if (existsSync(join(dir, DOCOPS_CONFIG_REL))) return dir;
+    if (existsSync(join(dir, ENGINE_CONFIG_REL))) return dir;
     const parent = dirname(dir);
     if (parent === dir) {
       break;
@@ -61,16 +63,8 @@ export function findProjectRoot(start = process.cwd()): string {
     dir = parent;
   }
   throw new Error(
-    `Could not find project root (expected .ai-spector/${CONFIG_NAME} or ${CONFIG_NAME})`,
+    `Could not find project root (expected .ai-spector/${CONFIG_NAME}, ${CONFIG_NAME}, ${DOCOPS_CONFIG_REL}, or ${ENGINE_CONFIG_REL})`,
   );
-}
-
-function configPath(root: string): string {
-  const nested = join(root, ".ai-spector", CONFIG_NAME);
-  if (existsSync(nested)) {
-    return nested;
-  }
-  return join(root, CONFIG_NAME);
 }
 
 const DEFAULT_PATHS = {
@@ -81,11 +75,11 @@ const DEFAULT_PATHS = {
 
 const DEFAULT_LANGUAGE: LanguageConfig = { code: "en", label: "English" };
 
-export async function loadDocflowConfig(
-  root = findProjectRoot(),
-): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
-  const configFile = configPath(root);
-  const raw = await readJson<Partial<DocflowConfig>>(configFile);
+function buildDocflowFromRaw(
+  raw: Partial<DocflowConfig>,
+  configFile: string,
+  root: string,
+): { root: string; config: DocflowConfig; configFile: string } {
   const languages =
     Array.isArray(raw.languages) && raw.languages.length > 0
       ? raw.languages.map((l: { code: string; label: string }) => ({
@@ -128,6 +122,113 @@ export async function loadDocflowConfig(
     },
   };
   return { root, config, configFile };
+}
+
+async function synthesizeDocflowFromDocopsAndEngine(
+  root: string,
+): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
+  // Read docops config inline to avoid circular dependency with docops/config.js
+  const docopsPath = join(root, DOCOPS_CONFIG_REL);
+  const docopsRaw: Partial<DocopsConfig> | null = existsSync(docopsPath)
+    ? await readJson<Partial<DocopsConfig>>(docopsPath)
+    : null;
+
+  const engine = await loadEngineConfig(root);
+
+  const rawLanguages = Array.isArray(docopsRaw?.languages) && docopsRaw.languages.length > 0
+    ? docopsRaw.languages
+    : [{ code: "en", label: "English" }];
+
+  const languages: LanguageConfig[] = rawLanguages.map((l) => ({
+    code: assertSupportedLanguageCode(l.code),
+    label: l.label,
+  }));
+
+  const languageCodes = new Set(languages.map((l) => l.code));
+
+  let internalLanguage: DocflowConfig["internalLanguage"];
+  if (docopsRaw?.internalLanguage) {
+    try {
+      const code = assertSupportedLanguageCode(docopsRaw.internalLanguage);
+      if (languageCodes.has(code)) internalLanguage = code;
+    } catch {
+      // unsupported code — skip
+    }
+  }
+
+  let clientLanguage: DocflowConfig["clientLanguage"];
+  if (docopsRaw?.clientLanguage) {
+    try {
+      const code = assertSupportedLanguageCode(docopsRaw.clientLanguage);
+      if (languageCodes.has(code)) clientLanguage = code;
+    } catch {
+      // unsupported code — skip
+    }
+  }
+
+  // Resolve templates path: first enabled docType's templatesPath, then fallback
+  let templates = ".docops/templates/srs";
+  const docTypes = docopsRaw?.docTypes;
+  if (docTypes) {
+    for (const dt of Object.values(docTypes)) {
+      if (dt.enabled && dt.templatesPath) {
+        templates = dt.templatesPath;
+        break;
+      }
+    }
+  }
+
+  const engineReadiness = engine.readiness;
+  const readiness: DocflowConfig["readiness"] = {
+    ...(engineReadiness.profile ? { profile: engineReadiness.profile } : {}),
+    ...(engineReadiness.standards?.length ? { standards: engineReadiness.standards } : {}),
+    ...(engineReadiness.docTypes && Object.keys(engineReadiness.docTypes).length
+      ? { docTypes: engineReadiness.docTypes }
+      : {}),
+    ...(engineReadiness.lastScan ? { lastScan: engineReadiness.lastScan } : {}),
+  };
+
+  const config: DocflowConfig = {
+    version: 1,
+    ...(engine.scaffoldVersion ? { scaffoldVersion: engine.scaffoldVersion } : {}),
+    languages,
+    ...(internalLanguage ? { internalLanguage } : {}),
+    ...(clientLanguage ? { clientLanguage } : {}),
+    ...(Object.keys(readiness).length > 0 ? { readiness } : {}),
+    paths: {
+      graph: engine.artifacts.graph,
+      registry: engine.artifacts.registry,
+      templates,
+    },
+    packs: {
+      srs: "builtin",
+      basicDesign: "builtin",
+    },
+  };
+
+  const configFile = join(root, ENGINE_CONFIG_REL);
+  return { root, config, configFile };
+}
+
+export async function loadDocflowConfig(
+  root = findProjectRoot(),
+): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
+  // Legacy path: .ai-spector/docflow.config.json
+  const legacyNested = join(root, ".ai-spector", CONFIG_NAME);
+  if (existsSync(legacyNested)) {
+    const raw = await readJson<Partial<DocflowConfig>>(legacyNested);
+    return buildDocflowFromRaw(raw, legacyNested, root);
+  }
+
+  // Legacy path: root docflow.config.json
+  const legacyRoot = join(root, CONFIG_NAME);
+  if (existsSync(legacyRoot)) {
+    const raw = await readJson<Partial<DocflowConfig>>(legacyRoot);
+    return buildDocflowFromRaw(raw, legacyRoot, root);
+  }
+
+  // New 2-file model: synthesize DocflowConfig from docops + engine
+  return synthesizeDocflowFromDocopsAndEngine(root);
 }
 
 /**
