@@ -1717,3 +1717,5 @@ export async function runTaskAbandon(opts: TaskAbandonOptions): Promise<TaskAban
 
   return { task, taskPath };
 }
+
+export { registerWorkCommands, registerTaskCommands } from "./work.js";
