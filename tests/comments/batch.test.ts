@@ -58,7 +58,7 @@ const HOME_META = {
 
 async function seedPrototypeThreads(root: string): Promise<void> {
   for (const meta of [LOGIN_META, HOME_META]) {
-    const dir = join(root, "comments/prototype/src", meta.anchor.url.split("/").pop()!, meta.threadId);
+    const dir = join(root, ".docops/comments/prototype/src", meta.anchor.url.split("/").pop()!, meta.threadId);
     await mkdir(dir, { recursive: true });
     await writeJson(join(dir, "meta_data.json"), meta);
     await writeJson(join(dir, `${meta.threadId}-body`), {

@@ -10,10 +10,8 @@ import {
   DOCOPS_ROOT,
   DOC_TYPE_INFERENCE,
   LEGACY_DOCFLOW_CONFIG_REL,
-  LEGACY_DOCOPS_PATHS,
   type DocopsPathKey,
   docopsConfigAbs,
-  docopsDualWriteEnabled,
   mergeDocopsPaths,
 } from "./paths.js";
 import { resolvedPluginsFromDocflow, syncCapabilitiesFromPlugins } from "./capabilities.js";
@@ -201,48 +199,29 @@ export interface DocopsWriteRoots {
 
 export async function resolveCommentsWriteRoots(projectRoot: string): Promise<DocopsWriteRoots> {
   const config = await loadOrDeriveDocopsConfig(projectRoot);
-  const primary = config.paths.comments;
-  if (!docopsDualWriteEnabled()) {
-    return { primary };
-  }
-  const legacy = LEGACY_DOCOPS_PATHS.comments;
-  return legacy === primary ? { primary } : { primary, legacy };
+  return { primary: config.paths.comments };
 }
 
 export async function resolveReviewQueueWriteRoots(projectRoot: string): Promise<DocopsWriteRoots> {
   const config = await loadOrDeriveDocopsConfig(projectRoot);
-  const primary = config.paths.reviewQueue;
-  if (!docopsDualWriteEnabled()) {
-    return { primary };
-  }
-  const legacy = LEGACY_DOCOPS_PATHS.reviewQueue;
-  return legacy === primary ? { primary } : { primary, legacy };
+  return { primary: config.paths.reviewQueue };
 }
 
 export async function resolvePrototypeScreenMapRel(projectRoot: string): Promise<{
   primary: string;
-  legacy?: string;
 }> {
   const config = await loadOrDeriveDocopsConfig(projectRoot);
-  const primary = config.paths.prototypeScreenMap;
-  if (!docopsDualWriteEnabled()) {
-    return { primary };
-  }
-  const legacy = LEGACY_DOCOPS_PATHS.prototypeScreenMap;
-  return legacy === primary ? { primary } : { primary, legacy };
+  return { primary: config.paths.prototypeScreenMap };
 }
 
 export async function writePrototypeScreenMap(
   projectRoot: string,
   screenMap: unknown,
-): Promise<{ primary: string; legacy?: string }> {
-  const roots = await resolvePrototypeScreenMapRel(projectRoot);
-  await writeJson(join(projectRoot, roots.primary), screenMap);
-  if (roots.legacy) {
-    await mkdir(join(projectRoot, roots.legacy.replace(/\/[^/]+$/, "")), { recursive: true });
-    await writeJson(join(projectRoot, roots.legacy), screenMap);
-  }
-  return roots;
+): Promise<{ primary: string }> {
+  const { primary } = await resolvePrototypeScreenMapRel(projectRoot);
+  await mkdir(join(projectRoot, primary.replace(/\/[^/]+$/, "")), { recursive: true });
+  await writeJson(join(projectRoot, primary), screenMap);
+  return { primary };
 }
 
 export async function scaffoldDocopsTree(projectRoot: string): Promise<string> {

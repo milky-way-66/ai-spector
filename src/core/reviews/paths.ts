@@ -1,6 +1,5 @@
 import { join } from "node:path";
-import { DEFAULT_DOCOPS_PATHS, LEGACY_DOCOPS_PATHS, docopsDualWriteEnabled } from "../docops/paths.js";
-import type { DualWriteRoots } from "../docops/dual-write.js";
+import { DEFAULT_DOCOPS_PATHS, LEGACY_DOCOPS_PATHS } from "../docops/paths.js";
 
 const LEGACY_REVIEWS_ROOT = "reviews";
 
@@ -63,13 +62,8 @@ export function legacyReviewQueuePaths(projectRoot: string): ReviewQueuePaths {
   return reviewQueuePathsFromRel(LEGACY_DOCOPS_PATHS.reviewQueue, projectRoot);
 }
 
-export function resolveReviewQueueWriteRoots(): DualWriteRoots {
-  const primary = DEFAULT_DOCOPS_PATHS.reviewQueue;
-  if (!docopsDualWriteEnabled()) {
-    return { primary };
-  }
-  const legacy = LEGACY_DOCOPS_PATHS.reviewQueue;
-  return { primary, legacy };
+export function resolveReviewQueueWriteRoots(): { primary: string } {
+  return { primary: DEFAULT_DOCOPS_PATHS.reviewQueue };
 }
 
 export function legacyReviewsRoot(projectRoot: string): string {

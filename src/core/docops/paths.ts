@@ -73,12 +73,6 @@ export type DocopsCapabilities = {
   translate: boolean;
 };
 
-/** True when core ops should mirror writes to legacy paths (default during P4 transition). */
-export function docopsDualWriteEnabled(): boolean {
-  const value = (process.env.DOCOPS_DUAL_WRITE ?? "1").trim().toLowerCase();
-  return !["0", "false", "no", "off"].includes(value);
-}
-
 export function docopsConfigAbs(projectRoot: string): string {
   return join(projectRoot, DOCOPS_CONFIG_REL).replace(/\\/g, "/");
 }

@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { DEFAULT_DOCOPS_PATHS, LEGACY_DOCOPS_PATHS } from "../docops/paths.js";
+import { loadOrDeriveDocopsConfig } from "../docops/config.js";
 
 /** Strip leading/trailing slashes and `docs/` prefix from logical paths. */
 export function normalizeLogicalPath(filePath: string): string {
@@ -87,6 +88,12 @@ export function commentsRootRel(commentsRoot: string = DEFAULT_DOCOPS_PATHS.comm
 
 export function legacyCommentsRootRel(): string {
   return LEGACY_DOCOPS_PATHS.comments;
+}
+
+/** Resolve the comments root for a project from its docops config. */
+export async function resolveCommentsRoot(projectRoot: string): Promise<string> {
+  const config = await loadOrDeriveDocopsConfig(projectRoot);
+  return config.paths.comments;
 }
 
 export function threadDirRel(

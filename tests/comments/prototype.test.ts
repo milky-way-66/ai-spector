@@ -50,7 +50,7 @@ const PROTO_META = {
 
 async function seedPrototypeThread(root: string): Promise<void> {
   const threadId = PROTO_META.threadId;
-  const dir = join(root, "comments/prototype/src/login.html", threadId);
+  const dir = join(root, ".docops/comments/prototype/src/login.html", threadId);
   await mkdir(dir, { recursive: true });
   await writeJson(join(dir, "meta_data.json"), PROTO_META);
   await writeJson(join(dir, "20260617T045148Z_a1b2c3d4-0626-4c8a-8aa3-26535c7f78f4"), {

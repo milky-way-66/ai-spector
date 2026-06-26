@@ -41,7 +41,7 @@ const SAMPLE_META = {
 
 async function seedThread(root: string): Promise<void> {
   const threadId = SAMPLE_META.threadId;
-  const dir = join(root, "comments/srs/01-overview", threadId);
+  const dir = join(root, ".docops/comments/srs/01-overview", threadId);
   await mkdir(dir, { recursive: true });
   await writeJson(join(dir, "meta_data.json"), SAMPLE_META);
   await writeJson(join(dir, "20260530T143045Z_e5f67890-abcd-ef12-3456-7890abcdef12"), {

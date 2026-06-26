@@ -9,9 +9,7 @@ import {
   threadDirRel,
   threadMetaRel,
   commentsRootRel,
-  legacyCommentsRootRel,
 } from "./paths.js";
-import { docopsDualWriteEnabled } from "../docops/paths.js";
 import { loadOrDeriveDocopsConfig } from "../docops/config.js";
 import type { CommentListFilters } from "./filters.js";
 import { threadMatchesFilters } from "./filters.js";
@@ -171,14 +169,7 @@ function toSummary(
 
 async function commentReadRoots(projectRoot: string): Promise<string[]> {
   const config = await loadOrDeriveDocopsConfig(projectRoot);
-  const roots = [config.paths.comments];
-  if (docopsDualWriteEnabled()) {
-    const legacy = legacyCommentsRootRel();
-    if (legacy !== config.paths.comments && !roots.includes(legacy)) {
-      roots.push(legacy);
-    }
-  }
-  return roots;
+  return [config.paths.comments];
 }
 
 async function discoverThreadMetas(
@@ -390,29 +381,6 @@ export async function resolveThread(
 
   if (!opts.dryRun) {
     await writeJson(metaPath, updated);
-    if (docopsDualWriteEnabled()) {
-      const primaryRoot = config.paths.comments;
-      const legacyRoot = legacyCommentsRootRel();
-      for (const rootRel of new Set([primaryRoot, legacyRoot])) {
-        if (rootRel === commentsRoot) {
-          continue;
-        }
-        const mirrorMeta = join(
-          opts.projectRoot,
-          threadMetaRel(lp, opts.threadId, rootRel),
-        );
-        const mirrorDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId, rootRel));
-        await mkdir(mirrorDir, { recursive: true });
-        await writeJson(mirrorMeta, updated);
-        const mirrorEvents = join(mirrorDir, "events.jsonl");
-        const line = `${JSON.stringify(event)}\n`;
-        if (await pathExists(mirrorEvents)) {
-          await writeFile(mirrorEvents, line, { flag: "a" });
-        } else {
-          await writeFile(mirrorEvents, line, "utf8");
-        }
-      }
-    }
     const line = `${JSON.stringify(event)}\n`;
     if (await pathExists(eventsPath)) {
       await writeFile(eventsPath, line, { flag: "a" });
