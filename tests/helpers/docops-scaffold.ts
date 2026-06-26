@@ -1,0 +1,66 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { DOCOPS_CONFIG_REL } from "@/core/docops/paths.js";
+import { ENGINE_CONFIG_REL } from "@/core/engine/paths.js";
+import { writeJson } from "@/core/util/fs.js";
+
+export const MIN_DOCOPS = {
+  schemaVersion: "1.0",
+  languages: [{ code: "en", label: "English" }],
+  capabilities: {
+    review: true,
+    comments: true,
+    prototype: true,
+    graph: true,
+    generate: true,
+    translate: false,
+  },
+  docTypes: {
+    srs: {
+      enabled: true,
+      path: "srs",
+      label: "SRS",
+      templatesPath: ".docops/templates/srs",
+    },
+    basicDesign: {
+      enabled: true,
+      path: "basic-design",
+      label: "Basic Design",
+      templatesPath: ".docops/templates/basic-design",
+    },
+  },
+};
+
+export const MIN_ENGINE = {
+  schemaVersion: 1,
+  artifacts: {
+    graph: ".ai-spector/graph/traceability.graph.json",
+    registry: ".ai-spector/registry/section-registry.json",
+    impactRules: ".ai-spector/rules/impact.json",
+    tasks: ".ai-spector/.docflow/tasks",
+    context: ".ai-spector/.docflow/context",
+    knowledge: ".ai-spector/.docflow/knowledge",
+    extracted: ".ai-spector/.docflow/extracted",
+  },
+  readiness: { profile: "general" },
+};
+
+/** Minimal Writer contract + engine layout for check/task tests. */
+export async function scaffoldDocopsMinimal(root: string): Promise<void> {
+  await mkdir(join(root, ".docops"), { recursive: true });
+  await writeFile(join(root, DOCOPS_CONFIG_REL), JSON.stringify(MIN_DOCOPS), "utf8");
+  await mkdir(join(root, ".ai-spector"), { recursive: true });
+  await writeJson(join(root, ENGINE_CONFIG_REL), MIN_ENGINE);
+  await mkdir(join(root, "docs/data-source"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
+  await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+  await mkdir(join(root, ".docops/templates/basic-design"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
+  await mkdir(join(root, "docs/srs/en"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
+  await writeJson(join(root, ".ai-spector/.docflow/tasks/index.json"), {
+    version: 1,
+    active: {},
+    recent: [],
+  });
+}

@@ -12,30 +12,12 @@ import {
 import { pathExists, writeJson } from "@/core/util/fs.js";
 import { passGenerateGates } from "../helpers/task-gate-fixture.js";
 import { withTempDir } from "../helpers/temp-project.js";
-
-const MIN_CONFIG = {
-  languages: [{ code: "en", label: "English" }],
-  paths: { graph: ".ai-spector/graph/traceability.json" },
-};
+import { MIN_DOCOPS, MIN_ENGINE, scaffoldDocopsMinimal } from "../helpers/docops-scaffold.js";
+import { DOCOPS_CONFIG_REL } from "@/core/docops/paths.js";
+import { ENGINE_CONFIG_REL } from "@/core/engine/paths.js";
 
 async function scaffoldMinimal(root: string): Promise<void> {
-  await mkdir(join(root, ".ai-spector"), { recursive: true });
-  await writeFile(
-    join(root, ".ai-spector/docflow.config.json"),
-    JSON.stringify(MIN_CONFIG),
-    "utf8",
-  );
-  await mkdir(join(root, "docs/data-source"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/templates"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
-  await mkdir(join(root, "docs/srs/en"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
-  await writeJson(join(root, ".ai-spector/.docflow/tasks/index.json"), {
-    version: 1,
-    active: {},
-    recent: [],
-  });
+  await scaffoldDocopsMinimal(root);
 }
 
 describe("runCheck", () => {
@@ -61,12 +43,14 @@ describe("runCheck", () => {
 
   it("--fix creates auto-fixable directories and marks them fixed", async () => {
     await withTempDir(async (root) => {
-      await mkdir(join(root, ".ai-spector"), { recursive: true });
+      await mkdir(join(root, ".docops"), { recursive: true });
       await writeFile(
-        join(root, ".ai-spector/docflow.config.json"),
-        JSON.stringify(MIN_CONFIG),
+        join(root, DOCOPS_CONFIG_REL),
+        JSON.stringify(MIN_DOCOPS),
         "utf8",
       );
+      await mkdir(join(root, ".ai-spector"), { recursive: true });
+      await writeJson(join(root, ENGINE_CONFIG_REL), MIN_ENGINE);
       const result = await runCheck({ root, fix: true });
       expect(await pathExists(join(root, "docs/data-source"))).toBe(true);
       expect(await pathExists(join(root, ".ai-spector/.docflow/config"))).toBe(true);
@@ -80,7 +64,7 @@ describe("runCheck", () => {
     await withTempDir(async (root) => {
       await scaffoldMinimal(root);
       await mkdir(join(root, ".ai-spector/graph"), { recursive: true });
-      await writeFile(join(root, ".ai-spector/graph/traceability.json"), "{ not json", "utf8");
+      await writeFile(join(root, ".ai-spector/graph/traceability.graph.json"), "{ not json", "utf8");
       const result = await runCheck({ root });
       const graph = result.findings.find((f) => f.ruleId === "GRAPH-001");
       expect(graph?.severity).toBe("warning");
@@ -210,8 +194,8 @@ describe("runCheck", () => {
     await withTempDir(async (root) => {
       await scaffoldMinimal(root);
       await writeFile(
-        join(root, ".ai-spector/docflow.config.json"),
-        JSON.stringify({ ...MIN_CONFIG, languages: [] }),
+        join(root, DOCOPS_CONFIG_REL),
+        JSON.stringify({ ...MIN_DOCOPS, languages: [] }),
         "utf8",
       );
       const result = await runCheck({ root });

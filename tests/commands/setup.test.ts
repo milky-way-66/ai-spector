@@ -45,6 +45,15 @@ describe("setup", () => {
 
   it("audit detects missing screen-map when manifest exists", async () => {
     await withTempProject(async (root) => {
+      await writeFile(
+        join(root, ".ai-spector/docflow.config.json"),
+        JSON.stringify({
+          version: 1,
+          languages: [{ code: "en", label: "English" }],
+          paths: {},
+        }),
+        "utf8",
+      );
       await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
       await writeJson(join(root, ".ai-spector/.docflow/config/prototype/config.json"), {
         version: 1,

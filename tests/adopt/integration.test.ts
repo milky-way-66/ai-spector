@@ -12,27 +12,11 @@ import { runCheck } from "@/core/operations/check.js";
 import { pathExists, writeJson } from "@/core/util/fs.js";
 import { graph, node } from "../helpers/graph.js";
 import { withTempDir } from "../helpers/temp-project.js";
+import { scaffoldDocopsMinimal } from "../helpers/docops-scaffold.js";
 
 async function scaffoldMinimalInit(root: string): Promise<void> {
+  await scaffoldDocopsMinimal(root);
   await mkdir(join(root, ".ai-spector/.docflow/adopt"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/templates"), { recursive: true });
-  await mkdir(join(root, "docs/data-source"), { recursive: true });
-  await writeFile(
-    join(root, ".ai-spector/docflow.config.json"),
-    JSON.stringify({
-      version: 1,
-      languages: [{ code: "en", label: "English" }],
-      paths: {
-        graph: ".ai-spector/graph/traceability.graph.json",
-        registry: ".ai-spector/registry/section-registry.json",
-        templates: ".ai-spector/templates",
-      },
-    }),
-    "utf8",
-  );
   await writeJson(workspaceIndexDocsPath(root), {
     version: 1,
     outputs: {

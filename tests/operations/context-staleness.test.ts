@@ -11,15 +11,11 @@ import {
 import { runCheck } from "@/core/operations/check.js";
 import { readJson } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
+import { scaffoldDocopsMinimal } from "../helpers/docops-scaffold.js";
 import type { ContextStore } from "@/core/operations/context.js";
 
 async function scaffold(root: string): Promise<void> {
-  await mkdir(join(root, ".ai-spector"), { recursive: true });
-  await writeFile(
-    join(root, ".ai-spector/docflow.config.json"),
-    JSON.stringify({ languages: [{ code: "en", label: "English" }] }),
-    "utf8",
-  );
+  await scaffoldDocopsMinimal(root);
 }
 
 /**
@@ -121,8 +117,6 @@ describe("context staleness", () => {
     await withTempDir(async (root) => {
       await scaffold(root);
       await mkdir(join(root, "docs/data-source"), { recursive: true });
-      await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
-      await mkdir(join(root, ".ai-spector/templates"), { recursive: true });
       await mkdir(join(root, "docs/srs/en"), { recursive: true });
 
       const ref = "docs/data-source/notes.md";

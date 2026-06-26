@@ -2,6 +2,16 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { workspaceRulesPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig, primaryLanguage } from "../config/load.js";
+import { readDocopsConfig } from "../docops/config.js";
+import {
+  DOCOPS_CONFIG_REL,
+  LEGACY_DOCFLOW_CONFIG_REL,
+} from "../docops/paths.js";
+import { isCapabilityEnabled } from "../engine/gate.js";
+import { loadEngineConfig } from "../engine/load.js";
+import { ENGINE_CONFIG_REL } from "../engine/paths.js";
+import type { DocopsConfig } from "../docops/types.js";
+import type { EngineConfig } from "../engine/types.js";
 import { discoverMarkdownFiles } from "../index/docs-build.js";
 import {
   isMisplacedBuiltinDocPath,
@@ -83,6 +93,7 @@ interface WorkspaceRules {
 const DEFAULT_RULES: RuleConfig[] = [
   { id: "STRUCT-001", severity: "error" },
   { id: "STRUCT-002", severity: "error" },
+  { id: "ENGINE-001", severity: "error" },
   { id: "STRUCT-003", severity: "warning" },
   { id: "STRUCT-004", severity: "error" },
   { id: "CFG-001", severity: "error" },
@@ -322,6 +333,32 @@ function enabled(rules: RuleConfig[], id: string): boolean {
   return r ? r.enabled !== false : true;
 }
 
+function isEngineReadinessExplicitlyConfigured(raw: Partial<EngineConfig> | null | undefined): boolean {
+  const readiness = raw?.readiness;
+  if (!readiness) return false;
+  if (readiness.profile?.trim()) return true;
+  if (readiness.docTypes && Object.keys(readiness.docTypes).length > 0) return true;
+  return false;
+}
+
+async function readRawEngineJson(root: string): Promise<Partial<EngineConfig> | null> {
+  const engineAbs = join(root, ENGINE_CONFIG_REL);
+  if (!(await pathExists(engineAbs))) return null;
+  try {
+    return await readJson<Partial<EngineConfig>>(engineAbs);
+  } catch {
+    return null;
+  }
+}
+
+async function loadEngineForCheck(root: string): Promise<EngineConfig | null> {
+  try {
+    return await loadEngineConfig(root);
+  } catch {
+    return null;
+  }
+}
+
 export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
   const root = resolve(opts.root ?? process.cwd());
   const rules = await loadRules(root);
@@ -334,22 +371,27 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     return true;
   };
 
-  // Load config once for downstream rules.
-  let config: DocflowConfig | undefined;
-  let configReadable = false;
-  const configPath = ".ai-spector/docflow.config.json";
-  if (await pathExists(join(root, configPath))) {
+  // Load docops contract config (STRUCT-002, CFG-001) and synthesized docflow for legacy rules.
+  let docopsConfig: DocopsConfig | undefined;
+  let docopsReadable = false;
+  const docopsConfigPath = DOCOPS_CONFIG_REL;
+  const legacyDocflowPath = LEGACY_DOCFLOW_CONFIG_REL;
+  const docopsAbs = join(root, docopsConfigPath);
+  const legacyDocflowAbs = join(root, legacyDocflowPath);
+  const hasDocopsFile = await pathExists(docopsAbs);
+  const hasLegacyDocflow = await pathExists(legacyDocflowAbs);
+
+  if (hasDocopsFile) {
     try {
-      const loaded = await loadDocflowConfig(root);
-      config = loaded.config;
-      configReadable = true;
+      docopsConfig = (await readDocopsConfig(root)) ?? undefined;
+      docopsReadable = !!docopsConfig;
     } catch (e) {
       if (enabled(rules, "STRUCT-002")) {
         add({
           ruleId: "STRUCT-002",
           severity: severityOf(rules, "STRUCT-002", "error"),
-          message: `docflow.config.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
-          path: configPath,
+          message: `docops.config.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
+          path: docopsConfigPath,
         });
       }
     }
@@ -357,10 +399,53 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     add({
       ruleId: "STRUCT-002",
       severity: severityOf(rules, "STRUCT-002", "error"),
-      message: "docflow.config.json is missing — workspace is not initialized.",
-      path: configPath,
-      fix: "npx ai-spector init",
+      message: "docops.config.json is missing — workspace is not initialized.",
+      path: docopsConfigPath,
+      fix: hasLegacyDocflow
+        ? "npx ai-spector docops migrate --from-docflow"
+        : "npx ai-spector init",
     });
+  }
+
+  if (!docopsReadable && hasLegacyDocflow && enabled(rules, "STRUCT-002")) {
+    add({
+      ruleId: "STRUCT-002",
+      severity: "warning",
+      message:
+        "Legacy docflow.config.json found without docops.config.json — migrate to the Writer contract.",
+      path: legacyDocflowPath,
+      fix: "npx ai-spector docops migrate --from-docflow",
+    });
+  }
+
+  // ENGINE-001 — engine.json parseable when .ai-spector/ exists.
+  if (enabled(rules, "ENGINE-001") && (await pathExists(join(root, ".ai-spector")))) {
+    const engineAbs = join(root, ENGINE_CONFIG_REL);
+    if (await pathExists(engineAbs)) {
+      try {
+        await readJson(engineAbs);
+      } catch (e) {
+        add({
+          ruleId: "ENGINE-001",
+          severity: severityOf(rules, "ENGINE-001", "error"),
+          message: `engine.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
+          path: ENGINE_CONFIG_REL,
+          fix: "Restore engine.json from backup or re-run docops migrate --from-docflow.",
+        });
+      }
+    }
+  }
+
+  let config: DocflowConfig | undefined;
+  let configReadable = false;
+  if (hasDocopsFile || hasLegacyDocflow) {
+    try {
+      const loaded = await loadDocflowConfig(root);
+      config = loaded.config;
+      configReadable = true;
+    } catch {
+      // STRUCT-002 / ENGINE-001 already surface parse failures.
+    }
   }
 
   // STRUCT-001 — required directories.
@@ -382,13 +467,13 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
-  // CFG-001 — languages configured. Read the RAW config: loadDocflowConfig
-  // silently substitutes a default language for an empty array, so we must
-  // inspect the file as written to catch a genuinely unconfigured project.
-  if (enabled(rules, "CFG-001") && configReadable) {
+  // CFG-001 — languages configured in docops.config.json only.
+  // mergeDocopsDefaults silently substitutes a default language for an empty array,
+  // so inspect the file as written to catch a genuinely unconfigured project.
+  if (enabled(rules, "CFG-001") && docopsReadable) {
     let rawLangs: unknown;
     try {
-      const raw = await readJson<{ languages?: unknown }>(join(root, configPath));
+      const raw = await readJson<{ languages?: unknown }>(docopsAbs);
       rawLangs = raw.languages;
     } catch {
       rawLangs = undefined;
@@ -398,7 +483,7 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
         ruleId: "CFG-001",
         severity: severityOf(rules, "CFG-001", "error"),
         message: "No output languages configured (languages[] is empty or missing).",
-        path: configPath,
+        path: docopsConfigPath,
         fix: "npx ai-spector lang add <code>",
       });
     }
@@ -477,17 +562,26 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
-  // TMPL-001 — templates dir present.
-  if (enabled(rules, "TMPL-001")) {
-    const rel = ".ai-spector/templates";
-    if (!(await pathExists(join(root, rel)))) {
-      add({
-        ruleId: "TMPL-001",
-        severity: severityOf(rules, "TMPL-001", "warning"),
-        message: "No templates directory found — generation will have no structure to follow.",
-        path: rel,
-        fix: "npx ai-spector init",
-      });
+  // TMPL-001 — templatesPath folder exists per enabled docTypes (generate capability).
+  if (
+    enabled(rules, "TMPL-001") &&
+    docopsReadable &&
+    docopsConfig &&
+    isCapabilityEnabled(docopsConfig, "generate")
+  ) {
+    const docTypes = docopsConfig.docTypes ?? {};
+    for (const [docTypeKey, docType] of Object.entries(docTypes)) {
+      if (!docType.enabled || !docType.templatesPath?.trim()) continue;
+      const rel = docType.templatesPath.trim();
+      if (!(await pathExists(join(root, rel)))) {
+        add({
+          ruleId: "TMPL-001",
+          severity: severityOf(rules, "TMPL-001", "warning"),
+          message: `Templates folder missing for enabled docType "${docTypeKey}": ${rel}`,
+          path: rel,
+          fix: "npx ai-spector init or create the templates directory for this doc type.",
+        });
+      }
     }
   }
 
@@ -573,32 +667,39 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
-  // READY-001 — readiness not explicitly configured in docflow.config.json.
-  if (enabled(rules, "READY-001") && config) {
-    const readinessStatus = await resolveReadinessConfigStatus({ root });
-    if (!readinessStatus.configured) {
-      add({
-        ruleId: "READY-001",
-        severity: severityOf(rules, "READY-001", "warning"),
-        message:
-          "Readiness profile not configured — set readiness.profile in docflow.config.json (MCP: readiness_config).",
-        path: readinessStatus.configPath,
-        fix: 'Add { "readiness": { "profile": "general" | "regulated" | "arc42" } } to docflow.config.json',
-      });
+  // READY-001 — readiness profile configured in engine.json (raw file, not merged defaults).
+  if (enabled(rules, "READY-001") && docopsReadable && docopsConfig) {
+    const rawEngine = await readRawEngineJson(root);
+    const engineAbs = join(root, ENGINE_CONFIG_REL);
+    if (rawEngine !== null || !(await pathExists(engineAbs))) {
+      if (!isEngineReadinessExplicitlyConfigured(rawEngine)) {
+        add({
+          ruleId: "READY-001",
+          severity: severityOf(rules, "READY-001", "warning"),
+          message:
+            "Readiness profile not configured — set readiness.profile in engine.json (MCP: readiness_config).",
+          path: ENGINE_CONFIG_REL,
+          fix: 'Add { "readiness": { "profile": "general" | "regulated" | "arc42" } } to .ai-spector/engine.json',
+        });
+      }
     }
   }
 
   // READY-002 — profile changed since last document scan.
   if (enabled(rules, "READY-002") && config) {
-    const readinessStatus = await resolveReadinessConfigStatus({ root });
-    if (readinessStatus.profileDrift.detected) {
-      add({
-        ruleId: "READY-002",
-        severity: severityOf(rules, "READY-002", "warning"),
-        message: readinessStatus.profileDrift.message ?? "Readiness profile drift — rescan documents.",
-        path: readinessStatus.configPath,
-        fix: "MCP: readiness_scan({ updateLastScan: true }) after updating documents",
-      });
+    try {
+      const readinessStatus = await resolveReadinessConfigStatus({ root });
+      if (readinessStatus.profileDrift.detected) {
+        add({
+          ruleId: "READY-002",
+          severity: severityOf(rules, "READY-002", "warning"),
+          message: readinessStatus.profileDrift.message ?? "Readiness profile drift — rescan documents.",
+          path: readinessStatus.configPath,
+          fix: "MCP: readiness_scan({ updateLastScan: true }) after updating documents",
+        });
+      }
+    } catch {
+      // Unparseable engine.json — ENGINE-001 surfaces the blocking issue.
     }
   }
 
@@ -708,20 +809,28 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
   }
 
   // GRAPH-001 — graph.json parses (shallow; defers to `graph validate`).
-  if (enabled(rules, "GRAPH-001") && configReadable && config) {
-    const graphRel = config.paths.graph;
-    const graphAbs = join(root, graphRel);
-    if (await pathExists(graphAbs)) {
-      try {
-        await readJson(graphAbs);
-      } catch (e) {
-        add({
-          ruleId: "GRAPH-001",
-          severity: severityOf(rules, "GRAPH-001", "warning"),
-          message: `graph.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
-          path: graphRel,
-          fix: "Re-run analyze/merge or restore from a known-good graph.",
-        });
+  if (
+    enabled(rules, "GRAPH-001") &&
+    docopsReadable &&
+    docopsConfig &&
+    isCapabilityEnabled(docopsConfig, "graph")
+  ) {
+    const engine = await loadEngineForCheck(root);
+    if (engine) {
+      const graphRel = engine.artifacts.graph;
+      const graphAbs = join(root, graphRel);
+      if (await pathExists(graphAbs)) {
+        try {
+          await readJson(graphAbs);
+        } catch (e) {
+          add({
+            ruleId: "GRAPH-001",
+            severity: severityOf(rules, "GRAPH-001", "warning"),
+            message: `graph.json is present but not parseable: ${e instanceof Error ? e.message : String(e)}`,
+            path: graphRel,
+            fix: "Re-run analyze/merge or restore from a known-good graph.",
+          });
+        }
       }
     }
   }

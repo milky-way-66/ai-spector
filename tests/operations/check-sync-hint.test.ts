@@ -6,38 +6,18 @@ import { describe, expect, it } from "vitest";
 import { runCheck } from "@/core/operations/check.js";
 import { runSyncSnapshot } from "@/core/sync/snapshot.js";
 import { withTempDir } from "../helpers/temp-project.js";
+import { scaffoldDocopsMinimal } from "../helpers/docops-scaffold.js";
 
 const exec = promisify(execFile);
 
-const MIN_CONFIG = {
-  languages: [{ code: "en", label: "English" }],
-  paths: { graph: ".ai-spector/graph/traceability.json" },
-};
-
 async function scaffoldMinimalWithDesignDoc(root: string): Promise<void> {
-  await mkdir(join(root, ".ai-spector"), { recursive: true });
-  await writeFile(
-    join(root, ".ai-spector/docflow.config.json"),
-    JSON.stringify(MIN_CONFIG),
-    "utf8",
-  );
-  await mkdir(join(root, "docs/data-source"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/templates"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
-  await writeFile(
-    join(root, ".ai-spector/.docflow/tasks/index.json"),
-    JSON.stringify({ version: 1, active: {}, recent: [] }),
-    "utf8",
-  );
+  await scaffoldDocopsMinimal(root);
   await mkdir(join(root, ".ai-spector/graph"), { recursive: true });
   await writeFile(
-    join(root, ".ai-spector/graph/traceability.json"),
+    join(root, ".ai-spector/graph/traceability.graph.json"),
     '{"nodes":[],"edges":[]}',
     "utf8",
   );
-  await mkdir(join(root, "docs/srs/en"), { recursive: true });
   await writeFile(join(root, "docs/srs/en/overview.md"), "# Overview\n", "utf8");
 }
 
