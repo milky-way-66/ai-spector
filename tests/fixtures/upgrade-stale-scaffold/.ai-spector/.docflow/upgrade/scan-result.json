@@ -1,5 +1,5 @@
 {
-  "scannedAt": "2026-06-26T04:29:22.029Z",
+  "scannedAt": "2026-06-26T04:41:03.140Z",
   "fromVersion": "0.4.0",
   "toVersion": "0.8.85",
   "editors": [
@@ -17,8 +17,6 @@
   ],
   "autoFixable": [
     "UPG-001",
-    "UPG-010",
-    "UPG-011",
     "UPG-040"
   ],
   "findings": [
@@ -33,9 +31,16 @@
       "id": "UPG-010",
       "status": "missing",
       "severity": "required",
-      "message": "Ensure packs.basicDesign in docflow.config.json",
-      "fix": "auto",
-      "detail": "Missing config key: packs.basicDesign"
+      "message": "Migrate from docflow.config.json to engine.json + docops.config.json",
+      "fix": "agent"
+    },
+    {
+      "id": "UPG-011",
+      "status": "missing",
+      "severity": "required",
+      "message": "Ensure scaffoldVersion stamped in engine.json",
+      "fix": "agent",
+      "detail": "Missing config key: scaffoldVersion"
     },
     {
       "id": "UPG-020",

@@ -42,8 +42,11 @@ function jumpMeetsMin(
   return order[jump] >= order[minJump];
 }
 
-async function readProjectConfig(root: string): Promise<Record<string, unknown>> {
-  const configPath = join(root, ".ai-spector", "docflow.config.json");
+async function readProjectConfig(
+  root: string,
+  relativePath?: string,
+): Promise<Record<string, unknown>> {
+  const configPath = join(root, relativePath ?? ".ai-spector/docflow.config.json");
   if (!(await pathExists(configPath))) {
     return {};
   }
@@ -100,9 +103,9 @@ export async function evaluateItemDetect(
       };
     }
     case "config-missing-key":
-      return evaluateConfigMissingKey(item.id, detect, ctx, fix, item.severity, item.title);
+      return evaluateConfigMissingKey(item.id, detect, ctx, fix, item.severity, item.title, detect.path);
     case "config-deprecated-key":
-      return evaluateConfigDeprecatedKey(item.id, detect, ctx, fix, item.severity, item.title);
+      return evaluateConfigDeprecatedKey(item.id, detect, ctx, fix, item.severity, item.title, detect.path);
     case "hook-stale": {
       const { scanHook } = await import("./detectors.js");
       const hooks = await scanHook(ctx.root);
@@ -145,11 +148,12 @@ async function evaluateConfigMissingKey(
   fix: UpgradeFinding["fix"],
   severity: UpgradeFinding["severity"],
   title: string,
+  configPath?: string,
 ): Promise<UpgradeFinding | null> {
   if (!detect.key) {
     return null;
   }
-  const config = await readProjectConfig(ctx.root);
+  const config = await readProjectConfig(ctx.root, configPath);
   const value = getByPath(config, detect.key);
   if (value !== undefined && value !== null) {
     return null;
@@ -171,11 +175,12 @@ async function evaluateConfigDeprecatedKey(
   fix: UpgradeFinding["fix"],
   severity: UpgradeFinding["severity"],
   title: string,
+  configPath?: string,
 ): Promise<UpgradeFinding | null> {
   if (!detect.key) {
     return null;
   }
-  const config = await readProjectConfig(ctx.root);
+  const config = await readProjectConfig(ctx.root, configPath);
   const value = getByPath(config, detect.key);
   if (value === undefined) {
     return null;

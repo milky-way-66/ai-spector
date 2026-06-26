@@ -14,7 +14,6 @@ import {
   docopsConfigAbs,
   mergeDocopsPaths,
 } from "./paths.js";
-import { resolvedPluginsFromDocflow, syncCapabilitiesFromPlugins } from "./capabilities.js";
 import { initDocopsContract } from "./init.js";
 
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
@@ -140,7 +139,7 @@ export function docopsConfigFromDocflow(
     path: lang.code,
   }));
 
-  const base = mergeDocopsDefaults({
+  return mergeDocopsDefaults({
     schemaVersion: "1.0",
     docsRoot: "docs",
     languages,
@@ -150,10 +149,6 @@ export function docopsConfigFromDocflow(
     paths: { ...DEFAULT_DOCOPS_PATHS },
     capabilities: { ...DEFAULT_CAPABILITIES },
   });
-
-  return syncCapabilitiesFromPlugins(base, resolvedPluginsFromDocflow(docflow as {
-    plugins?: { resolved?: string[]; enabled?: string[] };
-  }));
 }
 
 export async function readDocopsConfig(projectRoot: string): Promise<DocopsConfig | null> {

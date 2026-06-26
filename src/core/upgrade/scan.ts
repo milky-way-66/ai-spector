@@ -39,9 +39,17 @@ export async function runUpgradeScan(opts: {
   toVersion?: string;
 }): Promise<UpgradeScanResult> {
   const root = resolve(opts.root);
-  const marker = join(root, ".ai-spector", "docflow.config.json");
-  if (!(await pathExists(marker))) {
-    throw new Error(`Project not initialized (${marker}). Run: npx ai-spector init`);
+  // Accept any of: engine.json (new), docops.config.json, or legacy docflow.config.json
+  const markerPaths = [
+    join(root, ".ai-spector", "engine.json"),
+    join(root, ".docops", "docops.config.json"),
+    join(root, ".ai-spector", "docflow.config.json"),
+  ];
+  const initialized = await Promise.all(markerPaths.map((m) => pathExists(m)));
+  if (!initialized.some(Boolean)) {
+    throw new Error(
+      `Project not initialized. Run: npx ai-spector init`,
+    );
   }
 
   const fromVersion = await readScaffoldVersion(root);

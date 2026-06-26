@@ -17,9 +17,14 @@ export interface SyncCursorResult {
 
 export async function runSyncCursor(opts: SyncCursorOptions): Promise<SyncCursorResult> {
   const root = resolve(opts.targetDir);
-  const marker = join(root, ".ai-spector", "docflow.config.json");
-  if (!(await pathExists(marker))) {
-    throw new Error(`Project not initialized (${marker}). Run: npx ai-spector init`);
+  const markerPaths = [
+    join(root, ".ai-spector", "engine.json"),
+    join(root, ".docops", "docops.config.json"),
+    join(root, ".ai-spector", "docflow.config.json"),
+  ];
+  const initialized = await Promise.all(markerPaths.map((m) => pathExists(m)));
+  if (!initialized.some(Boolean)) {
+    throw new Error(`Project not initialized. Run: npx ai-spector init`);
   }
 
   await copyCursorToProject(root);

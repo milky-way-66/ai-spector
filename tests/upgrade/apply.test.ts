@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { runUpgradeApply } from "@/core/upgrade/apply.js";
+import { runUpgradeScan } from "@/core/upgrade/scan.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 vi.mock("@/core/operations/sync-cursor.js", () => ({
@@ -13,7 +14,7 @@ vi.mock("@/core/operations/sync-cursor.js", () => ({
 }));
 
 describe("runUpgradeApply", () => {
-  it("patches packs.basicDesign for legacy config", async () => {
+  it("detects engine.json migration for legacy project and does not auto-apply", async () => {
     await withTempDir(async (root) => {
       await mkdir(join(root, ".ai-spector"), { recursive: true });
       await mkdir(join(root, ".cursor/skills/ai-spector"), { recursive: true });
@@ -22,23 +23,21 @@ describe("runUpgradeApply", () => {
         join(root, ".ai-spector/docflow.config.json"),
         JSON.stringify({
           version: 1,
-          scaffoldVersion: "0.4.0",
+          scaffoldVersion: "0.8.0",
           languages: [{ code: "en", label: "English" }],
           packs: { srs: "builtin" },
         }),
         "utf8",
       );
 
+      // UPG-010 is agent-guided (not auto-applied) for engine.json migration
       const result = await runUpgradeApply({ root, auto: true });
-      expect(result.applied).toContain("UPG-010");
+      expect(result.applied).not.toContain("UPG-010");
 
-      const config = JSON.parse(
-        await (await import("node:fs/promises")).readFile(
-          join(root, ".ai-spector/docflow.config.json"),
-          "utf8",
-        ),
-      );
-      expect(config.packs.basicDesign).toBe("builtin");
+      // UPG-010 should still appear in scan findings (migration needed)
+      const scan = await runUpgradeScan({ root, toVersion: "0.9.1" });
+      expect(scan.applicableItems).toContain("UPG-010");
+      expect(scan.autoFixable).not.toContain("UPG-010");
     });
   });
 });

@@ -15,7 +15,7 @@ import type { CocoindexInstallMode } from "./cocoindex.js";
 import type { LanguageConfig, SupportedLanguageCode } from "../config/types.js";
 import { assertSupportedLanguageCode } from "../config/types.js";
 import { installedPackageVersion } from "../upgrade/package-version.js";
-import { stampScaffoldVersion } from "../upgrade/stamp.js";
+import { defaultEngineConfig, writeEngineConfig } from "../engine/load.js";
 import { initDocopsContract } from "../docops/init.js";
 
 const MCP_SERVER_ENTRY = {
@@ -210,7 +210,7 @@ async function runWizard(opts: InitOptions, alreadyInitialized: boolean): Promis
 
 export async function runInit(opts: InitOptions): Promise<void> {
   const root = resolve(opts.targetDir);
-  const marker = join(root, ".ai-spector", "docflow.config.json");
+  const marker = join(root, ".ai-spector", "engine.json");
   const alreadyInitialized = await pathExists(marker);
 
   if (alreadyInitialized && !opts.force) {
@@ -241,17 +241,11 @@ export async function runInit(opts: InitOptions): Promise<void> {
 
   await copyScaffoldToProject(root, target);
 
-  // Patch languages into config
-  const configPath = join(root, ".ai-spector", "docflow.config.json");
-  const existingConfig = await readJson<Record<string, unknown>>(configPath);
-  await writeJson(configPath, {
-    ...existingConfig,
-    languages,
-    ...(internalLanguageCode ? { internalLanguage: internalLanguageCode } : {}),
-    ...(clientLanguageCode ? { clientLanguage: clientLanguageCode } : {}),
-    packs: (existingConfig.packs as Record<string, unknown>) ?? { srs: "builtin", basicDesign: "builtin" },
+  // Scaffold engine.json with current package version
+  await writeEngineConfig(root, {
+    ...defaultEngineConfig(),
+    scaffoldVersion: installedPackageVersion(),
   });
-  await stampScaffoldVersion(root, installedPackageVersion());
 
   const { configPath: docopsConfigPath } = await initDocopsContract({
     projectRoot: root,

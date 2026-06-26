@@ -26,30 +26,25 @@
     },
     {
       "id": "UPG-010",
-      "since": "0.6.0",
-      "kind": "config",
+      "since": "0.9.0",
+      "kind": "agent",
       "severity": "required",
-      "title": "Ensure packs.basicDesign in docflow.config.json",
-      "detect": {
-        "type": "config-missing-key",
-        "path": ".ai-spector/docflow.config.json",
-        "key": "packs.basicDesign",
-        "default": "builtin"
-      },
-      "apply": { "type": "config-set", "key": "packs.basicDesign", "value": "builtin" }
+      "title": "Migrate from docflow.config.json to engine.json + docops.config.json",
+      "detect": { "type": "file-missing", "path": ".ai-spector/engine.json" },
+      "agentGuide": "Run: npx ai-spector docops migrate --from-docflow — then confirm .ai-spector/engine.json and .docops/docops.config.json are present."
     },
     {
       "id": "UPG-011",
-      "since": "0.6.0",
-      "kind": "config",
+      "since": "0.9.0",
+      "kind": "agent",
       "severity": "required",
-      "title": "Rename packs.active to packs.srs if present",
+      "title": "Ensure scaffoldVersion stamped in engine.json",
       "detect": {
-        "type": "config-deprecated-key",
-        "path": ".ai-spector/docflow.config.json",
-        "key": "packs.active"
+        "type": "config-missing-key",
+        "path": ".ai-spector/engine.json",
+        "key": "scaffoldVersion"
       },
-      "apply": { "type": "config-rename", "from": "packs.active", "to": "packs.srs" }
+      "agentGuide": "Run: npx ai-spector upgrade apply to stamp scaffoldVersion in engine.json."
     },
     {
       "id": "UPG-020",
