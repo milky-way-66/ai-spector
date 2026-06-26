@@ -73,6 +73,7 @@ describe("resolveCommentsWriteRoots", () => {
         languages: [{ code: "en", label: "English" }],
         primaryLanguage: "en",
         paths: {
+          registry: ".docops/registry",
           comments: ".docops/comments",
           reviewConfig: ".docops/review.config.json",
           reviewQueue: ".docops/review-queue",

@@ -7,6 +7,7 @@ export const DOCOPS_CONFIG_REL = `${DOCOPS_ROOT}/docops.config.json`;
 export const LEGACY_DOCFLOW_CONFIG_REL = ".ai-spector/docflow.config.json";
 
 export const DEFAULT_DOCOPS_PATHS = {
+  registry: ".docops/registry",
   comments: ".docops/comments",
   reviewConfig: ".docops/review.config.json",
   reviewQueue: ".docops/review-queue",
@@ -16,6 +17,7 @@ export const DEFAULT_DOCOPS_PATHS = {
 
 /** Legacy layout before `.docops/` contract (ai-spector + Writer dual-read). */
 export const LEGACY_DOCOPS_PATHS = {
+  registry: ".docops/registry",
   comments: "comments",
   reviewConfig: ".ai-spector/review.config.json",
   reviewQueue: ".ai-spector/.docflow/review-queue",

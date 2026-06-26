@@ -13,6 +13,7 @@ import {
 } from "./paths.js";
 import type {
   ApprovalRecord,
+  ApprovalRecordV4,
   QueueIndex,
   QueueEntry,
   DiffFile,
@@ -21,10 +22,18 @@ import type {
   ReviewTrack,
   FingerprintsFile,
   RegistryFile,
+  RegistryFileV3,
+  RegistryFileV4,
   PendingQueueFile,
   ReviewJob,
   ReviewFingerprint,
 } from "./types.js";
+import { approvalFromV4 } from "./registry-v4.js";
+import { loadOrDeriveDocopsConfig } from "../docops/config.js";
+import {
+  findDocumentEntityIdForPaths,
+  loadRegistryIndex,
+} from "../docops/registry/index.js";
 import type { DocAnchor, EnrichmentCache } from "../sync/drift-types.js";
 import { jobToQueueEntry, reviewJobId } from "./types.js";
 
@@ -34,7 +43,7 @@ import {
   normalizeApprovalRecord,
 } from "./normalize.js";
 
-const EMPTY_REGISTRY: RegistryFile = { version: 3, documents: {} };
+const EMPTY_REGISTRY: RegistryFileV3 = { version: 3, documents: {} };
 const EMPTY_FINGERPRINTS: FingerprintsFile = { version: 1, files: {} };
 const EMPTY_PENDING: PendingQueueFile = { version: 2, jobs: [] };
 const EMPTY_INDEX: QueueIndex = { version: 1, entries: [] };
@@ -85,15 +94,24 @@ export async function loadRegistry(projectRoot: string): Promise<RegistryFile> {
   const paths = await queuePathsForRead(projectRoot);
   if (!(await pathExists(paths.registry))) return { ...EMPTY_REGISTRY };
   const raw = await readJson<Partial<RegistryFile>>(paths.registry).catch(() => EMPTY_REGISTRY);
+  const version = raw.version ?? 3;
+
+  if (version === 4) {
+    return {
+      version: 4,
+      documents: (raw as RegistryFileV4).documents ?? {},
+    };
+  }
+
   const documents: Record<string, ApprovalRecord> = {};
   let dirty = false;
 
-  for (const [logicalPath, record] of Object.entries(raw.documents ?? {})) {
+  for (const [logicalPath, record] of Object.entries((raw as RegistryFileV3).documents ?? {})) {
     if (approvalNeedsNormalization(record)) dirty = true;
     documents[logicalPath] = normalizeApprovalRecord({ ...record, logicalPath });
   }
 
-  const registry: RegistryFile = { version: 3, documents };
+  const registry: RegistryFileV3 = { version: 3, documents };
   if (dirty) {
     await saveRegistry(projectRoot, registry);
   }
@@ -136,11 +154,33 @@ async function savePending(projectRoot: string, pending: PendingQueueFile): Prom
 
 // ── Approval ──────────────────────────────────────────────────────────────────
 
+async function resolveDocumentEntityId(
+  projectRoot: string,
+  logicalPath: string,
+): Promise<string | undefined> {
+  try {
+    const config = await loadOrDeriveDocopsConfig(projectRoot);
+    const index = await loadRegistryIndex(projectRoot, config);
+    return findDocumentEntityIdForPaths(index, [logicalPath]);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getApproval(
   projectRoot: string,
   logicalPath: string,
 ): Promise<ApprovalRecord | null> {
   const registry = await loadRegistry(projectRoot);
+
+  if (registry.version === 4) {
+    const entityId = await resolveDocumentEntityId(projectRoot, logicalPath);
+    if (!entityId) return null;
+    const record = registry.documents[entityId];
+    if (!record) return null;
+    return approvalFromV4(entityId, logicalPath, record);
+  }
+
   const fromRegistry = registry.documents[logicalPath];
   if (fromRegistry) return fromRegistry;
 
@@ -157,7 +197,22 @@ export async function saveApproval(
   record: ApprovalRecord,
 ): Promise<void> {
   const registry = await loadRegistry(projectRoot);
-  registry.documents[record.logicalPath] = normalizeApprovalRecord(record);
+  const normalized = normalizeApprovalRecord(record);
+
+  if (registry.version === 4) {
+    const entityId = await resolveDocumentEntityId(projectRoot, normalized.logicalPath);
+    if (!entityId) {
+      throw new Error(
+        `Cannot save review state: no document entity for ${normalized.logicalPath}`,
+      );
+    }
+    const { logicalPath: _lp, docPath: _dp, version: _v, ...state } = normalized;
+    registry.documents[entityId] = state;
+    await saveRegistry(projectRoot, registry);
+    return;
+  }
+
+  registry.documents[normalized.logicalPath] = normalized;
   await saveRegistry(projectRoot, registry);
 }
 
@@ -457,7 +512,28 @@ export async function deleteDiff(
 
 export async function discoverApprovals(projectRoot: string): Promise<string[]> {
   const registry = await loadRegistry(projectRoot);
-  const paths = new Set(Object.keys(registry.documents));
+  const paths = new Set<string>();
+
+  if (registry.version === 4) {
+    try {
+      const config = await loadOrDeriveDocopsConfig(projectRoot);
+      const index = await loadRegistryIndex(projectRoot, config);
+      for (const entityId of Object.keys(registry.documents)) {
+        const doc = index.documentsById.get(entityId);
+        if (doc?.logicalPath) {
+          paths.add(doc.logicalPath);
+        }
+      }
+    } catch {
+      for (const entityId of Object.keys(registry.documents)) {
+        paths.add(entityId);
+      }
+    }
+  } else {
+    for (const key of Object.keys(registry.documents)) {
+      paths.add(key);
+    }
+  }
 
   const legacyRoot = join(projectRoot, "reviews");
   if (await pathExists(legacyRoot)) {

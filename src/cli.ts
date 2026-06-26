@@ -10,7 +10,7 @@ import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
 import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
-import { runDocopsInit, runDocopsMigrate, runDocopsStatus } from "./core/operations/docops.js";
+import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus } from "./core/operations/docops.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
@@ -939,6 +939,8 @@ function parseCommentTypesOpt(raw: string | undefined): import("./core/comments/
 
 function commentFilterOpts(opts: {
   file?: string;
+  entity?: string;
+  screenId?: string;
   path?: string;
   type?: string;
   status?: string;
@@ -949,6 +951,8 @@ function commentFilterOpts(opts: {
 }): CommentFilterOptions {
   return {
     filePath: opts.file,
+    entityId: opts.entity,
+    screenId: opts.screenId,
     pathPrefix: opts.path,
     commentTypes: parseCommentTypesOpt(opts.type),
     status: (opts.status as CommentFilterOptions["status"]) ?? "open",
@@ -962,7 +966,9 @@ function commentFilterOpts(opts: {
 comments
   .command("facets")
   .description("Available comment filter values and counts")
-  .option("--file <path>", "Scope facets to file path filter")
+  .option("--file <path>", "Scope facets to file path filter (deprecated — prefer --entity)")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--path <prefix>", "Scope facets to path prefix")
   .option("--type <types>", "Comma-separated: document, prototype")
   .option("--screen <name>", "Prototype screen filter")
@@ -980,7 +986,9 @@ comments
 comments
   .command("list")
   .description("List comment threads from comments/{logical_path}/")
-  .option("--file <path>", "Filter by logical file path (e.g. srs/01-overview or prototype)")
+  .option("--file <path>", "Filter by logical file path (deprecated — prefer --entity)")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--path <prefix>", "Path prefix (e.g. srs/)")
   .option("--type <types>", "Comma-separated comment types: document, prototype")
   .option("--screen <name>", "Prototype screen stem (e.g. login)")
@@ -1002,7 +1010,9 @@ comments
   .description(
     "Thread pick list for IDE chat (C-001 / B-001) — JSON includes idePresentation.markdown",
   )
-  .option("--file <path>", "Filter by logical file path (e.g. prototype)")
+  .option("--file <path>", "Filter by logical file path (deprecated — prefer --entity)")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--path <prefix>", "Path prefix")
   .option("--type <types>", "Comma-separated comment types: document, prototype")
   .option("--screen <name>", "Prototype screen stem (e.g. login)")
@@ -1025,6 +1035,8 @@ comments
   .description("Resolve plan: anchor excerpt, graph impact, and IDE workflow hints")
   .option("--pick <id>", "Pick id from inbox (e.g. C-001)")
   .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string | undefined, opts, cmd) => {
     const id = opts.pick ?? threadId;
@@ -1033,7 +1045,14 @@ comments
       process.exitCode = 1;
       return;
     }
-    const plan = await runCommentsPlan({ root: projectRootOpt(cmd), threadId: id, filePath: opts.file, pick: opts.pick });
+    const plan = await runCommentsPlan({
+      root: projectRootOpt(cmd),
+      threadId: id,
+      filePath: opts.file,
+      entityId: opts.entity,
+      screenId: opts.screenId,
+      pick: opts.pick,
+    });
     if (opts.json) console.log(JSON.stringify(plan, null, 2));
     else console.log(formatCommentsPlan(plan));
   });
@@ -1042,9 +1061,17 @@ comments
   .command("show <threadId>")
   .description("Show thread metadata, replies, and events")
   .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string, opts, cmd) => {
-    const thread = await runCommentsShow({ root: projectRootOpt(cmd), threadId, filePath: opts.file });
+    const thread = await runCommentsShow({
+      root: projectRootOpt(cmd),
+      threadId,
+      filePath: opts.file,
+      entityId: opts.entity,
+      screenId: opts.screenId,
+    });
     if (opts.json) console.log(JSON.stringify(thread, null, 2));
     else console.log(formatCommentsShow(thread));
   });
@@ -1052,7 +1079,9 @@ comments
 comments
   .command("resolve <threadId>")
   .description("Mark thread resolved in meta_data.json and append events.jsonl")
-  .requiredOption("--file <path>", "Logical file path (e.g. srs/04-features/auth)")
+  .option("--file <path>", "Logical file path (deprecated — prefer --entity or --screen-id)")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
   .option("--by <email>", "Resolver email override (default: git user.email)")
   .option("--username <name>", "Resolver name override (default: git user.name)")
   .option("--role <role>", "Actor role: user | client (default: user)")
@@ -1061,10 +1090,17 @@ comments
   .option("--dry-run", "Preview resolve without writing files")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string, opts, cmd) => {
+    if (!opts.file && !opts.entity && !opts.screenId) {
+      console.error("Provide --entity, --screen-id, or --file");
+      process.exitCode = 1;
+      return;
+    }
     const result = await runCommentsResolve({
       root: projectRootOpt(cmd),
       threadId,
       filePath: opts.file,
+      entityId: opts.entity,
+      screenId: opts.screenId,
       resolvedBy: opts.by,
       resolvedByUsername: opts.username,
       role: opts.role,
@@ -1409,6 +1445,56 @@ docops
       templatesOnly: opts.templatesOnly,
       fromDocflow: opts.fromDocflow,
     });
+  });
+
+const docopsRegistry = docops.command("registry").description("Global entity registry (.docops/registry/)");
+
+docopsRegistry
+  .command("sync")
+  .description("Sync document entities from docs/ and import screens from screen-map")
+  .option("--dry-run", "Print planned actions without writing files")
+  .option("--skip-screen-map", "Do not import prototype screen-map.json")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsRegistrySync({
+      root: projectRootOpt(cmd),
+      dryRun: opts.dryRun,
+      skipScreenMap: opts.skipScreenMap,
+      json: opts.json,
+    });
+    process.exitCode = code;
+  });
+
+const docopsComments = docops.command("comments").description("Comment thread layout migration");
+
+docopsComments
+  .command("migrate")
+  .description("Move path-keyed comment folders to documents/{entityId} and screens/{screenId}")
+  .option("--dry-run", "Print planned actions without writing files")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsCommentsMigrate({
+      root: projectRootOpt(cmd),
+      dryRun: opts.dryRun,
+      json: opts.json,
+    });
+    process.exitCode = code;
+  });
+
+const docopsReview = docops.command("review-registry").description("Review queue registry layout");
+
+docopsReview
+  .command("migrate")
+  .description("Rekey review-queue/registry.json v3 (logicalPath) → v4 (entityId)")
+  .option("--dry-run", "Print planned actions without writing files")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsReviewRegistryMigrate({
+      root: projectRootOpt(cmd),
+      dryRun: opts.dryRun,
+      json: opts.json,
+    });
+    process.exitCode = code;
   });
 
 const reviewSession = review.command("session").description("Persisted review session gate for sign-off");

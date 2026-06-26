@@ -376,6 +376,28 @@ Deprecated: `DOCOPS_LEGACY_PATHS` environment dual-read. Use per-project `storag
 
 ---
 
+## 6.1 Entity registry and stable comment IDs
+
+Full guide: **[ENTITY_REGISTRY_MIGRATION.md](ENTITY_REGISTRY_MIGRATION.md)** (commands, verification, rollback).
+
+After `docops.config.json` includes `paths.registry`, run these **on each branch** that should use ID-keyed artifacts:
+
+```bash
+npx ai-spector docops registry sync      # 1. Build .docops/registry/ from docs/ (+ screen-map import)
+npx ai-spector docops comments migrate   # 2. Move comments/{path}/ → comments/documents/{entityId}/
+npx ai-spector docops review-registry migrate  # 3. Rekey review-queue/registry.json v3 → v4 (entityId keys)
+```
+
+Or: `bash .docops/guide/scripts/migrate-entity-registry.sh` (copied during Writer setup).
+
+Order matters: `registry sync` must run before comment or review migrations so logical paths resolve to entity UUIDs.
+
+**Writer reads registry from git via Redis cache** — entity JSON is not mirrored into Postgres. The `git_document_registry` table remains for design-doc listing from `docs/` scans only.
+
+Writer API and UI accept `entityId` (or `screenId` for prototype) when listing comments; `filePath` remains supported for one release (see `Deprecation` response headers).
+
+---
+
 ## 7. Migration flow (summary)
 
 ```text

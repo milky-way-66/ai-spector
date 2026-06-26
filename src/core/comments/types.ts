@@ -33,7 +33,10 @@ export type CommentAnchorLegacy = DocumentCommentAnchor;
 
 export interface ThreadMeta {
   threadId: string;
+  /** @deprecated Resolved path label — prefer targetId + registry */
   filePath: string;
+  /** Stable document entityId or prototype screenId. */
+  targetId?: string;
   commentType?: CommentType;
   originBranch: string;
   status: ThreadStatus;

@@ -67,7 +67,7 @@ export interface ClientTrack {
   reopenedAt: string | null;
 }
 
-/** Per-document approval state stored in registry.json. */
+/** Per-document approval state (v3 — keyed by logicalPath in registry file). */
 export interface ApprovalRecord {
   version: 3;
   logicalPath: string;
@@ -83,6 +83,29 @@ export interface ApprovalRecord {
   lastEventAt?: string;
 }
 
+/** Review state only — paths resolved from docops entity registry at read time. */
+export interface ApprovalRecordV4 {
+  contentHash: string;
+  overallStatus: OverallStatus;
+  internal: InternalTrack;
+  client: ClientTrack;
+  snapshotRef?: string;
+  baselineAnchor?: DocAnchor;
+  lastEventAt?: string;
+}
+
+export interface RegistryFileV3 {
+  version: 3;
+  documents: Record<string, ApprovalRecord>;
+}
+
+export interface RegistryFileV4 {
+  version: 4;
+  documents: Record<string, ApprovalRecordV4>;
+}
+
+export type RegistryFile = RegistryFileV3 | RegistryFileV4;
+
 export interface ReviewFingerprint {
   hash: string;
   docPath: string;
@@ -94,12 +117,6 @@ export interface FingerprintsFile {
   files: Record<string, ReviewFingerprint>;
 }
 
-export interface RegistryFile {
-  version: 3;
-  documents: Record<string, ApprovalRecord>;
-}
-
-/** Unified pending job (replaces per-track QueueEntry in pending index). */
 export interface ReviewJob {
   id: string;
   logicalPath: string;

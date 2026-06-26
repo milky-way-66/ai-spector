@@ -3,6 +3,8 @@ import { findProjectRoot } from "../config/load.js";
 import { assessDocopsProject } from "../docops/assess.js";
 import { initDocopsContract } from "../docops/init.js";
 import { migrateDocopsLayout, migrateFromDocflow } from "../docops/migrate.js";
+import { syncDocopsRegistry } from "../docops/registry/index.js";
+import { migrateCommentsToTargetIds } from "../comments/migrate.js";
 
 export interface DocopsMigrateOptions {
   root?: string;
@@ -92,4 +94,96 @@ export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise
     console.log(`  primaryLanguage: ${result.config.primaryLanguage}`);
   }
   console.log(result.migrated ? `\nMigrated → ${result.configPath}` : `\nNo migration performed.`);
+}
+
+export async function runDocopsRegistrySync(opts: {
+  root?: string;
+  dryRun?: boolean;
+  skipScreenMap?: boolean;
+  json?: boolean;
+}): Promise<number> {
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const result = await syncDocopsRegistry({
+    projectRoot,
+    dryRun: opts.dryRun,
+    importScreenMap: !opts.skipScreenMap,
+  });
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    if (opts.dryRun) {
+      console.log("Dry run — no files written.");
+    }
+    for (const action of result.actions) {
+      console.log(`  ${action}`);
+    }
+    for (const warning of result.warnings) {
+      console.log(`  warn: ${warning}`);
+    }
+    console.log(
+      `\nDocuments: +${result.documentsCreated} ~${result.documentsUpdated} | ` +
+        `Screens: +${result.screensCreated} ~${result.screensUpdated}` +
+        (result.manifestWritten ? " | manifest written" : ""),
+    );
+  }
+
+  return result.warnings.length > 0 ? 1 : 0;
+}
+
+export async function runDocopsCommentsMigrate(opts: {
+  root?: string;
+  dryRun?: boolean;
+  json?: boolean;
+}): Promise<number> {
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const result = await migrateCommentsToTargetIds({
+    projectRoot,
+    dryRun: opts.dryRun,
+  });
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    if (opts.dryRun) {
+      console.log("Dry run — no files written.");
+    }
+    for (const action of result.actions) {
+      console.log(`  ${action}`);
+    }
+    for (const warning of result.warnings) {
+      console.log(`  warn: ${warning}`);
+    }
+    console.log(`\nMoved: ${result.moved} | Skipped: ${result.skipped}`);
+  }
+
+  return result.warnings.length > 0 ? 1 : 0;
+}
+
+export async function runDocopsReviewRegistryMigrate(opts: {
+  root?: string;
+  dryRun?: boolean;
+  json?: boolean;
+}): Promise<number> {
+  const { migrateReviewRegistryToV4 } = await import("../reviews/registry-v4.js");
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const result = await migrateReviewRegistryToV4(projectRoot, { dryRun: opts.dryRun });
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    if (opts.dryRun) {
+      console.log("Dry run — no files written.");
+    }
+    if (!result.migrated) {
+      console.log("Review registry already v4 (entityId keys).");
+    } else {
+      console.log(`Rekeyed ${result.rekeyed} document(s) to entityId.`);
+    }
+    for (const warning of result.warnings) {
+      console.log(`  warn: ${warning}`);
+    }
+  }
+
+  return result.warnings.length > 0 ? 1 : 0;
 }

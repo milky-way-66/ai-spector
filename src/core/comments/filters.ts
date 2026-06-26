@@ -7,6 +7,10 @@ import {
 } from "./types.js";
 
 export interface CommentListFilters {
+  /** Document registry entityId (UUID). */
+  entityId?: string;
+  /** Prototype screenId. */
+  screenId?: string;
   /** Exact or aggregate path (`prototype` = all prototype URL folders). */
   filePath?: string;
   /** Prefix match on logical path (e.g. `srs/`, `prototype/src/`). */
@@ -93,6 +97,18 @@ export function threadMatchesFilters(
   thread: ThreadSummary,
   filters: CommentListFilters,
 ): boolean {
+  if (filters.entityId) {
+    const tid = thread.targetId ?? thread.filePath;
+    if (tid !== filters.entityId.trim()) {
+      return false;
+    }
+  }
+  if (filters.screenId) {
+    const tid = thread.targetId ?? "";
+    if (tid !== filters.screenId.trim()) {
+      return false;
+    }
+  }
   if (filters.filePath && !matchesFilePath(thread, filters.filePath)) {
     return false;
   }

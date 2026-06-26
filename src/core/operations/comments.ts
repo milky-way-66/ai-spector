@@ -32,6 +32,8 @@ import {
 
 export interface CommentFilterOptions {
   filePath?: string;
+  entityId?: string;
+  screenId?: string;
   pathPrefix?: string;
   commentTypes?: CommentType[];
   status?: "open" | "resolved" | "all";
@@ -44,6 +46,8 @@ export interface CommentFilterOptions {
 export function toCommentListFilters(opts: CommentFilterOptions): CommentListFilters {
   return {
     filePath: opts.filePath,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
     pathPrefix: opts.pathPrefix,
     commentTypes: opts.commentTypes,
     status: opts.status ?? "open",
@@ -80,6 +84,8 @@ export interface CommentsPlanOptions {
   root?: string;
   threadId: string;
   filePath?: string;
+  entityId?: string;
+  screenId?: string;
   pick?: string;
   filters?: CommentListFilters;
 }
@@ -101,12 +107,16 @@ export interface CommentsShowOptions {
   root?: string;
   threadId: string;
   filePath?: string;
+  entityId?: string;
+  screenId?: string;
 }
 
 export interface CommentsResolveOptions {
   root?: string;
   threadId: string;
-  filePath: string;
+  filePath?: string;
+  entityId?: string;
+  screenId?: string;
   resolvedBy?: string;
   resolvedByUsername?: string;
   role?: "user" | "client";
@@ -231,15 +241,16 @@ export async function runCommentsBatchPlan(
 
 export async function runCommentsShow(opts: CommentsShowOptions): Promise<NonNullable<Awaited<ReturnType<typeof getThread>>>> {
   const paths = await resolveProjectPaths(opts.root);
-  const thread = opts.filePath
-    ? await getThread(paths.root, normalizeLogicalPath(opts.filePath), opts.threadId)
-    : await findThreadById(paths.root, opts.threadId);
+  const thread =
+    opts.filePath || opts.entityId || opts.screenId
+      ? await getThread(paths.root, opts.filePath ?? "", opts.threadId, {
+          entityId: opts.entityId,
+          screenId: opts.screenId,
+        })
+      : await findThreadById(paths.root, opts.threadId);
   if (!thread) {
-    throw new Error(
-      opts.filePath
-        ? `Thread not found: ${opts.threadId} under ${normalizeLogicalPath(opts.filePath)}`
-        : `Thread not found: ${opts.threadId}`,
-    );
+    const hint = opts.entityId ?? opts.screenId ?? opts.filePath ?? opts.threadId;
+    throw new Error(`Thread not found: ${opts.threadId} (${hint})`);
   }
   return thread;
 }
@@ -250,10 +261,15 @@ export interface CommentsResolveResult extends ResolveThreadResult {
 
 export async function runCommentsResolve(opts: CommentsResolveOptions): Promise<CommentsResolveResult> {
   const paths = await resolveProjectPaths(opts.root);
+  if (!opts.filePath && !opts.entityId && !opts.screenId) {
+    throw new Error("filePath, entityId, or screenId is required");
+  }
   const result = await resolveThread({
     projectRoot: paths.root,
-    logicalPath: normalizeLogicalPath(opts.filePath),
+    logicalPath: opts.filePath ? normalizeLogicalPath(opts.filePath) : "",
     threadId: opts.threadId,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
     resolvedBy: opts.resolvedBy,
     resolvedByUsername: opts.resolvedByUsername,
     role: opts.role,

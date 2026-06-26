@@ -8,8 +8,15 @@ import {
   normalizeLogicalPath,
   threadDirRel,
   threadMetaRel,
-  commentsRootRel,
 } from "./paths.js";
+import { normalizeThreadMeta } from "./meta.js";
+import {
+  parseCommentStoragePath,
+  threadDirForLocation,
+  threadMetaForLocation,
+  type CommentStorageLocation,
+} from "./target-paths.js";
+import { resolveCommentListLocation } from "./migrate.js";
 import { loadOrDeriveDocopsConfig } from "../docops/config.js";
 import type { CommentListFilters } from "./filters.js";
 import { threadMatchesFilters } from "./filters.js";
@@ -57,6 +64,8 @@ export interface ResolveThreadOptions {
   projectRoot: string;
   logicalPath: string;
   threadId: string;
+  entityId?: string;
+  screenId?: string;
   /** Resolver email override. */
   resolvedBy?: number | string;
   resolvedByUsername?: string;
@@ -74,20 +83,7 @@ export interface ResolveThreadResult {
 }
 
 function isThreadMeta(raw: unknown): raw is ThreadMeta {
-  if (!raw || typeof raw !== "object") {
-    return false;
-  }
-  const m = raw as ThreadMeta;
-  if (
-    typeof m.threadId !== "string" ||
-    typeof m.filePath !== "string" ||
-    typeof m.status !== "string" ||
-    typeof m.version !== "number" ||
-    m.anchor == null
-  ) {
-    return false;
-  }
-  return isDocumentAnchor(m.anchor) || isPrototypeAnchor(m.anchor);
+  return normalizeThreadMeta(raw) !== null;
 }
 
 function isCommentBody(raw: unknown): raw is CommentBody {
@@ -154,16 +150,18 @@ async function loadCommentBodies(threadDir: string): Promise<CommentBody[]> {
 
 function toSummary(
   projectRoot: string,
-  logicalPath: string,
+  location: CommentStorageLocation,
   meta: ThreadMeta,
   replyCount: number,
+  commentsRoot: string,
 ): ThreadSummary {
-  const threadDir = threadDirRel(logicalPath, meta.threadId);
+  const normalized = normalizeThreadMeta(meta)!;
+  const threadDir = threadDirForLocation(location, meta.threadId, commentsRoot);
   return {
-    ...meta,
+    ...normalized,
     replyCount,
     threadDir,
-    docPath: logicalPathToTargetPath(meta.filePath),
+    docPath: logicalPathToTargetPath(normalized.filePath),
   };
 }
 
@@ -174,9 +172,16 @@ async function commentReadRoots(projectRoot: string): Promise<string[]> {
 
 async function discoverThreadMetas(
   projectRoot: string,
-): Promise<Array<{ logicalPath: string; threadId: string; metaPath: string }>> {
+): Promise<
+  Array<{ location: CommentStorageLocation; threadId: string; metaPath: string; commentsRoot: string }>
+> {
   const roots = await commentReadRoots(projectRoot);
-  const found: Array<{ logicalPath: string; threadId: string; metaPath: string }> = [];
+  const found: Array<{
+    location: CommentStorageLocation;
+    threadId: string;
+    metaPath: string;
+    commentsRoot: string;
+  }> = [];
   const seen = new Set<string>();
 
   for (const commentsRootRelPath of roots) {
@@ -203,13 +208,24 @@ async function discoverThreadMetas(
         }
         const threadDir = dirname(abs);
         const threadId = basename(threadDir);
-        const logicalPath = relative(commentsRoot, dirname(threadDir)).replace(/\\/g, "/");
-        const key = `${logicalPath}\0${threadId}`;
+        const storagePath = relative(commentsRoot, dirname(threadDir)).replace(/\\/g, "/");
+        const location =
+          parseCommentStoragePath(storagePath) ?? {
+            kind: "legacy" as const,
+            targetId: storagePath,
+            storagePath,
+          };
+        const key = `${location.storagePath}\0${threadId}`;
         if (seen.has(key)) {
           continue;
         }
         seen.add(key);
-        found.push({ logicalPath, threadId, metaPath: abs });
+        found.push({
+          location,
+          threadId,
+          metaPath: abs,
+          commentsRoot: commentsRootRelPath,
+        });
       }
     }
 
@@ -230,7 +246,13 @@ export async function listThreads(opts: ListThreadsOptions): Promise<ThreadSumma
       continue;
     }
     const replyCount = await countCommentFiles(dirname(item.metaPath));
-    const summary = toSummary(opts.projectRoot, item.logicalPath, meta, replyCount);
+    const summary = toSummary(
+      opts.projectRoot,
+      item.location,
+      meta,
+      replyCount,
+      item.commentsRoot,
+    );
     if (!threadMatchesFilters(summary, filters)) {
       continue;
     }
@@ -265,14 +287,33 @@ export async function getThread(
   projectRoot: string,
   logicalPath: string,
   threadId: string,
+  opts?: { entityId?: string; screenId?: string },
 ): Promise<ThreadDetail | null> {
-  const lp = normalizeLogicalPath(logicalPath);
+  const location = await resolveCommentListLocation(projectRoot, {
+    filePath: logicalPath,
+    entityId: opts?.entityId,
+    screenId: opts?.screenId,
+  });
+  if (!location) {
+    return null;
+  }
+  return getThreadAtLocation(projectRoot, location, threadId);
+}
+
+export async function getThreadAtLocation(
+  projectRoot: string,
+  location: CommentStorageLocation,
+  threadId: string,
+): Promise<ThreadDetail | null> {
   const config = await loadOrDeriveDocopsConfig(projectRoot);
   const roots = await commentReadRoots(projectRoot);
   let metaPath: string | null = null;
   let commentsRoot = config.paths.comments;
   for (const rootRel of roots) {
-    const candidate = join(projectRoot, threadMetaRel(lp, threadId, rootRel));
+    const candidate = join(
+      projectRoot,
+      threadMetaForLocation(location, threadId, rootRel),
+    );
     if (await pathExists(candidate)) {
       metaPath = candidate;
       commentsRoot = rootRel;
@@ -286,12 +327,15 @@ export async function getThread(
   if (!isThreadMeta(meta)) {
     return null;
   }
-  const threadDir = join(projectRoot, threadDirRel(lp, threadId, commentsRoot));
+  const threadDir = join(
+    projectRoot,
+    threadDirForLocation(location, threadId, commentsRoot),
+  );
   const replyCount = await countCommentFiles(threadDir);
   const comments = await loadCommentBodies(threadDir);
   const events = await readEvents(join(threadDir, "events.jsonl"));
   return {
-    ...toSummary(projectRoot, lp, meta, replyCount),
+    ...toSummary(projectRoot, location, meta, replyCount, commentsRoot),
     comments,
     events,
   };
@@ -306,19 +350,30 @@ export async function findThreadById(
   if (!match) {
     return null;
   }
-  return getThread(projectRoot, match.logicalPath, threadId);
+  return getThreadAtLocation(projectRoot, match.location, threadId);
 }
 
 export async function resolveThread(
   opts: ResolveThreadOptions,
 ): Promise<ResolveThreadResult> {
-  const lp = normalizeLogicalPath(opts.logicalPath);
-  const config = await loadOrDeriveDocopsConfig(opts.projectRoot);
+  const location = await resolveCommentListLocation(opts.projectRoot, {
+    filePath: opts.logicalPath,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
+  });
+  if (!location) {
+    throw new Error(
+      `Cannot resolve comment location for: ${opts.logicalPath || opts.entityId || opts.screenId}`,
+    );
+  }
   const roots = await commentReadRoots(opts.projectRoot);
   let metaPath: string | null = null;
-  let commentsRoot = config.paths.comments;
+  let commentsRoot = (await loadOrDeriveDocopsConfig(opts.projectRoot)).paths.comments;
   for (const rootRel of roots) {
-    const candidate = join(opts.projectRoot, threadMetaRel(lp, opts.threadId, rootRel));
+    const candidate = join(
+      opts.projectRoot,
+      threadMetaForLocation(location, opts.threadId, rootRel),
+    );
     if (await pathExists(candidate)) {
       metaPath = candidate;
       commentsRoot = rootRel;
@@ -327,7 +382,7 @@ export async function resolveThread(
   }
   if (!metaPath) {
     throw new Error(
-      `Thread not found: ${commentsRootRel(commentsRoot)}/${lp}/${opts.threadId}/meta_data.json`,
+      `Thread not found: ${threadMetaForLocation(location, opts.threadId, commentsRoot)}`,
     );
   }
 
@@ -372,7 +427,10 @@ export async function resolveThread(
     role: actor.role,
   };
 
-  const threadDir = join(opts.projectRoot, threadDirRel(lp, opts.threadId, commentsRoot));
+  const threadDir = join(
+    opts.projectRoot,
+    threadDirForLocation(location, opts.threadId, commentsRoot),
+  );
   const eventsPath = join(threadDir, "events.jsonl");
   const commitMessageSuggestion = isPrototypeAnchor(meta.anchor)
     ? `resolve prototype comment thread ${opts.threadId} on ${meta.anchor.url} (${meta.anchor.selector})`
@@ -391,7 +449,7 @@ export async function resolveThread(
 
   const replyCount = await countCommentFiles(threadDir);
   return {
-    thread: toSummary(opts.projectRoot, lp, updated, replyCount),
+    thread: toSummary(opts.projectRoot, location, updated, replyCount, commentsRoot),
     commitMessageSuggestion,
     dryRun: opts.dryRun === true,
   };
