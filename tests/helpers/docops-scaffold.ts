@@ -18,13 +18,13 @@ export const MIN_DOCOPS = {
   docTypes: {
     srs: {
       enabled: true,
-      path: "srs",
+      path: "docs/srs",
       label: "SRS",
       templatesPath: ".docops/templates/srs",
     },
     basicDesign: {
       enabled: true,
-      path: "basic-design",
+      path: "docs/basic-design",
       label: "Basic Design",
       templatesPath: ".docops/templates/basic-design",
     },
