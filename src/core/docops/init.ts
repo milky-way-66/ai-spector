@@ -1,6 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathExists, writeJson } from "../util/fs.js";
 import { DOCOPS_CONFIG_REL } from "./paths.js";
 import {
   inferDocTypesFromTree,
@@ -8,13 +6,7 @@ import {
   readDocopsConfig,
   writeDocopsConfig,
 } from "./config.js";
-import {
-  copyBootstrapConfig,
-  copyBootstrapContractAssets,
-  copyBootstrapDocs,
-  copyBootstrapTemplates,
-  resolveBootstrapRoot,
-} from "./bootstrap.js";
+import { applyDocopsBootstrap } from "./bootstrap.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
@@ -110,39 +102,13 @@ export async function initDocopsContract(opts: {
     }
   }
 
-  const bundleRoot = resolveBootstrapRoot();
-  const copyOpts = { projectRoot, bundleRoot, dryRun, skipExisting, actions };
-
-  await copyBootstrapConfig({ ...copyOpts, config });
-  await copyBootstrapDocs(copyOpts);
-  await copyBootstrapContractAssets(copyOpts);
-  await copyBootstrapTemplates({ ...copyOpts, docTypes });
-
-  for (const dir of [
-    config.paths.comments,
-    config.paths.reviewQueue,
-    ".docops/prototype",
-    ...Object.values(docTypes).map((d) => d.templatesPath),
-  ]) {
-    if (!dir) continue;
-    actions.push(`${dryRun ? "would mkdir" : "mkdir"} ${dir}`);
-    if (!dryRun) await mkdir(join(projectRoot, dir), { recursive: true });
-  }
-
-  for (const dt of Object.values(docTypes)) {
-    for (const lang of languages) {
-      const docsDir = join(projectRoot, config.docsRoot, dt.path, lang.path);
-      const gitkeep = join(docsDir, ".gitkeep");
-      if (!(await pathExists(gitkeep))) {
-        const relGitkeep = join(config.docsRoot, dt.path, lang.path, ".gitkeep");
-        actions.push(`${dryRun ? "would write" : "write"} ${relGitkeep}`);
-        if (!dryRun) {
-          await mkdir(docsDir, { recursive: true });
-          await writeFile(gitkeep, "");
-        }
-      }
-    }
-  }
+  await applyDocopsBootstrap({
+    projectRoot,
+    config,
+    dryRun,
+    skipExisting,
+    actions,
+  });
 
   return { initialized: true, dryRun, actions, configPath, config };
 }

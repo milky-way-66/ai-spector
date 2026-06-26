@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { migrateFromDocflow } from "../../src/core/docops/migrate.js";
 import { loadEngineConfig } from "../../src/core/engine/load.js";
 import { readDocopsConfig } from "../../src/core/docops/config.js";
+import { pathExists } from "../../src/core/util/fs.js";
 
 const FIXTURE = join(process.cwd(), "tests/fixtures/docflow-legacy");
 
@@ -22,6 +23,8 @@ describe("migrateFromDocflow", () => {
     expect(engine.scaffoldVersion).toBe("0.8.0");
     expect(engine.readiness.profile).toBe("general");
     expect(engine.artifacts.graph).toBe(".ai-spector/graph/traceability.graph.json");
+    expect(await pathExists(join(root, ".docops/guide/README.md"))).toBe(true);
+    expect(await pathExists(join(root, ".docops/review.config.json"))).toBe(true);
   });
 
   it("returns migrated=false when docflow.config.json is missing", async () => {

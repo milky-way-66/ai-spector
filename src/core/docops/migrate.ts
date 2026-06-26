@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import type { DocflowConfig } from "../config/types.js";
 import { defaultEngineConfig, writeEngineConfig } from "../engine/load.js";
-import { pathExists, writeJson } from "../util/fs.js";
+import { pathExists } from "../util/fs.js";
 import {
   DOCOPS_CONFIG_REL,
   LEGACY_DOCFLOW_CONFIG_REL,
@@ -15,6 +15,7 @@ import {
   readDocopsConfig,
   writeDocopsConfig,
 } from "./config.js";
+import { applyDocopsBootstrap } from "./bootstrap.js";
 import { copyTemplates, resolveTemplateSourcesForLayer } from "./templates.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
@@ -132,30 +133,36 @@ async function copyLegacyArtifacts(
   }
 }
 
-async function seedMissingReviewFiles(
+async function bootstrapDocopsContract(
+  projectRoot: string,
+  config: DocopsConfig,
+  docflow: DocflowConfig | null,
+  actions: string[],
+  dryRun: boolean,
+): Promise<void> {
+  await applyDocopsBootstrap({
+    projectRoot,
+    config,
+    dryRun,
+    skipExisting: true,
+    actions,
+  });
+  await copyTemplatesForEnabledDocTypes(projectRoot, config, docflow, actions, dryRun);
+}
+
+async function repairDocopsGaps(
   projectRoot: string,
   config: DocopsConfig,
   actions: string[],
   dryRun: boolean,
-): Promise<void> {
-  const reviewConfigRel = config.paths.reviewConfig;
-  const registryRel = join(config.paths.reviewQueue, "registry.json").replace(/\\/g, "/");
-  const pendingRel = join(config.paths.reviewQueue, "pending.json").replace(/\\/g, "/");
+): Promise<DocopsConfig> {
+  await copyLegacyArtifacts(projectRoot, actions, dryRun);
 
-  for (const [rel, payload] of [
-    [reviewConfigRel, { schemaVersion: "1.0", extends: "kaopiz-default", meta: { source: "docops-migrate" } }],
-    [registryRel, { version: 3, documents: {} }],
-    [pendingRel, { version: 2, jobs: [] }],
-  ] as const) {
-    const absPath = join(projectRoot, rel);
-    if (!(await pathExists(absPath))) {
-      actions.push(`${dryRun ? "would write" : "write"} ${rel}`);
-      if (!dryRun) {
-        await mkdir(dirname(absPath), { recursive: true });
-        await writeJson(absPath, payload);
-      }
-    }
-  }
+  const next = await patchMissingTemplatesPaths(projectRoot, config, actions, dryRun);
+  const docflow = await loadDocflowIfPresent(projectRoot);
+  await bootstrapDocopsContract(projectRoot, next, docflow, actions, dryRun);
+
+  return next;
 }
 
 async function patchMissingTemplatesPaths(
@@ -222,59 +229,27 @@ async function copyTemplatesForEnabledDocTypes(
   }
 }
 
-async function repairDocopsGaps(
-  projectRoot: string,
-  config: DocopsConfig,
-  actions: string[],
-  dryRun: boolean,
-): Promise<DocopsConfig> {
-  await copyLegacyArtifacts(projectRoot, actions, dryRun);
-  await seedMissingReviewFiles(projectRoot, config, actions, dryRun);
-
-  const readmePath = join(projectRoot, ".docops/guide/README.md");
-  if (!(await pathExists(readmePath))) {
-    const {
-      copyBootstrapContractAssets,
-      copyBootstrapDocs,
-      resolveBootstrapRoot,
-    } = await import("./bootstrap.js");
-    const bundleRoot = resolveBootstrapRoot();
-    const copyOpts = {
-      projectRoot,
-      bundleRoot,
-      dryRun,
-      skipExisting: true,
-      actions,
-    };
-    await copyBootstrapDocs(copyOpts);
-    await copyBootstrapContractAssets(copyOpts);
-  }
-
-  let next = await patchMissingTemplatesPaths(projectRoot, config, actions, dryRun);
-  const docflow = await loadDocflowIfPresent(projectRoot);
-  await copyTemplatesForEnabledDocTypes(projectRoot, next, docflow, actions, dryRun);
-
-  return next;
-}
-
 export interface MigrateFromDocflowResult {
   migrated: boolean;
   reason?: string;
   docopsPath: string;
   enginePath: string;
+  actions: string[];
 }
 
 export async function migrateFromDocflow(
   projectRoot: string,
   opts: { write?: boolean; dryRun?: boolean } = {},
 ): Promise<MigrateFromDocflowResult> {
-  const write = opts.write !== false && !opts.dryRun;
+  const dryRun = opts.dryRun === true;
+  const write = opts.write !== false && !dryRun;
+  const actions: string[] = [];
   const docflowPath = join(projectRoot, LEGACY_DOCFLOW_CONFIG_REL);
   const docopsPath = join(projectRoot, DOCOPS_CONFIG_REL).replace(/\\/g, "/");
   const enginePath = join(projectRoot, ".ai-spector/engine.json").replace(/\\/g, "/");
 
   if (!(await pathExists(docflowPath))) {
-    return { migrated: false, reason: "docflow.config.json missing", docopsPath, enginePath };
+    return { migrated: false, reason: "docflow.config.json missing", docopsPath, enginePath, actions };
   }
 
   const { config: docflow } = await loadDocflowConfig(projectRoot);
@@ -287,12 +262,18 @@ export async function migrateFromDocflow(
   if (docflow.paths?.graph) engine.artifacts.graph = docflow.paths.graph;
   if (docflow.paths?.registry) engine.artifacts.registry = docflow.paths.registry;
 
+  await copyLegacyArtifacts(projectRoot, actions, dryRun);
+
+  actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
+  actions.push(`${dryRun ? "would write" : "write"} .ai-spector/engine.json`);
   if (write) {
     await writeDocopsConfig(projectRoot, docops);
     await writeEngineConfig(projectRoot, engine);
   }
 
-  return { migrated: true, docopsPath, enginePath };
+  await bootstrapDocopsContract(projectRoot, docops, docflow, actions, dryRun);
+
+  return { migrated: true, docopsPath, enginePath, actions };
 }
 
 export async function migrateDocopsLayout(
@@ -374,13 +355,10 @@ export async function migrateDocopsLayout(
 
   actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
   if (!dryRun) {
-    await mkdir(join(projectRoot, ".docops/prototype"), { recursive: true });
-    await mkdir(join(projectRoot, ".docops/templates/srs"), { recursive: true });
-    await mkdir(join(projectRoot, ".docops/templates/basic-design"), { recursive: true });
     await writeDocopsConfig(projectRoot, docops);
   }
 
-  await copyTemplatesForEnabledDocTypes(projectRoot, docops, docflow, actions, dryRun);
+  await bootstrapDocopsContract(projectRoot, docops, docflow, actions, dryRun);
 
   return {
     migrated: true,

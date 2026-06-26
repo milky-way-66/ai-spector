@@ -64,6 +64,9 @@ export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise
     if (opts.dryRun) {
       console.log("Dry run — no files written.");
     }
+    for (const action of result.actions) {
+      console.log(`  ${action}`);
+    }
     if (!result.migrated) {
       console.log(`\nNo migration performed. ${result.reason ?? ""}`);
       return;

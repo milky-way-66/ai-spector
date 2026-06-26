@@ -16,8 +16,11 @@ export function resolveBootstrapRoot(): string {
   const env = process.env.DOCOPS_BOOTSTRAP_ROOT?.trim();
   if (env && existsSync(env)) return resolve(env);
 
-  const monorepo = resolve(packageBundleRoot(), "../../kari-writer/contracts/bootstrap");
+  const monorepo = resolve(packageBundleRoot(), "../kari-writer/contracts/bootstrap");
   if (existsSync(monorepo)) return monorepo;
+
+  const monorepoLegacy = resolve(packageBundleRoot(), "../../kari-writer/contracts/bootstrap");
+  if (existsSync(monorepoLegacy)) return monorepoLegacy;
 
   const packaged = join(packageBundleRoot(), "contracts/bootstrap");
   if (existsSync(packaged)) return packaged;
@@ -34,8 +37,10 @@ export function resolveContractsRoot(bundleRoot: string): string {
   if (existsSync(join(sibling, "schemas"))) return sibling;
   const bundled = join(bundleRoot, "schemas");
   if (existsSync(bundled)) return bundleRoot;
-  const monorepo = resolve(packageBundleRoot(), "../../kari-writer/contracts");
+  const monorepo = resolve(packageBundleRoot(), "../kari-writer/contracts");
   if (existsSync(join(monorepo, "schemas"))) return monorepo;
+  const monorepoLegacy = resolve(packageBundleRoot(), "../../kari-writer/contracts");
+  if (existsSync(join(monorepoLegacy, "schemas"))) return monorepoLegacy;
   const siblingRepo = resolve(packageBundleRoot(), "../kari-writer/contracts");
   if (existsSync(join(siblingRepo, "schemas"))) return siblingRepo;
   throw new Error("docops contracts root not found — set DOCOPS_CONTRACTS_ROOT");
@@ -200,5 +205,64 @@ export async function copyBootstrapTemplates(opts: {
     if (!sub || !templatesPath) continue;
     const srcDir = join(opts.bundleRoot, "templates", sub);
     await copyTreeFiles(srcDir, join(opts.projectRoot, templatesPath), (rel) => `${templatesPath}/${rel}`, opts);
+  }
+}
+
+/** Scaffold Writer contract files from the bootstrap bundle (shared by init and migrate). */
+export async function applyDocopsBootstrap(opts: {
+  projectRoot: string;
+  config: DocopsConfig;
+  dryRun: boolean;
+  skipExisting: boolean;
+  actions: string[];
+}): Promise<void> {
+  const bundleRoot = resolveBootstrapRoot();
+  const docTypes = opts.config.docTypes ?? {};
+  const copyOpts = {
+    projectRoot: opts.projectRoot,
+    bundleRoot,
+    dryRun: opts.dryRun,
+    skipExisting: opts.skipExisting,
+    actions: opts.actions,
+  };
+
+  await copyBootstrapConfig({ ...copyOpts, config: opts.config });
+  await copyBootstrapDocs(copyOpts);
+  await copyBootstrapContractAssets(copyOpts);
+  await copyBootstrapTemplates({ ...copyOpts, docTypes });
+
+  const dirs = new Set<string>([
+    opts.config.paths.comments,
+    opts.config.paths.reviewQueue,
+    ".docops/prototype",
+    ...Object.values(docTypes)
+      .filter((d) => d?.enabled !== false)
+      .map((d) => d.templatesPath)
+      .filter((p): p is string => Boolean(p?.trim())),
+  ]);
+
+  for (const dir of dirs) {
+    opts.actions.push(`${opts.dryRun ? "would mkdir" : "mkdir"} ${dir}`);
+    if (!opts.dryRun) {
+      await mkdir(join(opts.projectRoot, dir), { recursive: true });
+    }
+  }
+
+  const languages = opts.config.languages ?? [];
+  for (const dt of Object.values(docTypes)) {
+    if (dt?.enabled === false) continue;
+    for (const lang of languages) {
+      const relGitkeep = join(opts.config.docsRoot, dt.path, lang.path, ".gitkeep").replace(/\\/g, "/");
+      const absGitkeep = join(opts.projectRoot, relGitkeep);
+      if (opts.skipExisting && (await pathExists(absGitkeep))) {
+        opts.actions.push(`skip — ${relGitkeep} exists`);
+        continue;
+      }
+      opts.actions.push(`${opts.dryRun ? "would write" : "write"} ${relGitkeep}`);
+      if (!opts.dryRun) {
+        await mkdir(dirname(absGitkeep), { recursive: true });
+        await writeFile(absGitkeep, "");
+      }
+    }
   }
 }
