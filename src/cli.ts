@@ -1706,12 +1706,14 @@ docops
   .option("--dry-run", "Print planned actions without writing files")
   .option("--repair", "Fill gaps in existing .docops/ without overwriting")
   .option("--templates-only", "Copy templates only")
+  .option("--from-docflow", "Split legacy docflow.config.json into docops.config.json + engine.json")
   .action(async (opts, cmd) => {
     await runDocopsMigrate({
       root: projectRootOpt(cmd),
       dryRun: opts.dryRun,
       repair: opts.repair,
       templatesOnly: opts.templatesOnly,
+      fromDocflow: opts.fromDocflow,
     });
   });
 

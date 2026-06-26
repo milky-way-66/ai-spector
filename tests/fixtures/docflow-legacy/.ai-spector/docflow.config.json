@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scaffoldVersion": "0.8.0",
+  "languages": [{ "code": "en", "label": "English" }],
+  "internalLanguage": "en",
+  "clientLanguage": "en",
+  "paths": {
+    "graph": ".ai-spector/graph/traceability.graph.json",
+    "registry": ".ai-spector/registry/section-registry.json",
+    "templates": ".ai-spector/templates"
+  },
+  "packs": { "srs": "builtin", "basicDesign": "builtin" },
+  "readiness": { "profile": "general" }
+}

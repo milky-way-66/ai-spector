@@ -2,6 +2,7 @@ import { cp, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import type { DocflowConfig } from "../config/types.js";
+import { defaultEngineConfig, writeEngineConfig } from "../engine/load.js";
 import { pathExists, writeJson } from "../util/fs.js";
 import {
   DOCOPS_CONFIG_REL,
@@ -248,6 +249,44 @@ async function repairDocopsGaps(
   await copyTemplatesForEnabledDocTypes(projectRoot, next, docflow, actions, dryRun);
 
   return next;
+}
+
+export interface MigrateFromDocflowResult {
+  migrated: boolean;
+  reason?: string;
+  docopsPath: string;
+  enginePath: string;
+}
+
+export async function migrateFromDocflow(
+  projectRoot: string,
+  opts: { write?: boolean; dryRun?: boolean } = {},
+): Promise<MigrateFromDocflowResult> {
+  const write = opts.write !== false && !opts.dryRun;
+  const docflowPath = join(projectRoot, LEGACY_DOCFLOW_CONFIG_REL);
+  const docopsPath = join(projectRoot, DOCOPS_CONFIG_REL).replace(/\\/g, "/");
+  const enginePath = join(projectRoot, ".ai-spector/engine.json").replace(/\\/g, "/");
+
+  if (!(await pathExists(docflowPath))) {
+    return { migrated: false, reason: "docflow.config.json missing", docopsPath, enginePath };
+  }
+
+  const { config: docflow } = await loadDocflowConfig(projectRoot);
+  const docTypes = await inferDocTypesFromTree(projectRoot);
+  const docops = docopsConfigFromDocflow(docflow, Object.keys(docTypes).length ? docTypes : undefined);
+
+  const engine = defaultEngineConfig();
+  if (docflow.scaffoldVersion) engine.scaffoldVersion = docflow.scaffoldVersion;
+  if (docflow.readiness) engine.readiness = { ...engine.readiness, ...docflow.readiness };
+  if (docflow.paths?.graph) engine.artifacts.graph = docflow.paths.graph;
+  if (docflow.paths?.registry) engine.artifacts.registry = docflow.paths.registry;
+
+  if (write) {
+    await writeDocopsConfig(projectRoot, docops);
+    await writeEngineConfig(projectRoot, engine);
+  }
+
+  return { migrated: true, docopsPath, enginePath };
 }
 
 export async function migrateDocopsLayout(
