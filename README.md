@@ -1,6 +1,8 @@
 # AI Spector
 
-Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, and UI prototypes (static HTML or SPA). **Describe what you need in chat** — the agent matches a **skill**, reads its runbook, and runs `ai-spector` MCP tools. You rarely touch the terminal.
+Documentation workflow in **Cursor** or **Claude Code**: traceability graph, SRS, basic design, and UI prototypes (static HTML or SPA). **Describe what you need in chat** — the agent matches one of **4 skills**, reads its runbook, and runs `ai-spector` MCP tools. You rarely touch the terminal.
+
+**Kari Writer** owns the `.docops/` contract only (no agent skills). ai-spector is an optional local tool that implements that contract via git files.
 
 **Needs:** Node 20+, Git, [Cursor](https://cursor.com) and/or [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(optional — CocoIndex semantic search)*.
 
@@ -43,16 +45,27 @@ The init wizard prompts for editor (Cursor, Claude Code, or both), languages, gi
 
 Creates:
 
-- `.ai-spector/` — config, graph, templates
 - `.docops/` — Writer contract (`docops.config.json`, comments, review-queue, prototype metadata)
+- `.ai-spector/` — engine store (`engine.json`, graph, registry, work sessions)
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
-- **Cursor:** `.cursor/` — skills, rules, `mcp.json`
-- **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
+- **Cursor:** `.cursor/` — **4 skills**, rules, `mcp.json`
+- **Claude Code:** `CLAUDE.md` + `.claude/skills/` (4 skills) + `.mcp.json`
 - Pre-commit hook (when git is available)
 
-**Writer contract:** Kari Writer reads `.docops/docops.config.json` for capabilities and paths (see `kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). ai-spector `init` scaffolds `.docops/` alongside legacy `.ai-spector/` during transition (`DOCOPS_DUAL_WRITE=1` by default).
+No `docflow.config.json` — fresh `init` writes the two-config model below.
 
-**Docops CLI** (Writer contract only — no full ai-spector scaffold):
+### Configuration (2 files)
+
+| File | Owner | Purpose |
+|------|-------|---------|
+| `.docops/docops.config.json` | **Writer contract** (shared) | Languages, doc layers, paths, **capabilities** |
+| `.ai-spector/engine.json` | ai-spector engine (local only) | Graph/task artifact paths, readiness, CocoIndex, `scaffoldVersion` |
+
+**Writer** defines the contract schema (`kari-writer/contracts/CONTRACT.md` in the docs-ops meta-repo). It ships **no agent skills**. **Capabilities** in `docops.config.json` gate Writer web UI, ai-spector CLI/MCP, skill install, and `check` rules.
+
+**`.docops/guide/`** is for human tool authors only — agents and skills must **not** load or link to it at runtime.
+
+**Docops CLI** (Writer contract bootstrap — no full ai-spector scaffold):
 
 ```bash
 npx ai-spector docops status              # human-readable layout + readiness
@@ -64,13 +77,18 @@ npx ai-spector docops init --force        # fill gaps when config already exists
 
 npx ai-spector docops migrate --dry-run   # preview legacy → .docops/ migration
 npx ai-spector docops migrate             # migrate layout + copy templates
+npx ai-spector docops migrate --from-docflow   # split docflow.config.json → contract + engine
 npx ai-spector docops migrate --templates-only   # copy templates only
 npx ai-spector docops migrate --repair    # fill gaps without overwriting existing files
 ```
 
-Migrate an existing legacy project with `docops migrate`; use `--templates-only` or `--repair` if templates or contract files are still missing. Full steps, verification checklist, and `DOCOPS_LEGACY_PATHS` transition notes: [`kari-writer/contracts/MIGRATION.md`](../../kari-writer/contracts/MIGRATION.md) in the docs-ops meta-repo.
+Upgrade from a legacy project that still has `docflow.config.json`:
 
-Plugin registry (`docflow.config.json` → `plugins.resolved`) still gates **CLI/MCP** only; Writer web uses `capabilities` from the `.docops/` contract as authoritative.
+```bash
+npx ai-spector docops migrate --from-docflow
+```
+
+Then run `npx ai-spector upgrade apply` to sync the 4-skill scaffold. Full migration steps: [`kari-writer/contracts/MIGRATION.md`](../../kari-writer/contracts/MIGRATION.md) in the docs-ops meta-repo.
 
 ### Upgrade (guided workflow)
 
@@ -86,7 +104,7 @@ npx ai-spector upgrade apply --auto
 npx ai-spector upgrade validate
 ```
 
-The upgrade workflow scans a package checklist, syncs scaffold, backfills config, and stamps `scaffoldVersion` in `docflow.config.json` when complete.
+The upgrade workflow scans a package checklist, syncs the **4-skill** scaffold, backfills config, and stamps `scaffoldVersion` in `engine.json` when complete.
 
 Legacy skills-only refresh:
 
@@ -115,7 +133,16 @@ The agent installs the npm dependency (if needed), verifies the checklist, and r
 
 ### Step 3 — Enable the agent *(manual, one-time)*
 
-**Cursor:** Settings → Rules → **Agent Skills** — enable **all** folders under `.cursor/skills/`. Reload MCP (`.cursor/mcp.json`).
+Enable the **4 skills** (not the retired 23-skill bundle):
+
+| Skill | Role |
+|-------|------|
+| `ai-spector` | Setup, upgrade, adopt, check, work sessions |
+| `ai-spector-generate` | SRS, basic/detail design, prototype, template import |
+| `ai-spector-graph` | Analyze, index, validate, impact, search, sync audit |
+| `ai-spector-contract` | Review sign-off, comments, prototype comments, translation |
+
+**Cursor:** Settings → Rules → **Agent Skills** — enable all four folders under `.cursor/skills/`. Reload MCP (`.cursor/mcp.json`).
 
 **Claude Code:** Skills load from `.claude/skills/`. Reload MCP (`.mcp.json`).
 
@@ -135,14 +162,14 @@ Continue in chat — see [Workflow](#workflow) below.
 
 ## Workflow
 
-After `init`, see `.cursor/WORKFLOW.md` (Cursor) or `CLAUDE.md` (Claude Code) for the full skill map.
+After `init`, see `.cursor/WORKFLOW.md` (Cursor) or `CLAUDE.md` (Claude Code) for the 4-skill map.
 
 ### How chat routing works
 
 | Piece | Role |
 |-------|------|
-| **Routing** | `_skill-router.md` + `ai-spector-routing.mdc` classify your message; `workflow_route` when ambiguous |
-| **Skill** | One workflow (analyze, generate SRS, review docs, …) with a runbook under `references/` |
+| **Routing** | `_skill-router.md` + `ai-spector-routing.mdc` classify your message → one of 4 skills; `workflow_route` when ambiguous |
+| **Skill** | One of four workflows (setup/work, generate, graph, contract) with a runbook under `references/` |
 
 Say what you want in natural language — same in Cursor and Claude Code. The agent reads the matching skill and follows its runbook. If intent is unclear (especially **“approve”**), it asks once before acting.
 
@@ -174,7 +201,7 @@ review documents
 | New or changed sources | “analyze data source” |
 | Check graph | “validate the graph”, “graph report” |
 | Regenerate docs | “generate SRS”, “generate basic design” |
-| Pause / resume work | “active tasks”, “resume my SRS”, “pause task” |
+| Pause / resume work | “active work”, “resume my SRS”, “pause work” |
 | One feature or section | “I want to add login with Google”, “update the auth section” |
 | After doc edits | “refresh the index”, “re-index the graph” |
 | Document sign-off | “review documents”, “approve srs/01-overview”, “what needs review” |
@@ -218,13 +245,19 @@ npx ai-spector course serve --open    # interactive course in browser
 npx ai-spector setup --check
 npx ai-spector docops status            # assess .docops/ layout and Writer readiness
 npx ai-spector docops init --lang en    # scaffold Writer-ready .docops/ contract
-npx ai-spector docops migrate           # legacy layout → .docops/ (+ templates)
+npx ai-spector docops migrate --from-docflow   # split legacy docflow.config.json
+npx ai-spector work list                # active/paused work sessions (replaces task)
+npx ai-spector work resume <workId>
+npx ai-spector contract review queue    # sign-off queue (capability: review)
+npx ai-spector contract comments inbox  # open comment threads (capability: comments)
 npx ai-spector graph validate
 npx ai-spector graph visualize --open
 npx ai-spector graph impact --git
 npx ai-spector sync audit --fail-on-drift   # CI: design-layer drift since baseline
 npx ai-spector prototype validate --strict
 ```
+
+MCP tools are grouped: `work_*` (session lifecycle), `contract_review` / `contract_comments` / `contract_prototype` / `contract_translate` (Writer contract ops). Legacy `task_*` and flat review/comments tools remain as deprecation wrappers for one release.
 
 Full list: `npx ai-spector --help`.
 
@@ -236,7 +269,7 @@ Full list: `npx ai-spector --help`.
 |-------|-----|
 | MCP tools unavailable | Reload MCP; confirm `.cursor/mcp.json` or `.mcp.json` has `ai-spector` server |
 | Setup incomplete | **“check ai-spector setup”** |
-| Skills not routing (Cursor) | Re-enable all folders under `.cursor/skills/` |
+| Skills not routing (Cursor) | Re-enable all **4** skill folders under `.cursor/skills/` |
 | Validate errors after edits | **“re-index the graph”** |
 | Pre-commit hook missing | **“install ai-spector git hook”** |
 | Agent stuck on CLI error | `.cursor/skills/ai-spector/references/cli-failures.md` |

@@ -1,6 +1,8 @@
 # AI Spector
 
-Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**: sơ đồ liên kết, SRS, basic design và prototype UI (HTML tĩnh hoặc SPA build ra file tĩnh). **Bạn chỉ cần nói trong chat** — agent sẽ tự chạy lệnh `ai-spector` hoặc MCP. Thường bạn không cần gõ lệnh terminal.
+Công cụ làm tài liệu phần mềm trên **Cursor** hoặc **Claude Code**: sơ đồ liên kết, SRS, basic design và prototype UI (HTML tĩnh hoặc SPA build ra file tĩnh). **Bạn chỉ cần nói trong chat** — agent chọn một trong **4 skills**, đọc runbook và chạy MCP `ai-spector`. Thường bạn không cần gõ lệnh terminal.
+
+**Kari Writer** chỉ sở hữu contract `.docops/` (không có agent skills). ai-spector là công cụ local tùy chọn triển khai contract qua file git.
 
 **Cần có:** Node 20+, Git, [Cursor](https://cursor.com) và/hoặc [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Python 3.11+ *(không bắt buộc — dùng cho tìm kiếm thông minh với CocoIndex)*.
 
@@ -45,15 +47,46 @@ Wizard init sẽ hỏi: Cursor, Claude Code hay cả hai; ngôn ngữ; git hook;
 
 Sau khi chạy xong sẽ có:
 
-- `.ai-spector/` — cấu hình, sơ đồ, mẫu tài liệu
+- `.docops/` — contract Writer (`docops.config.json`, comments, review-queue, prototype)
+- `.ai-spector/` — engine (`engine.json`, graph, registry, work sessions)
 - `docs/data-source/`, `docs/srs/`, `docs/basic-design/`
-- **Cursor:** `.cursor/` — skills, rules, `mcp.json`
-- **Claude Code:** `CLAUDE.md` + `.claude/skills/` + `.mcp.json`
+- **Cursor:** `.cursor/` — **4 skills**, rules, `mcp.json`
+- **Claude Code:** `CLAUDE.md` + `.claude/skills/` (4 skills) + `.mcp.json`
 - Hook git trước khi commit *(nếu project có git)*
+
+Không còn `docflow.config.json` — `init` mới tạo mô hình 2 file cấu hình.
+
+### Cấu hình (2 file)
+
+| File | Sở hữu | Mục đích |
+|------|--------|----------|
+| `.docops/docops.config.json` | **Contract Writer** (dùng chung) | Ngôn ngữ, lớp tài liệu, đường dẫn, **capabilities** |
+| `.ai-spector/engine.json` | Engine ai-spector (local) | Đường dẫn graph/task, readiness, CocoIndex, `scaffoldVersion` |
+
+**Writer** định nghĩa schema contract (`kari-writer/contracts/CONTRACT.md`). **Không** ship agent skills. **Capabilities** trong `docops.config.json` điều khiển Writer web, CLI/MCP ai-spector, skills và quy tắc `check`.
+
+**`.docops/guide/`** dành cho người viết công cụ local — agent và skills **không** được đọc hoặc link tới thư mục này lúc chạy.
+
+**Docops CLI** (bootstrap contract Writer):
+
+```bash
+npx ai-spector docops status
+npx ai-spector docops init --lang en
+npx ai-spector docops migrate --from-docflow   # tách docflow.config.json → contract + engine
+npx ai-spector docops migrate --dry-run
+npx ai-spector docops migrate --repair
+```
+
+Nâng cấp project còn `docflow.config.json`:
+
+```bash
+npx ai-spector docops migrate --from-docflow
+npx ai-spector upgrade apply    # đồng bộ scaffold 4 skills
+```
 
 ### Nâng cấp (cập nhật skills & rules)
 
-Sau khi cài phiên bản `ai-spector` mới, refresh scaffold từ gói. Chỉ cập nhật skills và rules — **không** ghi đè `.ai-spector/`, graph, hay `docs/`.
+Sau khi cài phiên bản `ai-spector` mới, refresh scaffold **4 skills** từ gói. Chỉ cập nhật skills và rules — **không** ghi đè `.ai-spector/`, graph, hay `docs/`.
 
 ```bash
 npm install ai-spector@latest          # npm công khai; thêm --registry … cho Verdaccio
@@ -86,9 +119,18 @@ Agent sẽ cài gói npm (nếu thiếu), kiểm tra xem còn thiếu gì, hỏi
 
 ### Bước 3 — Bật skills *(làm tay một lần)*
 
+Bật **4 skills** (không phải bộ 23 skills cũ):
+
+| Skill | Vai trò |
+|-------|---------|
+| `ai-spector` | Setup, upgrade, adopt, check, work sessions |
+| `ai-spector-generate` | SRS, basic/detail design, prototype, import template |
+| `ai-spector-graph` | Analyze, index, validate, impact, search, sync audit |
+| `ai-spector-contract` | Duyệt tài liệu, comments, prototype comments, dịch |
+
 **Cursor**
 
-1. Vào **Settings → Rules → Agent Skills** — bật **hết** các thư mục trong `.cursor/skills/` (xem `.cursor/skills/README.md`)
+1. Vào **Settings → Rules → Agent Skills** — bật **4** thư mục trong `.cursor/skills/`
 2. **Reload MCP** — file `.cursor/mcp.json` đã cấu hình sẵn server `ai-spector`
 
 **Claude Code**
@@ -147,7 +189,7 @@ Hoặc chạy `npx ai-spector sync-cursor` / `sync-claude` — xem [Nâng cấp]
 
 ## Quy trình làm việc
 
-Sau khi `init`, xem thêm `.cursor/WORKFLOW.md` (Cursor) hoặc `CLAUDE.md` (Claude Code).
+Sau khi `init`, xem `.cursor/WORKFLOW.md` (Cursor) hoặc `CLAUDE.md` (Claude Code) — bản đồ **4 skills**.
 
 ### Lần đầu chạy
 
@@ -181,7 +223,7 @@ Sau đó: **“generate prototype for all screens”**. Với SPA, chạy build 
 | Xem phần nào bị ảnh hưởng | “what’s the impact of my changes” |
 | Xử lý comment | “resolve comments”, “show open comments” |
 | Duyệt / phê duyệt tài liệu | “review documents”, “approve srs/01-overview” |
-| Tạm dừng / tiếp tục task | “active tasks”, “resume my SRS” |
+| Tạm dừng / tiếp tục work | “active work”, “resume my SRS”, “pause work” |
 | Thêm / sửa một phần nhỏ | “I want to add login with Google” |
 | Xem sơ đồ trực quan | “show the graph”, `npx ai-spector graph visualize --open` |
 | Kiểm tra workspace | “check my workspace” |
@@ -203,9 +245,17 @@ Chủ yếu dùng chat. Một số lệnh hữu ích:
 ```bash
 npx ai-spector course serve --open
 npx ai-spector setup --check
+npx ai-spector docops status
+npx ai-spector docops migrate --from-docflow
+npx ai-spector work list                 # work sessions (thay task)
+npx ai-spector work resume <workId>
+npx ai-spector contract review queue
+npx ai-spector contract comments inbox
 npx ai-spector graph validate
 npx ai-spector graph visualize --open
 ```
+
+MCP nhóm theo `work_*` và `contract_*` (review, comments, prototype, translate). Lệnh `task_*` cũ còn wrapper deprecation một phiên bản.
 
 Đầy đủ: `npx ai-spector --help`
 
@@ -217,7 +267,7 @@ npx ai-spector graph visualize --open
 |-----|------------|
 | MCP không chạy | Reload MCP; kiểm tra `.cursor/mcp.json` hoặc `.mcp.json` có server `ai-spector` |
 | Setup chưa xong | Trong chat: **“check ai-spector setup”** |
-| Agent không hiểu lệnh (Cursor) | Bật lại hết thư mục trong `.cursor/skills/` ở Settings → Rules |
+| Agent không hiểu lệnh (Cursor) | Bật lại **4** thư mục skill trong `.cursor/skills/` ở Settings → Rules |
 | Validate báo lỗi sau khi sửa | Trong chat: **“re-index the graph”** |
 | Thiếu hook git | Trong chat: **“install ai-spector git hook”** |
 | Agent bị kẹt vì lỗi CLI | Xem `.cursor/skills/ai-spector/references/cli-failures.md` |

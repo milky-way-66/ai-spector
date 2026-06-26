@@ -4,6 +4,31 @@ All notable changes to [ai-spector](https://github.com/milky-way-66/ai-spector) 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-26
+
+Writer-contract redesign: ai-spector implements the `.docops/` contract as a thin local tool — 2 config files, 4 agent skills, grouped CLI/MCP.
+
+### Added
+
+- **`engine.json`** — engine-only config (artifact paths, readiness, CocoIndex, `scaffoldVersion`); loaded via `loadEngineConfig()`.
+- **`docops migrate --from-docflow`** — split legacy `docflow.config.json` into `.docops/docops.config.json` + `.ai-spector/engine.json`.
+- **`work` CLI group** and **`work_*` MCP tools** — work session lifecycle (`work_create`, `work_list`, `work_get`, `work_update`, `work_approve_plan`, `work_record_step`, `work_pause`, `work_resume`, `work_complete`, `work_abandon`).
+- **`contract` CLI group** and **`contract_*` MCP tools** — grouped Writer contract ops: `contract_review`, `contract_comments`, `contract_prototype`, `contract_translate`.
+- **4-skill agent scaffold** — `ai-spector`, `ai-spector-generate`, `ai-spector-graph`, `ai-spector-contract` (replaces 23 skills).
+
+### Changed
+
+- **Capability gating** — single source: `docops.config.json` → `capabilities` gates CLI, MCP, skills, and `check` rules (replaces `docflow.config.json` plugin registry).
+- **Upgrade checklist** — `scaffoldVersion` stamped in `engine.json` (UPG-010/011).
+
+### Breaking
+
+- **`docflow.config.json` removed on fresh `init`** — no dual-write (`DOCOPS_DUAL_WRITE` removed). Migrate existing projects: `npx ai-spector docops migrate --from-docflow`.
+- **23 → 4 agent skills** — run `npx ai-spector upgrade apply` or `sync-cursor` / `sync-claude`; enable only the 4 skill folders.
+- **`task_*` MCP → `work_*`** — `task` CLI group deprecated (aliases `work` for one release).
+- **Flat review/comments MCP → `contract_*`** — use `contract_review({ action })`, `contract_comments({ action })`, etc.
+- **Capabilities from contract only** — disable a capability in `docops.config.json` to hide CLI/MCP/skills/check rules; no plugin registry override.
+
 ## [Unreleased]
 
 ### Added
