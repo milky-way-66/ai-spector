@@ -250,9 +250,10 @@ export async function applyDocopsBootstrap(opts: {
 
   const languages = opts.config.languages ?? [];
   for (const dt of Object.values(docTypes)) {
-    if (dt?.enabled === false) continue;
+    if (dt?.enabled === false || !dt?.path) continue;
     for (const lang of languages) {
-      const relGitkeep = join(opts.config.docsRoot, dt.path, lang.path, ".gitkeep").replace(/\\/g, "/");
+      const langPath = lang.path ?? lang.code;
+      const relGitkeep = join(opts.config.docsRoot, dt.path, langPath, ".gitkeep").replace(/\\/g, "/");
       const absGitkeep = join(opts.projectRoot, relGitkeep);
       if (opts.skipExisting && (await pathExists(absGitkeep))) {
         opts.actions.push(`skip — ${relGitkeep} exists`);
