@@ -103,6 +103,10 @@ export const MCP_TOOL_NAMES = [
   "work_resume",
   "work_complete",
   "work_abandon",
+  "contract_review",
+  "contract_comments",
+  "contract_prototype",
+  "contract_translate",
 ] as const;
 
 /** Template-import workflow tools — must appear in MCP list_tools for gated runbook. */

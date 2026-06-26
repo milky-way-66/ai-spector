@@ -95,6 +95,10 @@ import {
   WorkCreateSchema,
   WorkflowRouteSchema,
   WorkflowStatusSchema,
+  ContractReviewSchema,
+  ContractCommentsSchema,
+  ContractPrototypeSchema,
+  ContractTranslateSchema,
 } from "./schemas.js";
 
 import { toolGraphQuery, toolGraphImpact, toolGraphValidate, toolGraphMerge, toolGraphReport } from "./tools/graph.js";
@@ -199,6 +203,12 @@ import {
 import { toolWorkflowRoute } from "./tools/workflow-route.js";
 import { toolWorkflowStatus } from "./tools/workflow-status.js";
 import {
+  toolContractReview,
+  toolContractComments,
+  toolContractPrototype,
+  toolContractTranslate,
+} from "./tools/contract.js";
+import {
   APPROVE_TOOL_DESCRIPTIONS,
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
   ADOPT_TOOL_DESCRIPTIONS,
@@ -207,6 +217,7 @@ import {
 } from "./tool-descriptions.js";
 import { MCP_TOOL_NAMES } from "./tool-names.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
+import { assertToolAllowed } from "./assert-tool-allowed.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../../package.json") as { version: string };
@@ -1578,6 +1589,80 @@ server.registerTool(
   async (input) => {
     const result = await toolWorkAbandon(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── Contract tools ────────────────────────────────────────────────────────────
+
+server.registerTool(
+  "contract_review",
+  {
+    description:
+      "Grouped review operations via action discriminator. Actions: check, status, approve, decline, close, reject, queue, list, begin, config, session_start, session_ack, withdraw, reopen. Requires review capability.",
+    inputSchema: ContractReviewSchema.shape,
+  },
+  async (input) => {
+    try {
+      await assertToolAllowed("contract_review", input.root);
+      const result = await toolContractReview(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+server.registerTool(
+  "contract_comments",
+  {
+    description:
+      "Grouped comment operations via action discriminator. Actions: list, inbox, show, resolve, facets, batch_plan, batch_resolve. Requires comments capability.",
+    inputSchema: ContractCommentsSchema.shape,
+  },
+  async (input) => {
+    try {
+      await assertToolAllowed("contract_comments", input.root);
+      const result = await toolContractComments(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+server.registerTool(
+  "contract_prototype",
+  {
+    description:
+      "Grouped prototype operations via action discriminator. Requires prototype capability.",
+    inputSchema: ContractPrototypeSchema.shape,
+  },
+  async (input) => {
+    try {
+      await assertToolAllowed("contract_prototype", input.root);
+      const result = await toolContractPrototype(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
+  },
+);
+
+server.registerTool(
+  "contract_translate",
+  {
+    description:
+      "Grouped translation operations via action discriminator. Actions: lang_queue. Requires translate capability.",
+    inputSchema: ContractTranslateSchema.shape,
+  },
+  async (input) => {
+    try {
+      await assertToolAllowed("contract_translate", input.root);
+      const result = await toolContractTranslate(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err) {
+      return mcpToolErrorContent(err);
+    }
   },
 );
 

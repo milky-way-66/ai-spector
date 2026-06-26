@@ -1076,3 +1076,94 @@ export const WorkflowRouteSchema = RootSchema.extend({
 });
 
 export const WorkflowStatusSchema = RootSchema;
+
+// ── Contract tools ────────────────────────────────────────────────────────────
+
+export const ContractReviewSchema = RootSchema.extend({
+  action: z
+    .enum([
+      "check",
+      "status",
+      "approve",
+      "decline",
+      "close",
+      "reject",
+      "queue",
+      "list",
+      "begin",
+      "config",
+      "session_start",
+      "session_ack",
+      "withdraw",
+      "reopen",
+    ])
+    .describe("Review operation to perform"),
+  logicalPath: z.string().optional().describe("Logical document path (e.g. srs/01-overview)"),
+  track: z.enum(["internal", "client", "all"]).optional().describe("Review track"),
+  ...AuditActorOverrideSchema,
+  note: z.string().optional().describe("Approve/decline note"),
+  reason: z.string().optional().describe("Close/reject reason"),
+  showDiff: z.boolean().optional().describe("Include diff content (default: true)"),
+  includeHistory: z.boolean().optional().describe("Include approval history events"),
+  historyLimit: z.number().int().min(0).optional().describe("Max history entries to return"),
+  historySince: z.string().optional().describe("Only return history entries after this ISO timestamp"),
+  enrich: z.boolean().optional().describe("Compute git diff and graph impact (default: true when showDiff)"),
+  status: z.string().optional().describe("Filter status for list action (pending, approved, all)"),
+  prefix: z.string().optional().describe("Logical path prefix for list action"),
+});
+
+export const ContractCommentsSchema = RootSchema.extend({
+  action: z
+    .enum(["list", "inbox", "show", "resolve", "facets", "batch_plan", "batch_resolve"])
+    .describe("Comment operation to perform"),
+  filePath: z
+    .string()
+    .optional()
+    .describe("Filter by file path (use `prototype` for all prototype threads)"),
+  pathPrefix: z.string().optional().describe("Logical path prefix (e.g. srs/, prototype/src/)"),
+  commentTypes: z
+    .array(z.enum(["document", "prototype"]))
+    .optional()
+    .describe("Filter by comment type"),
+  screen: z.string().optional().describe("Prototype screen stem or URL fragment (e.g. login)"),
+  originBranch: z.string().optional().describe("Filter by originBranch"),
+  anchorState: z
+    .enum(["active", "drifted", "missing"])
+    .optional()
+    .describe("Filter by anchor health"),
+  status: z
+    .enum(["open", "resolved", "all"])
+    .optional()
+    .describe("Filter by status (default: open)"),
+  groupByScreen: z
+    .boolean()
+    .optional()
+    .describe("Add B-00N batch rows grouped by prototype screen"),
+  threadId: z.string().optional().describe("Comment thread id (required for show/resolve)"),
+  ...AuditActorOverrideSchema,
+  resolvedBy: z.string().optional().describe("Deprecated alias for by"),
+  dryRun: z.boolean().optional().describe("Preview resolution without writing"),
+  batchId: z.string().optional().describe("Batch pick id B-001"),
+  picks: z.array(z.string()).optional().describe("B-00N or C-00N pick ids"),
+  phrase: z.string().optional().describe("Natural phrase e.g. login screen"),
+});
+
+export const ContractPrototypeSchema = RootSchema.extend({
+  action: z.string().describe("Prototype operation to perform"),
+});
+
+export const ContractTranslateSchema = RootSchema.extend({
+  action: z
+    .enum(["lang_queue"])
+    .describe("Translate operation to perform"),
+  lang: z.string().optional().describe("Filter by language code (e.g. 'jp', 'vi')"),
+  limit: z.number().int().min(1).optional().describe("Max pending jobs to return (default: all)"),
+  status: z
+    .enum(["pending", "failed", "resolved", "all"])
+    .optional()
+    .describe("Which queue to read (default: pending)"),
+  enrich: z
+    .boolean()
+    .optional()
+    .describe("Compute git diff and graph impact on pending jobs (default: true)"),
+});

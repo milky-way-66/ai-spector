@@ -1,4 +1,10 @@
 import { resolveProjectPaths } from "@/core/util/paths.js";
+
+function warnDeprecated(oldTool: string, action: string): void {
+  process.stderr.write(
+    `[ai-spector-mcp] DEPRECATED: "${oldTool}" is deprecated — use contract_comments with action="${action}" instead.\n`,
+  );
+}
 import {
   getThread,
   findThreadById,
@@ -46,6 +52,7 @@ function filtersFromInput(input: {
 }
 
 export async function toolCommentsList(input: z.infer<typeof CommentsListSchema>) {
+  warnDeprecated("comments_list", "list");
   const result = await runCommentsList({
     root: input.root,
     ...toCommentListFilters({
@@ -62,6 +69,7 @@ export async function toolCommentsList(input: z.infer<typeof CommentsListSchema>
 }
 
 export async function toolCommentsFacets(input: z.infer<typeof CommentsFacetsSchema>) {
+  warnDeprecated("comments_facets", "facets");
   return runCommentsFacets({
     root: input.root,
     ...toCommentListFilters({
@@ -76,6 +84,7 @@ export async function toolCommentsFacets(input: z.infer<typeof CommentsFacetsSch
 }
 
 export async function toolCommentsInbox(input: z.infer<typeof CommentsInboxSchema>) {
+  warnDeprecated("comments_inbox", "inbox");
   return runCommentsInbox({
     root: input.root,
     ...toCommentListFilters({
@@ -92,6 +101,7 @@ export async function toolCommentsInbox(input: z.infer<typeof CommentsInboxSchem
 }
 
 export async function toolCommentsBatchPlan(input: z.infer<typeof CommentsBatchPlanSchema>) {
+  warnDeprecated("comments_batch_plan", "batch_plan");
   return runCommentsBatchPlan({
     root: input.root,
     ...toCommentListFilters({
@@ -112,6 +122,7 @@ export async function toolCommentsBatchPlan(input: z.infer<typeof CommentsBatchP
 }
 
 export async function toolCommentsBatchResolve(input: z.infer<typeof CommentsBatchResolveSchema>) {
+  warnDeprecated("comments_batch_resolve", "batch_resolve");
   return runCommentsBatchResolve({
     root: input.root,
     picks: input.picks,
@@ -124,6 +135,7 @@ export async function toolCommentsBatchResolve(input: z.infer<typeof CommentsBat
 }
 
 export async function toolCommentsShow(input: z.infer<typeof CommentsShowSchema>) {
+  warnDeprecated("comments_show", "show");
   const paths = await resolveProjectPaths(input.root);
   const thread = input.filePath
     ? await getThread(paths.root, normalizeLogicalPath(input.filePath), input.threadId)
@@ -135,6 +147,7 @@ export async function toolCommentsShow(input: z.infer<typeof CommentsShowSchema>
 }
 
 export async function toolCommentsResolve(input: z.infer<typeof CommentsResolveSchema>) {
+  warnDeprecated("comments_resolve", "resolve");
   const paths = await resolveProjectPaths(input.root);
   const result = await resolveThread({
     projectRoot: paths.root,
