@@ -113,15 +113,21 @@ async function copyLegacyArtifacts(
     dryRun,
   );
 
-  const prototypeConfigSrc = join(projectRoot, LEGACY_DOCOPS_PATHS.prototypeConfig);
   const prototypeConfigDest = join(projectRoot, ".docops/prototype/config.json");
-  if ((await pathExists(prototypeConfigSrc)) && !(await pathExists(prototypeConfigDest))) {
-    actions.push(
-      `${dryRun ? "would copy" : "copy"} ${LEGACY_DOCOPS_PATHS.prototypeConfig} → .docops/prototype/config.json`,
-    );
-    if (!dryRun) {
-      await mkdir(dirname(prototypeConfigDest), { recursive: true });
-      await cp(prototypeConfigSrc, prototypeConfigDest);
+  for (const rel of [
+    LEGACY_DOCOPS_PATHS.prototypeConfig,
+    "prototype/config.json",
+  ]) {
+    const prototypeConfigSrc = join(projectRoot, rel);
+    if ((await pathExists(prototypeConfigSrc)) && !(await pathExists(prototypeConfigDest))) {
+      actions.push(
+        `${dryRun ? "would copy" : "copy"} ${rel} → .docops/prototype/config.json`,
+      );
+      if (!dryRun) {
+        await mkdir(dirname(prototypeConfigDest), { recursive: true });
+        await cp(prototypeConfigSrc, prototypeConfigDest);
+      }
+      break;
     }
   }
 }

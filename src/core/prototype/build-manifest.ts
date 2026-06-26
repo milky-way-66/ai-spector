@@ -14,7 +14,7 @@ import {
 } from "./resolve-default-screen.js";
 import { applyRouteDefaults, loadRouteDefaults } from "./route-defaults.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
-import { writePrototypeScreenMap } from "../docops/config.js";
+import { resolvePrototypeScreenMapRel, writePrototypeScreenMap } from "../docops/config.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { buildScreenDocPaths } from "./screen-doc-paths.js";
 import { toDeployBasePath, toDeployPrototypePath, toSpaScreenPrototypePath } from "./deploy-path.js";
@@ -107,11 +107,8 @@ export async function buildPrototypeManifest(
     opts.config.prototypeDir,
   );
 
-  const screenMapPath = join(
-    opts.projectRoot,
-    opts.config.prototypeDir,
-    "screen-map.json",
-  );
+  const { primary: screenMapRel } = await resolvePrototypeScreenMapRel(opts.projectRoot);
+  const screenMapPath = join(opts.projectRoot, screenMapRel);
   let previousDefault: string | undefined;
   let previousBypassAuth: boolean | undefined;
   let previousReview: ReviewUrlContext | undefined;

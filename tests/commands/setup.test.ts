@@ -54,8 +54,8 @@ describe("setup", () => {
         }),
         "utf8",
       );
-      await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
-      await writeJson(join(root, ".ai-spector/.docflow/config/prototype/config.json"), {
+      await mkdir(join(root, ".docops/prototype"), { recursive: true });
+      await writeJson(join(root, ".docops/prototype/config.json"), {
         version: 1,
         prototypeDir: "prototype",
       });

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "buildMode": "static",
+  "listScreenDoc": "docs/basic-design/en/list-screens.md",
+  "screenIndexSection": "## 4. Screen Index",
+  "screenDetailDir": "docs/basic-design/screens/",
+  "prototypeDir": "prototype",
+  "srcDir": "prototype/src",
+  "slugFrom": "screenName",
+  "defaultTheme": "vercel",
+  "htpasswdFile": "prototype/.htpasswd",
+  "prototypeBypassAuth": true,
+  "reviewHost": "",
+  "projectId": "",
+  "deployVersion": ""
+}

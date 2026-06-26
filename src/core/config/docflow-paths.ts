@@ -1,7 +1,9 @@
 import { join } from "node:path";
+import { DOCOPS_ROOT } from "../docops/paths.js";
 import { scaffoldBundleRoot } from "./load.js";
 
 export const DOCFLOW_CONFIG_REL = ".ai-spector/.docflow/config";
+export const DOCOPS_PROTOTYPE_CONFIG_REL = `${DOCOPS_ROOT}/prototype/config.json`;
 
 export function docflowConfigDir(root: string): string {
   return join(root, DOCFLOW_CONFIG_REL);
@@ -32,7 +34,7 @@ export function workspaceDataSourcePath(root: string): string {
 }
 
 export function prototypeConfigDir(root: string): string {
-  return join(docflowConfigDir(root), "prototype");
+  return join(root, DOCOPS_ROOT, "prototype");
 }
 
 export function prototypeConfigPath(root: string): string {
@@ -40,7 +42,7 @@ export function prototypeConfigPath(root: string): string {
 }
 
 export function bundledPrototypeConfigPath(): string {
-  return join(scaffoldBundleRoot(), DOCFLOW_CONFIG_REL, "prototype/config.json");
+  return join(scaffoldBundleRoot(), DOCOPS_PROTOTYPE_CONFIG_REL);
 }
 
 export function docTypeConfigDir(root: string, docTypeOrPack: string): string {

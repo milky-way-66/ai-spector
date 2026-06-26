@@ -144,7 +144,7 @@ export async function runPrototypeStack(opts: PrototypeStackOptions): Promise<vo
   const { projectRoot } = await loadPrototypeConfig(opts.root);
   const config = await persistPrototypeTechStack(projectRoot, stack);
   console.log(`Tech stack set to "${stack}" (buildMode: ${config.buildMode})`);
-  console.log(`  saved to .ai-spector/.docflow/config/prototype/config.json`);
+  console.log(`  saved to .docops/prototype/config.json`);
 }
 
 export interface PrototypeAuthOptions {
@@ -163,7 +163,7 @@ export async function runPrototypeAuth(opts: PrototypeAuthOptions = {}): Promise
   if (opts.fromConfig) {
     if (!isPrototypeBasicAuthConfigured(config)) {
       throw new Error(
-        "No basicAuth in prototype/config.json — run: npx ai-spector prototype auth --username <u> --password <p>",
+        "No basicAuth in .docops/prototype/config.json — run: npx ai-spector prototype auth --username <u> --password <p>",
       );
     }
     username = config.basicAuth.username;
@@ -181,7 +181,7 @@ export async function runPrototypeAuth(opts: PrototypeAuthOptions = {}): Promise
   await writeHtpasswdFile(htpasswdPath, username, password);
 
   console.log(`Prototype basic auth configured for user "${username}"`);
-  console.log(`  credentials: .ai-spector/.docflow/config/prototype/config.json (basicAuth)`);
+  console.log(`  credentials: .docops/prototype/config.json (basicAuth)`);
   console.log(`  htpasswd: ${next.htpasswdFile}`);
 }
 
@@ -564,7 +564,7 @@ export async function runPrototypeSync(opts: PrototypeSyncOptions = {}): Promise
   if (!opts.skipCopy) {
     if (!buildSrc) {
       throw new Error(
-        "No build source configured. Pass --from <path> or set buildSrc in prototype/config.json.",
+        "No build source configured. Pass --from <path> or set buildSrc in .docops/prototype/config.json.",
       );
     }
     const srcAbs = join(projectRoot, buildSrc);

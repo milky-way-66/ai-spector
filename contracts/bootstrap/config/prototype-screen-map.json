@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "buildMode": "static",
+  "defaultScreenId": "SCR-001",
+  "defaultScreen": {
+    "screenId": "SCR-001",
+    "displayName": "Login",
+    "screenDocPath": "basic-design/screens/login.md",
+    "prototypePath": "",
+    "route_exists": false
+  },
+  "screens": [
+    {
+      "screenId": "SCR-001",
+      "displayName": "Login",
+      "screenDocPath": "basic-design/screens/login.md",
+      "screenDocs": {
+        "en": "docs/basic-design/en/screens/login.md"
+      },
+      "prototypePath": "",
+      "route_exists": false,
+      "reviewUrl": null
+    }
+  ]
+}

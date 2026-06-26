@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { prototypeConfigPath } from "../config/docflow-paths.js";
+import { resolvePrototypeScreenMapRel } from "../docops/config.js";
 import { loadDocflowConfig } from "../config/load.js";
 import { runInit } from "./init.js";
 import { ensureGitRepository, installGitHooks } from "./hooks.js";
@@ -187,12 +188,13 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
       const protoConfig = await readJson<{ prototypeDir?: string }>(protoConfigPath);
       const protoDir = protoConfig.prototypeDir?.trim() || "prototype";
       const manifestPath = join(root, protoDir, "manifest.json");
-      const screenMapPath = join(root, protoDir, "screen-map.json");
+      const { primary: screenMapRel } = await resolvePrototypeScreenMapRel(root);
+      const screenMapPath = join(root, screenMapRel);
       if (await pathExists(manifestPath)) {
         const screenMapExists = await pathExists(screenMapPath);
         steps.push({
           id: "prototype-screen-map",
-          label: `${protoDir}/screen-map.json`,
+          label: screenMapRel,
           status: screenMapExists ? "ok" : "missing",
           fix: screenMapExists ? undefined : "npx ai-spector prototype manifest",
         });

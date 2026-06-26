@@ -159,6 +159,8 @@ export async function copyBootstrapConfig(opts: {
       "config/review-queue-pending.json",
       join(opts.config.paths.reviewQueue, "pending.json").replace(/\\/g, "/"),
     ],
+    ["config/prototype.config.json", opts.config.paths.prototypeConfig],
+    ["config/prototype-screen-map.json", opts.config.paths.prototypeScreenMap],
   ];
 
   for (const [srcRel, destRel] of mapping) {

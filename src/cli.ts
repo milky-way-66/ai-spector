@@ -1484,10 +1484,10 @@ prototype
 
 prototype
   .command("auth")
-  .description("Configure HTTP basic auth (credentials in prototype/config.json, .htpasswd under prototype/)")
+  .description("Configure HTTP basic auth (credentials in .docops/prototype/config.json, .htpasswd under prototype/)")
   .option("--username <name>", "Basic auth username")
   .option("--password <secret>", "Basic auth password")
-  .option("--from-config", "Regenerate .htpasswd from stored prototype/config.json basicAuth")
+  .option("--from-config", "Regenerate .htpasswd from stored .docops/prototype/config.json basicAuth")
   .action(async (opts, cmd) => {
     await runPrototypeAuth({
       root: projectRootOpt(cmd),
@@ -1548,7 +1548,7 @@ prototype
 prototype
   .command("map")
   .description(
-    "Build prototype/screen-map.json from basic-design Screen Index + prototype/path-map.json (hosted / external prototypes)",
+    "Build .docops/prototype/screen-map.json from basic-design Screen Index + prototype/path-map.json (hosted / external prototypes)",
   )
   .option("--from <path>", "Path map input (default: prototype/path-map.json)")
   .option("--theme <name>", "Theme name stored in screen-map.json")
