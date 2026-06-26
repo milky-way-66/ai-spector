@@ -742,6 +742,24 @@ export const TaskCreateSchema = RootSchema.extend({
   ...DeriveBootstrapFields,
 });
 
+/** WorkCreateSchema extends TaskCreateSchema to also accept kind "change" (alias for "resolve"). */
+export const WorkKindEnum = z.enum(["generate", "resolve", "import", "adopt", "change"]);
+export const WorkCreateSchema = RootSchema.extend({
+  kind: WorkKindEnum.describe(
+    "generate | resolve | import | adopt | change (alias for resolve)",
+  ),
+  workflow: WorkflowIdEnum.describe(
+    "Workflow template to initialize steps from (generate-srs, resolve, template-import, …)",
+  ),
+  trigger: z.string().describe("Original user intent that started this work item"),
+  docType: z.string().optional().describe("Doc type for generate workflows (e.g. srs)"),
+  force: z
+    .boolean()
+    .optional()
+    .describe("Replace existing active task in the same slot (abandons the previous task)"),
+  ...DeriveBootstrapFields,
+});
+
 const TaskListBootstrapSchema = z.object({
   kind: TaskKindEnum.describe("generate | resolve | import"),
   workflow: WorkflowIdEnum.describe(

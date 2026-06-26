@@ -92,6 +92,7 @@ import {
   TaskCompleteSchema,
   TaskAbandonSchema,
   TaskRecordWaveSchema,
+  WorkCreateSchema,
   WorkflowRouteSchema,
   WorkflowStatusSchema,
 } from "./schemas.js";
@@ -166,6 +167,19 @@ import {
   toolTaskUpdate,
   toolTaskRecordWave,
 } from "./tools/task.js";
+import {
+  toolWorkCreate,
+  toolWorkList,
+  toolWorkStatus,
+  toolWorkGet,
+  toolWorkUpdate,
+  toolWorkApprovePlan,
+  toolWorkRecordStep,
+  toolWorkPause,
+  toolWorkResume,
+  toolWorkComplete,
+  toolWorkAbandon,
+} from "./tools/work.js";
 import {
   toolReviewApprove,
   toolReviewDecline,
@@ -1431,6 +1445,138 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolTaskRecordWave(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+// ── work_* tools (aliases for task_* with deprecation shims on task_*) ──────
+
+server.registerTool(
+  "work_create",
+  {
+    description:
+      "Create a new workflow work item. Accepts kind 'change' as an alias for 'resolve'. Prefer work_* over deprecated task_* tools.",
+    inputSchema: WorkCreateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkCreate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_list",
+  {
+    description:
+      "List work items (active, paused, complete). Alias for task_list. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskListSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkList(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_get",
+  {
+    description:
+      "Load full work item state. Alias for task_get. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskGetSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkGet(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_update",
+  {
+    description:
+      "Patch work item state. Alias for task_update. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskUpdateSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkUpdate(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_approve_plan",
+  {
+    description:
+      "Approve a work item plan. Alias for task_approve_plan. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskApprovePlanSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkApprovePlan(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_record_step",
+  {
+    description:
+      "Record a generate-task wave/step completion. Alias for task_record_wave. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskRecordWaveSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkRecordStep(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_pause",
+  {
+    description:
+      "Pause an active work item. Alias for task_pause. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskPauseSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkPause(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_resume",
+  {
+    description:
+      "Resume a paused work item. Alias for task_resume. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskResumeSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkResume(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_complete",
+  {
+    description:
+      "Mark a work item complete. Alias for task_complete. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskCompleteSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkComplete(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "work_abandon",
+  {
+    description:
+      "Abandon a work item. Alias for task_abandon. Prefer work_* over deprecated task_* tools.",
+    inputSchema: TaskAbandonSchema.shape,
+  },
+  async (input) => {
+    const result = await toolWorkAbandon(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

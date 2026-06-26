@@ -93,6 +93,16 @@ export const MCP_TOOL_NAMES = [
   "task_complete",
   "task_abandon",
   "task_record_wave",
+  "work_create",
+  "work_list",
+  "work_get",
+  "work_update",
+  "work_approve_plan",
+  "work_record_step",
+  "work_pause",
+  "work_resume",
+  "work_complete",
+  "work_abandon",
 ] as const;
 
 /** Template-import workflow tools — must appear in MCP list_tools for gated runbook. */
