@@ -6,21 +6,23 @@ Agents use this when intent is ambiguous. Read the matching skill's runbook befo
 
 1. **Document sign-off** — *approve doc*, *sign off*, *review queue*, *pending client*, *what changed since approval*, logical path + approve (`srs/01-overview`) → **`ai-spector-contract`** (Review section). Not resolve-task, generate, or comments unless user explicitly switches topic.
 
-2. **Resume / active work** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector`** (`work_list` → `work_resume`). Skip if message is clearly document sign-off (priority 1).
+2. **Onboarding help** — *help* (setup), *I'm stuck*, *where am I*, *what's next* (project setup progress) → **`ai-spector`** ([help.md](./ai-spector/references/help.md)). Not generate, resolve-task, or work resume unless lifecycle is complete.
 
-3. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector`** (Upgrade section). Not greenfield setup, not doc migration.
+3. **Resume / active work** — *resume*, *continue*, *pick up*, *active tasks*, *in progress* → **`ai-spector`** (`work_list` → `work_resume`). Skip if message is clearly document sign-off (priority 1) or onboarding help (priority 2).
 
-4. **Adopt / migrate existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *legacy SRS*, *move docs* → **`ai-spector`** (Adopt section). Not greenfield setup, not empty template import, not full generate.
+4. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector`** (Upgrade section). Not greenfield setup, not doc migration.
 
-5. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-generate`** (Resolve-Task section). Not full generate (priority 6).
+5. **Adopt / migrate existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *legacy SRS*, *move docs* → **`ai-spector`** (Adopt section). Not greenfield setup, not empty template import, not full generate.
 
-6. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph*, *generate SRS/basic design/detail design/prototype* → **`ai-spector-generate`** (matching layer section).
+6. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-generate`** (Resolve-Task section). Not full generate (priority 7).
 
-7. **Graph / search / impact** — *analyze*, *index*, *validate*, *impact*, *visualize*, *sync audit*, *check doc drift*, *find docs about*, *semantic search* → **`ai-spector-graph`** (matching runbook section).
+7. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph*, *generate SRS/basic design/detail design/prototype* → **`ai-spector-generate`** (matching layer section).
 
-8. **Comments / translation** — *resolve comments*, *C-001*, *B-001*, *prototype comments*, *resolve translations*, *stale languages*, *translation status* → **`ai-spector-contract`** (Comments or Translation section).
+8. **Graph / search / impact** — *analyze*, *index*, *validate*, *impact*, *visualize*, *sync audit*, *check doc drift*, *find docs about*, *semantic search* → **`ai-spector-graph`** (matching runbook section).
 
-9. **Fallback** — call `workflow_route({ message })` MCP tool; if `askUser`, ask one clarifying question.
+9. **Comments / translation** — *resolve comments*, *C-001*, *B-001*, *prototype comments*, *resolve translations*, *stale languages*, *translation status* → **`ai-spector-contract`** (Comments or Translation section).
+
+10. **Fallback** — call `workflow_route({ message })` MCP tool; if `askUser`, ask one clarifying question.
 
 ## DISAMBIGUATION: "approve" means four different things
 
@@ -59,6 +61,7 @@ Agents use this when intent is ambiguous. Read the matching skill's runbook befo
 
 | User intent (examples) | Skill | Read first |
 |------------------------|-------|------------|
+| help, I'm stuck, where am I, what's next (setup) | `ai-spector` | `references/help.md` |
 | setup, init, bootstrap, get started | `ai-spector` | `references/runbook.md#setup` |
 | upgrade ai-spector, sync after update | `ai-spector` | `references/runbook.md#upgrade` |
 | migrate project, adopt existing docs, wrong SRS folder | `ai-spector` | `references/runbook.md#adopt` |

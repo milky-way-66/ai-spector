@@ -23,7 +23,8 @@ Without MCP: follow priority table below and `_skill-router.md` (same rules, no 
 
 0. **Document sign-off** — approve doc, review queue, pending client, logical path (`srs/…`) → **`ai-spector-review`**
 0.5. **Active review session** — if `.ai-spector/.docflow/review-queue/.session.json` phase is `queue`, `reviewing`, or `awaiting_decision` → **`ai-spector-review`** (overrides "continue"/"resume" unless user clearly switches topic)
-1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues or active review session)
+0.75. **Onboarding help** — help (setup context), I'm stuck, where am I, what's next (project progress) → **`ai-spector`** — read `references/help.md` (not generate/resolve-task unless lifecycle is complete)
+1. **Resume task** — resume, continue generation, active tasks → **`ai-spector-task`** (skip if sign-off cues, active review session, or onboarding help cues in 0.75)
 1.5. **Upgrade ai-spector** — upgrade, update ai-spector, sync after update, stale scaffold, continue upgrade → **`ai-spector-upgrade`**
 2. **Incremental change** — add/update/change/"I want to…" → **`ai-spector-resolve-task`** (exception: "I want to generate …" → **`ai-spector-generate-*`**)
 2.5. **Migrate / adopt existing docs** — migrate project, adopt existing docs, wrong SRS folder, legacy SRS, move docs to ai-spector structure, continue adopt → **`ai-spector-adopt`**

@@ -2,20 +2,27 @@
 name: ai-spector
 description: >-
   Core AI Spector skill: setup, upgrade, adopt, check, docops CLI, work sessions (resume/route/pause),
-  and course link. Use for project init/setup, upgrade, adopting existing docs, workspace check,
-  Writer contract bootstrap (docops init/migrate), resuming or managing active work sessions, or
-  learning via the course. Do not use when the user clearly wants generation, graph ops, or contract
-  review/comments — use the matching skill instead.
+  course link, and onboarding help. Use when the user says help, I'm stuck, where am I, or what's next
+  about project setup; project init/setup, upgrade, adopting existing docs, workspace check, Writer
+  contract bootstrap (docops init/migrate), resuming or managing active work sessions, or learning via
+  the course. Do not use when the user clearly wants generation, graph ops, or contract review/comments
+  — use the matching skill instead.
 ---
 
 # AI Spector (core)
 
 **Router:** [../_skill-router.md](../_skill-router.md) · **Workflow:** [../../WORKFLOW.md](../../WORKFLOW.md)
 
+## When to use
+
+- **Onboarding help** — *help*, *I'm stuck*, *where am I*, *what's next* (project setup progress) → [references/help.md](references/help.md)
+- Setup, upgrade, adopt, check, docops, course, work sessions → runbook sections below
+
 ## Route by intent
 
 | Intent | Runbook section |
 |--------|-----------------|
+| Help / stuck / where am I / what's next | [references/help.md](references/help.md) |
 | Setup / bootstrap project | [references/runbook.md — Setup](references/runbook.md#setup) |
 | Upgrade ai-spector package | [references/runbook.md — Upgrade](references/runbook.md#upgrade) |
 | Adopt / migrate existing docs | [references/runbook.md — Adopt](references/runbook.md#adopt) |
@@ -43,6 +50,7 @@ When the `ai-spector` MCP server is configured, **call MCP tools** instead of `n
 | Resume work session | `work_resume({ workId })` | `npx ai-spector work resume <id>` |
 | List work sessions | `work_list({ status })` | `npx ai-spector work list --json` |
 | Docops status | `docops_status({})` | `npx ai-spector docops status --json` |
+| Lifecycle sync / onboarding progress | `lifecycle_sync({ dryRun?: boolean })` | `npx ai-spector lifecycle sync [--json]` |
 | Translation queue status | `lang_queue({})` | `npx ai-spector lang queue pending --json` |
 
 ## CLI failure rule (non-negotiable)
@@ -78,6 +86,7 @@ Or `index({})` if CocoIndex is not configured. Never skip embedding refresh when
 - [references/cli-failures.md](references/cli-failures.md)
 - [references/cli-reference.md](references/cli-reference.md)
 - [references/project-conventions.md](references/project-conventions.md)
+- [references/help.md](references/help.md)
 - [references/workspace-check.md](references/workspace-check.md)
 - [references/generate-workflow.md](references/generate-workflow.md)
 - [references/graph.md](references/graph.md)
