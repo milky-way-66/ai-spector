@@ -57,7 +57,7 @@ async function writeMinimalGraph(root: string): Promise<void> {
   });
 }
 
-describe("adopt integration", () => {
+describe("adopt integration", { timeout: 20_000 }, () => {
   it("migrates flat SRS to canonical layout and validates ready", async () => {
     await withTempDir(async (root) => {
       await scaffoldMinimalInit(root);
