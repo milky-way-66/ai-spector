@@ -1,5 +1,13 @@
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { ENGINE_CONFIG_REL } from "../engine/paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
+import { assessDocopsProject } from "./assess.js";
+import { readDocopsConfig } from "./config.js";
+import {
+  LEGACY_DOCFLOW_CONFIG_REL,
+  segmentRepoPrefixMap,
+} from "./paths.js";
 
 export const LIFECYCLE_PATH = ".docops/lifecycle.json";
 
@@ -72,8 +80,97 @@ export interface LifecycleSummary {
   nextStepId: LifecycleStepId | null;
 }
 
-function nowIso(): string {
+export function nowIso(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+const DATA_SOURCE_PROBE_PATH = "docs/data-source";
+
+function listingHasMeaningfulFiles(paths: string[]): boolean {
+  for (const path of paths) {
+    const name = path.replace(/\/$/, "").split("/").pop();
+    if (name && name !== ".gitkeep") {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function listFilesUnder(projectRoot: string, folder: string): Promise<string[]> {
+  const absDir = join(projectRoot, folder);
+  if (!(await pathExists(absDir))) {
+    return [];
+  }
+
+  const results: string[] = [];
+
+  async function walk(current: string, prefix: string): Promise<void> {
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full, rel);
+        continue;
+      }
+      if (entry.isFile()) {
+        results.push(rel.replace(/\\/g, "/"));
+      }
+    }
+  }
+
+  await walk(absDir, "");
+  return results;
+}
+
+async function folderHasMdFiles(projectRoot: string, folder: string): Promise<boolean> {
+  const files = await listFilesUnder(projectRoot, folder);
+  return files.some((path) => path.endsWith(".md"));
+}
+
+/** Filesystem probes for lifecycle reconcile (parity with Writer git assessment). */
+export async function probeLifecycleSignals(projectRoot: string): Promise<LifecycleProbes> {
+  const assessment = await assessDocopsProject(projectRoot);
+  const config = await readDocopsConfig(projectRoot);
+  const hasDocopsConfig = config != null;
+
+  const dataSourceListed = await listFilesUnder(projectRoot, DATA_SOURCE_PROBE_PATH);
+  const hasDataSourceFiles = listingHasMeaningfulFiles(dataSourceListed);
+
+  let hasGeneratedDocs = false;
+  if (config) {
+    for (const folder of Object.values(segmentRepoPrefixMap(config))) {
+      if (folder && (await folderHasMdFiles(projectRoot, folder))) {
+        hasGeneratedDocs = true;
+        break;
+      }
+    }
+  }
+
+  const hasAiSpectorEngine =
+    (await pathExists(join(projectRoot, ENGINE_CONFIG_REL))) ||
+    (await pathExists(join(projectRoot, LEGACY_DOCFLOW_CONFIG_REL)));
+
+  const gitConnected = await pathExists(join(projectRoot, ".git"));
+
+  return {
+    git_connected: gitConnected,
+    has_docops_config: hasDocopsConfig,
+    has_data_source_files: hasDataSourceFiles,
+    has_generated_docs: hasGeneratedDocs,
+    layout: assessment.layout,
+    has_ai_spector_engine: hasAiSpectorEngine,
+    writer_synced: false,
+  };
 }
 
 function step(id: LifecycleStepId, status: StepStatus = "pending"): LifecycleStep {

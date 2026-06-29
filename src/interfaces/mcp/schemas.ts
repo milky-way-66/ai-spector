@@ -1077,6 +1077,15 @@ export const WorkflowRouteSchema = RootSchema.extend({
 
 export const WorkflowStatusSchema = RootSchema;
 
+// ── Lifecycle sync ────────────────────────────────────────────────────────────
+
+export const LifecycleSyncSchema = RootSchema.extend({
+  dryRun: z
+    .boolean()
+    .optional()
+    .describe("Reconcile lifecycle steps without writing .docops/lifecycle.json"),
+});
+
 // ── Contract tools ────────────────────────────────────────────────────────────
 
 export const ContractReviewSchema = RootSchema.extend({

@@ -47,6 +47,7 @@ import {
   UpgradeSetupMarkSchema,
   SyncSnapshotSchema,
   SyncAuditSchema,
+  LifecycleSyncSchema,
   DocsSearchSchema,
   GraphQueryFuzzySchema,
   CocoindexStatusSchema,
@@ -147,6 +148,7 @@ import {
   toolUpgradeSetupMark,
 } from "./tools/upgrade.js";
 import { toolSyncSnapshot, toolSyncAudit } from "./tools/sync.js";
+import { toolLifecycleSync } from "./tools/lifecycle.js";
 import { toolDocsSearch, toolGraphQueryFuzzy, toolCocoindexStatus, toolCocoindexStats, toolCocoindexIndex } from "./tools/cocoindex.js";
 import { toolResolveTask } from "./tools/resolve-task.js";
 import { toolWorkspaceCheck } from "./tools/check.js";
@@ -214,6 +216,7 @@ import {
   ADOPT_TOOL_DESCRIPTIONS,
   UPGRADE_TOOL_DESCRIPTIONS,
   SYNC_TOOL_DESCRIPTIONS,
+  LIFECYCLE_TOOL_DESCRIPTIONS,
 } from "./tool-descriptions.js";
 import { MCP_TOOL_NAMES } from "./tool-names.js";
 import { mcpToolErrorContent } from "./format-tool-error.js";
@@ -805,6 +808,18 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolSyncAudit(input);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "lifecycle_sync",
+  {
+    description: LIFECYCLE_TOOL_DESCRIPTIONS.lifecycle_sync,
+    inputSchema: LifecycleSyncSchema.shape,
+  },
+  async (input) => {
+    const result = await toolLifecycleSync(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

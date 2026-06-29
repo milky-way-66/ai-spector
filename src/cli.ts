@@ -11,6 +11,7 @@ import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
 import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus } from "./core/operations/docops.js";
+import { runLifecycleSync } from "./core/operations/lifecycle.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
   runLangQueueFailed,
@@ -1493,6 +1494,24 @@ docopsReview
       root: projectRootOpt(cmd),
       dryRun: opts.dryRun,
       json: opts.json,
+    });
+    process.exitCode = code;
+  });
+
+const lifecycle = program
+  .command("lifecycle")
+  .description("Project onboarding lifecycle (.docops/lifecycle.json)");
+
+lifecycle
+  .command("sync")
+  .description("Reconcile lifecycle steps from filesystem probes and write lifecycle.json")
+  .option("--json", "JSON output for agents")
+  .option("--dry-run", "Reconcile without writing lifecycle.json")
+  .action(async (opts, cmd) => {
+    const code = await runLifecycleSync({
+      root: projectRootOpt(cmd),
+      json: opts.json,
+      dryRun: opts.dryRun,
     });
     process.exitCode = code;
   });

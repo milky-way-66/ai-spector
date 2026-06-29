@@ -46,6 +46,7 @@ export const MCP_TOOL_NAMES = [
   "upgrade_setup_mark",
   "sync_snapshot",
   "sync_audit",
+  "lifecycle_sync",
   "cocoindex_status",
   "cocoindex_stats",
   "cocoindex_index",

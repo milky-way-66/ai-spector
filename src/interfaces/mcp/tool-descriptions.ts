@@ -262,3 +262,16 @@ export const SYNC_TOOL_DESCRIPTIONS = {
 } as const;
 
 export type SyncToolName = keyof typeof SYNC_TOOL_DESCRIPTIONS;
+
+export const LIFECYCLE_TOOL_DESCRIPTIONS = {
+  lifecycle_sync: [
+    "Reconcile project onboarding lifecycle (.docops/lifecycle.json) from filesystem probes.",
+    "",
+    "WHEN: After setup, docops init, adopt, or local adapter work — before git push to Writer.",
+    "NOT WHEN: Document quality readiness (readiness_assess); design-layer drift (sync_audit).",
+    "Marks steps done when docops config, data-source, SRS markdown, or engine.json are detected.",
+    "Set dryRun:true to preview reconcile without writing lifecycle.json.",
+  ].join("\n"),
+} as const;
+
+export type LifecycleToolName = keyof typeof LIFECYCLE_TOOL_DESCRIPTIONS;
