@@ -7,6 +7,7 @@ import {
   readLifecycle,
   reconcileLifecycle,
   writeLifecycle,
+  WRITER_LIFECYCLE_HANDOFF,
   type LifecycleSummary,
 } from "../docops/lifecycle.js";
 
@@ -39,7 +40,7 @@ function printHumanSummary(summary: LifecycleSummary, dryRun: boolean): void {
     console.log(`  ${mark} ${step.id} (${step.status})`);
   }
   console.log("");
-  console.log("Next on Writer: git push, then open Project → Overview to see updated checklist.");
+  console.log(WRITER_LIFECYCLE_HANDOFF);
 }
 
 export async function runLifecycleSync(opts: {

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runAdoptApply } from "@/core/adopt/apply.js";
 import { adoptArtifactPaths } from "@/core/adopt/paths.js";
+import { LIFECYCLE_PATH } from "@/core/docops/lifecycle.js";
 import { loadAdoptSetup } from "@/core/adopt/setup.js";
 import type { AdoptPlan } from "@/core/adopt/types.js";
 import { pathExists, readJson, writeJson } from "@/core/util/fs.js";
@@ -83,6 +84,14 @@ describe("runAdoptApply", () => {
 
       const setup = await loadAdoptSetup(root);
       expect(setup.items["apply.done"]?.done).toBe(true);
+
+      const lifecyclePath = join(root, LIFECYCLE_PATH);
+      expect(await pathExists(lifecyclePath)).toBe(true);
+      const lifecycle = await readJson<{ steps: Array<{ id: string; status: string }> }>(
+        lifecyclePath,
+      );
+      const legacy = lifecycle.steps.find((s) => s.id === "legacy-aligned");
+      expect(legacy?.status).toBe("done");
     });
   });
 

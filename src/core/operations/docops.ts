@@ -5,6 +5,7 @@ import { initDocopsContract } from "../docops/init.js";
 import { migrateDocopsLayout, migrateFromDocflow } from "../docops/migrate.js";
 import { syncDocopsRegistry } from "../docops/registry/index.js";
 import { migrateCommentsToTargetIds } from "../comments/migrate.js";
+import { markLifecycleStepDone, WRITER_LIFECYCLE_HANDOFF } from "../docops/lifecycle.js";
 
 export interface DocopsMigrateOptions {
   root?: string;
@@ -27,6 +28,8 @@ export async function runDocopsStatus(opts: { root?: string; json?: boolean } = 
       console.log(`  [${gap.severity}] ${gap.id}: ${gap.message}`);
       if (gap.fix) console.log(`    fix: ${gap.fix}`);
     }
+    console.log("");
+    console.log(WRITER_LIFECYCLE_HANDOFF);
   }
   return assessment.writerReady ? 0 : 2;
 }
@@ -53,6 +56,15 @@ export async function runDocopsInit(opts: {
     process.exitCode = 1;
   }
   console.log(result.initialized ? `\nInitialized → ${result.configPath}` : `\nNo init performed.`);
+  if (result.initialized && !opts.dryRun) {
+    try {
+      await markLifecycleStepDone(projectRoot, "docops-init");
+    } catch {
+      // lifecycle update is best-effort after docops init
+    }
+    console.log("");
+    console.log(WRITER_LIFECYCLE_HANDOFF);
+  }
 }
 
 export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise<void> {

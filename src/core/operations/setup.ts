@@ -15,6 +15,7 @@ import { HOOK_MARKER } from "./hooks-constants.js";
 import { installedPackageVersion } from "../upgrade/package-version.js";
 import { readScaffoldVersion } from "../upgrade/stamp.js";
 import semver from "semver";
+import { lifecycleSyncResult } from "./lifecycle.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../../../package.json") as { version: string; engines?: { node?: string } };
@@ -363,5 +364,12 @@ export async function runSetup(opts: SetupOptions = {}): Promise<SetupAudit> {
   }
 
   audit = await auditSetup(root);
+  if (audit.ready) {
+    try {
+      await lifecycleSyncResult({ root, dryRun: false });
+    } catch {
+      // lifecycle sync is best-effort after setup
+    }
+  }
   return audit;
 }

@@ -299,3 +299,32 @@ export async function writeLifecycle(
   await writeJson(path, lifecycle);
   return path;
 }
+
+export const WRITER_LIFECYCLE_HANDOFF =
+  "Next on Writer: git push, then open Project → Overview to see updated checklist.";
+
+/** Mark a single lifecycle step done and persist (creates lifecycle from probes when missing). */
+export async function markLifecycleStepDone(
+  projectRoot: string,
+  stepId: LifecycleStepId,
+  opts: { updatedBy?: string } = {},
+): Promise<LifecycleDocument> {
+  const { updatedBy = "ai-spector" } = opts;
+  const probes = await probeLifecycleSignals(projectRoot);
+  let lifecycle = await readLifecycle(projectRoot);
+  if (!lifecycle) {
+    lifecycle = synthesizeLifecycleFromProbes({ probes, updatedBy });
+  }
+  const step = lifecycle.steps.find((s) => s.id === stepId);
+  if (step && step.status !== "blocked" && step.status !== "skipped") {
+    step.status = "done";
+    step.completedAt ??= nowIso();
+  }
+  const updated: LifecycleDocument = {
+    ...lifecycle,
+    updatedAt: nowIso(),
+    updatedBy,
+  };
+  await writeLifecycle(projectRoot, updated);
+  return updated;
+}

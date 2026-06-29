@@ -2,6 +2,7 @@ import type { SyncClaudeResult } from "@/core/operations/sync-claude.js";
 import type { SyncCursorResult } from "@/core/operations/sync-cursor.js";
 import type { HooksInstallResult } from "@/core/operations/hooks.js";
 import type { PreCommitReport } from "@/core/operations/hooks.js";
+import { WRITER_LIFECYCLE_HANDOFF } from "@/core/docops/lifecycle.js";
 import type { SetupAudit } from "@/core/operations/setup.js";
 import type { LangAddResult, LangSetClientResult, LangSetInternalResult } from "@/core/operations/lang.js";
 import type { QueueScanResult } from "@/core/operations/lang-queue.js";
@@ -55,6 +56,9 @@ export function formatSetupAudit(audit: SetupAudit, afterSetup = false): string 
     lines.push("  4. Add source files to docs/data-source/");
     lines.push('  5. In chat: "setup complete — analyze my data source"');
     lines.push("", "Re-check anytime: npx ai-spector setup --check");
+    if (audit.ready) {
+      lines.push("", WRITER_LIFECYCLE_HANDOFF);
+    }
   }
   return lines.join("\n");
 }

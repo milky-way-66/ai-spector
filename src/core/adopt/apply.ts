@@ -8,6 +8,7 @@ import {
   assertAdoptApplyAllowed,
   assertAdoptPlanApprovedOnDisk,
 } from "../operations/adopt-gates.js";
+import { markLifecycleStepDone } from "../docops/lifecycle.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import { adoptArtifactPaths } from "./paths.js";
 import { markAdoptSetupItem } from "./setup.js";
@@ -160,6 +161,11 @@ export async function runAdoptApply(opts: {
   const applied: AdoptPlan = { ...plan, status: "applied" };
   await writeJson(paths.plan, applied);
   await markAdoptSetupItem(root, "apply.done");
+  try {
+    await markLifecycleStepDone(root, "legacy-aligned");
+  } catch {
+    // lifecycle update is best-effort after adopt apply
+  }
 
   return { moved: moves.length, dryRun: false, moves };
 }
