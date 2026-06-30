@@ -60,7 +60,9 @@ Use `nextStepId` from Step 1. Cross-check Step 2 findings against the symptom ta
 | No git remote / clone fails | `git-connected` | Connect Bitbucket repo in Writer → Project Settings → Git |
 | Missing `.docops/docops.config.json` | `docops-init` | Writer Settings → Docops → Initialize, or `npx ai-spector docops init` |
 | Skills not routing / agent ignores ai-spector | `local-adapter-ready` | Enable all `.cursor/skills/ai-spector*` skills; reload MCP servers |
-| Docs in wrong folder / legacy layout | `legacy-aligned` | Read adopt runbook → [runbook.md — Adopt](runbook.md#adopt); offer `npx ai-spector adopt scan --json` |
+| Docs in wrong folder / legacy layout | `legacy-aligned` | Layout transform: [runbook.md — Adopt](runbook.md#adopt). Include comments, review, prototype in adopt plan or copy per MIGRATION.md |
+| Custom / non-standard template | `legacy-aligned` | Pause adopt — guide full gated [template-import](../../ai-spector-generate/references/runbook.md#template-import) workflow, then re-run adopt scan |
+| Legacy comments / review / prototype paths | `legacy-aligned` | Migrate to `.docops/comments/`, `.docops/review-queue/`, `.docops/prototype/` — adopt plan or MIGRATION.md copy steps |
 | Push done but Writer checklist stale | `first-push-synced` | Push branch; refresh Writer Project → Overview; check webhook/poll |
 | MCP tools missing / server not listed | `local-adapter-ready` | Reload MCP: Cmd+Shift+P → "Reload MCP Servers"; verify `.mcp.json` |
 | Empty `docs/data-source/` | `data-source-added` | Add project context files under `docs/data-source/` |
@@ -74,7 +76,7 @@ Use `nextStepId` from Step 1. Cross-check Step 2 findings against the symptom ta
 | `project-created` | User started on Writer — confirm project exists; continue web wizard |
 | `git-connected` | Link git remote in Writer or verify `git remote -v` locally |
 | `docops-init` | `npx ai-spector docops init` or Writer Docops initialize |
-| `legacy-aligned` | Gated adopt: [runbook.md — Adopt](runbook.md#adopt) |
+| `legacy-aligned` | Local only: doc layout + comments/review/prototype migrate + template-import (gated workflow). Wrong folder → adopt; custom template → template-import first |
 | `local-adapter-ready` | `npx ai-spector setup -y` or enable skills + MCP reload |
 | `data-source-added` | Add files to `docs/data-source/` |
 | `first-docs-generated` | Hand off to `ai-spector-generate` (SRS) or adopt path for migrate |
