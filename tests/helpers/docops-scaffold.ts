@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { DOCOPS_CONFIG_REL } from "@/core/docops/paths.js";
 import { ENGINE_CONFIG_REL } from "@/core/engine/paths.js";
@@ -8,7 +8,7 @@ export const MIN_DOCOPS = {
   schemaVersion: "1.0",
   languages: [{ code: "en", label: "English" }],
   capabilities: {
-    review: true,
+    review: false,
     comments: true,
     prototype: true,
     graph: true,
@@ -57,6 +57,23 @@ export async function scaffoldDocopsMinimal(root: string): Promise<void> {
   await mkdir(join(root, ".docops/templates/basic-design"), { recursive: true });
   await writeFile(join(root, ".docops/templates/srs/01.md"), "# srs\n", "utf8");
   await writeFile(join(root, ".docops/templates/basic-design/01.md"), "# bd\n", "utf8");
+  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
+  await mkdir(join(root, "docs/srs/en"), { recursive: true });
+  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
+  await writeJson(join(root, ".ai-spector/.docflow/tasks/index.json"), {
+    version: 1,
+    active: {},
+    recent: [],
+  });
+}
+
+/** Writer-ready docops contract (templates + review capability files). */
+export async function scaffoldDocopsWriterReady(root: string): Promise<void> {
+  await scaffoldDocopsMinimal(root);
+  const configPath = join(root, DOCOPS_CONFIG_REL);
+  const config = JSON.parse(await readFile(configPath, "utf8")) as typeof MIN_DOCOPS;
+  config.capabilities.review = true;
+  await writeFile(configPath, JSON.stringify(config), "utf8");
   await writeJson(join(root, ".docops/review.config.json"), {
     schemaVersion: "1.0",
     extends: "kaopiz-default",
@@ -65,13 +82,5 @@ export async function scaffoldDocopsMinimal(root: string): Promise<void> {
   await writeJson(join(root, ".docops/review-queue/registry.json"), {
     version: 3,
     documents: {},
-  });
-  await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
-  await mkdir(join(root, "docs/srs/en"), { recursive: true });
-  await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });
-  await writeJson(join(root, ".ai-spector/.docflow/tasks/index.json"), {
-    version: 1,
-    active: {},
-    recent: [],
   });
 }
