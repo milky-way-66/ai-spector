@@ -5,7 +5,8 @@ import { initDocopsContract } from "../docops/init.js";
 import { migrateDocopsLayout, migrateFromDocflow } from "../docops/migrate.js";
 import { syncDocopsRegistry } from "../docops/registry/index.js";
 import { migrateCommentsToTargetIds } from "../comments/migrate.js";
-import { markLifecycleStepDone, WRITER_LIFECYCLE_HANDOFF } from "../docops/lifecycle.js";
+import { WRITER_LIFECYCLE_HANDOFF } from "../docops/lifecycle.js";
+import { lifecycleSyncResult } from "./lifecycle.js";
 
 export interface DocopsMigrateOptions {
   root?: string;
@@ -58,9 +59,9 @@ export async function runDocopsInit(opts: {
   console.log(result.initialized ? `\nInitialized → ${result.configPath}` : `\nNo init performed.`);
   if (result.initialized && !opts.dryRun) {
     try {
-      await markLifecycleStepDone(projectRoot, "docops-init");
+      await lifecycleSyncResult({ root: projectRoot, dryRun: false });
     } catch {
-      // lifecycle update is best-effort after docops init
+      // lifecycle sync is best-effort after docops init
     }
     console.log("");
     console.log(WRITER_LIFECYCLE_HANDOFF);

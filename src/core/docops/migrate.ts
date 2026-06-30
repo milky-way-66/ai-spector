@@ -8,6 +8,7 @@ import {
   DOCOPS_CONFIG_REL,
   LEGACY_DOCFLOW_CONFIG_REL,
   LEGACY_DOCOPS_PATHS,
+  normalizeDocTypePath,
 } from "./paths.js";
 import {
   docopsConfigFromDocflow,
@@ -158,10 +159,51 @@ async function repairDocopsGaps(
 ): Promise<DocopsConfig> {
   await copyLegacyArtifacts(projectRoot, actions, dryRun);
 
-  const next = await patchMissingTemplatesPaths(projectRoot, config, actions, dryRun);
+  const withPaths = await patchCanonicalDocTypePaths(projectRoot, config, actions, dryRun);
+  const next = await patchMissingTemplatesPaths(projectRoot, withPaths, actions, dryRun);
   const docflow = await loadDocflowIfPresent(projectRoot);
   await bootstrapDocopsContract(projectRoot, next, docflow, actions, dryRun);
 
+  return next;
+}
+
+async function patchCanonicalDocTypePaths(
+  projectRoot: string,
+  config: DocopsConfig,
+  actions: string[],
+  dryRun: boolean,
+): Promise<DocopsConfig> {
+  if (!config.docTypes) {
+    return config;
+  }
+
+  const docsRoot = config.docsRoot?.trim() || "docs";
+  const docTypes = { ...config.docTypes };
+  let patched = false;
+
+  for (const [key, dt] of Object.entries(docTypes)) {
+    if (dt?.enabled === false || !dt?.path?.trim()) {
+      continue;
+    }
+    const canonical = normalizeDocTypePath(key, dt.path, docsRoot);
+    if (canonical === dt.path.trim()) {
+      continue;
+    }
+    docTypes[key] = { ...dt, path: canonical };
+    patched = true;
+    actions.push(
+      `${dryRun ? "would patch" : "patch"} docTypes.${key}.path → ${canonical}`,
+    );
+  }
+
+  if (!patched) {
+    return config;
+  }
+
+  const next = { ...config, docTypes };
+  if (!dryRun) {
+    await writeDocopsConfig(projectRoot, next);
+  }
   return next;
 }
 

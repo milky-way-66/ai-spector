@@ -35,7 +35,7 @@ describe("buildInitialLifecycle", () => {
 });
 
 describe("reconcileLifecycle", () => {
-  it("marks docops-init done when config present", () => {
+  it("marks docops-init done when writerReady", () => {
     const lc = buildInitialLifecycle({
       intent: "greenfield",
       adapter: "ai-spector",
@@ -44,6 +44,7 @@ describe("reconcileLifecycle", () => {
     const out = reconcileLifecycle({
       lifecycle: lc,
       probes: {
+        writer_ready: true,
         has_docops_config: true,
         has_data_source_files: false,
         has_generated_docs: false,
@@ -53,6 +54,24 @@ describe("reconcileLifecycle", () => {
     });
     const byId = Object.fromEntries(out.steps.map((s) => [s.id, s.status]));
     expect(byId["docops-init"]).toBe("done");
+  });
+
+  it("keeps docops-init pending when config exists but not writerReady", () => {
+    const lc = buildInitialLifecycle({
+      intent: "greenfield",
+      adapter: "ai-spector",
+      updatedBy: "test",
+    });
+    const out = reconcileLifecycle({
+      lifecycle: lc,
+      probes: {
+        writer_ready: false,
+        has_docops_config: true,
+        layout: "docops",
+      },
+    });
+    const byId = Object.fromEntries(out.steps.map((s) => [s.id, s.status]));
+    expect(byId["docops-init"]).toBe("pending");
   });
 
   it("does not downgrade blocked steps", () => {

@@ -269,6 +269,8 @@ npx ai-spector docops init --json
 
 Creates `.docops/docops.config.json` + capability stubs.
 
+`docTypes.<layer>.path` must be repo-root-relative folders under `docs/` (e.g. `docs/srs`, `docs/basic-design`) — not bare segment names like `srs` or `basic-design`. If an agent hand-wrote short paths, run `docops migrate --repair`.
+
 ### Phase 2 — Migrate (legacy → docops)
 
 ```bash
@@ -285,7 +287,23 @@ Splits `docflow.config.json` into `.docops/docops.config.json` + `.ai-spector/en
 npx ai-spector docops migrate --repair --json
 ```
 
-Fills missing capability files; patches config gaps.
+Fills missing capability files; patches config gaps (including short `docTypes.*.path` values).
+
+### Lifecycle sync
+
+```bash
+npx ai-spector lifecycle sync --json
+```
+
+Reconciles `.docops/lifecycle.json` from filesystem probes:
+
+| Step | Probe |
+|------|--------|
+| `docops-init` | `docops status` → `writerReady` (not just config file exists) |
+| `local-adapter-ready` | `npx ai-spector setup --check` ready, or engine/docflow present |
+| `first-push-synced` | `lifecycle.json` on disk + git upstream with no unpushed commits |
+
+After push, run `lifecycle sync` again so Writer checklist updates on refresh.
 
 ### Phase 4 — Verify
 

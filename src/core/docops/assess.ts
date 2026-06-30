@@ -3,8 +3,10 @@ import { pathExists } from "../util/fs.js";
 import { readDocopsConfig } from "./config.js";
 import {
   DOCOPS_CONFIG_REL,
+  isNonCanonicalDocTypePath,
   LEGACY_DOCFLOW_CONFIG_REL,
   LEGACY_DOCOPS_PATHS,
+  normalizeDocTypePath,
 } from "./paths.js";
 import { countMarkdownInDir } from "./templates.js";
 import type { DocopsConfig } from "./types.js";
@@ -102,7 +104,19 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
         }
       }
 
+      const docsRoot = config.docsRoot?.trim() || "docs";
       for (const [key, dt] of enabledDocTypes(config)) {
+        const layerPath = dt.path?.trim();
+        if (layerPath && isNonCanonicalDocTypePath(key, layerPath, docsRoot)) {
+          const canonical = normalizeDocTypePath(key, layerPath, docsRoot);
+          gaps.push({
+            id: `DOCOPS-PATH-${key}`,
+            severity: "blocking",
+            message: `docTypes.${key}.path is "${layerPath}" — expected "${canonical}"`,
+            fix: "Run docops migrate --repair (do not hand-edit paths to bare segment names)",
+          });
+        }
+
         const tpl = dt.templatesPath?.trim();
         if (!tpl) continue;
         const mdCount = await countMarkdownInDir(join(projectRoot, tpl));

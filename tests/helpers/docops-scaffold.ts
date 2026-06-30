@@ -55,6 +55,17 @@ export async function scaffoldDocopsMinimal(root: string): Promise<void> {
   await mkdir(join(root, ".ai-spector/.docflow/config"), { recursive: true });
   await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
   await mkdir(join(root, ".docops/templates/basic-design"), { recursive: true });
+  await writeFile(join(root, ".docops/templates/srs/01.md"), "# srs\n", "utf8");
+  await writeFile(join(root, ".docops/templates/basic-design/01.md"), "# bd\n", "utf8");
+  await writeJson(join(root, ".docops/review.config.json"), {
+    schemaVersion: "1.0",
+    extends: "kaopiz-default",
+  });
+  await mkdir(join(root, ".docops/review-queue"), { recursive: true });
+  await writeJson(join(root, ".docops/review-queue/registry.json"), {
+    version: 3,
+    documents: {},
+  });
   await mkdir(join(root, ".ai-spector/.docflow/context"), { recursive: true });
   await mkdir(join(root, "docs/srs/en"), { recursive: true });
   await mkdir(join(root, ".ai-spector/.docflow/tasks"), { recursive: true });

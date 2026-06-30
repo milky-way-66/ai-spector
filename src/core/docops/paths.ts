@@ -57,15 +57,67 @@ export const DOC_TYPE_INFERENCE: ReadonlyArray<{
   },
 ];
 
-const DOC_TYPE_KEY_TO_SEGMENT: Record<string, string> = {
+export const DOC_TYPE_KEY_TO_SEGMENT: Record<string, string> = {
   srs: "srs",
   basicDesign: "basic-design",
   detailDesign: "detail-design",
 };
 
-const DEFAULT_DOC_TYPE_REPO_PATH: Record<string, string> = Object.fromEntries(
+export const DEFAULT_DOC_TYPE_REPO_PATH: Record<string, string> = Object.fromEntries(
   DOC_TYPE_INFERENCE.map((row) => [row.key, row.path]),
 );
+
+/** Canonical repo folder for a doc layer (e.g. ``docs/basic-design``). */
+export function expectedDocTypeRepoPath(layerKey: string): string | undefined {
+  return DEFAULT_DOC_TYPE_REPO_PATH[layerKey];
+}
+
+/**
+ * Expand legacy short ``docTypes.<layer>.path`` values (``srs``, ``basic-design``)
+ * to repo-root-relative folders under ``docs/``. Custom paths are left unchanged.
+ */
+export function normalizeDocTypePath(
+  layerKey: string,
+  path: string,
+  docsRoot = "docs",
+): string {
+  const trimmed = resolveDocTypeRepoPath(path);
+  if (!trimmed) {
+    return trimmed;
+  }
+  const canonical = DEFAULT_DOC_TYPE_REPO_PATH[layerKey];
+  if (!canonical || trimmed === canonical) {
+    return trimmed;
+  }
+
+  const segment = DOC_TYPE_KEY_TO_SEGMENT[layerKey];
+  if (trimmed === segment || trimmed === layerKey) {
+    return canonical;
+  }
+
+  const root = docsRoot.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  if (root && !trimmed.includes("/") && !trimmed.startsWith(".")) {
+    const candidate = `${root}/${trimmed}`;
+    if (candidate === canonical) {
+      return canonical;
+    }
+  }
+
+  return trimmed;
+}
+
+/** True when ``path`` is a known short form that should be ``docs/<segment>``. */
+export function isNonCanonicalDocTypePath(
+  layerKey: string,
+  path: string,
+  docsRoot = "docs",
+): boolean {
+  const trimmed = resolveDocTypeRepoPath(path);
+  if (!trimmed) {
+    return false;
+  }
+  return normalizeDocTypePath(layerKey, trimmed, docsRoot) !== trimmed;
+}
 
 /**
  * Normalize ``docTypes.<layer>.path`` as a repo-root-relative directory.

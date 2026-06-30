@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { ENGINE_CONFIG_REL } from "../engine/paths.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
+import { probeGitPushedToUpstream } from "../util/git-push.js";
 import { assessDocopsProject } from "./assess.js";
 import { readDocopsConfig } from "./config.js";
 import {
@@ -63,6 +64,7 @@ export interface LifecycleDocument {
 export interface LifecycleProbes {
   git_connected?: boolean;
   has_docops_config?: boolean;
+  writer_ready?: boolean;
   has_data_source_files?: boolean;
   has_generated_docs?: boolean;
   layout?: string;
@@ -160,16 +162,31 @@ export async function probeLifecycleSignals(projectRoot: string): Promise<Lifecy
     (await pathExists(join(projectRoot, ENGINE_CONFIG_REL))) ||
     (await pathExists(join(projectRoot, LEGACY_DOCFLOW_CONFIG_REL)));
 
+  let adapterReady = false;
+  try {
+    const { auditSetup } = await import("../operations/setup.js");
+    const audit = await auditSetup(projectRoot);
+    adapterReady = audit.ready;
+  } catch {
+    adapterReady = false;
+  }
+
   const gitConnected = await pathExists(join(projectRoot, ".git"));
+  const lifecycleOnDisk = await pathExists(join(projectRoot, LIFECYCLE_PATH));
+  const gitPushed = gitConnected && lifecycleOnDisk
+    ? await probeGitPushedToUpstream(projectRoot)
+    : false;
 
   return {
     git_connected: gitConnected,
     has_docops_config: hasDocopsConfig,
+    writer_ready: assessment.writerReady,
     has_data_source_files: hasDataSourceFiles,
     has_generated_docs: hasGeneratedDocs,
     layout: assessment.layout,
     has_ai_spector_engine: hasAiSpectorEngine,
-    writer_synced: false,
+    adapter_ready: adapterReady,
+    writer_synced: gitPushed,
   };
 }
 
@@ -237,11 +254,18 @@ export function reconcileLifecycle(opts: {
     }
   }
 
+  function docopsInitDone(): boolean {
+    if (probes.writer_ready !== undefined) {
+      return Boolean(probes.writer_ready);
+    }
+    return Boolean(probes.has_docops_config);
+  }
+
   maybeDone("git-connected", Boolean(probes.git_connected));
-  maybeDone("docops-init", Boolean(probes.has_docops_config));
+  maybeDone("docops-init", docopsInitDone());
   maybeDone(
     "legacy-aligned",
-    probes.layout === "docops" && base.intent === "migrate",
+    probes.layout === "docops" && base.intent === "migrate" && docopsInitDone(),
   );
   maybeDone(
     "local-adapter-ready",

@@ -11,6 +11,8 @@ describe("initDocopsContract", () => {
     await withTempDir(async (root) => {
       const result = await initDocopsContract({ projectRoot: root });
       expect(result.initialized).toBe(true);
+      expect(result.config?.docTypes?.srs?.path).toBe("docs/srs");
+      expect(result.config?.docTypes?.basicDesign?.path).toBe("docs/basic-design");
       expect(await pathExists(join(root, DOCOPS_CONFIG_REL))).toBe(true);
       expect(await pathExists(join(root, ".docops/review.config.json"))).toBe(true);
       expect(await pathExists(join(root, ".docops/review-queue/registry.json"))).toBe(true);

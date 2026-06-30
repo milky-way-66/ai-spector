@@ -162,4 +162,53 @@ describe("docops migrate", () => {
       expect(md).toBeGreaterThan(0);
     });
   });
+
+  it("repair patches short docTypes paths to docs/<segment>", async () => {
+    await withTempDir(async (root) => {
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        docsRoot: "docs",
+        languages: [{ code: "en", label: "English", path: "en" }],
+        primaryLanguage: "en",
+        docTypes: {
+          srs: {
+            enabled: true,
+            path: "srs",
+            label: "SRS",
+            templatesPath: ".docops/templates/srs",
+          },
+          basicDesign: {
+            enabled: true,
+            path: "basic-design",
+            label: "Basic Design",
+            templatesPath: ".docops/templates/basic-design",
+          },
+        },
+        paths: {
+          comments: ".docops/comments",
+          reviewConfig: ".docops/review.config.json",
+          reviewQueue: ".docops/review-queue",
+          prototypeConfig: ".docops/prototype/config.json",
+          prototypeScreenMap: ".docops/prototype/screen-map.json",
+        },
+        capabilities: { review: false, comments: true, prototype: false },
+      });
+      await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+      await mkdir(join(root, ".docops/templates/basic-design"), { recursive: true });
+
+      const result = await migrateDocopsLayout({
+        projectRoot: root,
+        repair: true,
+      });
+      expect(result.migrated).toBe(true);
+      expect(result.actions.some((a) => a.includes("docTypes.srs.path"))).toBe(true);
+      expect(result.actions.some((a) => a.includes("docTypes.basicDesign.path"))).toBe(true);
+
+      const onDisk = await readJson<{ docTypes: Record<string, { path: string }> }>(
+        join(root, DOCOPS_CONFIG_REL),
+      );
+      expect(onDisk.docTypes.srs.path).toBe("docs/srs");
+      expect(onDisk.docTypes.basicDesign.path).toBe("docs/basic-design");
+    });
+  });
 });

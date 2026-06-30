@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { logicalPathToDocPath } from "@/core/comments/paths.js";
 import { resolveCommentsWriteRoots } from "@/core/docops/config.js";
 import {
+  isNonCanonicalDocTypePath,
+  normalizeDocTypePath,
   resolveDocTypeRepoPath,
   segmentRepoPrefixMap,
 } from "@/core/docops/paths.js";
@@ -18,6 +20,21 @@ describe("resolveDocTypeRepoPath", () => {
   it("does not expand short segment names under docsRoot", () => {
     expect(resolveDocTypeRepoPath("srs")).toBe("srs");
     expect(resolveDocTypeRepoPath("basic-design")).toBe("basic-design");
+  });
+
+  it("normalizeDocTypePath expands short segment names to docs/<segment>", () => {
+    expect(normalizeDocTypePath("srs", "srs")).toBe("docs/srs");
+    expect(normalizeDocTypePath("basicDesign", "basic-design")).toBe("docs/basic-design");
+    expect(normalizeDocTypePath("detailDesign", "detail-design")).toBe("docs/detail-design");
+    expect(normalizeDocTypePath("srs", "docs/srs")).toBe("docs/srs");
+    expect(normalizeDocTypePath("detailDesign", "custom/detail-design")).toBe(
+      "custom/detail-design",
+    );
+  });
+
+  it("isNonCanonicalDocTypePath flags bare segment paths", () => {
+    expect(isNonCanonicalDocTypePath("basicDesign", "basic-design")).toBe(true);
+    expect(isNonCanonicalDocTypePath("basicDesign", "docs/basic-design")).toBe(false);
   });
 
   it("normalizes dot segments", () => {
