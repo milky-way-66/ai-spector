@@ -22,6 +22,7 @@ export const GREENFIELD_STEPS = [
   "local-adapter-ready",
   "data-source-added",
   "first-docs-generated",
+  "review-queue-synced",
   "first-push-synced",
 ] as const;
 
@@ -30,18 +31,24 @@ export const MIGRATE_STEPS = [
   "git-connected",
   "docops-init",
   "legacy-aligned",
+  "registry-synced",
   "local-adapter-ready",
   "first-docs-generated",
+  "review-queue-synced",
   "first-push-synced",
 ] as const;
 
-export type LifecycleStepId = (typeof GREENFIELD_STEPS)[number] | "legacy-aligned";
+export type LifecycleStepId =
+  | (typeof GREENFIELD_STEPS)[number]
+  | "legacy-aligned"
+  | "registry-synced";
 
 export const DEFAULT_HELP: Partial<Record<LifecycleStepId, string>> = {
   "docops-init": "guide/modules/generate.md",
   "local-adapter-ready": "course/en/02-get-started/01-setup-via-chat",
   "legacy-aligned": "guide/MIGRATION.md",
   "data-source-added": "course/en/03-chat-basics/01-how-chat-works",
+  "review-queue-synced": "guide/modules/review.md",
 };
 
 export interface LifecycleStep {
@@ -71,6 +78,9 @@ export interface LifecycleProbes {
   has_ai_spector_engine?: boolean;
   adapter_ready?: boolean;
   writer_synced?: boolean;
+  registry_synced?: boolean;
+  review_enabled?: boolean;
+  review_queue_synced?: boolean;
 }
 
 export interface LifecycleSummary {
@@ -139,6 +149,30 @@ async function folderHasMdFiles(projectRoot: string, folder: string): Promise<bo
   return files.some((path) => path.endsWith(".md"));
 }
 
+/** Whether sign-off review queue exists and has registered documents. */
+export async function probeReviewQueueSynced(projectRoot: string): Promise<{
+  review_enabled: boolean;
+  review_queue_synced: boolean;
+}> {
+  const config = await readDocopsConfig(projectRoot);
+  const reviewEnabled = Boolean(config?.capabilities?.review);
+  if (!reviewEnabled) {
+    return { review_enabled: false, review_queue_synced: true };
+  }
+  const queueRoot = config?.paths?.reviewQueue ?? ".docops/review-queue";
+  const registryPath = join(projectRoot, queueRoot, "registry.json");
+  if (!(await pathExists(registryPath))) {
+    return { review_enabled: true, review_queue_synced: false };
+  }
+  try {
+    const registry = await readJson<{ documents?: Record<string, unknown> }>(registryPath);
+    const count = registry?.documents ? Object.keys(registry.documents).length : 0;
+    return { review_enabled: true, review_queue_synced: count > 0 };
+  } catch {
+    return { review_enabled: true, review_queue_synced: false };
+  }
+}
+
 /** Filesystem probes for lifecycle reconcile (parity with Writer git assessment). */
 export async function probeLifecycleSignals(projectRoot: string): Promise<LifecycleProbes> {
   const assessment = await assessDocopsProject(projectRoot);
@@ -177,6 +211,8 @@ export async function probeLifecycleSignals(projectRoot: string): Promise<Lifecy
     ? await probeGitPushedToUpstream(projectRoot)
     : false;
 
+  const reviewQueue = await probeReviewQueueSynced(projectRoot);
+
   return {
     git_connected: gitConnected,
     has_docops_config: hasDocopsConfig,
@@ -187,6 +223,8 @@ export async function probeLifecycleSignals(projectRoot: string): Promise<Lifecy
     has_ai_spector_engine: hasAiSpectorEngine,
     adapter_ready: adapterReady,
     writer_synced: gitPushed,
+    review_enabled: reviewQueue.review_enabled,
+    review_queue_synced: reviewQueue.review_queue_synced,
   };
 }
 
@@ -261,6 +299,17 @@ export function reconcileLifecycle(opts: {
     return Boolean(probes.has_docops_config);
   }
 
+  function maybeSkip(stepId: LifecycleStepId, cond: boolean): void {
+    const s = steps[stepId];
+    if (!s || s.status === "blocked") {
+      return;
+    }
+    if (cond) {
+      s.status = "skipped";
+      s.completedAt ??= nowIso();
+    }
+  }
+
   maybeDone("git-connected", Boolean(probes.git_connected));
   maybeDone("docops-init", docopsInitDone());
   maybeDone(
@@ -268,11 +317,20 @@ export function reconcileLifecycle(opts: {
     probes.layout === "docops" && base.intent === "migrate" && docopsInitDone(),
   );
   maybeDone(
+    "registry-synced",
+    Boolean(probes.registry_synced) && base.intent === "migrate",
+  );
+  maybeDone(
     "local-adapter-ready",
     Boolean(probes.has_ai_spector_engine) || Boolean(probes.adapter_ready),
   );
   maybeDone("data-source-added", Boolean(probes.has_data_source_files));
   maybeDone("first-docs-generated", Boolean(probes.has_generated_docs));
+  if (probes.review_enabled === false) {
+    maybeSkip("review-queue-synced", true);
+  } else {
+    maybeDone("review-queue-synced", Boolean(probes.review_queue_synced));
+  }
   maybeDone("first-push-synced", Boolean(probes.writer_synced));
 
   const order = base.intent === "migrate" ? MIGRATE_STEPS : GREENFIELD_STEPS;

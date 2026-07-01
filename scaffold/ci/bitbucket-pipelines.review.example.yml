@@ -1,0 +1,18 @@
+# Example Bitbucket Pipelines step for docops review-queue sync.
+# Copy into your project repo's bitbucket-pipelines.yml (authoring branch / PR).
+#
+# Requires: npm ci with ai-spector as a devDependency (or npx ai-spector).
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Docops review queue
+          script:
+            - npm ci
+            - npx ai-spector check --json
+            - npx ai-spector hooks ci --json
+            - git diff --exit-code .docops/lifecycle.json .docops/review-queue/ || (
+                echo "Commit review-queue and lifecycle updates from CI, or run hooks ci locally."
+                && exit 1
+              )

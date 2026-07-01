@@ -126,7 +126,9 @@ describe("lifecycleSummary", () => {
     const summary = lifecycleSummary(reconciled, { present: false });
     expect(summary.present).toBe(false);
     expect(summary.intent).toBe("migrate");
-    expect(summary.percentComplete).toBe(Math.round((100 * 6) / reconciled.steps.length));
+    expect(summary.percentComplete).toBe(
+      Math.round((100 * reconciled.steps.filter((s) => s.status === "done").length) / reconciled.steps.length),
+    );
     expect(summary.nextStepId).toBe("legacy-aligned");
     const byId = Object.fromEntries(summary.steps.map((s) => [s.id, s.status]));
     expect(byId["legacy-aligned"]).toBe("pending");

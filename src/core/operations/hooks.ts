@@ -24,6 +24,7 @@ export interface PreCommitOptions {
   strict?: boolean;
   skipImpact?: boolean;
   skipQueue?: boolean;
+  skipReview?: boolean;
 }
 
 export interface PreCommitReport {
@@ -141,6 +142,35 @@ export async function runPreCommitCheck(opts: PreCommitOptions = {}): Promise<Pr
     }
   }
 
+  if (!opts.skipReview && stagedDocs.length > 0) {
+    try {
+      const { readDocopsConfig } = await import("../docops/config.js");
+      const { runReviewCheck } = await import("./review.js");
+      const docops = await readDocopsConfig(root);
+      if (docops?.capabilities?.review) {
+        const reviewResult = await runReviewCheck({ root });
+        if (reviewResult.invalidated > 0) {
+          warnings.push(
+            `${reviewResult.invalidated} internal approval(s) invalidated (content changed) — re-review required.`,
+          );
+          warnings.push(
+            "  Stage updated review-queue files (`.docops/review-queue/` or legacy path) before commit.",
+          );
+        }
+        if (reviewResult.queued > 0) {
+          warnings.push(
+            `${reviewResult.queued} document(s) newly queued for internal review.`,
+          );
+        }
+        warnings.push("  Run: npx ai-spector lifecycle sync --json (updates review-queue-synced step).");
+      }
+    } catch (err) {
+      warnings.push(
+        `Review queue check failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   if (!opts.skipImpact && graphExists && relevant.some((p) => p.startsWith("docs/"))) {
     try {
       const stagedDiff = await collectStagedGitDiff(root);
@@ -192,6 +222,110 @@ export function formatPreCommitReport(report: PreCommitReport): string {
 
 export async function runHooksPreCommit(opts: PreCommitOptions = {}): Promise<PreCommitReport> {
   return runPreCommitCheck(opts);
+}
+
+export interface CiGateOptions {
+  root?: string;
+  json?: boolean;
+  skipReview?: boolean;
+}
+
+export interface CiGateReport {
+  ok: boolean;
+  skipped: boolean;
+  skipReason?: string;
+  reviewCheck?: Awaited<ReturnType<typeof import("./review.js").runReviewCheck>>;
+  lifecycleSynced: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/** CI pipeline gate: review queue staleness + lifecycle reconcile. */
+export async function runHooksCi(opts: CiGateOptions = {}): Promise<CiGateReport> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  let root: string;
+  try {
+    ({ root } = await loadDocflowConfig(opts.root));
+  } catch {
+    return {
+      ok: true,
+      skipped: true,
+      skipReason: "not an ai-spector project",
+      lifecycleSynced: false,
+      errors,
+      warnings,
+    };
+  }
+
+  let reviewCheck: CiGateReport["reviewCheck"];
+  if (!opts.skipReview) {
+    try {
+      const { readDocopsConfig } = await import("../docops/config.js");
+      const { runReviewCheck } = await import("./review.js");
+      const docops = await readDocopsConfig(root);
+      if (docops?.capabilities?.review) {
+        reviewCheck = await runReviewCheck({ root });
+        if (reviewCheck.invalidated > 0) {
+          warnings.push(
+            `${reviewCheck.invalidated} internal approval(s) invalidated (content changed).`,
+          );
+        }
+      }
+    } catch (err) {
+      errors.push(
+        `Review check failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  let lifecycleSynced = false;
+  try {
+    const { runLifecycleSync } = await import("./lifecycle.js");
+    const code = await runLifecycleSync({ root, json: Boolean(opts.json) });
+    lifecycleSynced = code === 0;
+    if (code !== 0) {
+      errors.push("Lifecycle sync failed.");
+    }
+  } catch (err) {
+    errors.push(
+      `Lifecycle sync failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  return {
+    ok: errors.length === 0,
+    skipped: false,
+    reviewCheck,
+    lifecycleSynced,
+    errors,
+    warnings,
+  };
+}
+
+export function formatCiGateReport(report: CiGateReport): string {
+  if (report.skipped) {
+    return report.skipReason ? `ai-spector ci: skipped (${report.skipReason})` : "";
+  }
+  const lines: string[] = ["ai-spector ci gate", ""];
+  if (report.reviewCheck) {
+    const r = report.reviewCheck;
+    lines.push(
+      `Review check: scanned=${r.scanned} invalidated=${r.invalidated} queued=${r.queued}`,
+    );
+    lines.push("");
+  }
+  if (report.errors.length > 0) {
+    lines.push("ERRORS:", ...report.errors, "");
+  }
+  if (report.warnings.length > 0) {
+    lines.push("WARNINGS:", ...report.warnings, "");
+  }
+  if (report.ok) {
+    lines.push("OK — review queue and lifecycle reconciled.");
+  }
+  return lines.join("\n");
 }
 
 const PRE_COMMIT_HOOK = `#!/bin/sh

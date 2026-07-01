@@ -22,7 +22,7 @@ import {
   runLangQueueScan,
 } from "./core/operations/lang-queue.js";
 import { formatPendingTable, formatResolvedTable, formatFailedTable } from "./core/lang/queue.js";
-import { runHooksInstall, runHooksPreCommit, formatPreCommitReport } from "./core/operations/hooks.js";
+import { runHooksInstall, runHooksPreCommit, runHooksCi, formatPreCommitReport, formatCiGateReport } from "./core/operations/hooks.js";
 import { runSetup, runSetupCheck } from "./core/operations/setup.js";
 import { runCheck } from "./core/operations/check.js";
 import { formatCheck } from "./interfaces/cli/format/check.js";
@@ -591,18 +591,45 @@ hooks
   .option("--strict", "Treat warnings as errors")
   .option("--skip-impact", "Skip graph impact advisory")
   .option("--skip-queue", "Skip translation queue check")
+  .option("--skip-review", "Skip review queue staleness check")
   .action(async (opts) => {
     const report = await runHooksPreCommit({
       root: resolve(opts.cwd ?? process.cwd()),
       strict: opts.strict,
       skipImpact: opts.skipImpact,
       skipQueue: opts.skipQueue,
+      skipReview: opts.skipReview,
     });
     const text = formatPreCommitReport(report);
     if (text) console.log(text);
     if (!report.skipped && report.errors.length > 0) { process.exitCode = 1; return; }
     if (opts.strict && !report.skipped && report.warnings.length > 0) {
       console.error("Strict mode: warnings block commit. Fix warnings or commit with --no-verify.");
+      process.exitCode = 1;
+    }
+  });
+
+hooks
+  .command("ci")
+  .description(
+    "CI gate: review check (when sign-off enabled) + lifecycle sync — run on doc pushes or PR merge",
+  )
+  .option("-C, --cwd <path>", "Project root", process.cwd())
+  .option("--json", "JSON output")
+  .option("--skip-review", "Skip review queue check")
+  .action(async (opts) => {
+    const report = await runHooksCi({
+      root: resolve(opts.cwd ?? process.cwd()),
+      json: opts.json,
+      skipReview: opts.skipReview,
+    });
+    if (opts.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      const text = formatCiGateReport(report);
+      if (text) console.log(text);
+    }
+    if (!report.ok && !report.skipped) {
       process.exitCode = 1;
     }
   });

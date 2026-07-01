@@ -1176,6 +1176,16 @@ export async function runReviewCheck(opts: ReviewCheckOptions): Promise<ReviewCh
   const guidance = buildReviewSessionWorkflowGuidance(session, {
     pendingCount: result.queued + result.invalidated + result.alreadyPending,
   });
+  try {
+    const { readDocopsConfig } = await import("../docops/config.js");
+    const { markLifecycleStepDone } = await import("../docops/lifecycle.js");
+    const config = await readDocopsConfig(projectRoot);
+    if (config?.capabilities?.review) {
+      await markLifecycleStepDone(projectRoot, "review-queue-synced");
+    }
+  } catch {
+    // Non-fatal — lifecycle step can be reconciled via `lifecycle sync`.
+  }
   if (migration?.migrated) {
     return { ...result, migrated: true, session, workflowGuidance: guidance };
   }
