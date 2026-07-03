@@ -186,16 +186,16 @@ When routing is wrong, the user can say `workflow: <name>` (e.g. `workflow: gene
 
 ## Plan approval gate
 
-# Plan approval gate (task_approve_plan)
+# Plan approval gate (work_approve_plan)
 
-**Server enforces gates** — `task_approve_plan` throws `PRECONDITION_FAILED` if steps are skipped.
+**Server enforces gates** — `work_approve_plan` throws `PRECONDITION_FAILED` if steps are skipped.
 
 ## Never treat as plan approval
 
 | User says | Meaning | Action |
 |-----------|---------|--------|
-| "ok", "ok tạo 4 file đầu", "làm đi", "tạo đi" | Agrees to **start** or **scope** | Continue gates — do **not** call `task_approve_plan` |
-| "yes", "đồng ý", "go ahead", "approve the plan" | Approves **plan table shown in chat** | `task_approve_plan` |
+| "ok", "ok tạo 4 file đầu", "làm đi", "tạo đi" | Agrees to **start** or **scope** | Continue gates — do **not** call `work_approve_plan` |
+| "yes", "đồng ý", "go ahead", "approve the plan" | Approves **plan table shown in chat** | `work_approve_plan` |
 
 ## Generate workflow (mandatory order)
 
@@ -203,18 +203,18 @@ When routing is wrong, the user can say `workflow: <name>` (e.g. `workflow: gene
 2. `readiness_assess` + criteria table → `snapshot.readinessReportShown` → clarify **done**
 3. Context briefing per file → user confirms → `snapshot.briefingConfirmedAt` → briefing **done**
 4. Plan table in chat → `snapshot.planPresentedAt` + `phaseStatus: awaiting_user`
-5. User **explicit yes** → `task_approve_plan` only
+5. User **explicit yes** → `work_approve_plan` only
 
 ## Forbidden
 
-- `task_approve_plan` in the same turn as `task_list` bootstrap
-- Marking plan step **done** via `task_update` (only `task_approve_plan` completes plan)
+- `work_approve_plan` in the same turn as `work_list` bootstrap
+- Marking plan step **done** via `work_update` (only `work_approve_plan` completes plan)
 - Writing under `docs/srs/` / `docs/basic-design/` before step 5
-- `task_record_wave` before `task_approve_plan`
+- `work_record_step` before `work_approve_plan`
 
 ## On PRECONDITION_FAILED
 
-Stop. Report the `hint` from the error payload. Complete the blocked step — do not retry `task_approve_plan` until gates pass.
+Stop. Report the `hint` from the error payload. Complete the blocked step — do not retry `work_approve_plan` until gates pass.
 
 
 ## After doc edits

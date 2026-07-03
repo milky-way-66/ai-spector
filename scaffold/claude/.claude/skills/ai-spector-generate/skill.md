@@ -4,7 +4,7 @@ description: >-
   All document generation: SRS, basic design, detail design, HTML prototype; incremental feature/section
   changes (resolve-task); and template pack import. Use for "generate SRS/basic design/detail design",
   "write chapter N", "add feature", "update section", "I want to add…", "HTML prototype",
-  "set up template pack". Local adapter generates via MCP/CLI even when capabilities.generate is false (Writer cloud UI only).
+  Capability-gated for Writer cloud UI only — local adapter (`.ai-spector/engine.json`) uses MCP/CLI work sessions even when `capabilities.generate` is false.
 ---
 
 # AI Spector — Generate
