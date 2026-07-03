@@ -8,6 +8,7 @@ import {
 } from "./config.js";
 import { applyDocopsBootstrap } from "./bootstrap.js";
 import { migrateRootDataSourceToCanonical } from "./data-source-path.js";
+import { bootstrapEntityRegistry } from "./entity-keying.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
@@ -119,6 +120,10 @@ export async function initDocopsContract(opts: {
     skipExisting,
     actions,
   });
+
+  if (!dryRun) {
+    await bootstrapEntityRegistry(projectRoot, { actions });
+  }
 
   return { initialized: true, dryRun, actions, configPath, config };
 }

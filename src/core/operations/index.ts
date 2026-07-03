@@ -41,6 +41,7 @@ import {
 import { reconcileTranslationQueue } from "../lang/queue.js";
 import { runReviewDiscovery, type ReviewDiscoveryResult } from "../reviews/register.js";
 import { runContextStaleScan } from "./context.js";
+import { refreshEntityRegistryIfStale } from "../docops/entity-keying.js";
 
 export type IndexStepStatus = "ok" | "skipped" | "failed";
 
@@ -684,6 +685,25 @@ export async function runIndex(
 
   if (shouldSyncReviewQueue && reviewQueueSummary === undefined) {
     reviewQueueSummary = await refreshReviewQueueFromDisk(projectRoot, record);
+  }
+
+  if (shouldSyncReviewQueue) {
+    try {
+      const entityRefresh = await refreshEntityRegistryIfStale(projectRoot);
+      record({
+        id: "entity-registry",
+        label: "Entity registry (.docops/registry/)",
+        status: entityRefresh.synced ? "ok" : "skipped",
+        detail: entityRefresh.detail,
+      });
+    } catch (err) {
+      record({
+        id: "entity-registry",
+        label: "Entity registry (.docops/registry/)",
+        status: "failed",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   try {

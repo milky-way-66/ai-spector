@@ -25,6 +25,20 @@ export async function runDocopsStatus(opts: { root?: string; json?: boolean } = 
     console.log(`Layout: ${assessment.layout}`);
     console.log(`Writer ready: ${assessment.writerReady}`);
     console.log(`Recommended: ${assessment.recommendedAction}`);
+    if (assessment.entityRegistry) {
+      const er = assessment.entityRegistry;
+      if (er.keying === "logicalPath") {
+        console.log(`Entity registry: legacy path-keyed (migrate to entityId)`);
+      } else if (er.expectedCount === 0 && er.documentCount === 0) {
+        console.log(`Entity registry: empty (no design docs yet)`);
+      } else if (er.synced) {
+        console.log(`Entity registry: synced — ${er.documentCount} document(s) (entityId)`);
+      } else {
+        console.log(
+          `Entity registry: stale — ${er.documentCount}/${er.expectedCount} document(s) — run docops registry sync`,
+        );
+      }
+    }
     for (const gap of assessment.gaps) {
       console.log(`  [${gap.severity}] ${gap.id}: ${gap.message}`);
       if (gap.fix) console.log(`    fix: ${gap.fix}`);

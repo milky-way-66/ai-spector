@@ -233,6 +233,7 @@ export async function applyDocopsBootstrap(opts: {
   await copyBootstrapTemplates({ ...copyOpts, docTypes });
 
   const dirs = new Set<string>([
+    opts.config.paths.registry,
     opts.config.paths.comments,
     opts.config.paths.reviewQueue,
     ".docops/prototype",

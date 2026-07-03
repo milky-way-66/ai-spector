@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { pathExists } from "../util/fs.js";
+import { assessEntityRegistry } from "./entity-keying.js";
 import { readDocopsConfig } from "./config.js";
 import {
   DOCOPS_CONFIG_REL,
@@ -21,6 +22,13 @@ export interface DocopsGap {
   fix?: string;
 }
 
+export interface DocopsEntityRegistryAssessment {
+  keying: "entityId" | "logicalPath";
+  documentCount: number;
+  expectedCount: number;
+  synced: boolean;
+}
+
 export interface DocopsAssessment {
   layout: DocopsLayout;
   writerReady: boolean;
@@ -28,6 +36,7 @@ export interface DocopsAssessment {
   recommendedAction: DocopsRecommendedAction;
   legacyPathsFound: string[];
   docopsPathsFound: string[];
+  entityRegistry?: DocopsEntityRegistryAssessment;
 }
 
 async function fileExists(projectRoot: string, rel: string): Promise<boolean> {
@@ -143,6 +152,31 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
       } else {
         docopsPathsFound.push(readmeRel);
       }
+
+      const entityStatus = await assessEntityRegistry(projectRoot);
+      if (entityStatus) {
+        const registryRoot = config.paths.registry.replace(/\\/g, "/");
+        if (entityStatus.keying === "logicalPath") {
+          gaps.push({
+            id: "DOCOPS-REG-LEGACY",
+            severity: "warning",
+            message:
+              "Legacy path-keyed comments/review — entity IDs not active (will be removed in a future release)",
+            fix: "Run docops registry sync, comments migrate, review-registry migrate (see ENTITY_REGISTRY_MIGRATION.md)",
+          });
+        } else if (!entityStatus.synced && entityStatus.expectedCount > 0) {
+          gaps.push({
+            id: "DOCOPS-REG-001",
+            severity: "warning",
+            message: `Entity registry out of date — ${entityStatus.documentCount}/${entityStatus.expectedCount} document entity file(s) under ${registryRoot}/documents/`,
+            fix: "Run npx ai-spector docops registry sync (or npx ai-spector index)",
+          });
+        } else if (entityStatus.expectedCount === 0 && entityStatus.documentCount === 0) {
+          docopsPathsFound.push(`${registryRoot}/`);
+        } else if (entityStatus.synced) {
+          docopsPathsFound.push(`${registryRoot}/documents/`);
+        }
+      }
     }
   } else {
     gaps.push({
@@ -167,6 +201,8 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
     recommendedAction = "repair";
   }
 
+  const entityRegistry = hasDocopsConfig ? (await assessEntityRegistry(projectRoot)) ?? undefined : undefined;
+
   return {
     layout,
     writerReady,
@@ -174,5 +210,6 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
     recommendedAction,
     legacyPathsFound,
     docopsPathsFound,
+    ...(entityRegistry ? { entityRegistry } : {}),
   };
 }

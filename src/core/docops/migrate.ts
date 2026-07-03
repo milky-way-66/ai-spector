@@ -17,6 +17,7 @@ import {
   writeDocopsConfig,
 } from "./config.js";
 import { applyDocopsBootstrap } from "./bootstrap.js";
+import { bootstrapEntityRegistry } from "./entity-keying.js";
 import { copyTemplates, resolveTemplateSourcesForLayer } from "./templates.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
@@ -163,6 +164,10 @@ async function repairDocopsGaps(
   const next = await patchMissingTemplatesPaths(projectRoot, withPaths, actions, dryRun);
   const docflow = await loadDocflowIfPresent(projectRoot);
   await bootstrapDocopsContract(projectRoot, next, docflow, actions, dryRun);
+
+  if (!dryRun) {
+    await bootstrapEntityRegistry(projectRoot, { actions });
+  }
 
   return next;
 }
@@ -314,6 +319,10 @@ export async function migrateFromDocflow(
   }
 
   await bootstrapDocopsContract(projectRoot, docops, docflow, actions, dryRun);
+
+  if (!dryRun) {
+    await bootstrapEntityRegistry(projectRoot, { actions });
+  }
 
   return { migrated: true, docopsPath, enginePath, actions };
 }

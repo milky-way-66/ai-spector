@@ -16,6 +16,13 @@ describe("initDocopsContract", () => {
       expect(await pathExists(join(root, DOCOPS_CONFIG_REL))).toBe(true);
       expect(await pathExists(join(root, ".docops/review.config.json"))).toBe(true);
       expect(await pathExists(join(root, ".docops/review-queue/registry.json"))).toBe(true);
+      const reviewRegistry = JSON.parse(
+        await (await import("node:fs/promises")).readFile(
+          join(root, ".docops/review-queue/registry.json"),
+          "utf8",
+        ),
+      );
+      expect(reviewRegistry.version).toBe(4);
       expect(await pathExists(join(root, ".docops/guide/README.md"))).toBe(true);
       expect(await pathExists(join(root, ".docops/guide/modules/review.md"))).toBe(true);
       expect(await pathExists(join(root, ".docops/guide/schemas/docops.config.schema.json"))).toBe(true);

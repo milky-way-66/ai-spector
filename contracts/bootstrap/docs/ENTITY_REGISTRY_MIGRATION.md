@@ -1,5 +1,9 @@
 # Entity registry migration guide
 
+> **Greenfield projects:** `docops init` and `docops migrate --repair` scaffold **entityId** keying by default (`.docops/registry/`, review registry v4). Path-keyed layouts are **legacy only** and will be removed in a future release.
+>
+> **Note:** `.docops/registry/documents/` is created by `docops registry sync` (also run automatically on init/repair/index when design docs exist). An empty project has no entity files until the first sync.
+
 > **Audience:** Teams on legacy path-keyed docops (comments, prototype screen-map, review queue v3) migrating to stable **entity IDs** in `.docops/registry/`.  
 > **Prerequisite:** [MIGRATION.md](MIGRATION.md) — contract layout (`legacy` → `docops`) should be done first (or in parallel on the same branch).
 

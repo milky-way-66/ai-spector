@@ -7,13 +7,16 @@ Writer reads this repo via git. Edit files here, commit, and push — no CLI req
 | Path | Purpose |
 |------|---------|
 | `docops.config.json` | Languages, doc layers, paths, capabilities |
+| `registry/` | **Entity registry** — stable UUIDs per design doc / screen (`registry sync`) |
 | `review.config.json` | Review sign-off preset |
-| `review-queue/` | Review registry + pending queue |
-| `comments/` | Comment threads (git-backed) |
-| `prototype/` | Screen map + deploy config |
+| `review-queue/` | Review sign-off state (v4 keys = `entityId`; legacy v3 = `logicalPath`) |
+| `comments/` | Comment threads — `documents/{entityId}/` or `screens/{screenId}/` (legacy: path folders) |
+| `prototype/` | Screen map (legacy) or registry screens after sync |
 | `templates/` | Markdown templates per doc layer |
 | `modules/` | Per-feature setup guides (this folder) |
 | `adapters/` | External tool integration rules |
+
+**Not the same as:** `.docops/review-queue/registry.json` (review sign-off) or `.ai-spector/registry/section-registry.json` (traceability section index for local graph).
 
 ## Document paths
 
@@ -28,7 +31,7 @@ Example: `docs/srs/en/1-introduction.md`
 | `review` | Review queue + sign-off |
 | `comments` | Inline comments |
 | `prototype` | Prototype screen map |
-| `graph` | Traceability graph |
+| `graph` | Traceability graph in **Writer web UI** (local `npx ai-spector index` always builds `.ai-spector/graph/` regardless) |
 | `generate` | Cloud generation from templates |
 | `translate` | Translation workflow UI |
 
