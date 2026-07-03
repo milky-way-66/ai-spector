@@ -42,10 +42,12 @@ Use `projectionPaths`, `nodes`, `edges` from JSON. **If command fails or JSON in
 ## `graph impact`
 
 ```bash
-npx ai-spector graph impact <nodeId> --change content_change --json
+npx ai-spector graph impact <nodeId> --json
 npx ai-spector graph impact --file docs/srs/en/03-use-cases.md --heading "3.2 List Use Case" --json
-npx ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --json
 ```
+
+MCP accepts `change`; CLI always uses `content_change` (no `--change` flag).
 
 Note: doc file paths now always include a language subfolder: `docs/srs/{lang.code}/{filename}`.
 

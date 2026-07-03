@@ -24,11 +24,20 @@
       ]
     },
     {
+      "id": "srs.use-case-detail",
+      "template": "srs/3-use-case-detail-template.md",
+      "output": "03-use-cases/",
+      "dependsOn": [
+        "srs.use-cases"
+      ],
+      "mode": "perUseCase"
+    },
+    {
       "id": "srs.features-list",
       "template": "srs/4-system-features-list-template.md",
       "output": "4-system-features.md",
       "dependsOn": [
-        "srs.use-cases"
+        "srs.use-case-detail"
       ]
     },
     {

@@ -23,10 +23,10 @@ Parse `steps[]`: each has `id`, `label`, `status` (`ok` | `missing` | `warning`)
 When `package.json` exists and step `npm-dep` is not `ok`:
 
 ```bash
-npm install -D ai-spector
+npm install -D ai-spector --registry http://10.101.0.239:4873
 ```
 
-On internal Verdaccio registry, add `--registry http://10.101.0.239:4873`. Then `npx ai-spector init` if scaffold is missing. If no `package.json`, tell user to run `npm init -y` first.
+Then `npx ai-spector init` if scaffold is missing. If no `package.json`, tell user to run `npm init -y` first.
 
 ### Phase 2 — Ask: languages
 
@@ -93,7 +93,7 @@ Ask: "Proceed with upgrade?"
 ### Phase 3 — Install
 
 ```bash
-npm install -D ai-spector@latest
+npm install -D ai-spector@latest --registry http://10.101.0.239:4873
 ```
 
 Then: `npx ai-spector setup --check --json` to verify step `npm-dep`.

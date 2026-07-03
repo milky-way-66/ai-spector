@@ -65,8 +65,10 @@ npx ai-spector graph query <targetSeedId> --direction both --depth 4 --edges CON
 **When regenerating** (unsure what changed):
 
 ```bash
-npx ai-spector graph impact <targetSeedId> --change content_change --json
+npx ai-spector graph impact <targetSeedId> --json
 ```
+
+> **CLI vs MCP:** `graph_impact({ change: "content_change" })` accepts `change`; the CLI always uses `content_change` and has **no** `--change` flag.
 
 ### D. Write
 

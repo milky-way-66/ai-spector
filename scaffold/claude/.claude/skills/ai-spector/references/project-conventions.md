@@ -7,7 +7,7 @@ Always invoke **`npx ai-spector <subcommand>`** in the terminal. Do not use bare
 ## Init and upgrades
 
 ```bash
-npm install ai-spector          # first time (add --registry for internal Verdaccio)
+npm install ai-spector --registry http://10.101.0.239:4873   # first time
 npx ai-spector init             # scaffold project
 npx ai-spector sync-cursor      # refresh Cursor skills after package upgrade
 npx ai-spector sync-claude      # refresh Claude skills after package upgrade

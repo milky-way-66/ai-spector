@@ -37,8 +37,10 @@ git diff --cached
 Optional CLI (same resolution + merged buckets):
 
 ```bash
-npx ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --json
 ```
+
+> CLI has no `--change` flag (always `content_change`). MCP: `graph_impact({ git: true, change: "content_change" })`.
 
 **Not a git repo** or **clean working tree** → tell the user clearly; suggest `/impact <short description>`, editor selection, or `@path`.
 
@@ -67,9 +69,9 @@ graph_impact({ git: true, change: "content_change" })
 ```
 
 ```bash
-# CLI fallback:
-npx ai-spector graph impact <originId> --change content_change --json
-npx ai-spector graph impact --git --change content_change --json
+# CLI fallback (no --change flag):
+npx ai-spector graph impact <originId> --json
+npx ai-spector graph impact --git --json
 ```
 
 Merge `regenerate` / `review` / `syncUpstream` across seeds (CLI `--git` dedupes). Present one table with `projectionPath`; note which file/heading each seed came from (`gitSeeds` in JSON when using `--git`).
@@ -79,7 +81,7 @@ Merge `regenerate` / `review` / `syncUpstream` across seeds (CLI `--git` dedupes
 When editing **basic design** or **detail design**, upstream SRS may also need review:
 
 ```bash
-npx ai-spector graph impact --git --direction both --change content_change --json
+npx ai-spector graph impact --git --direction both --json
 ```
 
 ```text
@@ -123,8 +125,8 @@ graph_impact({ file: "docs/srs/3-use-cases.md", heading: "3.2 List Use Case", ch
 ### CLI fallback
 
 ```bash
-npx ai-spector graph impact <originId> --change content_change --json
-npx ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact <originId> --json
+npx ai-spector graph impact --git --json
 npx ai-spector graph impact --file docs/srs/3-use-cases.md --heading "3.2 List Use Case" --json
 ```
 
@@ -161,7 +163,7 @@ Use [cli-failures.md](../../ai-spector/references/cli-failures.md). If resolve o
 
 ## After doc edits (automatic rule)
 
-When finishing edits under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`, agents should run this impact flow per `.cursor/rules/ai-spector-after-doc-edit.mdc`, then `npx ai-spector index`.
+When finishing edits under `docs/srs/`, `docs/basic-design/`, or `docs/detail-design/`, agents should run this impact flow per `.claude/rules/ai-spector-after-doc-edit.mdc`, then `npx ai-spector index`.
 
 ## Guardrails
 

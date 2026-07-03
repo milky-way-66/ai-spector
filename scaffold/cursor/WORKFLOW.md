@@ -13,7 +13,7 @@ Enable all 4 skills under `.cursor/skills/` (see [skills/README.md](./skills/REA
 **CLI (guided):**
 
 ```bash
-npm install -D ai-spector
+npm install -D ai-spector --registry http://10.101.0.239:4873
 npx ai-spector setup              # interactive wizard
 npx ai-spector setup -y -l en,jp  # non-interactive
 npx ai-spector setup --check      # audit only
@@ -21,7 +21,7 @@ npx ai-spector setup --check      # audit only
 
 Then: add files under `docs/data-source/`, enable **all** skills under `.cursor/skills/`, reload MCP.
 
-> **After upgrading ai-spector** (`npm install -D ai-spector@latest`): reload the MCP server in Cursor (Cmd+Shift+P → "Reload MCP Servers") so new tools are picked up.
+> **After upgrading ai-spector** (`npm install -D ai-spector@latest --registry http://10.101.0.239:4873`): reload the MCP server in Cursor (Cmd+Shift+P → "Reload MCP Servers") so new tools are picked up.
 
 ## What to say → skill → agent does
 

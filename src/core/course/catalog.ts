@@ -105,7 +105,7 @@ export function formatCourseNotFoundMessage(
     "",
     "Fix:",
     "  1. Reinstall ai-spector (course ships in node_modules/ai-spector/website/docs/{locale}/):",
-    "       npm install ai-spector",
+    "       npm install ai-spector --registry http://10.101.0.239:4873",
     "  2. Or add a local copy in your project:",
     "       docs/course/en/  or  docs/course/vi/  (optional override)",
     "  3. From the ai-spector repo: edit website/docs/en/ or website/docs/vi/.",

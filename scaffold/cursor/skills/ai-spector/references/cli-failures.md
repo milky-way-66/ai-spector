@@ -33,7 +33,7 @@ Reply: 1 Fix & retry  2 Workaround  3 Pause
 
 | Error | Fix |
 |---|---|
-| `command not found` | `npm install ai-spector`; use `npx ai-spector` |
+| `command not found` | `npm install ai-spector --registry http://10.101.0.239:4873`; use `npx ai-spector` |
 | `Could not find project root` | Run `npx ai-spector init`; check cwd |
 | `analyze` fails | Show full error; check registry exists; re-run init if corrupt |
 | `merge` — no domain entries | Re-run `/analyze`; ensure data-source has UC/F/actor content |

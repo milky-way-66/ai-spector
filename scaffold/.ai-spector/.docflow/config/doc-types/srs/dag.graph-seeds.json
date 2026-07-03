@@ -5,6 +5,7 @@
     "srs.introduction": "doc.srs.1-introduction",
     "srs.overall-description": "doc.srs.2-overall-description",
     "srs.use-cases": "doc.srs.3-use-cases",
+    "srs.use-case-detail": "doc.srs.3-use-cases",
     "srs.features-list": "doc.srs.4-system-features",
     "srs.feature-details": "doc.srs.4-system-features",
     "srs.data-requirements": "doc.srs.5-data-requirements",

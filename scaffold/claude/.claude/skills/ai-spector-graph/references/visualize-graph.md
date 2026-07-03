@@ -19,6 +19,6 @@ Agent runs from project root. Default: `.ai-spector/views/graph-knowledge.html`
 Use [cli-failures.md](../../ai-spector/references/cli-failures.md). Common fixes:
 
 - Missing graph → run **`/analyze`** first (step 0 `npx ai-spector index`).
-- `command not found` → `npm install ai-spector`; use `npx ai-spector graph visualize --open`.
+- `command not found` → `npm install ai-spector --registry http://10.101.0.239:4873`; use `npx ai-spector graph visualize --open`.
 
 Do not tell the user to inspect raw JSON instead of fixing the CLI — offer to fix cwd/install, then re-run **`/visualize-graph`**.

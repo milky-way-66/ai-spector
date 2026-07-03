@@ -672,9 +672,8 @@
     },
     {
       "dagNode": "srs.use-case-detail",
-      "outputPattern": "features/UC-*.md",
-      "mode": "perUseCaseDetail",
-      "note": "Logical target for per-UC detail files; not a separate DAG node",
+      "outputPattern": "03-use-cases/uc-{nn}-{slug}.md",
+      "mode": "perUseCase",
       "iso29148": ["9.6.10", "9.6.12"],
       "criteria": [
         {

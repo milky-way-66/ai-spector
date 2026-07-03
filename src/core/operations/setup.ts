@@ -13,6 +13,7 @@ import { ensureAiSpectorGitignore } from "../util/gitignore.js";
 import { isInteractive, promptLine, promptYesNo } from "../util/prompt.js";
 import { HOOK_MARKER } from "./hooks-constants.js";
 import { installedPackageVersion } from "../upgrade/package-version.js";
+import { DEFAULT_NPM_REGISTRY, npmInstallAiSpectorCommand } from "../package-registry.js";
 import { readScaffoldVersion } from "../upgrade/stamp.js";
 import semver from "semver";
 import { lifecycleSyncResult } from "./lifecycle.js";
@@ -215,7 +216,7 @@ export async function auditSetup(projectRoot: string): Promise<SetupAudit> {
       id: "npm-dep",
       label: "ai-spector npm dependency",
       status: hasDep ? "ok" : "warning",
-      fix: hasDep ? undefined : "npm install -D ai-spector",
+      fix: hasDep ? undefined : npmInstallAiSpectorCommand({ dev: true }),
     });
   }
 
@@ -280,7 +281,10 @@ async function maybeInstallDependency(root: string, installDep: boolean): Promis
   console.log("Installing ai-spector as dev dependency…");
   const { spawn } = await import("node:child_process");
   await new Promise<void>((resolvePromise, reject) => {
-    const child = spawn("npm", ["install", "-D", "ai-spector"], {
+    const child = spawn(
+      "npm",
+      ["install", "-D", "ai-spector", "--registry", DEFAULT_NPM_REGISTRY],
+      {
       cwd: root,
       stdio: "inherit",
       shell: process.platform === "win32",

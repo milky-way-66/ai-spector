@@ -57,7 +57,7 @@ After editing any file under `docs/srs/`, `docs/basic-design/`, or `docs/detail-
 **a) Impact:**
 ```
 graph_impact({ git: true, change: "content_change" })   # MCP preferred
-npx ai-spector graph impact --git --change content_change --json  # CLI fallback
+npx ai-spector graph impact --git --json  # CLI fallback (no --change flag)
 ```
 
 **b) Re-index + embeddings (mandatory when CocoIndex is configured):**
@@ -253,13 +253,13 @@ git diff --cached
 Then:
 
 ```bash
-npx ai-spector graph impact --git --change content_change --json
+npx ai-spector graph impact --git --json
 ```
 
 When edits are under **`docs/basic-design/`** or **`docs/detail-design/`**, also check upstream SRS drift:
 
 ```bash
-npx ai-spector graph impact --git --direction both --change content_change --json
+npx ai-spector graph impact --git --direction both --json
 ```
 
 For a single aggregate SRS file (e.g. `docs/srs/3-use-cases.md`):

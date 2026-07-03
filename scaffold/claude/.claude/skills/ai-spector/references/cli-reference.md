@@ -49,7 +49,7 @@ Options:
   -l, --languages   Comma-separated codes (e.g. en,jp,vi)
   -y, --yes         Non-interactive defaults
   -f, --force       Re-run init (overwrite scaffold)
-  --install-dep     npm install -D ai-spector when package.json exists
+  --install-dep     npm install -D ai-spector --registry http://10.101.0.239:4873 when package.json exists
   --json            JSON audit output
   -C, --cwd         Project root
 ```
@@ -261,9 +261,12 @@ Options:
   --file <path>       Resolve origin from repo-relative doc path
   --heading <text>    Resolve section by heading (combine with --file)
   --git               Seeds from current git diff (staged + unstaged)
-  --change <type>     Change type label (default: "content_change")
+  --direction <mode>  downstream (default), upstream, or both
   -o, --output <path> Write impact JSON to file
   --json              Print JSON
+
+> **Note:** Change type is always `content_change` on the CLI. Use MCP
+> `graph_impact({ change: "…" })` when you need a different change label.
 ```
 
 **Examples:**

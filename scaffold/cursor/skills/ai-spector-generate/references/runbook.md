@@ -38,7 +38,7 @@ work_list({
 | Record clarification | `context_resolve({ id, answer })` | `npx ai-spector context resolve <id> --json` |
 | Query graph | `graph_query({ seedId })` | `npx ai-spector graph query <id> --json` |
 | Approve plan | `work_approve_plan({ workId })` | `npx ai-spector work approve-plan <id>` |
-| Record wave | `work_record_step({ workId, stepId: "wave-1", status: "done", artifacts: [...] })` | `npx ai-spector work record-step ...` |
+| Record wave | `work_record_step({ workId, waveId: "wave-1", status: "done", artifacts: [...] })` | `npx ai-spector work record-step ...` |
 | Extract spec | `spec_record({ ... })` | `npx ai-spector spec record --json` |
 | Complete session | `work_complete({ workId, summary })` | `npx ai-spector work complete <id>` |
 
@@ -48,7 +48,8 @@ work_list({
 |-------------|---------------|
 | introduction, purpose, scope | `srs.introduction` |
 | actors, overall, §2 | `srs.overall-description` |
-| use cases, UC, §3 | `srs.use-cases` |
+| use cases index, UC list, §3 | `srs.use-cases` → `3-use-cases.md` |
+| use case detail, per UC | `srs.use-case-detail` → `03-use-cases/uc-{nn}-{slug}.md` (one per UC) |
 | feature list, §4.2 | `srs.features-list` |
 | feature detail, F-xx | `srs.feature-details` |
 | data, entities, §5 | `srs.data-requirements` |
@@ -89,7 +90,7 @@ Same set as SRS. Use `graph_query({ seedId })` with `bd.*` seeds from `dag.basic
 | API detail, per endpoint | `bd.detail-api` → `docs/basic-design/api/` (one per endpoint) |
 | screen list, UI list | `bd.list-screen` → `list-screens.md` |
 | screen detail, wireframe | `bd.detail-screen` → `docs/basic-design/screens/` (one per screen) |
-| everything, full basic design | Full DAG |
+| everything, full basic design | Full DAG — **include** `bd.detail-api` + `bd.detail-screen` in plan table (defer explicitly if user wants lists only) |
 
 ### Output paths
 

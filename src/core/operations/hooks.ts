@@ -189,7 +189,7 @@ export async function runPreCommitCheck(opts: PreCommitOptions = {}): Promise<Pr
             warnings.push(
               `Graph impact: ${regen} regenerate, ${review} review downstream of staged doc edits.`,
             );
-            warnings.push("  Run: npx ai-spector graph impact --git --change content_change");
+            warnings.push("  Run: npx ai-spector graph impact --git --json");
           }
         }
       }
