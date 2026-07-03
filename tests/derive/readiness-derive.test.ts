@@ -32,11 +32,12 @@ describe("readiness derive-from-downstream", () => {
         docType: "srs",
         sourceMode: "derive-downstream",
         workflow: "generate-srs",
+        verbose: true,
       });
 
       expect(result.appliedProfiles).toContain("derive-from-downstream");
       expect(result.ready).toBe(true);
-      expect(result.criteria.map((c) => c.id)).toEqual(
+      expect(result.criteria!.map((c) => c.id)).toEqual(
         expect.arrayContaining(["DER-001", "DER-002"]),
       );
     });

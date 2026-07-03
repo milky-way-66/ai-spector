@@ -25,6 +25,8 @@ Do not silently overwrite concurrent edits.
 
 Set `capabilities.<module>: false` in `docops.config.json` when your adapter owns that workflow entirely. Writer hides the feature without error.
 
+`capabilities.graph` and `capabilities.generate` affect **Writer cloud UI only**. The local ai-spector engine (MCP and CLI) always owns index, graph, and generate work sessions regardless of those flags.
+
 ## Schema reference
 
 Full schemas and examples: `kari-writer/contracts/` in the docs-ops meta-repo, or `.docops/guide/README.md` in this project after init.

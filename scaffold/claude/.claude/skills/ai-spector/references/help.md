@@ -24,6 +24,7 @@ Parse the JSON response:
 | `lifecycle.percentComplete` | Show progress to user |
 | `lifecycle.nextStepId` | Primary driver for Step 3 |
 | `lifecycle.steps[]` | Status icons, `blockedReason`, `helpRef` per step |
+| `lifecycle.generateGatePending` | `true` when generate plan table awaits user **yes** → `work_approve_plan` |
 
 If sync fails, pause per [cli-failures.md](./cli-failures.md) — do not guess lifecycle state.
 
@@ -79,7 +80,7 @@ Use `nextStepId` from Step 1. Cross-check Step 2 findings against the symptom ta
 | `legacy-aligned` | Local only: doc layout + comments/review/prototype migrate + template-import (gated workflow). Wrong folder → adopt; custom template → template-import first |
 | `local-adapter-ready` | `npx ai-spector setup -y` or enable skills + MCP reload |
 | `data-source-added` | Add files to `docs/data-source/` |
-| `first-docs-generated` | Hand off to `ai-spector-generate` (SRS) or adopt path for migrate |
+| `first-docs-generated` | Hand off to `ai-spector-generate` (SRS) or adopt path for migrate. **Agent shows a plan table first — user must reply `yes` before files are written** (`work_approve_plan`). |
 | `first-push-synced` | `git push`; open Writer dashboard to confirm sync |
 | `null` (all done) | Summarize completed steps; offer course or next workflow (analyze → generate) |
 
@@ -105,6 +106,7 @@ Default help refs when `helpRef` is missing (from contract):
 | `local-adapter-ready` | `course/en/02-get-started/01-setup-via-chat` |
 | `legacy-aligned` | `guide/MIGRATION.md` |
 | `data-source-added` | `course/en/03-chat-basics/01-how-chat-works` |
+| `first-docs-generated` | Generate runbook — plan table + explicit `yes` before `work_approve_plan` |
 
 ---
 

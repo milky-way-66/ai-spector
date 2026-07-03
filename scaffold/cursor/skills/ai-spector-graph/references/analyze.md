@@ -27,6 +27,7 @@ index({})
 
 **CLI fallback:**
 ```bash
+npx ai-spector graph analyze --json   # prepare graph + agent instructions
 npx ai-spector index
 ```
 

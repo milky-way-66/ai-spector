@@ -29,6 +29,8 @@ export interface ReadinessAssessOptions {
   derivePhase?: DerivePhase;
   /** Workflow id for default deriveFrom when not specified */
   workflow?: string;
+  /** When false (default), omit full criteria[] — use verbose: true for the full table. */
+  verbose?: boolean;
 }
 
 function collectCriteriaInScope(
@@ -95,11 +97,18 @@ async function countDataSourceFiles(root: string): Promise<number> {
   }
 }
 
-async function countAnalysisGaps(root: string): Promise<number> {
+async function countBlockingAnalysisGaps(root: string): Promise<number> {
   const gapsPath = join(root, ".ai-spector/.docflow/analysis/gaps.json");
   if (!(await pathExists(gapsPath))) return 0;
-  const gaps = await readJson<{ gaps?: unknown[] }>(gapsPath).catch(() => ({ gaps: [] }));
-  return Array.isArray(gaps.gaps) ? gaps.gaps.length : 0;
+  const gaps = await readJson<{
+    gaps?: Array<{ severity?: string; acceptAssumption?: boolean }>;
+  }>(gapsPath).catch(() => ({ gaps: [] }));
+  if (!Array.isArray(gaps.gaps)) return 0;
+  return gaps.gaps.filter((gap) => {
+    if (gap.acceptAssumption) return false;
+    const severity = (gap.severity ?? "low").toLowerCase();
+    return severity === "blocking" || severity === "high";
+  }).length;
 }
 
 function buildRequirementQualitySummary(
@@ -178,7 +187,7 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
     nodeCounts,
     contextEntries,
     dataSourceFiles: await countDataSourceFiles(root),
-    analysisGaps: await countAnalysisGaps(root),
+    analysisGaps: await countBlockingAnalysisGaps(root),
     ...(deriveFrom?.length ? { deriveFrom } : {}),
     ...(downstreamDocFiles != null ? { downstreamDocFiles } : {}),
   };
@@ -241,7 +250,7 @@ export async function assessReadiness(opts: ReadinessAssessOptions): Promise<Rea
     scope: { dagNodes: targetAll ? dagNodes : (opts.targets ?? dagNodes), targetAll },
     summary,
     requirementQuality: buildRequirementQualitySummary(criteria, inventory),
-    criteria: results,
+    ...(opts.verbose ? { criteria: results } : {}),
     blockingGaps,
     questionsForUser,
     inventory: {

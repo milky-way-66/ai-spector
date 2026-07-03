@@ -61,7 +61,7 @@ to see active files, profile, and `standardsAlignment` per doc type.
 
 After changing `profile`, run `readiness_scan({ updateLastScan: true })` — `workspace_check` reports **READY-002** until scan baseline is updated.
 
-`readiness_assess` returns structured JSON: `ready`, `summary`, `criteria[]`, `blockingGaps`, `questionsForUser`, `inventory`.
+`readiness_assess` returns structured JSON: `ready`, `summary`, `blockingGaps`, `questionsForUser`, `inventory`. Pass `verbose: true` for full `criteria[]` (91+ rows).
 
 **Tailoring profiles** (bundled in `readiness/profiles/` — one JSON file per profile):
 

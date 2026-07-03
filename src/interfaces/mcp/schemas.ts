@@ -674,7 +674,12 @@ export const TaskUpdatePatchSchema = z.object({
       readinessReportShown: z
         .boolean()
         .optional()
-        .describe("Required before clarify step done (generate; resolve Standard/Full)"),
+        .describe("Full criteria table shown (or readinessSummaryAcknowledged on greenfield bootstrap)"),
+      readinessSummaryAcknowledged: z
+        .boolean()
+        .optional()
+        .describe("Greenfield bootstrap: readiness_assess summary + blockingGaps presented"),
+      greenfieldBootstrap: z.boolean().optional().describe("Auto-set on first greenfield generate session"),
       briefingConfirmedAt: z
         .string()
         .optional()
@@ -966,6 +971,10 @@ export const ReadinessAssessSchema = RootSchema.extend({
   deriveFrom: z.array(DeriveLayerEnum).optional(),
   derivePhase: DerivePhaseEnum.optional(),
   workflow: z.string().optional().describe("Workflow id for default deriveFrom layers"),
+  verbose: z
+    .boolean()
+    .optional()
+    .describe("Include full criteria[] table (default false — returns summary + blockingGaps only)"),
 });
 
 export const ReadinessOutputChecklistSchema = RootSchema.extend({

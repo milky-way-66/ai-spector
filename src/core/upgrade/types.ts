@@ -61,6 +61,8 @@ export interface UpgradeScanResult {
   autoFixable: string[];
   findings: UpgradeFinding[];
   ready: boolean;
+  /** Present when fromVersion === toVersion — scan succeeded, nothing to upgrade. */
+  alreadyCurrent?: boolean;
 }
 
 export interface UpgradeSetupItem {

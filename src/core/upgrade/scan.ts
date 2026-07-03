@@ -55,8 +55,26 @@ export async function runUpgradeScan(opts: {
   const fromVersion = await readScaffoldVersion(root);
   const toVersion = opts.toVersion ?? installedPackageVersion();
 
-  if (semver.lte(toVersion, fromVersion)) {
+  if (semver.lt(toVersion, fromVersion)) {
     throw new Error(`Downgrade unsupported (${fromVersion} → ${toVersion})`);
+  }
+
+  if (semver.eq(toVersion, fromVersion)) {
+    const result: UpgradeScanResult = {
+      scannedAt: new Date().toISOString(),
+      fromVersion,
+      toVersion,
+      editors: [],
+      applicableItems: [],
+      autoFixable: [],
+      findings: [],
+      ready: true,
+      alreadyCurrent: true,
+    };
+    const { dir, scanResult } = upgradeArtifactPaths(root);
+    await mkdir(dir, { recursive: true });
+    await writeJson(scanResult, result);
+    return result;
   }
 
   const editors = await detectEditors(root);

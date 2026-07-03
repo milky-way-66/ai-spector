@@ -41,6 +41,7 @@ export async function toolReadinessAssess(input: z.infer<typeof ReadinessAssessS
     deriveFrom: input.deriveFrom,
     derivePhase: input.derivePhase,
     workflow: input.workflow,
+    verbose: input.verbose,
   });
 }
 

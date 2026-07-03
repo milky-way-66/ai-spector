@@ -10,6 +10,7 @@ import {
   WRITER_LIFECYCLE_HANDOFF,
   type LifecycleSummary,
 } from "../docops/lifecycle.js";
+import { probeGenerateGatePending } from "../docops/generate-gate-probe.js";
 
 function resolveRoot(root?: string): string {
   return resolve(root ?? findProjectRoot());
@@ -56,7 +57,11 @@ export async function runLifecycleSync(opts: {
   if (!opts.dryRun) {
     await writeLifecycle(root, toWrite);
   }
-  const summary = lifecycleSummary(toWrite, { present: existing != null });
+  const generateGatePending = await probeGenerateGatePending(root);
+  const summary = lifecycleSummary(toWrite, {
+    present: existing != null,
+    generateGatePending,
+  });
   if (opts.json) {
     console.log(JSON.stringify({ ok: true, lifecycle: summary, dryRun: Boolean(opts.dryRun) }, null, 2));
   } else {
@@ -77,6 +82,10 @@ export async function lifecycleSyncResult(opts: {
   if (!opts.dryRun) {
     await writeLifecycle(root, toWrite);
   }
-  const summary = lifecycleSummary(toWrite, { present: existing != null });
+  const generateGatePending = await probeGenerateGatePending(root);
+  const summary = lifecycleSummary(toWrite, {
+    present: existing != null,
+    generateGatePending,
+  });
   return { ok: true, lifecycle: summary, dryRun: Boolean(opts.dryRun) };
 }

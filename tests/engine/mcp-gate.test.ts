@@ -1,49 +1,70 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { gateMcpTool } from "../../src/core/engine/gate-mcp.js";
-import type { DocopsConfig } from "../../src/core/docops/types.js";
+import { mergeDocopsDefaults } from "../../src/core/docops/config.js";
 
-const noGraph: DocopsConfig = {
-  schemaVersion: "1.0",
-  docsRoot: "docs",
-  languages: [{ code: "en", label: "English" }],
-  primaryLanguage: "en",
-  paths: {
-    comments: ".docops/comments",
-    reviewConfig: ".docops/review.config.json",
-    reviewQueue: ".docops/review-queue",
-    prototypeConfig: ".docops/prototype/config.json",
-    prototypeScreenMap: ".docops/prototype/screen-map.json",
-  },
-  capabilities: {
-    review: true,
-    comments: true,
-    prototype: false,
-    graph: false,
-    generate: false,
-    translate: false,
-  },
-};
+async function writeJson(path: string, data: unknown) {
+  await writeFile(path, JSON.stringify(data, null, 2) + "\n", "utf8");
+}
 
 describe("gateMcpTool", () => {
-  it("blocks graph_query when graph disabled", () => {
-    const result = gateMcpTool("graph_query", noGraph);
+  const writerUiOff = mergeDocopsDefaults({
+    capabilities: {
+      review: true,
+      comments: true,
+      prototype: true,
+      graph: false,
+      generate: false,
+      translate: false,
+    },
+  });
+
+  it("allows graph_query when capabilities.graph is false (Writer UI only)", () => {
+    const result = gateMcpTool("graph_query", writerUiOff);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("allows index when capabilities.graph is false", () => {
+    expect(gateMcpTool("index", writerUiOff).allowed).toBe(true);
+  });
+
+  it("allows context_record when capabilities.generate is false", () => {
+    expect(gateMcpTool("context_record", writerUiOff).allowed).toBe(true);
+  });
+
+  it("blocks contract_review when review disabled", () => {
+    const config = mergeDocopsDefaults({
+      capabilities: {
+        review: false,
+        comments: true,
+        prototype: true,
+        graph: true,
+        generate: true,
+        translate: false,
+      },
+    });
+    const result = gateMcpTool("contract_review", config);
     expect(result.allowed).toBe(false);
-    expect(result.reason).toMatch(/graph/);
+    expect(result.capability).toBe("review");
   });
+});
 
-  it("allows graph_query when graph enabled", () => {
-    const cfg: DocopsConfig = {
-      ...noGraph,
-      capabilities: { ...noGraph.capabilities, graph: true },
-    };
-    expect(gateMcpTool("graph_query", cfg).allowed).toBe(true);
-  });
-
-  it("allows unmapped tools", () => {
-    expect(gateMcpTool("knowledge_status", noGraph).allowed).toBe(true);
-  });
-
-  it("allows workspace_check regardless of capabilities", () => {
-    expect(gateMcpTool("workspace_check", noGraph).allowed).toBe(true);
+describe("probeGenerateGatePending", () => {
+  it("detects plan awaiting approval", async () => {
+    const { probeGenerateGatePending } = await import("../../src/core/docops/generate-gate-probe.js");
+    const root = await mkdtemp(join(tmpdir(), "aispector-gate-"));
+    const tasksDir = join(root, ".ai-spector/.docflow/tasks");
+    await mkdir(tasksDir, { recursive: true });
+    await writeJson(join(tasksDir, "index.json"), { active: { "generate-srs": "task-abc" } });
+    await writeJson(join(tasksDir, "task-abc.json"), {
+      kind: "generate",
+      planApprovedAt: null,
+      plan: { kind: "generate" },
+      phaseStatus: "awaiting_user",
+      snapshot: { planPresentedAt: "2026-07-03T00:00:00Z" },
+    });
+    expect(await probeGenerateGatePending(root)).toBe(true);
   });
 });

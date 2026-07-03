@@ -3,6 +3,20 @@ import { isImportClarifyComplete } from "../template/import-aspects.js";
 
 type StepStatus = TaskState["steps"][number]["status"];
 
+export function generateClarifyReadinessSatisfied(task: TaskState): boolean {
+  if (task.snapshot.readinessReportShown) {
+    return true;
+  }
+  return Boolean(task.snapshot.greenfieldBootstrap && task.snapshot.readinessSummaryAcknowledged);
+}
+
+function generateClarifyReadinessHint(task: TaskState): string {
+  if (task.snapshot.greenfieldBootstrap) {
+    return "Run readiness_assess (summary mode), present blockingGaps to user, set snapshot.readinessSummaryAcknowledged via work_update, then mark clarify done.";
+  }
+  return "Present the full readiness criteria table (ID, ISO, status), then set snapshot.readinessReportShown via work_update.";
+}
+
 export type TaskGateReason =
   | "plan_missing"
   | "plan_invalid"
@@ -293,12 +307,12 @@ function assertGenerateApproveGates(task: TaskState): void {
     "Run readiness_assess, present criteria table, set snapshot.readinessReportShown, resolve gaps, then mark clarify done.",
     ["readiness_assess", "context_list", "task_update"],
   );
-  if (!task.snapshot.readinessReportShown) {
+  if (!generateClarifyReadinessSatisfied(task)) {
     throw new TaskPreconditionError(
       "snapshot_missing",
       `Task "${task.id}" clarify step done but readiness report was not recorded.`,
-      "Present the full readiness criteria table (ID, ISO, status), then set snapshot.readinessReportShown via task_update.",
-      ["readiness_assess", "task_update"],
+      generateClarifyReadinessHint(task),
+      ["readiness_assess", "work_update"],
       task,
       "clarify",
     );
@@ -663,12 +677,12 @@ export function assertTaskStepUpdateAllowed(
       );
     }
 
-    if (stepId === "clarify" && !task.snapshot.readinessReportShown) {
+    if (stepId === "clarify" && !generateClarifyReadinessSatisfied(task)) {
       throw new TaskPreconditionError(
         "snapshot_missing",
         `Cannot mark clarify done on task "${task.id}" until readiness report was shown.`,
-        "Present readiness criteria table, set snapshot.readinessReportShown, then mark clarify done.",
-        ["readiness_assess", "task_update"],
+        generateClarifyReadinessHint(task),
+        ["readiness_assess", "work_update"],
         task,
         "clarify",
       );

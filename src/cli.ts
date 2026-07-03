@@ -649,6 +649,7 @@ program
   )
   .option("--skip-validate", "Skip graph validate after refresh")
   .option("--cocoindex-sync", "Run CocoIndex pipeline update after indexing (requires Python)")
+  .option("--json", "JSON report for agents")
   .action(async (opts, cmd) => {
     const report = await runIndex({
       root: projectRootOpt(cmd),
@@ -660,7 +661,11 @@ program
       skipValidate: opts.skipValidate,
       cocoindexSync: opts.cocoindexSync,
     });
-    console.log(formatIndexReport(report));
+    if (opts.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(formatIndexReport(report));
+    }
     if (report.failed) {
       process.exitCode = 1;
     }
@@ -738,6 +743,39 @@ syncCmd
   });
 
 const graph = program.command("graph").description("Traceability graph operations");
+
+graph
+  .command("analyze")
+  .description(
+    "Prepare graph for data-source analysis: rebuild structure, merge knowledge if present, validate",
+  )
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    const paths = await getPaths(cmd);
+    const report = await runIndex({
+      root: paths.root,
+      graphOnly: false,
+      docsOnly: false,
+      skipValidate: false,
+    });
+    const payload = {
+      ok: !report.failed,
+      phase: "analyze",
+      message:
+        "Graph prepared. Read docs/data-source/, write .ai-spector/.docflow/analysis/knowledge.json, then run index again to merge.",
+      knowledgePath: ".ai-spector/.docflow/analysis/knowledge.json",
+      index: report,
+    };
+    if (opts.json) {
+      console.log(JSON.stringify(payload, null, 2));
+    } else {
+      console.log(payload.message);
+      console.log(formatIndexReport(report));
+    }
+    if (report.failed) {
+      process.exitCode = 1;
+    }
+  });
 
 graph
   .command("registry")

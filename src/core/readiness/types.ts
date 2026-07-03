@@ -137,7 +137,8 @@ export interface ReadinessAssessResult {
     totalCharacteristics?: number;
     gaps?: string[];
   };
-  criteria: ReadinessCriterionResult[];
+  /** Full per-criterion rows — omitted unless readiness_assess verbose: true */
+  criteria?: ReadinessCriterionResult[];
   blockingGaps: ReadinessCriterionResult[];
   questionsForUser: string[];
   inventory: ReadinessInventory;

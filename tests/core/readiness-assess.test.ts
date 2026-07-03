@@ -58,11 +58,12 @@ describe("assessReadiness", () => {
       docType: "srs",
       targets: ["srs.introduction"],
       targetAll: false,
+      verbose: true,
     });
 
     expect(result.docType).toBe("srs");
     expect(result.profile).toBe("general");
-    expect(result.criteria.length).toBeGreaterThan(0);
+    expect(result.criteria!.length).toBeGreaterThan(0);
     expect(result.summary.total).toBeGreaterThan(0);
     expect(result.inventory.graphLoaded).toBe(true);
     expect(result.inventory.nodeCounts.actor).toBe(1);
@@ -78,10 +79,27 @@ describe("assessReadiness", () => {
       root,
       profile: "regulated",
       targetAll: true,
+      verbose: true,
     });
 
     expect(result.profile).toBe("regulated");
     expect(result.appliedProfiles).toContain("regulated");
-    expect(result.criteria.some((c) => c.id.startsWith("REG-"))).toBe(true);
+    expect(result.criteria!.some((c) => c.id.startsWith("REG-"))).toBe(true);
+  });
+
+  it("omits criteria array by default (summary mode)", async () => {
+    const root = await mkdtemp(join(tmpdir(), "aispector-rdy-"));
+    await scaffoldMinimalProject(root);
+
+    const result = await assessReadiness({
+      root,
+      docType: "srs",
+      targets: ["srs.introduction"],
+      targetAll: false,
+    });
+
+    expect(result.criteria).toBeUndefined();
+    expect(result.summary.total).toBeGreaterThan(0);
+    expect(result.blockingGaps).toBeDefined();
   });
 });

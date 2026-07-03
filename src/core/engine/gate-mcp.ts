@@ -2,6 +2,12 @@ import type { DocopsCapabilities } from "../docops/paths.js";
 import type { DocopsConfig } from "../docops/types.js";
 import { isCapabilityEnabled } from "./gate.js";
 
+/**
+ * Writer `capabilities.graph` / `capabilities.generate` control cloud UI only.
+ * Local engine MCP tools are never blocked by those flags (see adapters README).
+ */
+const WRITER_UI_ONLY_CAPABILITIES = new Set<keyof DocopsCapabilities>(["graph", "generate"]);
+
 const TOOL_CAPABILITY: Record<string, keyof DocopsCapabilities | null> = {
   docops_status: null,
   workspace_check: null,
@@ -42,12 +48,18 @@ const TOOL_CAPABILITY: Record<string, keyof DocopsCapabilities | null> = {
 export function gateMcpTool(
   tool: string,
   config: DocopsConfig,
-): { allowed: boolean; reason?: string } {
+): { allowed: boolean; reason?: string; capability?: keyof DocopsCapabilities } {
   const cap = TOOL_CAPABILITY[tool];
-  if (cap === undefined) return { allowed: true };
-  if (cap === null) return { allowed: true };
+  if (cap === undefined || cap === null) return { allowed: true };
+  if (WRITER_UI_ONLY_CAPABILITIES.has(cap)) {
+    return { allowed: true };
+  }
   if (!isCapabilityEnabled(config, cap)) {
-    return { allowed: false, reason: `Capability "${cap}" is disabled in docops.config.json` };
+    return {
+      allowed: false,
+      reason: `Capability "${cap}" is disabled in docops.config.json`,
+      capability: cap,
+    };
   }
   return { allowed: true };
 }

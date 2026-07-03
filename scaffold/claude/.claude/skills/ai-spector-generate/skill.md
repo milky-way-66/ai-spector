@@ -4,7 +4,7 @@ description: >-
   All document generation: SRS, basic design, detail design, HTML prototype; incremental feature/section
   changes (resolve-task); and template pack import. Use for "generate SRS/basic design/detail design",
   "write chapter N", "add feature", "update section", "I want to add…", "HTML prototype",
-  "set up template pack". Capability-gated by docops.config.json capabilities.generate.
+  "set up template pack". Local adapter generates via MCP/CLI even when capabilities.generate is false (Writer cloud UI only).
 ---
 
 # AI Spector — Generate
@@ -22,7 +22,7 @@ description: >-
 
 ## Step 1 — Check active packs
 
-Read `docops.config.json`. Check `capabilities` for `generate`. Check `packs.srs` and `packs.basicDesign`.
+Read `docops.config.json`. `capabilities.generate: false` hides Writer cloud generate UI only — proceed via MCP/CLI when local adapter is set up. Check `packs.srs` and `packs.basicDesign`.
 
 | Pack field | Value | Action |
 |------------|-------|--------|

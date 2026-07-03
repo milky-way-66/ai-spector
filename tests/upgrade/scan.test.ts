@@ -20,4 +20,16 @@ describe("runUpgradeScan", () => {
       /downgrade/i,
     );
   });
+
+  it("returns ready when already on latest version", async () => {
+    const result = await runUpgradeScan({
+      root: FIXTURE,
+      toVersion: "0.4.0",
+    });
+    expect(result.fromVersion).toBe("0.4.0");
+    expect(result.toVersion).toBe("0.4.0");
+    expect(result.alreadyCurrent).toBe(true);
+    expect(result.ready).toBe(true);
+    expect(result.findings).toEqual([]);
+  });
 });

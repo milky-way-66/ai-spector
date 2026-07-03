@@ -630,7 +630,7 @@ server.registerTool(
   "readiness_assess",
   {
     description:
-      "Structured readiness report: score criteria against graph, context store, and data-source. Returns blockingGaps, questionsForUser, and ready flag. Run after scope selection, before clarify questions. Prefer this over manual JSON review.",
+      "Structured readiness report: score criteria against graph, context store, and data-source. Default: summary + blockingGaps only; pass verbose:true for full criteria[] table. Run after scope selection, before clarify questions.",
     inputSchema: ReadinessAssessSchema.shape,
   },
   async (input) => {

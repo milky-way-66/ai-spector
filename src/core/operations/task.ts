@@ -28,6 +28,7 @@ import {
   type DerivePhase,
   type SourceMode,
 } from "./derive.js";
+import { probeLifecycleSignals, readLifecycle } from "../docops/lifecycle.js";
 import {
   assertGenerateExecutionAllowed,
   assertResolveExecutionAllowed,
@@ -189,6 +190,10 @@ export interface TaskSnapshot {
   readinessReportShown?: boolean;
   /** Set when user confirmed the per-file context briefing (briefing gate). */
   briefingConfirmedAt?: string;
+  /** Greenfield first generate — shorten clarify to readiness summary + blockingGaps. */
+  greenfieldBootstrap?: boolean;
+  /** Set after presenting readiness_assess summary (blockingGaps) on greenfield bootstrap. */
+  readinessSummaryAcknowledged?: boolean;
   /** Set when the plan table was shown in chat and phaseStatus is awaiting_user. */
   planPresentedAt?: string;
   /** Set when extract stage offered spec_record to the user (extract gate before task_complete). */
@@ -461,6 +466,8 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
   const first = steps[0]!;
   first.status = "in-progress";
 
+  const greenfieldBootstrap = await detectGreenfieldBootstrap(root, opts.kind);
+
   const task: TaskState = {
     version: 1,
     id: buildTaskId(),
@@ -487,6 +494,7 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
       ...(derive.deriveFrom ? { deriveFrom: derive.deriveFrom } : {}),
       derivePhase: derive.derivePhase,
       ...(derive.priorDeriveTaskId ? { priorDeriveTaskId: derive.priorDeriveTaskId } : {}),
+      ...(greenfieldBootstrap ? { greenfieldBootstrap: true } : {}),
     },
   };
 
@@ -496,6 +504,23 @@ export async function runTaskCreate(opts: TaskCreateOptions): Promise<TaskCreate
   await saveIndex(root, index);
 
   return { task, taskPath, replacedTaskId };
+}
+
+async function detectGreenfieldBootstrap(
+  root: string,
+  kind: TaskKind,
+): Promise<boolean> {
+  if (kind !== "generate") {
+    return false;
+  }
+  const lifecycle = await readLifecycle(root);
+  const probes = await probeLifecycleSignals(root);
+  const intent = lifecycle?.intent ?? (probes.layout === "legacy" || probes.layout === "mixed" ? "migrate" : "greenfield");
+  return (
+    intent === "greenfield" &&
+    !probes.has_generated_docs &&
+    Boolean(probes.has_data_source_files)
+  );
 }
 
 // ── get / list ────────────────────────────────────────────────────────────────

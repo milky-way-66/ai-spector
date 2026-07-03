@@ -7,6 +7,7 @@ import {
   writeDocopsConfig,
 } from "./config.js";
 import { applyDocopsBootstrap } from "./bootstrap.js";
+import { migrateRootDataSourceToCanonical } from "./data-source-path.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
@@ -101,6 +102,13 @@ export async function initDocopsContract(opts: {
     actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
     if (!dryRun) {
       await writeDocopsConfig(projectRoot, config);
+    }
+  }
+
+  if (!dryRun) {
+    const migration = await migrateRootDataSourceToCanonical(projectRoot);
+    for (const line of migration.migrated) {
+      actions.push(`migrate — ${line}`);
     }
   }
 

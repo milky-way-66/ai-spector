@@ -13,6 +13,8 @@ Complete command reference for AI agents. Run all commands from the project root
 | Initialize a new project | `npx ai-spector init` |
 | Add a language | `npx ai-spector lang add <code>` |
 | Refresh graph + indexes | `npx ai-spector index` |
+| Refresh graph + indexes (JSON) | `npx ai-spector index --json` |
+| Prepare graph for data-source analysis | `npx ai-spector graph analyze [--json]` |
 | Prepare graph structure only | `npx ai-spector index --graph-only` |
 | Rebuild doc indexes only | `npx ai-spector index --docs-only` |
 | Query a node's subgraph | `npx ai-spector graph query <id> --json` |

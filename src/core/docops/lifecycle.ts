@@ -9,6 +9,7 @@ import {
   LEGACY_DOCFLOW_CONFIG_REL,
   segmentRepoPrefixMap,
 } from "./paths.js";
+import { probeGenerateGatePending } from "./generate-gate-probe.js";
 
 export const LIFECYCLE_PATH = ".docops/lifecycle.json";
 
@@ -48,6 +49,7 @@ export const DEFAULT_HELP: Partial<Record<LifecycleStepId, string>> = {
   "local-adapter-ready": "course/en/02-get-started/01-setup-via-chat",
   "legacy-aligned": "guide/MIGRATION.md",
   "data-source-added": "course/en/03-chat-basics/01-how-chat-works",
+  "first-docs-generated": "guide/modules/generate.md",
   "review-queue-synced": "guide/modules/review.md",
 };
 
@@ -90,6 +92,9 @@ export interface LifecycleSummary {
   steps: LifecycleStep[];
   percentComplete: number;
   nextStepId: LifecycleStepId | null;
+  /** Active generate work session has plan table awaiting explicit user yes. */
+  generateGatePending?: boolean;
+  generateGateHint?: string;
 }
 
 export function nowIso(): string {
@@ -340,9 +345,9 @@ export function reconcileLifecycle(opts: {
 
 export function lifecycleSummary(
   lifecycle: LifecycleDocument,
-  opts: { present?: boolean } = {},
+  opts: { present?: boolean; generateGatePending?: boolean } = {},
 ): LifecycleSummary {
-  const { present = true } = opts;
+  const { present = true, generateGatePending = false } = opts;
   const steps = lifecycle.steps ?? [];
   const done = steps.filter((s) => s.status === "done").length;
   const total = steps.length || 1;
@@ -357,6 +362,13 @@ export function lifecycleSummary(
     steps,
     percentComplete: Math.round((100 * done) / total),
     nextStepId: nextId,
+    ...(generateGatePending
+      ? {
+          generateGatePending: true,
+          generateGateHint:
+            "Generate plan table is awaiting approval — reply yes in chat, then call work_approve_plan.",
+        }
+      : {}),
   };
 }
 

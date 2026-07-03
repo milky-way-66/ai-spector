@@ -9,12 +9,15 @@ import {
   runContextRecord,
   runContextResolve,
 } from "@/core/operations/context.js";
+import { assertToolAllowed } from "../assert-tool-allowed.js";
 
 export async function toolContextList(input: z.infer<typeof ContextListSchema>) {
+  await assertToolAllowed("context_list", input.root);
   return runContextList({ root: input.root, docType: input.docType, status: input.status });
 }
 
 export async function toolContextRecord(input: z.infer<typeof ContextRecordSchema>) {
+  await assertToolAllowed("context_record", input.root);
   return runContextRecord({
     root: input.root,
     docType: input.docType,
@@ -30,6 +33,7 @@ export async function toolContextRecord(input: z.infer<typeof ContextRecordSchem
 }
 
 export async function toolContextResolve(input: z.infer<typeof ContextResolveSchema>) {
+  await assertToolAllowed("context_resolve", input.root);
   return runContextResolve({
     root: input.root,
     docType: input.docType,

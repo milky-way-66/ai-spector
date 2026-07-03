@@ -62,14 +62,16 @@ export function registerReadinessCommand(program: import("commander").Command): 
     .option("--profile <id>", "Tailoring profile: general, regulated, arc42")
     .option("--targets <nodes>", "Comma-separated DAG nodes in scope")
     .option("--all-targets", "Assess all targets in criteria file")
+    .option("--verbose", "Include full criteria[] in JSON output")
     .option("--json", "JSON output")
-    .action(async (opts: { docType?: string; profile?: string; targets?: string; allTargets?: boolean; json?: boolean }) => {
+    .action(async (opts: { docType?: string; profile?: string; targets?: string; allTargets?: boolean; verbose?: boolean; json?: boolean }) => {
       const targets = opts.targets?.split(",").map((s) => s.trim()).filter(Boolean);
       const result = await runReadinessAssess({
         docType: opts.docType,
         profile: opts.profile,
         targets,
         targetAll: opts.allTargets ?? !targets?.length,
+        verbose: opts.verbose,
       });
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));

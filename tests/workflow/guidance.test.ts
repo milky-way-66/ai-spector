@@ -34,7 +34,7 @@ function minimalTask(overrides: Partial<TaskState>): TaskState {
 }
 
 describe("buildTaskWorkflowGuidance", () => {
-  it("suggests task_approve_plan when plan exists and gates are complete", () => {
+  it("suggests work_approve_plan when plan exists and gates are complete", () => {
     const g = buildTaskWorkflowGuidance(
       minimalTask({
         kind: "generate",
@@ -71,11 +71,11 @@ describe("buildTaskWorkflowGuidance", () => {
       }),
     );
     expect(g.phase).toBe("awaiting_plan_approval");
-    expect(g.nextTools).toContain("task_approve_plan");
+    expect(g.nextTools).toContain("work_approve_plan");
     expect(g.notTheseTools).toContain("review_approve");
   });
 
-  it("blocks task_approve_plan when generate gates are incomplete", () => {
+  it("blocks work_approve_plan when generate gates are incomplete", () => {
     const g = buildTaskWorkflowGuidance(
       minimalTask({
         kind: "generate",
@@ -99,7 +99,7 @@ describe("buildTaskWorkflowGuidance", () => {
       }),
     );
     expect(g.phase).toBe("check");
-    expect(g.notTheseTools).toContain("task_approve_plan");
+    expect(g.notTheseTools).toContain("work_approve_plan");
   });
 
   it("suggests resolve_task when plan approved", () => {
@@ -133,7 +133,7 @@ describe("buildTaskWorkflowGuidance", () => {
       }),
     );
     expect(g.phase).toBe("tier");
-    expect(g.notTheseTools).toContain("task_approve_plan");
+    expect(g.notTheseTools).toContain("work_approve_plan");
   });
 });
 
@@ -182,6 +182,6 @@ describe("buildTaskListWorkflowGuidance", () => {
       },
     });
     expect(g.workflowId).toBe("task-router");
-    expect(g.nextTools).toContain("task_resume");
+    expect(g.nextTools).toContain("work_resume");
   });
 });

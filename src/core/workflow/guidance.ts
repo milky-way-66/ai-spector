@@ -3,6 +3,7 @@ import type { TaskState } from "../operations/task.js";
 import {
   effectiveResolveTier,
   isLegacyResolveTask,
+  generateClarifyReadinessSatisfied,
 } from "../operations/task-gates.js";
 import type { ReviewSessionFile } from "../reviews/types.js";
 import type { WorkflowId } from "./route-intent.js";
@@ -19,9 +20,9 @@ export interface WorkflowToolGuidance {
 
 const REVIEW_APPROVE = "review_approve";
 const SPEC_APPROVE = "spec_approve";
-const TASK_APPROVE = "task_approve_plan";
+const WORK_APPROVE = "work_approve_plan";
 const COMMENTS_RESOLVE = "comments_resolve";
-const APPROVE_SIBLINGS = [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE] as const;
+const APPROVE_SIBLINGS = [REVIEW_APPROVE, SPEC_APPROVE, WORK_APPROVE, COMMENTS_RESOLVE] as const;
 
 function taskStepStatus(task: TaskState, stepId: string): string {
   return task.steps.find((s) => s.id === stepId)?.status ?? "missing";
@@ -36,9 +37,9 @@ function gateBlockedGuidance(
   return {
     workflowId,
     phase,
-    message: `${message} Do not call task_approve_plan yet.`,
+    message: `${message} Do not call work_approve_plan yet.`,
     nextTools,
-    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
+    notTheseTools: [REVIEW_APPROVE, WORK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
     canProceed: false,
   };
 }
@@ -64,9 +65,9 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
             "index",
             "workspace_check",
             "readiness_output_checklist",
-            "task_complete",
+            "work_complete",
           ]
-        : ["task_record_wave", "index", "spec_record", "task_complete"];
+        : ["work_record_step", "index", "spec_record", "work_complete"];
     const tier = task.kind === "resolve" ? effectiveResolveTier(task) : null;
     const execHint =
       tier && tier !== "fast" && !task.snapshot.executionMode
@@ -79,7 +80,7 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
           ? "verify"
           : "plan_approved",
       message:
-        `Plan approved — execute the task steps, then verify changed paths before task_complete.${execHint} Use task_approve_plan only once; this is not document sign-off (review_approve).`,
+        `Plan approved — execute the work steps, then verify changed paths before work_complete.${execHint} Use work_approve_plan only once; this is not document sign-off (review_approve).`,
       nextTools: executeTools,
       notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
       canProceed: true,
@@ -94,15 +95,18 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
       if (!checkDone) {
         return gateBlockedGuidance(workflowId, "check", "Run workspace_check, record snapshot.workspaceCheckAt, mark check done.", [
           "workspace_check",
-          "task_update",
+          "work_update",
         ]);
       }
-      if (!clarifyDone || !task.snapshot.readinessReportShown) {
+      if (!clarifyDone || !generateClarifyReadinessSatisfied(task)) {
+        const clarifyHint = task.snapshot.greenfieldBootstrap
+          ? "Run readiness_assess (summary), present blockingGaps, set snapshot.readinessSummaryAcknowledged."
+          : "Run readiness_assess with verbose:true, show criteria table, set snapshot.readinessReportShown.";
         return gateBlockedGuidance(
           workflowId,
           "clarify",
-          "Run readiness_assess, show criteria table, set snapshot.readinessReportShown, resolve gaps.",
-          ["readiness_assess", "context_list", "task_update"],
+          clarifyHint,
+          ["readiness_assess", "context_list", "work_update"],
         );
       }
       if (!briefingDone || !task.snapshot.briefingConfirmedAt) {
@@ -110,7 +114,7 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
           workflowId,
           "briefing",
           "Present per-file context briefing — user must confirm before plan table.",
-          ["task_update", "context_list"],
+          ["work_update", "context_list"],
         );
       }
       if (!task.snapshot.planPresentedAt || task.phaseStatus !== "awaiting_user") {
@@ -118,7 +122,7 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
           workflowId,
           "plan",
           "Show plan table with criteria/ISO refs — set phaseStatus awaiting_user and snapshot.planPresentedAt.",
-          ["task_update"],
+          ["work_update"],
         );
       }
     } else {
@@ -130,8 +134,8 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
       workflowId,
       phase: "awaiting_plan_approval",
       message:
-        'Plan table shown — wait for explicit yes (yes / đồng ý / go ahead). "ok" or scope alone is NOT approval. Then task_approve_plan.',
-      nextTools: ["task_update", TASK_APPROVE],
+        'Plan table shown — wait for explicit yes (yes / đồng ý / go ahead). "ok" or scope alone is NOT approval. Then work_approve_plan.',
+      nextTools: ["work_update", WORK_APPROVE],
       notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
       canProceed: false,
     };
@@ -146,9 +150,9 @@ export function buildTaskWorkflowGuidance(task: TaskState): WorkflowToolGuidance
     workflowId,
     phase: "planning",
     message:
-      "Propose tier → clarify → build GoalSpec + TaskPlan → wait for user yes → task_approve_plan before any doc writes.",
-    nextTools: ["task_update", "context_list"],
-    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
+      "Propose tier → clarify → build GoalSpec + TaskPlan → wait for user yes → work_approve_plan before any doc writes.",
+    nextTools: ["work_update", "context_list"],
+    notTheseTools: [REVIEW_APPROVE, WORK_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
     canProceed: false,
   };
 }
@@ -164,7 +168,7 @@ function buildResolvePreApproveGuidance(
       workflowId,
       "tier",
       "Propose Fast/Standard/Full tier with rationale — user must confirm before clarify/plan.",
-      ["task_update", "task_confirm_tier"],
+      ["work_update", "task_confirm_tier"],
     );
   }
 
@@ -174,7 +178,7 @@ function buildResolvePreApproveGuidance(
         workflowId,
         "design",
         "Write design spec, get user approval — task_approve_design_spec or snapshot fields.",
-        ["task_approve_design_spec", "task_update"],
+        ["task_approve_design_spec", "work_update"],
       );
     }
   }
@@ -185,14 +189,14 @@ function buildResolvePreApproveGuidance(
         workflowId,
         "check",
         "Run workspace_check, record snapshot.workspaceCheckAt, mark check done.",
-        ["workspace_check", "task_update"],
+        ["workspace_check", "work_update"],
       );
     }
   }
 
   if (taskStepStatus(task, "clarify") !== "done") {
     return gateBlockedGuidance(workflowId, "clarify", "Clarify GoalSpec fields before plan approval.", [
-      "task_update",
+      "work_update",
       "context_list",
     ]);
   }
@@ -203,7 +207,7 @@ function buildResolvePreApproveGuidance(
         workflowId,
         "clarify",
         "Run scoped readiness_assess, show criteria table, set snapshot.readinessReportShown.",
-        ["readiness_assess", "context_list", "task_update"],
+        ["readiness_assess", "context_list", "work_update"],
       );
     }
     if (taskStepStatus(task, "briefing") !== "done" || !task.snapshot.briefingConfirmedAt) {
@@ -211,7 +215,7 @@ function buildResolvePreApproveGuidance(
         workflowId,
         "briefing",
         "Present per-file context briefing — user must confirm before plan table.",
-        ["task_update", "context_list"],
+        ["work_update", "context_list"],
       );
     }
     if (!task.snapshot.implementationPlanPath) {
@@ -219,7 +223,7 @@ function buildResolvePreApproveGuidance(
         workflowId,
         "plan",
         "Save bite-sized plan to docs/superpowers/plans/… and set snapshot.implementationPlanPath.",
-        ["task_update"],
+        ["work_update"],
       );
     }
   }
@@ -228,8 +232,8 @@ function buildResolvePreApproveGuidance(
     return gateBlockedGuidance(
       workflowId,
       "plan",
-      "Build GoalSpec + TaskPlan — store via task_update before presenting for approval.",
-      ["task_update", "context_list"],
+      "Build GoalSpec + TaskPlan — store via work_update before presenting for approval.",
+      ["work_update", "context_list"],
     );
   }
 
@@ -238,7 +242,7 @@ function buildResolvePreApproveGuidance(
       workflowId,
       "plan",
       "Show GoalSpec + TaskPlan — wait for explicit yes (not ok/scope alone).",
-      ["task_update"],
+      ["work_update"],
     );
   }
 
@@ -257,19 +261,19 @@ export function buildTaskListWorkflowGuidance(opts: {
       workflowId: opts.activeForSlot ? "task-router" : g.workflowId,
       phase: opts.activeForSlot ? "resume" : g.phase,
       message: opts.activeForSlot
-        ? `Active task ${task.id} — call task_resume then hand off to ${g.workflowId} worker.`
+        ? `Active work session ${task.id} — call work_resume then hand off to ${g.workflowId} worker.`
         : g.message,
       nextTools: opts.activeForSlot
-        ? ["task_resume", "task_get", ...g.nextTools]
-        : ["task_get", ...g.nextTools],
+        ? ["work_resume", "work_get", ...g.nextTools]
+        : ["work_get", ...g.nextTools],
     };
   }
 
   return {
     workflowId: "task-router",
     phase: "list",
-    message: "No active task in slot — use bootstrap on task_list or task_create to start a workflow.",
-    nextTools: ["task_create", "task_list"],
+    message: "No active work session in slot — use bootstrap on work_list or work_create to start a workflow.",
+    nextTools: ["work_create", "work_list"],
     notTheseTools: [...APPROVE_SIBLINGS],
     canProceed: false,
   };
@@ -280,7 +284,7 @@ export function buildTaskApprovePlanWorkflowGuidance(task: TaskState): WorkflowT
   return {
     ...g,
     phase: "plan_approved",
-    message: "Plan approved — execute next steps. Do not call task_approve_plan again.",
+    message: "Plan approved — execute next steps. Do not call work_approve_plan again.",
     canProceed: true,
   };
 }
@@ -298,7 +302,7 @@ export function buildSpecListWorkflowGuidance(stores: SpecStore[]): WorkflowTool
       message:
         "No pending extracted specs in queue. Approve specs with spec_approve (SPEC-NNN) after generation stage 6 — not review_approve.",
       nextTools: ["spec_list", "spec_record"],
-      notTheseTools: [REVIEW_APPROVE, TASK_APPROVE],
+      notTheseTools: [REVIEW_APPROVE, WORK_APPROVE],
     };
   }
 
@@ -311,9 +315,9 @@ export function buildSpecListWorkflowGuidance(stores: SpecStore[]): WorkflowTool
   return {
     workflowId: "spec-queue",
     phase: "pending_specs",
-    message: `${pending.length} spec(s) pending (${ids}${suffix}). User approves with spec_approve — not review_approve or task_approve_plan.`,
+    message: `${pending.length} spec(s) pending (${ids}${suffix}). User approves with spec_approve — not review_approve or work_approve_plan.`,
     nextTools: ["spec_approve", "spec_reject"],
-    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    notTheseTools: [REVIEW_APPROVE, WORK_APPROVE, COMMENTS_RESOLVE],
     canProceed: true,
   };
 }
@@ -330,7 +334,7 @@ export function buildSpecActionWorkflowGuidance(
         ? `${specId} approved and merged — not document sign-off (review_approve).`
         : `${specId} rejected — remaining pending specs use spec_list.`,
     nextTools: ["spec_list", "graph_validate", "index"],
-    notTheseTools: [REVIEW_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    notTheseTools: [REVIEW_APPROVE, WORK_APPROVE, COMMENTS_RESOLVE],
     canProceed: true,
   };
 }
@@ -342,7 +346,7 @@ export function buildCommentsInboxWorkflowGuidance(openCount: number): WorkflowT
       phase: "inbox_empty",
       message: "No open comment threads. Formal document sign-off uses review_* tools, not comments_resolve.",
       nextTools: ["comments_list"],
-      notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE],
+      notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, WORK_APPROVE],
     };
   }
 
@@ -351,7 +355,7 @@ export function buildCommentsInboxWorkflowGuidance(openCount: number): WorkflowT
     phase: "threads_open",
     message: `${openCount} open thread(s) — pick C-NNN, address feedback, then comments_resolve. Not formal document sign-off (review_approve).`,
     nextTools: ["comments_show", "comments_resolve"],
-    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, WORK_APPROVE],
     canProceed: true,
   };
 }
@@ -362,7 +366,7 @@ export function buildCommentsPlanWorkflowGuidance(threadId: string): WorkflowToo
     phase: "plan",
     message: `Plan for ${threadId} — propose doc edit, wait for user approval, commit doc + meta, then comments_resolve.`,
     nextTools: ["comments_show"],
-    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, WORK_APPROVE, COMMENTS_RESOLVE],
     canProceed: false,
   };
 }
@@ -373,7 +377,7 @@ export function buildCommentsResolveWorkflowGuidance(threadId: string): Workflow
     phase: "resolved",
     message: `${threadId} resolved — not formal document sign-off (review_approve).`,
     nextTools: ["comments_inbox", "comments_list"],
-    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, TASK_APPROVE],
+    notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, WORK_APPROVE],
     canProceed: true,
   };
 }
@@ -386,9 +390,9 @@ export function buildResolveTaskResultWorkflowGuidance(
     phase: status === "complete" ? "workflow_complete" : status,
     message:
       status === "complete"
-        ? "Resolve task finished — call task_complete. Not document sign-off."
-        : "Resolve task blocked or partial — fix blockers before task_complete.",
-    nextTools: status === "complete" ? ["task_complete", "index"] : ["task_get", "task_update"],
+        ? "Resolve work session finished — call work_complete. Not document sign-off."
+        : "Resolve work session blocked or partial — fix blockers before work_complete.",
+    nextTools: status === "complete" ? ["work_complete", "index"] : ["work_get", "work_update"],
     notTheseTools: [REVIEW_APPROVE, SPEC_APPROVE, COMMENTS_RESOLVE],
     canProceed: status === "complete",
   };
@@ -400,7 +404,7 @@ export function buildReviewSessionWorkflowGuidance(
 ): WorkflowToolGuidance {
   const base = {
     workflowId: "doc-review" as const,
-    notTheseTools: [SPEC_APPROVE, TASK_APPROVE, COMMENTS_RESOLVE],
+    notTheseTools: [SPEC_APPROVE, WORK_APPROVE, COMMENTS_RESOLVE],
   };
 
   switch (session.phase) {
