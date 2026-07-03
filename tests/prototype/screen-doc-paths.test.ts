@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { withTempProject } from "../helpers/temp-project.js";
+import { syncDocopsLanguages } from "../helpers/docops-scaffold.js";
 import { buildPrototypeManifest } from "@/core/prototype/build-manifest.js";
 import {
   buildScreenDocPaths,
@@ -78,6 +79,10 @@ const LIST = `## 4. Screen Index
 describe("screen-map screen doc paths", () => {
   it("writes full screenDoc, screenDocPath, and screenDocs in multi-lang projects", async () => {
     await withTempProject(async (root) => {
+      await syncDocopsLanguages(root, [
+        { code: "en", label: "English" },
+        { code: "vi", label: "Vietnamese" },
+      ]);
       await writeJson(join(root, ".ai-spector/docflow.config.json"), {
         version: 1,
         languages: [

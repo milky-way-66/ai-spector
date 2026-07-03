@@ -60,11 +60,13 @@ as an assumption by the user before stage 5 (details: [clarify.md](./clarify.md)
 
 ## Language check (before first write)
 
-Read `.ai-spector/docflow.config.json` at the project root. Check the `languages` array:
+Read **`.docops/docops.config.json`** first (contract source of truth). Use `primaryLanguage` and
+`languages[]` from docops. Legacy `.ai-spector/docflow.config.json` may still exist for engine paths
+and packs — **do not** use its `languages[]` when docops is present.
 
-- **Multiple languages configured** → generate primary language first, then translate to secondary languages from the primary output. Never generate secondary languages independently from the graph — always translate from the finished primary file.
-- **Single language configured** → generate only for that language.
-- **`languages` missing** → fall back to reading `.ai-spector/.docflow/config/workspace/language.json`. If `documentLanguage` is empty or missing, load [language-picker.md](./language-picker.md) and run the picker.
+- **Multiple languages configured** → **ask which language(s) this run generates** in the decisions table ([plan-and-briefing.md](./plan-and-briefing.md)). Default suggestion: docops `primaryLanguage`. Then generate primary first, translate secondaries from the finished primary file.
+- **Single language configured** → confirm that language in the plan header; generate only for it.
+- **`languages` missing in docops** → fall back to [language-picker.md](./language-picker.md).
 
 **Output path rule:**
 
@@ -198,7 +200,7 @@ After any language file write, `npx ai-spector index` reconciles the translation
 
 When any doc under `docs/` is edited outside generate skills, follow `.claude/rules/ai-spector-after-doc-edit.mdc`:
 
-1. `npx ai-spector graph impact --git --change content_change --json` (or `--file`)
+1. `npx ai-spector graph impact --git --json` (or `--file`) — MCP: `graph_impact({ git: true, change: "content_change" })`
 2. `npx ai-spector index` (refreshes translation queue)
 
 ## Finish

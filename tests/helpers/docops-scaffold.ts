@@ -45,6 +45,31 @@ export const MIN_ENGINE = {
   readiness: { profile: "general" },
 };
 
+/** Sync docops contract languages (source of truth when docops exists). */
+export async function syncDocopsLanguages(
+  root: string,
+  langs: Array<{ code: string; label: string }>,
+  extra?: {
+    primaryLanguage?: string;
+    internalLanguage?: string;
+    clientLanguage?: string;
+  },
+): Promise<void> {
+  const configPath = join(root, DOCOPS_CONFIG_REL);
+  const existing = JSON.parse(await readFile(configPath, "utf8")) as typeof MIN_DOCOPS;
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      ...existing,
+      languages: langs,
+      ...(extra?.primaryLanguage ? { primaryLanguage: extra.primaryLanguage } : {}),
+      ...(extra?.internalLanguage ? { internalLanguage: extra.internalLanguage } : {}),
+      ...(extra?.clientLanguage ? { clientLanguage: extra.clientLanguage } : {}),
+    }),
+    "utf8",
+  );
+}
+
 /** Minimal Writer contract + engine layout for check/task tests. */
 export async function scaffoldDocopsMinimal(root: string): Promise<void> {
   await mkdir(join(root, ".docops"), { recursive: true });

@@ -159,4 +159,43 @@ describe("runCheck docops + engine rules", () => {
       expect(cfg?.path).toBe(DOCOPS_CONFIG_REL);
     });
   });
+
+  it("CFG-002 warns when legacy docflow languages disagree with docops", async () => {
+    await withTempDir(async (root) => {
+      await mkdir(join(root, ".docops"), { recursive: true });
+      await writeFile(
+        join(root, DOCOPS_CONFIG_REL),
+        JSON.stringify({
+          ...MIN_DOCOPS,
+          primaryLanguage: "vi",
+          languages: [
+            { code: "vi", label: "Vietnamese" },
+            { code: "jp", label: "Japanese" },
+          ],
+        }),
+        "utf8",
+      );
+      await mkdir(join(root, ".ai-spector"), { recursive: true });
+      await writeFile(
+        join(root, LEGACY_DOCFLOW_CONFIG_REL),
+        JSON.stringify({
+          version: 1,
+          languages: [{ code: "en", label: "English" }],
+          paths: {},
+        }),
+        "utf8",
+      );
+      await writeJson(join(root, ENGINE_CONFIG_REL), {
+        schemaVersion: 1,
+        artifacts: { graph: ".ai-spector/graph/traceability.graph.json" },
+        readiness: { profile: "general" },
+      });
+      const result = await runCheck({ root });
+      const cfg = result.findings.find((f) => f.ruleId === "CFG-002");
+      expect(cfg?.severity).toBe("warning");
+      expect(cfg?.message).toContain('primaryLanguage "vi"');
+      expect(cfg?.message).toContain("legacy docflow.config.json");
+      expect(cfg?.path).toBe(LEGACY_DOCFLOW_CONFIG_REL);
+    });
+  });
 });

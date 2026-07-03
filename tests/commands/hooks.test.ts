@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { runPreCommitCheck, installGitHooks } from "@/core/operations/hooks.js";
 import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
+import { syncDocopsLanguages } from "../helpers/docops-scaffold.js";
 
 const exec = promisify(execFile);
 
@@ -16,12 +17,14 @@ async function gitInit(root: string): Promise<void> {
 }
 
 async function setupProject(root: string): Promise<void> {
+  const langs = [
+    { code: "en", label: "English" },
+    { code: "jp", label: "Japanese" },
+  ];
+  await syncDocopsLanguages(root, langs);
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {
     version: 1,
-    languages: [
-      { code: "en", label: "English" },
-      { code: "jp", label: "Japanese" },
-    ],
+    languages: langs,
     paths: {
       graph: ".ai-spector/graph/traceability.graph.json",
       registry: ".ai-spector/registry/section-registry.json",

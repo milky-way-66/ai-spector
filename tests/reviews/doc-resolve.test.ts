@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
+import { syncDocopsLanguages } from "../helpers/docops-scaffold.js";
 import { writeJson } from "@/core/util/fs.js";
 import { resolveReviewDocPath } from "@/core/reviews/doc-resolve.js";
 
@@ -9,6 +10,7 @@ async function setupMultiLangProject(
   root: string,
   langs: Array<{ code: string; label: string }>,
 ): Promise<void> {
+  await syncDocopsLanguages(root, langs);
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {
     version: 1,
     languages: langs,
@@ -62,6 +64,14 @@ describe("resolveReviewDocPath", () => {
 
   it("prefers internalLanguage for internal track when both exist", async () => {
     await withTempProject(async (root) => {
+      await syncDocopsLanguages(
+        root,
+        [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        { internalLanguage: "vi" },
+      );
       await writeJson(join(root, ".ai-spector/docflow.config.json"), {
         version: 1,
         languages: [
@@ -87,6 +97,14 @@ describe("resolveReviewDocPath", () => {
 
   it("prefers clientLanguage for client track when both exist", async () => {
     await withTempProject(async (root) => {
+      await syncDocopsLanguages(
+        root,
+        [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        { clientLanguage: "vi" },
+      );
       await writeJson(join(root, ".ai-spector/docflow.config.json"), {
         version: 1,
         languages: [

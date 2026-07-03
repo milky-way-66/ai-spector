@@ -2,6 +2,7 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { workspaceRulesPath } from "../config/docflow-paths.js";
 import { loadDocflowConfig, primaryLanguage } from "../config/load.js";
+import { legacyDocflowLanguageDiffersFromDocops } from "../config/language-from-docops.js";
 import { readDocopsConfig } from "../docops/config.js";
 import {
   DOCOPS_CONFIG_REL,
@@ -97,6 +98,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "STRUCT-003", severity: "warning" },
   { id: "STRUCT-004", severity: "error" },
   { id: "CFG-001", severity: "error" },
+  { id: "CFG-002", severity: "warning" },
   { id: "TMPL-001", severity: "warning" },
   { id: "CTX-001", severity: "warning" },
   { id: "TASK-001", severity: "warning" },
@@ -486,6 +488,28 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
         path: docopsConfigPath,
         fix: "npx ai-spector lang add <code>",
       });
+    }
+  }
+
+  // CFG-002 — legacy docflow language fields disagree with docops contract (generation uses docops).
+  if (enabled(rules, "CFG-002") && docopsReadable && hasLegacyDocflow && docopsConfig) {
+    try {
+      const legacyRaw = await readJson<Partial<DocflowConfig>>(legacyDocflowAbs);
+      const mismatch = legacyDocflowLanguageDiffersFromDocops(docopsConfig, legacyRaw);
+      if (mismatch) {
+        add({
+          ruleId: "CFG-002",
+          severity: severityOf(rules, "CFG-002", "warning"),
+          message:
+            `docops primaryLanguage "${mismatch.docopsPrimary}" and languages [${mismatch.docopsCodes.join(", ")}] ` +
+            `disagree with legacy docflow.config.json languages [${mismatch.legacyCodes.join(", ") || "none"}] — ` +
+            "generation uses docops; sync or remove stale legacy language fields.",
+          path: legacyDocflowPath,
+          fix: "Update .ai-spector/docflow.config.json languages to match docops, or remove languages from legacy file.",
+        });
+      }
+    } catch {
+      // Legacy parse errors are surfaced elsewhere.
     }
   }
 

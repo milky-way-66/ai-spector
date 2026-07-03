@@ -2,6 +2,7 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadDocflowConfig } from "../config/load.js";
 import type { DocflowConfig } from "../config/types.js";
+import { primaryLanguageCodeFromDocops } from "../config/language-from-docops.js";
 import { pathExists, readJson, writeJson } from "../util/fs.js";
 import {
   DEFAULT_CAPABILITIES,
@@ -27,13 +28,7 @@ const DEFAULT_CONFIG: DocopsConfig = {
 };
 
 function primaryLanguageCode(config: Partial<DocopsConfig>): string {
-  const explicit = config.primaryLanguage?.trim().toLowerCase();
-  const languages = config.languages ?? [];
-  const known = new Set(languages.map((l) => l.code.trim().toLowerCase()).filter(Boolean));
-  if (explicit && (!known.size || known.has(explicit))) {
-    return explicit;
-  }
-  return languages[0]?.code?.trim().toLowerCase() || explicit || "en";
+  return primaryLanguageCodeFromDocops(config);
 }
 
 function resolveTrackCode(

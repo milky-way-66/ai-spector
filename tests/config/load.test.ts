@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
-import { writeJson } from "@/core/util/fs.js";
+import { readJson, writeJson } from "@/core/util/fs.js";
 import {
   clientLanguage,
   internalLanguage,
@@ -26,9 +26,33 @@ async function writeConfig(
   });
 }
 
+async function writeDocopsLanguages(
+  root: string,
+  body: {
+    languages: Array<{ code: string; label: string }>;
+    primaryLanguage?: string;
+    internalLanguage?: string;
+    clientLanguage?: string;
+  },
+): Promise<void> {
+  const existing = await readJson<Record<string, unknown>>(join(root, ".docops/docops.config.json"));
+  await writeJson(join(root, ".docops/docops.config.json"), {
+    ...existing,
+    ...body,
+  });
+}
+
 describe("loadDocflowConfig internalLanguage", () => {
   it("loads internalLanguage when it matches a configured language", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        internalLanguage: "vi",
+        clientLanguage: "en",
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },
@@ -62,6 +86,12 @@ describe("loadDocflowConfig internalLanguage", () => {
 
   it("falls back to primary when internalLanguage is unset", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },
@@ -78,6 +108,13 @@ describe("loadDocflowConfig internalLanguage", () => {
 describe("loadDocflowConfig clientLanguage", () => {
   it("loads clientLanguage when it matches a configured language", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+        clientLanguage: "vi",
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },
@@ -109,6 +146,12 @@ describe("loadDocflowConfig clientLanguage", () => {
 
   it("falls back to primary when clientLanguage is unset", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },
@@ -125,6 +168,12 @@ describe("loadDocflowConfig clientLanguage", () => {
 describe("runLangSetInternal", () => {
   it("persists internalLanguage in docflow.config.json", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },
@@ -152,9 +201,58 @@ describe("runLangSetInternal", () => {
   });
 });
 
+describe("loadDocflowConfig docops language precedence", () => {
+  it("prefers docops languages over legacy docflow when both exist", async () => {
+    await withTempProject(async (root) => {
+      await writeConfig(root, {
+        languages: [{ code: "en", label: "English" }],
+      });
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        primaryLanguage: "vi",
+        languages: [
+          { code: "vi", label: "Vietnamese", path: "vi" },
+          { code: "jp", label: "Japanese", path: "jp" },
+        ],
+        internalLanguage: "vi",
+        clientLanguage: "jp",
+      });
+
+      const { config } = await loadDocflowConfig(root);
+      expect(config.languages.map((l) => l.code)).toEqual(["vi", "jp"]);
+      expect(primaryLanguage(config).code).toBe("vi");
+      expect(config.internalLanguage).toBe("vi");
+      expect(config.clientLanguage).toBe("jp");
+    });
+  });
+
+  it("orders primaryLanguage first when it is not languages[0] in docops", async () => {
+    await withTempProject(async (root) => {
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        primaryLanguage: "jp",
+        languages: [
+          { code: "en", label: "English" },
+          { code: "jp", label: "Japanese" },
+        ],
+      });
+
+      const { config } = await loadDocflowConfig(root);
+      expect(config.languages.map((l) => l.code)).toEqual(["jp", "en"]);
+      expect(primaryLanguage(config).code).toBe("jp");
+    });
+  });
+});
+
 describe("runLangSetClient", () => {
   it("persists clientLanguage in docflow.config.json", async () => {
     await withTempProject(async (root) => {
+      await writeDocopsLanguages(root, {
+        languages: [
+          { code: "en", label: "English" },
+          { code: "vi", label: "Vietnamese" },
+        ],
+      });
       await writeConfig(root, {
         languages: [
           { code: "en", label: "English" },

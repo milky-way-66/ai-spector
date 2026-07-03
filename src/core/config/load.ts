@@ -8,6 +8,12 @@ import { DOCOPS_CONFIG_REL } from "../docops/paths.js";
 import { ENGINE_CONFIG_REL } from "../engine/paths.js";
 import { loadEngineConfig } from "../engine/load.js";
 import type { DocopsConfig } from "../docops/types.js";
+import {
+  applyDocopsLanguageOverlay,
+  languagesFromDocopsPartial,
+  orderLanguagesPrimaryFirst,
+  primaryLanguageCodeFromDocops,
+} from "./language-from-docops.js";
 
 export { bundledPrototypeConfigPath } from "./docflow-paths.js";
 
@@ -135,16 +141,12 @@ async function synthesizeDocflowFromDocopsAndEngine(
 
   const engine = await loadEngineConfig(root);
 
-  const rawLanguages = Array.isArray(docopsRaw?.languages) && docopsRaw.languages.length > 0
-    ? docopsRaw.languages
-    : [{ code: "en", label: "English" }];
+  const languages: LanguageConfig[] =
+    languagesFromDocopsPartial(docopsRaw ?? {}) ?? [{ code: "en", label: "English" }];
+  const primaryCode = primaryLanguageCodeFromDocops(docopsRaw ?? {});
+  const orderedLanguages = orderLanguagesPrimaryFirst(languages, primaryCode);
 
-  const languages: LanguageConfig[] = rawLanguages.map((l) => ({
-    code: assertSupportedLanguageCode(l.code),
-    label: l.label,
-  }));
-
-  const languageCodes = new Set(languages.map((l) => l.code));
+  const languageCodes = new Set(orderedLanguages.map((l) => l.code));
 
   let internalLanguage: DocflowConfig["internalLanguage"];
   if (docopsRaw?.internalLanguage) {
@@ -191,7 +193,7 @@ async function synthesizeDocflowFromDocopsAndEngine(
   const config: DocflowConfig = {
     version: 1,
     ...(engine.scaffoldVersion ? { scaffoldVersion: engine.scaffoldVersion } : {}),
-    languages,
+    languages: orderedLanguages,
     ...(internalLanguage ? { internalLanguage } : {}),
     ...(clientLanguage ? { clientLanguage } : {}),
     ...(Object.keys(readiness).length > 0 ? { readiness } : {}),
@@ -210,21 +212,44 @@ async function synthesizeDocflowFromDocopsAndEngine(
   return { root, config, configFile };
 }
 
+async function readDocopsRawIfPresent(root: string): Promise<Partial<DocopsConfig> | null> {
+  const docopsPath = join(root, DOCOPS_CONFIG_REL);
+  if (!existsSync(docopsPath)) {
+    return null;
+  }
+  return readJson<Partial<DocopsConfig>>(docopsPath);
+}
+
+function finalizeDocflowConfig(
+  result: { root: string; config: DocflowConfig; configFile: string },
+  docopsRaw: Partial<DocopsConfig> | null,
+): { root: string; config: DocflowConfig; configFile: string } {
+  if (!docopsRaw) {
+    return result;
+  }
+  return {
+    ...result,
+    config: applyDocopsLanguageOverlay(result.config, docopsRaw),
+  };
+}
+
 export async function loadDocflowConfig(
   root = findProjectRoot(),
 ): Promise<{ root: string; config: DocflowConfig; configFile: string }> {
+  const docopsRaw = await readDocopsRawIfPresent(root);
+
   // Legacy path: .ai-spector/docflow.config.json
   const legacyNested = join(root, ".ai-spector", CONFIG_NAME);
   if (existsSync(legacyNested)) {
     const raw = await readJson<Partial<DocflowConfig>>(legacyNested);
-    return buildDocflowFromRaw(raw, legacyNested, root);
+    return finalizeDocflowConfig(buildDocflowFromRaw(raw, legacyNested, root), docopsRaw);
   }
 
   // Legacy path: root docflow.config.json
   const legacyRoot = join(root, CONFIG_NAME);
   if (existsSync(legacyRoot)) {
     const raw = await readJson<Partial<DocflowConfig>>(legacyRoot);
-    return buildDocflowFromRaw(raw, legacyRoot, root);
+    return finalizeDocflowConfig(buildDocflowFromRaw(raw, legacyRoot, root), docopsRaw);
   }
 
   // New 2-file model: synthesize DocflowConfig from docops + engine

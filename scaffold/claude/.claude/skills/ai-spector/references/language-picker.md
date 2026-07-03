@@ -1,6 +1,8 @@
 # Language picker — ask, store, enforce
 
-> **Multi-language projects:** If `.ai-spector/docflow.config.json` contains a non-empty `languages[]` array, skip this entire file. Use those languages and write to `docs/srs/{lang.code}/`. This picker is a legacy fallback for projects without `languages` in config.
+> **Multi-language projects:** Read **`.docops/docops.config.json`** for `primaryLanguage` and `languages[]`. You still **must confirm which `lang.code` this run uses** in the plan decisions table ([plan-and-briefing.md](./plan-and-briefing.md)) when multiple languages are configured. After confirmation, write to `docs/srs/{lang.code}/` (or the active doc type path). Do not read language from legacy `.ai-spector/docflow.config.json` when docops exists.
+>
+> This picker applies when `languages[]` is **missing** — legacy fallback.
 
 When **no document language is stored** and the user did not name one in this request, run this flow **before any document write**. Do not generate document content until the user confirms a language.
 

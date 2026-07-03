@@ -2,6 +2,7 @@ import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempProject } from "../helpers/temp-project.js";
+import { syncDocopsLanguages } from "../helpers/docops-scaffold.js";
 import { loadDocflowConfig, primaryLanguage } from "@/core/config/load.js";
 import {
   loadChangeHistory,
@@ -19,6 +20,7 @@ async function setupMultiLangProject(
   root: string,
   langs: Array<{ code: string; label: string }>,
 ): Promise<void> {
+  await syncDocopsLanguages(root, langs);
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {
     version: 1,
     languages: langs,

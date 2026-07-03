@@ -12,6 +12,7 @@ import {
 import { reconcileTranslationQueue } from "@/core/lang/queue.js";
 import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
+import { syncDocopsLanguages } from "../helpers/docops-scaffold.js";
 
 const exec = promisify(execFile);
 
@@ -19,6 +20,7 @@ async function setupMultiLangProject(
   root: string,
   langs: Array<{ code: string; label: string }>,
 ): Promise<void> {
+  await syncDocopsLanguages(root, langs);
   await writeJson(join(root, ".ai-spector/docflow.config.json"), {
     version: 1,
     languages: langs,
