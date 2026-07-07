@@ -51,8 +51,7 @@ export const WORKFLOW_ROUTE_EXAMPLES: WorkflowRouteExample[] = [
   { say: "approve SRS", skill: "ai-spector-review" },
   { say: "approve detail-design/feature-list", skill: "ai-spector-review" },
   { say: "import template", skill: "ai-spector-template-import" },
-  { say: "align my legacy docs", skill: "ai-spector-adopt" },
-  { say: "migrate existing SRS to ai-spector structure", skill: "ai-spector-adopt" },
-  { say: "continue adopt", skill: "ai-spector-adopt" },
+  { say: "migrate my existing docs to Writer", skill: "ai-spector" },
+  { say: "align legacy SRS folders", skill: "ai-spector" },
   { say: "help me approve", skill: "ai-spector", expectAskUser: true },
 ];

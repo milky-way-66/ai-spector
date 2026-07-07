@@ -14,7 +14,7 @@ export interface UpgradeDetectRule {
 }
 
 export interface UpgradeApplyRule {
-  command?: "sync-cursor" | "sync-claude" | "hooks install";
+  command?: "sync-cursor" | "sync-claude" | "hooks install" | "docops-repair";
   type?: "config-set" | "config-rename";
   key?: string;
   value?: unknown;

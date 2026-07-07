@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { runUpgradeApply } from "@/core/upgrade/apply.js";
 import { runUpgradeScan } from "@/core/upgrade/scan.js";
+import { readJson } from "@/core/util/fs.js";
 import { withTempDir } from "../helpers/temp-project.js";
 
 vi.mock("@/core/operations/sync-cursor.js", () => ({
@@ -38,6 +39,59 @@ describe("runUpgradeApply", () => {
       const scan = await runUpgradeScan({ root, toVersion: "0.9.1" });
       expect(scan.applicableItems).toContain("UPG-010");
       expect(scan.autoFixable).not.toContain("UPG-010");
+    });
+  });
+
+  it("auto-applies UPG-012 docops optional doc type repair", async () => {
+    await withTempDir(async (root) => {
+      await mkdir(join(root, ".ai-spector"), { recursive: true });
+      await mkdir(join(root, ".docops"), { recursive: true });
+      await writeFile(
+        join(root, ".ai-spector/engine.json"),
+        JSON.stringify({ scaffoldVersion: "0.9.18", artifacts: {}, readiness: {} }),
+        "utf8",
+      );
+      await writeFile(
+        join(root, ".docops/docops.config.json"),
+        JSON.stringify({
+          schemaVersion: "1.0",
+          docsRoot: "docs",
+          languages: [{ code: "en", label: "English", path: "en" }],
+          primaryLanguage: "en",
+          docTypes: {
+            srs: {
+              enabled: true,
+              path: "docs/srs",
+              label: "SRS",
+              templatesPath: ".docops/templates/srs",
+            },
+          },
+          paths: {
+            comments: ".docops/comments",
+            reviewConfig: ".docops/review.config.json",
+            reviewQueue: ".docops/review-queue",
+            prototypeConfig: ".docops/prototype/config.json",
+            prototypeScreenMap: ".docops/prototype/screen-map.json",
+          },
+          capabilities: { review: false, comments: true, prototype: false },
+        }),
+        "utf8",
+      );
+
+      const scan = await runUpgradeScan({ root, toVersion: "0.9.20" });
+      expect(scan.applicableItems).toContain("UPG-012");
+      expect(scan.autoFixable).toContain("UPG-012");
+      expect(scan.findings.some((f) => f.id === "UPG-012" && f.status === "stale")).toBe(true);
+
+      const result = await runUpgradeApply({ root, auto: true, items: ["UPG-012"] });
+      expect(result.applied).toContain("UPG-012");
+      expect(result.failed).toEqual([]);
+
+      const docops = await readJson<{
+        docTypes: Record<string, { enabled: boolean }>;
+      }>(join(root, ".docops/docops.config.json"));
+      expect(docops.docTypes.detailDesign.enabled).toBe(false);
+      expect(docops.docTypes.otherDocument.enabled).toBe(false);
     });
   });
 });

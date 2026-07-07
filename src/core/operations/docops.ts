@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { findProjectRoot } from "../config/load.js";
 import { assessDocopsProject } from "../docops/assess.js";
+import { checkDocopsConfig } from "../docops/check.js";
 import { initDocopsContract } from "../docops/init.js";
 import { migrateDocopsLayout, migrateFromDocflow } from "../docops/migrate.js";
 import { syncDocopsRegistry } from "../docops/registry/index.js";
@@ -47,6 +48,91 @@ export async function runDocopsStatus(opts: { root?: string; json?: boolean } = 
     console.log(WRITER_LIFECYCLE_HANDOFF);
   }
   return assessment.writerReady ? 0 : 2;
+}
+
+export async function runDocopsCheck(opts: {
+  root?: string;
+  json?: boolean;
+  prompt?: boolean;
+} = {}): Promise<number> {
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const result = await checkDocopsConfig(projectRoot);
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else if (opts.prompt) {
+    console.log(result.agentPrompt);
+  } else {
+    console.log(`Valid: ${result.valid}`);
+    console.log(`Config: ${result.configPath}`);
+    console.log(`Schema: ${result.schemaValid ? "ok" : "invalid"}`);
+    console.log(`Layout: ${result.layout} | Writer ready: ${result.writerReady}`);
+    console.log(`Config drift: ${result.configDrift ? "yes" : "no"}`);
+    console.log(`Recommended: ${result.recommendedCommand}`);
+    if (result.schemaErrors.length > 0) {
+      console.log("\nSchema errors:");
+      for (const err of result.schemaErrors) {
+        console.log(`  - ${err}`);
+      }
+    }
+    if (result.actions.length > 0) {
+      console.log("\nActions:");
+      for (const action of result.actions) {
+        console.log(`  [${action.severity}] ${action.id}: ${action.message}`);
+        console.log(`    fix: ${action.fix}`);
+        if (action.command) {
+          console.log(`    command: ${action.command}`);
+        }
+      }
+    }
+    if (result.repairPreview.length > 0) {
+      console.log("\nRepair preview (dry-run):");
+      for (const line of result.repairPreview.slice(0, 10)) {
+        console.log(`  ${line}`);
+      }
+    }
+    console.log("\n--- Agent prompt (copy to Cursor) ---\n");
+    console.log(result.agentPrompt);
+  }
+
+  return result.valid ? 0 : 2;
+}
+
+export async function runDocopsLayout(opts: {
+  root?: string;
+  json?: boolean;
+  prompt?: boolean;
+} = {}): Promise<number> {
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const { probeDocopsLayout } = await import("../docops/layout.js");
+  const result = await probeDocopsLayout(projectRoot);
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else if (opts.prompt) {
+    console.log(result.agentPrompt);
+  } else {
+    console.log(`Probed at: ${result.probedAt}`);
+    console.log("\nConfigured paths:");
+    for (const [key, path] of Object.entries(result.configuredPaths)) {
+      console.log(`  ${key}: ${path}`);
+    }
+    console.log("\nOn disk:");
+    for (const [key, layer] of Object.entries(result.onDisk)) {
+      const roots = layer?.roots.map((r) => `${r.path} (${r.fileCount})`).join(", ") ?? "—";
+      console.log(`  ${key}: ${roots} | ${layer?.languageLayout}`);
+    }
+    if (result.suggestions.length > 0) {
+      console.log("\nSuggestions:");
+      for (const line of result.suggestions) {
+        console.log(`  - ${line}`);
+      }
+    }
+    console.log("\n--- Agent prompt ---\n");
+    console.log(result.agentPrompt);
+  }
+
+  return 0;
 }
 
 export async function runDocopsInit(opts: {

@@ -89,6 +89,16 @@ export function ensureOptionalDocTypes(
   return changed ? next : docTypes;
 }
 
+/** Keys missing from docTypes that should be present (disabled by default). */
+export function missingOptionalDocTypeKeys(
+  docTypes: Record<string, DocopsDocTypeConfig> | undefined,
+): string[] {
+  if (!docTypes) {
+    return [...OPTIONAL_DISABLED_LAYERS];
+  }
+  return [...OPTIONAL_DISABLED_LAYERS].filter((key) => !docTypes[key]);
+}
+
 export function templateLayerKeys(config: {
   docTypes?: Record<string, DocopsDocTypeConfig>;
 }): string[] {

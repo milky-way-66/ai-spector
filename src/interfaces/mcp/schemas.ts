@@ -483,7 +483,7 @@ export const ReviewListSchema = RootSchema.extend({
 
 // ── Task state (workflow persistence) ─────────────────────────────────────────
 
-export const TaskKindEnum = z.enum(["generate", "resolve", "import", "adopt"]);
+export const TaskKindEnum = z.enum(["generate", "resolve", "import"]);
 
 const DeriveBootstrapFields = {
   sourceMode: SourceModeEnum.optional().describe(
@@ -610,35 +610,10 @@ export const ImportPlanSchema = z.object({
   supplementalQuestions: z.array(ImportSupplementalQuestionSchema).optional(),
 });
 
-export const AdoptPlanSummarySchema = z.object({
-  moveCount: z.number().int(),
-  layers: z.object({
-    srs: z.number().int(),
-    basicDesign: z.number().int(),
-    detailDesign: z.number().int(),
-    prototype: z.number().int(),
-  }),
-  lowConfidenceCount: z.number().int(),
-  classification: z.object({
-    srs: z.string(),
-    basicDesign: z.string(),
-    detailDesign: z.string(),
-    prototype: z.string(),
-    languages: z.object({
-      detected: z.array(z.string()),
-      strategy: z.string(),
-    }),
-    dataSource: z.string(),
-    activePack: z.string(),
-  }),
-  warnings: z.array(z.string()),
-});
-
 export const StoredPlanSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("resolve"), plan: FullTaskPlanSchema }),
   z.object({ kind: z.literal("generate"), plan: GeneratePlanSchema }),
   z.object({ kind: z.literal("import"), plan: ImportPlanSchema }),
-  z.object({ kind: z.literal("adopt"), plan: AdoptPlanSummarySchema }),
 ]);
 
 export const TaskStepPatchSchema = z.object({
@@ -748,10 +723,10 @@ export const TaskCreateSchema = RootSchema.extend({
 });
 
 /** WorkCreateSchema extends TaskCreateSchema to also accept kind "change" (alias for "resolve"). */
-export const WorkKindEnum = z.enum(["generate", "resolve", "import", "adopt", "change"]);
+export const WorkKindEnum = z.enum(["generate", "resolve", "import", "change"]);
 export const WorkCreateSchema = RootSchema.extend({
   kind: WorkKindEnum.describe(
-    "generate | resolve | import | adopt | change (alias for resolve)",
+    "generate | resolve | import | change (alias for resolve)",
   ),
   workflow: WorkflowIdEnum.describe(
     "Workflow template to initialize steps from (generate-srs, resolve, template-import, …)",
@@ -825,12 +800,6 @@ export const TaskApproveImportPlanSchema = RootSchema.extend({
   taskId: z.string().describe("Import task id"),
   plan: StoredPlanSchema.optional().describe("ImportPlan to approve; omit if already set via task_update"),
   ...AuditActorOverrideSchema,
-});
-
-export const TaskApproveAdoptPlanSchema = RootSchema.extend({
-  taskId: z.string().describe("Adopt task id"),
-  plan: StoredPlanSchema.optional().describe("AdoptPlanSummary to approve; omit if already set via task_update"),
-  by: z.string().optional().describe("Approver identity"),
 });
 
 export const TaskApprovePackDesignSchema = RootSchema.extend({
@@ -990,50 +959,6 @@ export const ReadinessOutputChecklistSchema = RootSchema.extend({
   paths: z
     .array(z.string())
     .describe("Generated doc paths just written — agent scores checklist items semantically"),
-});
-
-// ── Project adopt ─────────────────────────────────────────────────────────────
-
-export const AdoptScanSchema = RootSchema;
-
-export const AdoptPlanSchema = RootSchema.extend({
-  approve: z
-    .boolean()
-    .optional()
-    .describe("Approve plan after generation (Gate 2); equivalent to adopt plan --approve"),
-  sync: z
-    .boolean()
-    .optional()
-    .describe("Refresh heuristics from scan (overwrite draft plan)"),
-  by: z.string().optional().describe("Approver identity when approve is true"),
-});
-
-export const AdoptApplySchema = RootSchema.extend({
-  dryRun: z.boolean().optional().describe("Preview moves without changing files"),
-  legacy: z.boolean().optional().describe("Bypass adopt task gates (scripts/CI only)"),
-});
-
-export const AdoptBootstrapSchema = RootSchema.extend({
-  skipAnalyze: z.boolean().optional().describe("Skip optional analyze step"),
-  legacy: z.boolean().optional().describe("Bypass adopt task gates (scripts/CI only)"),
-});
-
-export const AdoptValidateSchema = RootSchema.extend({
-  sync: z
-    .boolean()
-    .optional()
-    .describe("Update adopt-setup.json from plan status"),
-});
-
-export const AdoptSetupMarkSchema = RootSchema.extend({
-  itemId: z
-    .string()
-    .describe('Adopt setup item id, e.g. "plan.approved", "migration.complete"'),
-});
-
-export const AdoptContextRecordSchema = RootSchema.extend({
-  id: z.string().describe("Context question id from scan (e.g. lang-primary)"),
-  answer: z.string().describe("Human answer to store in adopt context.json"),
 });
 
 export const UpgradeScanSchema = RootSchema.extend({

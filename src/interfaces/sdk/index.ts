@@ -252,26 +252,9 @@ export type {
   ResolvedReadinessCriteria,
 } from "../../core/operations/readiness.js";
 
-// Project adopt (migrate existing docs)
-export {
-  runAdoptScan,
-  runAdoptPlan,
-  approveAdoptPlan,
-  runAdoptApply,
-  runAdoptBootstrap,
-  validateAdopt,
-  markAdoptSetupItem,
-  recordAdoptAnswer,
-} from "../../core/operations/adopt.js";
-export type {
-  AdoptScanResult,
-  AdoptPlan,
-  AdoptSetupState,
-  AdoptQuestion,
-  AdoptInventoryItem,
-  AdoptValidationResult,
-  AdoptValidationGap,
-} from "../../core/operations/adopt.js";
+// Doc layout probe (self-service migration)
+export { probeDocopsLayout } from "../../core/docops/layout.js";
+export type { DocopsLayoutProbeResult, DocopsLayerOnDisk } from "../../core/docops/layout.js";
 
 // Template pack install (staging → .ai-spector/packs/<name>/)
 export {

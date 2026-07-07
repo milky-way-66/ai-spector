@@ -158,8 +158,20 @@ describe("docops migrate", () => {
         repair: true,
       });
       expect(result.migrated).toBe(true);
-      expect(result.actions.some((a) => a.includes("docTypes.detailDesign"))).toBe(true);
-      expect(result.actions.some((a) => a.includes("docTypes.otherDocument"))).toBe(true);
+      expect(
+        result.actions.some(
+          (a) =>
+            a.includes("docTypes.detailDesign") ||
+            (a.includes("sync") && a.includes(DOCOPS_CONFIG_REL)),
+        ),
+      ).toBe(true);
+      expect(
+        result.actions.some(
+          (a) =>
+            a.includes("docTypes.otherDocument") ||
+            (a.includes("sync") && a.includes(DOCOPS_CONFIG_REL)),
+        ),
+      ).toBe(true);
 
       const onDisk = await readJson<{
         docTypes: Record<string, { enabled: boolean; path: string }>;
@@ -207,6 +219,51 @@ describe("docops migrate", () => {
       expect(result.migrated).toBe(true);
       const md = await countMarkdownInDir(join(root, ".docops/templates/srs"));
       expect(md).toBeGreaterThan(0);
+    });
+  });
+
+  it("repair syncs missing paths.registry and optional doc types to disk", async () => {
+    await withTempDir(async (root) => {
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        docsRoot: "docs",
+        languages: [{ code: "en", label: "English", path: "en" }],
+        primaryLanguage: "en",
+        docTypes: {
+          srs: {
+            enabled: true,
+            path: "docs/srs",
+            label: "SRS",
+            templatesPath: ".docops/templates/srs",
+          },
+        },
+        paths: {
+          comments: ".docops/comments",
+          reviewConfig: ".docops/review.config.json",
+          reviewQueue: ".docops/review-queue",
+          prototypeConfig: ".docops/prototype/config.json",
+          prototypeScreenMap: ".docops/prototype/screen-map.json",
+        },
+        capabilities: { review: false, comments: true, prototype: false },
+      });
+      await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+
+      const result = await migrateDocopsLayout({
+        projectRoot: root,
+        repair: true,
+      });
+      expect(result.migrated).toBe(true);
+      expect(result.actions.some((a) => a.includes("sync") && a.includes(DOCOPS_CONFIG_REL))).toBe(
+        true,
+      );
+
+      const onDisk = await readJson<{
+        paths: { registry?: string };
+        docTypes: Record<string, { enabled: boolean }>;
+      }>(join(root, DOCOPS_CONFIG_REL));
+      expect(onDisk.paths.registry).toBe(".docops/registry");
+      expect(onDisk.docTypes.detailDesign.enabled).toBe(false);
+      expect(onDisk.docTypes.otherDocument.enabled).toBe(false);
     });
   });
 

@@ -152,68 +152,12 @@ export const REVIEW_WORKFLOW_TOOL_DESCRIPTIONS = {
 
 export type ReviewWorkflowToolName = keyof typeof REVIEW_WORKFLOW_TOOL_DESCRIPTIONS;
 
-export const ADOPT_TOOL_DESCRIPTIONS = {
-  adopt_scan: [
-    "Classify existing project docs (SRS, basic design, prototype) and inventory files for migration.",
-    "",
-    "WHEN: Project was initialized but docs are in legacy/wrong layout — start of ai-spector-adopt Gate 1.",
-    "NOT WHEN: Full greenfield init (ai-spector init); template pack import (template_*); generate workflow (task_*).",
-    "Returns classification, inventory, and questionsForUser (blocking questions need adopt_context_record before plan).",
-  ].join("\n"),
-
-  adopt_plan: [
-    "Build migration plan from scan-result.json and adopt context answers; optionally approve (Gate 2).",
-    "",
-    "WHEN: Scan complete and blocking Gate 1 questions answered; user reviews mapping table.",
-    "NOT WHEN: User approved a generate/resolve TaskPlan (use task_approve_plan); document sign-off (review_approve).",
-    "Set approve:true only after explicit user yes on the mapping table — equivalent to adopt plan --approve.",
-    "Use sync:true to refresh heuristics after manual plan.json edits.",
-  ].join("\n"),
-
-  adopt_apply: [
-    "Execute approved migration plan — moves files (git mv when in a git repo).",
-    "",
-    "WHEN: Plan status is approved and user confirmed apply (Gate 3).",
-    "NOT WHEN: Plan is still draft — run adopt_plan with approve first.",
-    "Use dryRun:true to preview moves without changing files.",
-  ].join("\n"),
-
-  adopt_bootstrap: [
-    "Post-move bootstrap: config patches, index, optional analyze, prototype, review registry, adopt tasks.",
-    "",
-    "WHEN: After adopt_apply succeeded (plan status applied); user confirmed bootstrap (Gate 3).",
-    "NOT WHEN: Plan not yet applied; use adopt_apply first.",
-  ].join("\n"),
-
-  adopt_validate: [
-    "Readiness gate after migration — workspace check + graph validate; like template verify for adopt.",
-    "",
-    "WHEN: After adopt_bootstrap; before marking migration.complete.",
-    "Returns ready flag and blocking gaps. Use sync:true to refresh adopt-setup.json from plan status.",
-  ].join("\n"),
-
-  adopt_setup_mark: [
-    "Mark a human-confirmed adopt setup item done in adopt-setup.json.",
-    "",
-    "WHEN: User confirmed a gate item (plan.approved, apply.done, bootstrap.done, migration.complete).",
-    "NOT WHEN: Template pack setup (template_setup_mark); task plan approval (task_approve_plan).",
-    'itemId "migration.complete" requires adopt_validate ready:true.',
-  ].join("\n"),
-
-  adopt_context_record: [
-    "Record a Gate 1 answer in adopt context.json (e.g. lang-primary for flat SRS layout).",
-    "",
-    "WHEN: adopt_scan returned a blocking question; ask user one at a time, then record and re-scan.",
-    "NOT WHEN: Generation clarifications (context_record for doc types); comment threads.",
-  ].join("\n"),
-} as const;
-
 export const UPGRADE_TOOL_DESCRIPTIONS = {
   upgrade_scan: [
     "Detect stale scaffold, config drift, and applicable upgrade checklist items for a version bump.",
     "",
     "WHEN: User wants to upgrade ai-spector or after npm install ai-spector@new — start of ai-spector-upgrade Phase 1.",
-    "NOT WHEN: Greenfield setup (ai-spector-setup); doc migration (adopt_scan).",
+    "NOT WHEN: Greenfield setup (ai-spector-setup); existing-project doc layout (docops layout CLI).",
     "Returns fromVersion, toVersion, applicableItems, findings, and autoFixable IDs.",
   ].join("\n"),
 
@@ -239,14 +183,12 @@ export const UPGRADE_TOOL_DESCRIPTIONS = {
   ].join("\n"),
 } as const;
 
-export type AdoptToolName = keyof typeof ADOPT_TOOL_DESCRIPTIONS;
-
 export const SYNC_TOOL_DESCRIPTIONS = {
   sync_snapshot: [
     "Record sync baseline when SRS, basic-design, and detail-design are aligned.",
     "",
     "WHEN: User confirms design layers are in sync — start of ai-spector-sync-audit workflow.",
-    "NOT WHEN: Checking drift (use sync_audit); doc migration (adopt_scan); index rebuild only (index).",
+    "NOT WHEN: Checking drift (use sync_audit); doc layout probe (docops layout CLI); index rebuild only (index).",
     "Stores per-file hashes, graph hash, and gitRef under .ai-spector/.docflow/sync/baseline.json.",
     "Use force:true to overwrite an existing baseline after completing drift remediation.",
   ].join("\n"),
@@ -267,7 +209,7 @@ export const LIFECYCLE_TOOL_DESCRIPTIONS = {
   lifecycle_sync: [
     "Reconcile project onboarding lifecycle (.docops/lifecycle.json) from filesystem probes.",
     "",
-    "WHEN: After setup, docops init, adopt, or local adapter work — before git push to Writer.",
+    "WHEN: After setup, docops init/migrate, or local adapter work — before git push to Writer.",
     "NOT WHEN: Document quality readiness (readiness_assess); design-layer drift (sync_audit).",
     "Marks steps done when docops config, data-source, SRS markdown, or engine.json are detected.",
     "Set dryRun:true to preview reconcile without writing lifecycle.json.",

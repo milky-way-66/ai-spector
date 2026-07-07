@@ -34,13 +34,6 @@ import {
   ReadinessProfilesListSchema,
   ReadinessCriteriaSchema,
   ReadinessOutputChecklistSchema,
-  AdoptScanSchema,
-  AdoptPlanSchema,
-  AdoptApplySchema,
-  AdoptBootstrapSchema,
-  AdoptValidateSchema,
-  AdoptSetupMarkSchema,
-  AdoptContextRecordSchema,
   UpgradeScanSchema,
   UpgradeApplySchema,
   UpgradeValidateSchema,
@@ -85,7 +78,6 @@ import {
   TaskConfirmTierSchema,
   TaskApproveDesignSpecSchema,
   TaskApproveImportPlanSchema,
-  TaskApproveAdoptPlanSchema,
   TaskApprovePackDesignSchema,
   TaskSetExecutionModeSchema,
   TaskPauseSchema,
@@ -133,15 +125,6 @@ import {
   toolReadinessOutputChecklist,
 } from "./tools/readiness.js";
 import {
-  toolAdoptScan,
-  toolAdoptPlan,
-  toolAdoptApply,
-  toolAdoptBootstrap,
-  toolAdoptValidate,
-  toolAdoptSetupMark,
-  toolAdoptContextRecord,
-} from "./tools/adopt.js";
-import {
   toolUpgradeScan,
   toolUpgradeApply,
   toolUpgradeValidate,
@@ -158,7 +141,6 @@ import {
   toolTaskAbandon,
   toolTaskApproveDesignSpec,
   toolTaskApproveImportPlan,
-  toolTaskApproveAdoptPlan,
   toolTaskApprovePackDesign,
   toolTaskApprovePlan,
   toolTaskComplete,
@@ -213,7 +195,6 @@ import {
 import {
   APPROVE_TOOL_DESCRIPTIONS,
   REVIEW_WORKFLOW_TOOL_DESCRIPTIONS,
-  ADOPT_TOOL_DESCRIPTIONS,
   UPGRADE_TOOL_DESCRIPTIONS,
   SYNC_TOOL_DESCRIPTIONS,
   LIFECYCLE_TOOL_DESCRIPTIONS,
@@ -648,92 +629,6 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolReadinessOutputChecklist(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-// ── Project adopt ─────────────────────────────────────────────────────────────
-
-server.registerTool(
-  "adopt_scan",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_scan,
-    inputSchema: AdoptScanSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptScan(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_plan",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_plan,
-    inputSchema: AdoptPlanSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptPlan(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_apply",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_apply,
-    inputSchema: AdoptApplySchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptApply(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_bootstrap",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_bootstrap,
-    inputSchema: AdoptBootstrapSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptBootstrap(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_validate",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_validate,
-    inputSchema: AdoptValidateSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptValidate(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_setup_mark",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_setup_mark,
-    inputSchema: AdoptSetupMarkSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptSetupMark(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "adopt_context_record",
-  {
-    description: ADOPT_TOOL_DESCRIPTIONS.adopt_context_record,
-    inputSchema: AdoptContextRecordSchema.shape,
-  },
-  async (input) => {
-    const result = await toolAdoptContextRecord(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
@@ -1370,19 +1265,6 @@ server.registerTool(
   },
   async (input) => {
     const result = await toolTaskApproveImportPlan(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  },
-);
-
-server.registerTool(
-  "task_approve_adopt_plan",
-  {
-    description:
-      "Adopt task only: approve migration move plan after user yes — sets planApprovedAt, marks plan done, approves adopt plan.json. NOT task_approve_plan.",
-    inputSchema: TaskApproveAdoptPlanSchema.shape,
-  },
-  async (input) => {
-    const result = await toolTaskApproveAdoptPlan(input);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );

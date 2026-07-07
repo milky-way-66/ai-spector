@@ -14,7 +14,6 @@ import {
   runTaskUpdate,
   runTaskApprovePlan,
   runTaskApproveImportPlan,
-  runTaskApproveAdoptPlan,
   runTaskApprovePackDesign,
   runTaskPause,
   runTaskResume,
@@ -111,7 +110,6 @@ export type WorkAbandonOptions = TaskAbandonOptions;
 export const runWorkStatus = runTaskStatus;
 
 export const runWorkApproveImportPlan = runTaskApproveImportPlan;
-export const runWorkApproveAdoptPlan = runTaskApproveAdoptPlan;
 export const runWorkApprovePackDesign = runTaskApprovePackDesign;
 
 const TASK_DEPRECATION_WARNING =
@@ -287,24 +285,6 @@ function registerWorkSubcommands(group: Command, opts: { deprecated: boolean }):
       });
       if (cmdOpts.json) console.log(JSON.stringify(result, null, 2));
       else console.log(formatTaskSimple("Approved import manifest plan for", result));
-    });
-
-  group
-    .command("approve-adopt-plan <taskId>")
-    .description("Adopt work item: approve migration move plan after user yes (not work approve)")
-    .option("-C, --cwd <path>", "Project root", process.cwd())
-    .option("--by <email>", "Approver identity")
-    .option("--plan <json>", "AdoptPlanSummary JSON (StoredPlan kind adopt) if not already on work item")
-    .option("--json", "JSON output")
-    .action(async (taskId, cmdOpts) => {
-      const result = await runWorkApproveAdoptPlan({
-        root: resolve(cmdOpts.cwd ?? process.cwd()),
-        taskId,
-        plan: cmdOpts.plan ? JSON.parse(cmdOpts.plan as string) : undefined,
-        by: cmdOpts.by,
-      });
-      if (cmdOpts.json) console.log(JSON.stringify(result, null, 2));
-      else console.log(formatTaskSimple("Approved adopt migration plan for", result));
     });
 
   group

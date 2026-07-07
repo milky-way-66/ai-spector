@@ -1,6 +1,6 @@
 # Core Operations — Agent Runbook
 
-Consolidated runbook for: setup, upgrade, adopt, check, docops, course, and work sessions.
+Consolidated runbook for: setup, upgrade, check, docops, course, and work sessions.
 
 **Path semantics:** refer to `kari-writer/contracts/CONTRACT.md` — do not load or link to `.docops/guide/`.
 
@@ -61,7 +61,7 @@ Tell the user:
 
 Bump `ai-spector` package, refresh scaffold, backfill config, verify hooks and MCP.
 
-**Related but different:** setup (greenfield init); adopt (migrate misplaced docs).
+**Related but different:** setup (greenfield init); migrate existing project (self-service docops section below).
 
 ### Phase 0 — Preflight
 
@@ -129,83 +129,48 @@ Remind user: Cmd+Shift+P → "Reload MCP Servers" after scaffold sync.
 
 ---
 
-## Adopt
+## Migrate existing project (self-service)
 
-Migrate existing filled-in docs from legacy layouts into canonical paths.
+Bring filled-in docs into the Writer contract **without** automated file moves.
 
-**Not for:** greenfield init (setup), empty template import (ai-spector-generate), or full doc generation.
+**Read first:** `.docops/guide/MIGRATION.md` and `.docops/guide/guides/PROJECT_LAYOUT.md`
 
-### Phase 0 — Confirm candidate
+**Hard rule:** Prefer editing `docTypes.*.path` in `.docops/docops.config.json` to point at folders that already hold your markdown.
 
-```bash
-npx ai-spector check --json
-# MCP: workspace_check({})
-```
-
-Read `errors[]` / `warnings[]` — STRUCT-003/004 and layout failures expected before adopt.
-
-Tell the user: init appears done; which doc paths look non-canonical. Ask: "Proceed with adopt scan?"
-
-Create work session:
-
-```json
-work_create({ "kind": "adopt", "workflow": "adopt", "trigger": "<user's phrase>" })
-```
-
-### Phase 1 — Adopt scan
+### Phase 0 — Assess
 
 ```bash
-npx ai-spector adopt scan --json
-# MCP: adopt_scan({})
+npx ai-spector docops status --json
+npx ai-spector docops layout --prompt
+npx ai-spector docops check --prompt
 ```
 
-Parse `candidates[]` — each has `from`, `to`, `docType`, `confidence`. Note `classifiedAs: "custom"` (needs template import first — pause adopt, open `ai-spector-generate`, then start new adopt task).
+### Phase 1 — Configure paths
 
-Ask clarifying questions from `scan.questions[]` until all have answers.
+Edit `.docops/docops.config.json`:
 
-### Phase 2 — Plan
+- `docTypes.srs.path`, `basicDesign.path`, `detailDesign.path` (repo-root-relative, e.g. `docs/srs`)
+- `languages`, `primaryLanguage`, `internalLanguage`, `clientLanguage`
+- `docTypes.*.templatesPath` under `.docops/templates/`
+
+Customize template markdown under `.docops/templates/{srs,basic-design,detail-design}/` if needed.
+
+### Phase 2 — Repair contract
 
 ```bash
-npx ai-spector adopt plan --json
-# MCP: adopt_plan({})
+npx ai-spector docops migrate --repair --json
+npx ai-spector index
+npx ai-spector docops registry sync
 ```
 
-Show mapping table to user. Ask: "Approve this adopt plan?" — wait for yes → `work_approve_plan({ workId })`.
-
-### Phase 3 — Apply
+### Phase 3 — Verify
 
 ```bash
-npx ai-spector adopt apply --json
-# dry run first: npx ai-spector adopt apply --dry-run --json
+npx ai-spector docops check --json
+npx ai-spector lifecycle sync --json
 ```
 
-On `dry-run` clean → re-run without `--dry-run`.
-
-### Phase 4 — Bootstrap
-
-```bash
-npx ai-spector adopt bootstrap --json
-# MCP: adopt_bootstrap({})
-```
-
-Indexes the migrated docs.
-
-### Phase 5 — Validate
-
-```bash
-npx ai-spector adopt validate --sync --json
-# MCP: adopt_validate({ sync: true })
-```
-
-`ready: true` → complete. Otherwise fix remaining issues.
-
-### Phase 6 — Complete
-
-```
-work_complete({ workId, summary: "Adopted N docs from legacy paths" })
-```
-
-**Forbidden:** `work_approve_plan` before plan shown; `adopt_apply` before plan approval; template-import nested inside adopt task.
+`docops check` → `valid: true` and `writerReady: true` → done.
 
 ---
 
@@ -361,7 +326,7 @@ After opening the lesson, ask: "Which part would you like to try in this project
 
 ## Work Sessions
 
-Resume, pause, list, or route active work sessions (`kind: generate`, `change`, `adopt`, `migrate`).
+Resume, pause, list, or route active work sessions (`kind: generate`, `change`, `migrate`).
 
 Work sessions replace the former `task_*` concept — use `work_*` MCP tools.
 
@@ -382,8 +347,7 @@ work_get({ workId })
 
 Route by `kind`:
 - `generate` / `change` → `ai-spector-generate`
-- `adopt` → stay in this skill (Adopt section)
-- `migrate` → stay in this skill (Docops section)
+- `migrate` → stay in this skill (Docops / Migrate existing project)
 
 ### Lifecycle MCP tools
 

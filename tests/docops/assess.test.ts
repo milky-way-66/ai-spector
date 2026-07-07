@@ -89,6 +89,17 @@ describe("assessDocopsProject", () => {
             label: "SRS",
             templatesPath: ".docops/templates/srs",
           },
+          detailDesign: {
+            enabled: false,
+            path: "docs/detail-design",
+            label: "Detail Design",
+            templatesPath: ".docops/templates/detail-design",
+          },
+          otherDocument: {
+            enabled: false,
+            path: "docs/other",
+            label: "Other Document",
+          },
         },
         paths: {
           comments: ".docops/comments",
@@ -109,11 +120,49 @@ describe("assessDocopsProject", () => {
       });
       await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
       await writeFile(join(root, ".docops/templates/srs/01.md"), "# x");
+      await mkdir(join(root, ".docops/templates/detail-design"), { recursive: true });
+      await writeFile(join(root, ".docops/templates/detail-design/01.md"), "# dd");
       await mkdir(join(root, ".docops/comments"), { recursive: true });
       const a = await assessDocopsProject(root);
       expect(a.layout).toBe("docops");
       expect(a.writerReady).toBe(true);
       expect(a.recommendedAction).toBe("ok");
+    });
+  });
+
+  it("recommends repair when optional doc types missing from config", async () => {
+    await withTempDir(async (root) => {
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        docsRoot: "docs",
+        languages: [{ code: "en", label: "English", path: "en" }],
+        primaryLanguage: "en",
+        docTypes: {
+          srs: {
+            enabled: true,
+            path: "docs/srs",
+            label: "SRS",
+            templatesPath: ".docops/templates/srs",
+          },
+        },
+        paths: {
+          comments: ".docops/comments",
+          reviewConfig: ".docops/review.config.json",
+          reviewQueue: ".docops/review-queue",
+          prototypeConfig: ".docops/prototype/config.json",
+          prototypeScreenMap: ".docops/prototype/screen-map.json",
+        },
+        capabilities: { review: false, comments: true, prototype: false },
+      });
+      await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+      await writeFile(join(root, ".docops/templates/srs/01.md"), "# x");
+      await mkdir(join(root, ".docops/comments"), { recursive: true });
+
+      const a = await assessDocopsProject(root);
+      expect(a.writerReady).toBe(true);
+      expect(a.recommendedAction).toBe("repair");
+      expect(a.gaps.some((g) => g.id === "DOCOPS-CFG-OPTIONAL")).toBe(true);
+      expect(a.gaps.some((g) => g.id === "DOCOPS-TPL-detailDesign")).toBe(true);
     });
   });
 });

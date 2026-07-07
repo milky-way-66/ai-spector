@@ -18,7 +18,7 @@ export type WorkflowId =
   | "lang-status"
   | "resolve-translation"
   | "template-import"
-  | "adopt";
+  | "migrate-project";
 
 export interface WorkflowRouteActiveTask {
   id: string;
@@ -90,7 +90,6 @@ const SKILL_TO_WORKFLOW: Record<string, WorkflowId> = {
   "ai-spector-lang-status": "lang-status",
   "ai-spector-resolve-translation": "resolve-translation",
   "ai-spector-template-import": "template-import",
-  "ai-spector-adopt": "adopt",
 };
 
 const APPROVE_DISAMBIGUATION: WorkflowRouteAskOption[] = [
@@ -451,15 +450,16 @@ function isResolveTranslationIntent(msg: string): boolean {
   );
 }
 
-function isAdoptIntent(msg: string): boolean {
+function isMigrateProjectIntent(msg: string): boolean {
   return (
-    /\bcontinue adopt\b/.test(msg) ||
-    /\badopt\b/.test(msg) ||
+    /\bmigrate\b.*\b(project|repo|docs?)\b/.test(msg) ||
     /\balign\b.*\blegacy\b/.test(msg) ||
     /\bmigrate\b.*\b(existing|legacy)\b/.test(msg) ||
     /\bwrong srs folder\b/.test(msg) ||
     /\blegacy srs\b/.test(msg) ||
-    /\bmigrate\b.*\bai-?spector\b.*\bstructure\b/.test(msg)
+    /\bb-ring\b.*\bdemo\b/.test(msg) ||
+    /\bdocops\b.*\bconfig\b/.test(msg) ||
+    /\bexisting docs?\b/.test(msg)
   );
 }
 
@@ -722,15 +722,15 @@ export function classifyWorkflowIntent(
     );
   }
 
-  if (isAdoptIntent(msg)) {
+  if (isMigrateProjectIntent(msg)) {
     return result(
-      "ai-spector-adopt",
+      "ai-spector",
       "high",
-      "adopt_legacy",
-      "Legacy doc alignment — gated adopt task: scan → task_approve_adopt_plan → apply → index.",
+      "migrate_project",
+      "Self-service migration — docops layout probe + edit docops.config.json paths (prefer pointing paths at existing folders).",
       ctx,
       {
-        nextTools: ["task_create", "workspace_check", "adopt_scan"],
+        nextTools: ["workspace_check", "docops_status"],
         avoidTools: ["task_approve_plan", "review_approve"],
       },
     );

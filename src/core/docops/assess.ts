@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { pathExists } from "../util/fs.js";
 import { assessEntityRegistry } from "./entity-keying.js";
 import { readDocopsConfig } from "./config.js";
+import { missingOptionalDocTypeKeys } from "./layer-defaults.js";
 import {
   DOCOPS_CONFIG_REL,
   isNonCanonicalDocTypePath,
@@ -114,6 +115,16 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
       }
 
       const docsRoot = config.docsRoot?.trim() || "docs";
+      const missingOptional = missingOptionalDocTypeKeys(config.docTypes);
+      if (missingOptional.length > 0) {
+        gaps.push({
+          id: "DOCOPS-CFG-OPTIONAL",
+          severity: "warning",
+          message: `docops.config.json missing docTypes: ${missingOptional.join(", ")}`,
+          fix: "Run docops migrate --repair",
+        });
+      }
+
       for (const [key, dt] of enabledDocTypes(config)) {
         const layerPath = dt.path?.trim();
         if (layerPath && isNonCanonicalDocTypePath(key, layerPath, docsRoot)) {
@@ -139,6 +150,20 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
         } else {
           docopsPathsFound.push(tpl);
         }
+      }
+
+      const detailDesignTpl = config.docTypes?.detailDesign?.templatesPath?.trim()
+        ?? ".docops/templates/detail-design";
+      const ddTplCount = await countMarkdownInDir(join(projectRoot, detailDesignTpl));
+      if (ddTplCount === 0) {
+        gaps.push({
+          id: "DOCOPS-TPL-detailDesign",
+          severity: "warning",
+          message: `No templates in ${detailDesignTpl}`,
+          fix: "Run docops migrate --repair",
+        });
+      } else {
+        docopsPathsFound.push(detailDesignTpl);
       }
 
       const readmeRel = ".docops/guide/README.md";
@@ -191,7 +216,9 @@ export async function assessDocopsProject(projectRoot: string): Promise<DocopsAs
   const writerReady = hasDocopsConfig && blocking.length === 0;
 
   let recommendedAction: DocopsRecommendedAction;
-  if (writerReady) {
+  if (writerReady && gaps.some((g) => g.id.startsWith("DOCOPS-CFG-OPTIONAL") || g.id === "DOCOPS-TPL-detailDesign")) {
+    recommendedAction = "repair";
+  } else if (writerReady) {
     recommendedAction = "ok";
   } else if (layout === "none") {
     recommendedAction = "init";

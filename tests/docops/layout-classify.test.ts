@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scoreBuiltinMatch, detectLanguageLayout, extractDomainIds } from "@/core/adopt/classify.js";
+import { scoreBuiltinMatch, detectLanguageLayout, extractDomainIds } from "@/core/docops/layout-classify.js";
 
 describe("scoreBuiltinMatch", () => {
   it("scores high when filename and H1 match builtin SRS intro", () => {
@@ -33,7 +33,7 @@ describe("detectLanguageLayout", () => {
 });
 
 describe("extractDomainIds", () => {
-  it("extracts UC and F ids", () => {
-    expect(extractDomainIds("UC-01 login\nF-02 auth")).toEqual(expect.arrayContaining(["UC-01", "F-02"]));
+  it("finds UC and F ids", () => {
+    expect(extractDomainIds("See UC-01 and F-12 for traceability.")).toEqual(["UC-01", "F-12"]);
   });
 });

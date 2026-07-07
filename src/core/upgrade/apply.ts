@@ -30,6 +30,17 @@ async function applyUpgradeItem(root: string, item: UpgradeChecklistItem): Promi
         await ensureGitRepository(root);
         await installGitHooks(root);
         return;
+      case "docops-repair": {
+        const { readDocopsConfig } = await import("../docops/config.js");
+        const { repairDocopsContract } = await import("../docops/migrate.js");
+        const config = await readDocopsConfig(root);
+        if (!config) {
+          return;
+        }
+        const actions: string[] = [];
+        await repairDocopsContract(root, config, actions, false);
+        return;
+      }
       default:
         throw new Error(`Unknown upgrade command: ${apply.command}`);
     }

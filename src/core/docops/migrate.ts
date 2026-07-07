@@ -13,6 +13,7 @@ import {
 import {
   docopsConfigFromDocflow,
   inferDocTypesFromTree,
+  mergeDocopsDefaults,
   readDocopsConfig,
   writeDocopsConfig,
 } from "./config.js";
@@ -147,6 +148,39 @@ async function bootstrapDocopsContract(
   await copyTemplatesForEnabledDocTypes(projectRoot, config, docflow, actions, dryRun);
 }
 
+async function syncDocopsConfigSchema(
+  projectRoot: string,
+  config: DocopsConfig,
+  actions: string[],
+  dryRun: boolean,
+): Promise<DocopsConfig> {
+  const merged = mergeDocopsDefaults(config);
+  const withOptional = {
+    ...merged,
+    docTypes: ensureOptionalDocTypes(merged.docTypes ?? {}),
+  };
+  const before = JSON.stringify(mergeDocopsDefaults(config));
+  const after = JSON.stringify(withOptional);
+  if (before === after) {
+    return config;
+  }
+  actions.push(`${dryRun ? "would sync" : "sync"} ${DOCOPS_CONFIG_REL} to latest contract defaults`);
+  if (!dryRun) {
+    await writeDocopsConfig(projectRoot, withOptional);
+  }
+  return withOptional;
+}
+
+/** Gap-fill an existing docops contract (config patches + bootstrap files). */
+export async function repairDocopsContract(
+  projectRoot: string,
+  config: DocopsConfig,
+  actions: string[],
+  dryRun: boolean,
+): Promise<DocopsConfig> {
+  return repairDocopsGaps(projectRoot, config, actions, dryRun);
+}
+
 async function repairDocopsGaps(
   projectRoot: string,
   config: DocopsConfig,
@@ -155,7 +189,8 @@ async function repairDocopsGaps(
 ): Promise<DocopsConfig> {
   await copyLegacyArtifacts(projectRoot, actions, dryRun);
 
-  const withPaths = await patchCanonicalDocTypePaths(projectRoot, config, actions, dryRun);
+  const synced = await syncDocopsConfigSchema(projectRoot, config, actions, dryRun);
+  const withPaths = await patchCanonicalDocTypePaths(projectRoot, synced, actions, dryRun);
   const withOptional = await patchMissingOptionalDocTypes(projectRoot, withPaths, actions, dryRun);
   const next = await patchMissingTemplatesPaths(projectRoot, withOptional, actions, dryRun);
   const docflow = await loadDocflowIfPresent(projectRoot);

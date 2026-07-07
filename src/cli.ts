@@ -10,7 +10,7 @@ import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
 import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
-import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus } from "./core/operations/docops.js";
+import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus, runDocopsCheck, runDocopsLayout } from "./core/operations/docops.js";
 import { runLifecycleSync } from "./core/operations/lifecycle.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
@@ -143,7 +143,6 @@ import {
 } from "./interfaces/cli/format/reviews.js";
 import { registerTemplateCommand } from "./core/operations/template.js";
 import { registerReadinessCommand } from "./core/operations/readiness.js";
-import { registerAdoptCommand } from "./core/operations/adopt.js";
 import { registerUpgradeCommand } from "./core/operations/upgrade.js";
 import { runCocoindexSetup, runCocoindexSearch, runGraphQueryFuzzy } from "./core/operations/cocoindex.js";
 import {
@@ -1554,6 +1553,34 @@ docops
   });
 
 docops
+  .command("check")
+  .description("Validate docops.config.json and emit agent-ready fix feedback")
+  .option("--json", "JSON output for agents")
+  .option("--prompt", "Print only the agent prompt")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsCheck({
+      root: projectRootOpt(cmd),
+      json: opts.json,
+      prompt: opts.prompt,
+    });
+    process.exitCode = code;
+  });
+
+docops
+  .command("layout")
+  .description("Read-only probe: doc folders on disk vs docops.config.json (no file moves)")
+  .option("--json", "JSON output for agents")
+  .option("--prompt", "Print only the agent prompt")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsLayout({
+      root: projectRootOpt(cmd),
+      json: opts.json,
+      prompt: opts.prompt,
+    });
+    process.exitCode = code;
+  });
+
+docops
   .command("init")
   .description("Scaffold Writer-ready .docops/ contract")
   .option("--lang <codes>", "Comma-separated language codes", "en")
@@ -1880,7 +1907,6 @@ graph
   });
 
 registerTemplateCommand(program);
-registerAdoptCommand(program);
 registerUpgradeCommand(program);
 registerReadinessCommand(program);
 

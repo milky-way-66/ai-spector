@@ -47,6 +47,16 @@
       "agentGuide": "Run: npx ai-spector upgrade apply to stamp scaffoldVersion in engine.json."
     },
     {
+      "id": "UPG-012",
+      "since": "0.9.19",
+      "kind": "auto",
+      "severity": "recommended",
+      "title": "Patch docops.config.json with detailDesign and otherDocument (disabled)",
+      "detect": { "type": "docops-optional-doc-types-stale" },
+      "apply": { "command": "docops-repair" },
+      "agentGuide": "Run: npx ai-spector docops migrate --repair — adds disabled detailDesign/otherDocument keys and detail-design templates."
+    },
+    {
       "id": "UPG-020",
       "since": "0.5.0",
       "kind": "agent",

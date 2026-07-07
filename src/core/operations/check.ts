@@ -33,8 +33,6 @@ import { resolveReadinessConfigStatus } from "../readiness/config.js";
 import { validateCustomPack } from "../template/pack-validate.js";
 import { pathExists, readJson } from "../util/fs.js";
 import type { DocflowConfig } from "../config/types.js";
-import { hasAdoptTaskCoverage } from "../adopt/tasks.js";
-import { loadAdoptSetup } from "../adopt/setup.js";
 import { listApprovedTaskGateViolations } from "./task-gates.js";
 import type { TaskState } from "./task.js";
 import type { SourceMode } from "./derive.js";
@@ -109,7 +107,7 @@ const DEFAULT_RULES: RuleConfig[] = [
   { id: "PACK-001", severity: "warning" },
   { id: "READY-001", severity: "warning" },
   { id: "READY-002", severity: "warning" },
-  { id: "ADOPT-001", severity: "warning" },
+  { id: "DOC-LAYOUT-001", severity: "warning" },
   { id: "SYNC-001", severity: "info" },
 ];
 
@@ -224,10 +222,6 @@ async function checkGenerateTaskGate(
   path: string,
   activePack?: string,
 ): Promise<void> {
-  if (await hasAdoptTaskCoverage(root, slot)) {
-    return;
-  }
-
   const activeId = index.active?.[slot];
   if (!activeId) {
     addGenerateTaskFinding(add, rules, ruleId, defaultSeverity, slot, docType, path, "missing", undefined, activePack);
@@ -570,19 +564,17 @@ export async function runCheck(opts: CheckOptions = {}): Promise<CheckResult> {
     }
   }
 
-  // ADOPT-001 — legacy SRS/BD layout may need adopt migration.
-  if (enabled(rules, "ADOPT-001") && configReadable && config) {
-    const setup = await loadAdoptSetup(root);
-    if (!setup.items["migration.complete"]?.done) {
-      const needsAdopt = await hasFlatOrMisplacedSrsBdDocs(root, config);
-      if (needsAdopt) {
-        add({
-          ruleId: "ADOPT-001",
-          severity: severityOf(rules, "ADOPT-001", "warning"),
-          message: "Existing docs may need adopt migration — run: npx ai-spector adopt scan",
-          fix: "npx ai-spector adopt scan",
-        });
-      }
+  // DOC-LAYOUT-001 — non-canonical doc layout; self-service migration via docops layout + guide.
+  if (enabled(rules, "DOC-LAYOUT-001") && configReadable && config) {
+    const needsLayoutHelp = await hasFlatOrMisplacedSrsBdDocs(root, config);
+    if (needsLayoutHelp) {
+      add({
+        ruleId: "DOC-LAYOUT-001",
+        severity: severityOf(rules, "DOC-LAYOUT-001", "warning"),
+        message:
+          "Doc folders may not match Writer conventions — run docops layout and edit docTypes paths in docops.config.json",
+        fix: "npx ai-spector docops layout --prompt",
+      });
     }
   }
 

@@ -3,12 +3,12 @@ export type BuiltinWorkflowId =
   | "generate-basic-design"
   | "generate-detail-design"
   | "resolve"
-  | "template-import"
-  | "adopt";
+  | "template-import";
+
 /** Builtin workflows or custom pack workflows (`generate-<pack-name>`). */
 export type WorkflowId = BuiltinWorkflowId | `generate-${string}`;
 
-export type TaskKind = "generate" | "resolve" | "import" | "adopt";
+export type TaskKind = "generate" | "resolve" | "import";
 
 export interface TemplateStep {
   id: string;
@@ -59,24 +59,6 @@ const IMPORT_STEPS: TemplateStep[] = [
   { id: "complete", phase: "report", description: "Import complete — pack ready for generate" },
 ];
 
-const ADOPT_STEPS: TemplateStep[] = [
-  { id: "check", phase: "check", description: "Validate workspace; confirm adopt candidate" },
-  {
-    id: "clarify",
-    phase: "clarify",
-    description: "Scan + resolve blocking classification questions",
-  },
-  { id: "plan", phase: "plan", description: "Present move mapping table; user approves" },
-  { id: "apply", phase: "execute", description: "Execute approved file moves" },
-  {
-    id: "bootstrap",
-    phase: "execute",
-    description: "Index, optional analyze, prototype, review registry",
-  },
-  { id: "validate", phase: "verify", description: "Workspace + graph readiness gate" },
-  { id: "complete", phase: "report", description: "Mark migration complete; unlock pipeline" },
-];
-
 export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
   "generate-srs": { id: "generate-srs", kind: "generate", steps: GENERATE_STEPS },
   "generate-basic-design": {
@@ -91,7 +73,6 @@ export const WORKFLOW_TEMPLATES: Record<BuiltinWorkflowId, WorkflowTemplate> = {
   },
   resolve: { id: "resolve", kind: "resolve", steps: RESOLVE_STEPS },
   "template-import": { id: "template-import", kind: "import", steps: IMPORT_STEPS },
-  adopt: { id: "adopt", kind: "adopt", steps: ADOPT_STEPS },
 };
 
 const CUSTOM_GENERATE_RE = /^generate-[a-z0-9][a-z0-9-]*$/;
@@ -116,7 +97,6 @@ export function defaultNextAction(workflow: WorkflowId, stepId: string): string 
 
 export function activeSlotFor(kind: TaskKind, workflow: string, docType?: string): string {
   if (kind === "import") return "import";
-  if (kind === "adopt") return "adopt";
   if (kind === "resolve") return "resolve";
   if (workflow === "generate-srs") return "generate:srs";
   if (workflow === "generate-basic-design") return "generate:basic-design";

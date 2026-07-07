@@ -14,6 +14,5 @@ export const DEFAULT_RESOLVED_PLUGINS = [
   "resolve-task",
   "sync-audit",
   "template-import",
-  "adopt",
   "search",
 ] as const;

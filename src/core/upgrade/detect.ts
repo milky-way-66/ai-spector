@@ -136,6 +136,26 @@ export async function evaluateItemDetect(
         fix,
       };
     }
+    case "docops-optional-doc-types-stale": {
+      const { readDocopsConfig } = await import("../docops/config.js");
+      const { missingOptionalDocTypeKeys } = await import("../docops/layer-defaults.js");
+      const config = await readDocopsConfig(ctx.root);
+      if (!config) {
+        return null;
+      }
+      const missing = missingOptionalDocTypeKeys(config.docTypes);
+      if (missing.length === 0) {
+        return null;
+      }
+      return {
+        id: item.id,
+        status: "stale",
+        severity: item.severity,
+        message: item.title,
+        fix,
+        detail: `Missing docTypes: ${missing.join(", ")}`,
+      };
+    }
     default:
       return null;
   }

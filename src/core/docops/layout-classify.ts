@@ -6,11 +6,10 @@ import {
   packageBundleRoot,
 } from "../config/load.js";
 import type { DocumentsManifest } from "../config/types.js";
-import type {
-  AdoptLangStrategy,
-  AdoptLayerClass,
-  AdoptPrototypeClass,
-} from "./types.js";
+
+export type DocopsLayerClass = "builtin-aligned" | "reshaped" | "custom" | "missing";
+export type DocopsPrototypeClass = "static-html" | "spa" | "disconnected" | "missing";
+export type DocopsLangStrategy = "per-lang-folders" | "flat" | "mixed";
 
 const FILENAME_WEIGHT = 0.55;
 const HEADING_WEIGHT = 0.45;
@@ -22,7 +21,7 @@ const PROTOTYPE_SOURCE_DIRS = ["prototype/src", "prototype", "docs/prototype"] a
 const SPA_FRAMEWORKS = ["react", "vue", "@vue/", "next", "nuxt", "svelte"];
 const PROTOTYPE_EXTENSIONS = new Set([".html", ".htm", ".tsx", ".jsx", ".vue"]);
 
-export interface AdoptClassifyFile {
+export interface DocopsClassifyFile {
   relativePath: string;
   headings: Array<{ depth: number; text: string }>;
   content?: string;
@@ -143,10 +142,7 @@ function firstHeadingText(headings: Array<{ depth: number; text: string }>): str
   return headings[0]?.text.trim() ?? "";
 }
 
-function scoreAgainstManifestEntry(
-  file: AdoptClassifyFile,
-  entry: ManifestEntry,
-): number {
+function scoreAgainstManifestEntry(file: DocopsClassifyFile, entry: ManifestEntry): number {
   const filenameScore = textSimilarity(
     filenameStem(file.relativePath),
     filenameStem(entry.template),
@@ -156,7 +152,7 @@ function scoreAgainstManifestEntry(
 }
 
 export function scoreBuiltinMatch(
-  file: AdoptClassifyFile,
+  file: DocopsClassifyFile,
   layer: "srs" | "basic-design" | "detail-design",
 ): number {
   const entries = getManifestEntries(layer);
@@ -168,9 +164,9 @@ export function scoreBuiltinMatch(
 }
 
 export function classifyLayer(
-  files: AdoptClassifyFile[],
+  files: DocopsClassifyFile[],
   layer: "srs" | "basic-design" | "detail-design",
-): AdoptLayerClass {
+): DocopsLayerClass {
   if (files.length === 0) return "missing";
 
   const scores = files.map((file) => scoreBuiltinMatch(file, layer));
@@ -186,13 +182,12 @@ export function classifyLayer(
   });
   if (hasDomainIds && averageScore < 0.7) return "reshaped";
 
-  // v1: treat uncertain/custom layouts as reshaped until pack detection lands.
   return "reshaped";
 }
 
 export function detectLanguageLayout(paths: string[]): {
   detected: string[];
-  strategy: AdoptLangStrategy;
+  strategy: DocopsLangStrategy;
 } {
   const normalized = paths.map((path) => path.replace(/\\/g, "/"));
   const langs = new Set<string>();
@@ -299,7 +294,7 @@ function hasSpaDependency(packageJsonPath: string): boolean {
 function classifyPrototypeFiles(
   filesByRoot: Map<string, string[]>,
   root: string,
-): AdoptPrototypeClass {
+): DocopsPrototypeClass {
   const prototypePkg = join(root, "prototype", "package.json");
   if (pathExistsSync(prototypePkg) && hasSpaDependency(prototypePkg)) {
     return "spa";
@@ -348,8 +343,7 @@ export function classifyDataSource(
   return "partial";
 }
 
-export async function classifyPrototype(root: string): Promise<AdoptPrototypeClass> {
-  // Warm async manifest loaders for parity with scan command; scoring uses sync cache.
+export async function classifyPrototype(root: string): Promise<DocopsPrototypeClass> {
   await Promise.all([loadDocumentsManifest(), loadBasicDesignListManifest()]);
 
   const filesByRoot = collectPrototypeFiles(root);
@@ -358,7 +352,7 @@ export async function classifyPrototype(root: string): Promise<AdoptPrototypeCla
 }
 
 /** Reset cached manifest entries — for tests only. */
-export function resetAdoptClassifyCacheForTests(): void {
+export function resetLayoutClassifyCacheForTests(): void {
   srsManifestCache = null;
   basicDesignManifestCache = null;
   detailDesignManifestCache = null;
