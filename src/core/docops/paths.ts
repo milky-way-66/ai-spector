@@ -32,7 +32,7 @@ export const DOC_TYPE_INFERENCE: ReadonlyArray<{
   key: string;
   path: string;
   label: string;
-  templatesPath: string;
+  templatesPath?: string;
 }> = [
   {
     docsPrefix: "docs/srs",
@@ -55,12 +55,19 @@ export const DOC_TYPE_INFERENCE: ReadonlyArray<{
     label: "Detail Design",
     templatesPath: ".docops/templates/detail-design",
   },
+  {
+    docsPrefix: "docs/other",
+    key: "otherDocument",
+    path: "docs/other",
+    label: "Other Document",
+  },
 ];
 
 export const DOC_TYPE_KEY_TO_SEGMENT: Record<string, string> = {
   srs: "srs",
   basicDesign: "basic-design",
   detailDesign: "detail-design",
+  otherDocument: "other-document",
 };
 
 export const DEFAULT_DOC_TYPE_REPO_PATH: Record<string, string> = Object.fromEntries(

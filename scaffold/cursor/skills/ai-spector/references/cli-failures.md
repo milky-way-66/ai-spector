@@ -55,10 +55,22 @@ Reply: 1 Fix & retry  2 Workaround  3 Pause
 | `validate` — one bad id/edge | Patch single node/edge; re-validate | Must pass before next wave |
 | `index` fails one path | Skip that path if allowed; re-index after fix | Re-run index |
 | Upstream SRS missing | Generate SRS prerequisite first (user approves) | Full pipeline order |
+| `docops init` / `migrate` / `migrate --repair` fails | Manual gap-fill per `.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md` (or monorepo `kari-writer/contracts/bootstrap/docs/guides/DOCOPS_MANUAL_FALLBACK.md`): merge `detailDesign` + `otherDocument` (`enabled: false`), copy DD templates from bootstrap; **never overwrite** existing files | `npx ai-spector docops status --json` when CLI works |
 
 After any workaround that wrote docs: `graph validate` (+ `index` if required) before next wave.
 
 **Forbidden without user approval:** hand-edit graph at scale · glob `docs/srs/**` as primary context · skip `graph merge` · continue generation after validate errors.
+
+---
+
+## Docops manual fallback (CLI unavailable)
+
+When **`docops init`**, **`docops migrate`**, or **`docops migrate --repair`** fails:
+
+1. Pause and report per format above; ask user for **Workaround (2)**.
+2. Open **`.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md`** in the project repo (or `kari-writer/contracts/bootstrap/docs/guides/DOCOPS_MANUAL_FALLBACK.md` in docs-ops monorepo).
+3. Execute the checklist — patch config, copy bootstrap files, skip existing destinations.
+4. Re-run `npx ai-spector docops status --json` when CLI is available; do not claim `writerReady` without verification.
 
 ---
 

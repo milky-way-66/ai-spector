@@ -117,7 +117,7 @@ export async function inferDocTypesFromTree(
         enabled: true,
         path: row.path,
         label: row.label,
-        templatesPath: row.templatesPath,
+        ...(row.templatesPath ? { templatesPath: row.templatesPath } : {}),
       };
     }
   }

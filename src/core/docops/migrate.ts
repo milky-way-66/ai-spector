@@ -18,8 +18,14 @@ import {
 } from "./config.js";
 import { applyDocopsBootstrap } from "./bootstrap.js";
 import { bootstrapEntityRegistry } from "./entity-keying.js";
+import {
+  buildDocTypesFromLayers,
+  ensureOptionalDocTypes,
+  LAYER_TEMPLATES_PATH,
+  templateLayerKeys,
+} from "./layer-defaults.js";
 import { copyTemplates, resolveTemplateSourcesForLayer } from "./templates.js";
-import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
+import type { DocopsConfig } from "./types.js";
 
 export interface MigrateDocopsOptions {
   projectRoot: string;
@@ -36,18 +42,7 @@ export interface MigrateDocopsResult {
   config?: DocopsConfig;
 }
 
-const LAYER_TEMPLATES_PATH: Record<string, string> = {
-  srs: ".docops/templates/srs",
-  basicDesign: ".docops/templates/basic-design",
-  detailDesign: ".docops/templates/detail-design",
-};
-
-function enabledDocTypes(
-  config: DocopsConfig,
-): Array<[string, DocopsDocTypeConfig]> {
-  if (!config.docTypes) return [];
-  return Object.entries(config.docTypes).filter(([, v]) => v?.enabled !== false);
-}
+const LAYER_TEMPLATES_PATH_LEGACY = LAYER_TEMPLATES_PATH;
 
 async function loadDocflowIfPresent(projectRoot: string): Promise<DocflowConfig | null> {
   const docflowPath = join(projectRoot, LEGACY_DOCFLOW_CONFIG_REL);
@@ -161,7 +156,8 @@ async function repairDocopsGaps(
   await copyLegacyArtifacts(projectRoot, actions, dryRun);
 
   const withPaths = await patchCanonicalDocTypePaths(projectRoot, config, actions, dryRun);
-  const next = await patchMissingTemplatesPaths(projectRoot, withPaths, actions, dryRun);
+  const withOptional = await patchMissingOptionalDocTypes(projectRoot, withPaths, actions, dryRun);
+  const next = await patchMissingTemplatesPaths(projectRoot, withOptional, actions, dryRun);
   const docflow = await loadDocflowIfPresent(projectRoot);
   await bootstrapDocopsContract(projectRoot, next, docflow, actions, dryRun);
 
@@ -212,6 +208,32 @@ async function patchCanonicalDocTypePaths(
   return next;
 }
 
+async function patchMissingOptionalDocTypes(
+  projectRoot: string,
+  config: DocopsConfig,
+  actions: string[],
+  dryRun: boolean,
+): Promise<DocopsConfig> {
+  const docTypes = ensureOptionalDocTypes(config.docTypes ?? {});
+  if (docTypes === config.docTypes) {
+    return config;
+  }
+
+  for (const key of ["detailDesign", "otherDocument"] as const) {
+    if (!config.docTypes?.[key] && docTypes[key]) {
+      actions.push(
+        `${dryRun ? "would patch" : "patch"} docTypes.${key} (enabled: false, path: ${docTypes[key].path})`,
+      );
+    }
+  }
+
+  const next = { ...config, docTypes };
+  if (!dryRun) {
+    await writeDocopsConfig(projectRoot, next);
+  }
+  return next;
+}
+
 async function patchMissingTemplatesPaths(
   projectRoot: string,
   config: DocopsConfig,
@@ -228,7 +250,7 @@ async function patchMissingTemplatesPaths(
     if (dt?.enabled === false || dt.templatesPath) {
       continue;
     }
-    const defaultPath = LAYER_TEMPLATES_PATH[key];
+    const defaultPath = LAYER_TEMPLATES_PATH_LEGACY[key];
     if (!defaultPath) {
       continue;
     }
@@ -257,8 +279,9 @@ async function copyTemplatesForEnabledDocTypes(
   actions: string[],
   dryRun: boolean,
 ): Promise<void> {
-  for (const [key, dt] of enabledDocTypes(config)) {
-    if (!dt.templatesPath) {
+  for (const key of templateLayerKeys(config)) {
+    const dt = config.docTypes?.[key];
+    if (!dt?.templatesPath) {
       continue;
     }
     if (!dryRun) {
@@ -300,8 +323,8 @@ export async function migrateFromDocflow(
   }
 
   const { config: docflow } = await loadDocflowConfig(projectRoot);
-  const docTypes = await inferDocTypesFromTree(projectRoot);
-  const docops = docopsConfigFromDocflow(docflow, Object.keys(docTypes).length ? docTypes : undefined);
+  const docTypes = buildDocTypesFromLayers(undefined, await inferDocTypesFromTree(projectRoot));
+  const docops = docopsConfigFromDocflow(docflow, docTypes);
 
   const engine = defaultEngineConfig();
   if (docflow.scaffoldVersion) engine.scaffoldVersion = docflow.scaffoldVersion;
@@ -398,11 +421,8 @@ export async function migrateDocopsLayout(
   await copyLegacyArtifacts(projectRoot, actions, dryRun);
 
   const { config: docflow } = await loadDocflowConfig(projectRoot);
-  const docTypes = await inferDocTypesFromTree(projectRoot);
-  const docops = docopsConfigFromDocflow(
-    docflow,
-    Object.keys(docTypes).length ? docTypes : undefined,
-  );
+  const docTypes = buildDocTypesFromLayers(undefined, await inferDocTypesFromTree(projectRoot));
+  const docops = docopsConfigFromDocflow(docflow, docTypes);
 
   actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
   if (!dryRun) {

@@ -126,6 +126,53 @@ describe("docops migrate", () => {
     });
   });
 
+  it("repair patches missing optional doc types and detail-design templates", async () => {
+    await withTempDir(async (root) => {
+      await writeLegacyFixture(root);
+      await writeJson(join(root, ".docops/docops.config.json"), {
+        schemaVersion: "1.0",
+        docsRoot: "docs",
+        languages: [{ code: "en", label: "English", path: "en" }],
+        primaryLanguage: "en",
+        docTypes: {
+          srs: {
+            enabled: true,
+            path: "docs/srs",
+            label: "SRS",
+            templatesPath: ".docops/templates/srs",
+          },
+        },
+        paths: {
+          comments: ".docops/comments",
+          reviewConfig: ".docops/review.config.json",
+          reviewQueue: ".docops/review-queue",
+          prototypeConfig: ".docops/prototype/config.json",
+          prototypeScreenMap: ".docops/prototype/screen-map.json",
+        },
+        capabilities: { review: false, comments: true, prototype: false },
+      });
+      await mkdir(join(root, ".docops/templates/srs"), { recursive: true });
+
+      const result = await migrateDocopsLayout({
+        projectRoot: root,
+        repair: true,
+      });
+      expect(result.migrated).toBe(true);
+      expect(result.actions.some((a) => a.includes("docTypes.detailDesign"))).toBe(true);
+      expect(result.actions.some((a) => a.includes("docTypes.otherDocument"))).toBe(true);
+
+      const onDisk = await readJson<{
+        docTypes: Record<string, { enabled: boolean; path: string }>;
+      }>(join(root, DOCOPS_CONFIG_REL));
+      expect(onDisk.docTypes.detailDesign.enabled).toBe(false);
+      expect(onDisk.docTypes.otherDocument.enabled).toBe(false);
+      expect(onDisk.docTypes.otherDocument.path).toBe("docs/other");
+
+      const ddMd = await countMarkdownInDir(join(root, ".docops/templates/detail-design"));
+      expect(ddMd).toBeGreaterThan(0);
+    });
+  });
+
   it("repair copies templates when config exists but templates empty", async () => {
     await withTempDir(async (root) => {
       await writeLegacyFixture(root);

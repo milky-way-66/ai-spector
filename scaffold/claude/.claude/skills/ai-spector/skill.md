@@ -27,7 +27,7 @@ description: >-
 | Upgrade ai-spector package | [references/runbook.md — Upgrade](references/runbook.md#upgrade) |
 | Adopt / migrate existing docs | [references/runbook.md — Adopt](references/runbook.md#adopt) |
 | Check workspace / clarifications | [references/runbook.md — Check](references/runbook.md#check) |
-| Docops / Writer contract bootstrap | [references/runbook.md — Docops](references/runbook.md#docops) |
+| Docops / Writer contract bootstrap | [references/runbook.md — Docops](references/runbook.md#docops) · CLI failed → `.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md` |
 | Learn / open course | [references/runbook.md — Course](references/runbook.md#course) |
 | Resume / pause / manage work sessions | [references/runbook.md — Work-Sessions](references/runbook.md#work-sessions) |
 

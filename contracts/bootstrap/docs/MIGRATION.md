@@ -40,6 +40,8 @@ npx ai-spector docops migrate --repair     # fill gaps when config already exist
 npx ai-spector docops init                 # greenfield scaffold
 ```
 
+**CLI failed or unavailable?** Follow [guides/DOCOPS_MANUAL_FALLBACK.md](guides/DOCOPS_MANUAL_FALLBACK.md) — same gap-fill rules (patch `detailDesign` / `otherDocument`, copy DD templates, no overwrite).
+
 ### Hard rules for agents
 
 | Rule | Detail |
@@ -118,6 +120,9 @@ Document markdown lives under **`docTypes.<layer>.path`** — a folder **relativ
 | `srs` | SRS | `docs/srs` | `docs/srs/en/01-overview.md` |
 | `basicDesign` | Basic Design | `docs/basic-design` | `docs/basic-design/en/screen-list.md` |
 | `detailDesign` | Detail Design | `docs/detail-design` | `docs/detail-design/en/feature-list.md` |
+| `otherDocument` | Other Document | `docs/other` | `docs/other/en/meeting-notes.md` |
+
+**Default bootstrap:** `detailDesign` and `otherDocument` are written to config with `"enabled": false`. Detail Design templates still land in `.docops/templates/detail-design/`. Other Document has no `templatesPath`.
 
 **Use full repo-root paths** in config:
 
@@ -134,6 +139,17 @@ Document markdown lives under **`docTypes.<layer>.path`** — a folder **relativ
     "path": "docs/basic-design",
     "label": "Basic Design",
     "templatesPath": ".docops/templates/basic-design"
+  },
+  "detailDesign": {
+    "enabled": false,
+    "path": "docs/detail-design",
+    "label": "Detail Design",
+    "templatesPath": ".docops/templates/detail-design"
+  },
+  "otherDocument": {
+    "enabled": false,
+    "path": "docs/other",
+    "label": "Other Document"
   }
 }
 ```
@@ -291,10 +307,13 @@ Recommended order for Writer-only teams:
 | No review config | Copy [examples/review/minimal-review.config.json](examples/review/minimal-review.config.json) |
 | No guide docs | Copy from another initialized branch or re-run setup on a branch without config, then copy `.docops/guide/` |
 | Empty templates | Copy `*.md` into `docTypes.*.templatesPath` or run setup on greenfield branch and copy template folders |
+| Missing `detailDesign` / `otherDocument` in config | Merge keys from [full-docops.config.json](examples/full-docops.config.json) (`enabled: false`) — see [guides/DOCOPS_MANUAL_FALLBACK.md](guides/DOCOPS_MANUAL_FALLBACK.md) |
+| Empty `.docops/templates/detail-design/` | Copy from bootstrap `templates/detail-design/` even when DD disabled — [guides/DOCOPS_MANUAL_FALLBACK.md](guides/DOCOPS_MANUAL_FALLBACK.md) §4 |
 | Prototype not working | See [modules/prototype.md](modules/prototype.md) — config, screen-map, `.htpasswd` |
 
-Writer **Set up repository** returns **409** if `docops.config.json` already exists. To scaffold **missing** files without CLI, either:
+Writer **Set up repository** returns **409** if `docops.config.json` already exists. To scaffold **missing** files without CLI:
 
+- Follow [guides/DOCOPS_MANUAL_FALLBACK.md](guides/DOCOPS_MANUAL_FALLBACK.md) (agent gap-fill), or
 - Add files manually from `guide/examples/`, or
 - Use a temporary branch without config for setup, then copy missing paths into your working branch
 
@@ -433,9 +452,12 @@ Migrate repo to .docops contract:
 - Branch: docops/migrate (or user branch)
 - Copy legacy → contract (§2 table); skip existing destinations
 - docops.config.json: layout "docops", docTypes.*.path = repo-root-relative (docs/srs, docs/basic-design, …)
+- Always include detailDesign + otherDocument (enabled: false) unless already present
+- Copy .docops/templates/detail-design/ from bootstrap even when DD disabled
 - capabilities + paths per project needs
 - templates: .docops/templates/{layer}/*.md
-- gitkeep: {docTypes.path}/{lang}/.gitkeep for each language
+- gitkeep: {docTypes.path}/{lang}/.gitkeep for each enabled layer × language
 - Commit; then Writer storage_layout = docops
 - Never overwrite existing files; never use short docTypes.path expecting docs/ prefix
+- CLI failed → guides/DOCOPS_MANUAL_FALLBACK.md
 ```

@@ -9,21 +9,7 @@ import {
 import { applyDocopsBootstrap } from "./bootstrap.js";
 import { migrateRootDataSourceToCanonical } from "./data-source-path.js";
 import { bootstrapEntityRegistry } from "./entity-keying.js";
-import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
-
-const LAYER_DEFAULTS: Record<string, Omit<DocopsDocTypeConfig, "enabled">> = {
-  srs: { path: "docs/srs", label: "SRS", templatesPath: ".docops/templates/srs" },
-  basicDesign: {
-    path: "docs/basic-design",
-    label: "Basic Design",
-    templatesPath: ".docops/templates/basic-design",
-  },
-  detailDesign: {
-    path: "docs/detail-design",
-    label: "Detail Design",
-    templatesPath: ".docops/templates/detail-design",
-  },
-};
+import { buildDocTypesFromLayers } from "./layer-defaults.js";
 
 function parseLanguages(codes?: string[]): Array<{ code: string; label: string; path: string }> {
   const list = (codes?.length ? codes : ["en"]).map((c) => c.trim().toLowerCase()).filter(Boolean);
@@ -32,32 +18,6 @@ function parseLanguages(codes?: string[]): Array<{ code: string; label: string; 
     label: code.toUpperCase(),
     path: code,
   }));
-}
-
-function buildDocTypes(
-  layers: string[] | undefined,
-  inferred: Record<string, DocopsDocTypeConfig>,
-): Record<string, DocopsDocTypeConfig> {
-  const layerKeys = layers?.length
-    ? layers
-    : Object.keys(inferred).length
-      ? Object.keys(inferred)
-      : ["srs", "basicDesign"];
-
-  const out: Record<string, DocopsDocTypeConfig> = {};
-  for (const key of layerKeys) {
-    const base = LAYER_DEFAULTS[key];
-    if (!base) continue;
-    const inferredLayer = inferred[key];
-    out[key] = {
-      ...base,
-      ...inferredLayer,
-      // Keep an explicit configured path; defaults only fill gaps.
-      path: inferredLayer?.path?.trim() || base.path,
-      enabled: inferredLayer?.enabled ?? true,
-    };
-  }
-  return out;
 }
 
 export async function initDocopsContract(opts: {
@@ -91,7 +51,7 @@ export async function initDocopsContract(opts: {
 
   const languages = parseLanguages(opts.languages);
   const inferred = await inferDocTypesFromTree(projectRoot);
-  const docTypes = buildDocTypes(opts.layers, inferred);
+  const docTypes = buildDocTypesFromLayers(opts.layers, inferred);
 
   const config = mergeDocopsDefaults({
     languages,

@@ -287,7 +287,18 @@ Splits `docflow.config.json` into `.docops/docops.config.json` + `.ai-spector/en
 npx ai-spector docops migrate --repair --json
 ```
 
-Fills missing capability files; patches config gaps (including short `docTypes.*.path` values).
+Fills missing capability files; patches config gaps (including short `docTypes.*.path` values, missing `detailDesign` / `otherDocument`, and empty `.docops/templates/detail-design/`).
+
+### Phase 3b — Manual fallback (CLI failed)
+
+When init/migrate/repair exits non-zero or bootstrap bundle is missing — **after user approves workaround** per [cli-failures.md](cli-failures.md):
+
+1. Read **`.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md`** in the target repo (committed by Writer setup), or **`kari-writer/contracts/bootstrap/docs/guides/DOCOPS_MANUAL_FALLBACK.md`** in the monorepo.
+2. Patch `docops.config.json` — merge missing `detailDesign` + `otherDocument` (`enabled: false`).
+3. Copy scaffold + templates from bootstrap bundle — **never overwrite** existing files.
+4. Verify with `npx ai-spector docops status --json` when CLI works again.
+
+Same rules as repair; agents finish the task in git when the script cannot.
 
 ### Lifecycle sync
 

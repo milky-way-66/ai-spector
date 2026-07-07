@@ -13,6 +13,8 @@ describe("initDocopsContract", () => {
       expect(result.initialized).toBe(true);
       expect(result.config?.docTypes?.srs?.path).toBe("docs/srs");
       expect(result.config?.docTypes?.basicDesign?.path).toBe("docs/basic-design");
+      expect(result.config?.docTypes?.detailDesign?.enabled).toBe(false);
+      expect(result.config?.docTypes?.otherDocument?.enabled).toBe(false);
       expect(await pathExists(join(root, DOCOPS_CONFIG_REL))).toBe(true);
       expect(await pathExists(join(root, ".docops/review.config.json"))).toBe(true);
       expect(await pathExists(join(root, ".docops/review-queue/registry.json"))).toBe(true);
@@ -29,6 +31,8 @@ describe("initDocopsContract", () => {
       expect(await pathExists(join(root, ".docops/guide/examples/minimal-docops.config.json"))).toBe(true);
       const md = await countMarkdownInDir(join(root, ".docops/templates/srs"));
       expect(md).toBeGreaterThan(0);
+      const ddMd = await countMarkdownInDir(join(root, ".docops/templates/detail-design"));
+      expect(ddMd).toBeGreaterThan(0);
     });
   });
 

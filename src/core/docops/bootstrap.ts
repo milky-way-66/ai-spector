@@ -4,13 +4,14 @@ import { dirname, join, relative, resolve } from "node:path";
 import { packageBundleRoot } from "../config/load.js";
 import { pathExists, writeJson } from "../util/fs.js";
 import { resolveDocTypeRepoPath } from "./paths.js";
+import {
+  ALWAYS_BOOTSTRAP_TEMPLATE_LAYERS,
+  LAYER_DEFAULTS,
+  LAYER_TEMPLATE_SUBDIR,
+} from "./layer-defaults.js";
 import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
-const LAYER_TEMPLATE_SUBDIR: Record<string, string> = {
-  srs: "srs",
-  basicDesign: "basic-design",
-  detailDesign: "detail-design",
-};
+const LAYER_TEMPLATE_SUBDIR_LEGACY = LAYER_TEMPLATE_SUBDIR;
 
 /** Writer-owned bootstrap bundle (monorepo or packaged fallback). */
 export function resolveBootstrapRoot(): string {
@@ -200,9 +201,15 @@ export async function copyBootstrapTemplates(opts: {
   skipExisting: boolean;
   actions: string[];
 }): Promise<void> {
-  for (const [key, dt] of Object.entries(opts.docTypes)) {
-    const sub = LAYER_TEMPLATE_SUBDIR[key];
-    const templatesPath = dt.templatesPath?.trim();
+  const keys = new Set([
+    ...Object.keys(opts.docTypes),
+    ...ALWAYS_BOOTSTRAP_TEMPLATE_LAYERS,
+  ]);
+
+  for (const key of keys) {
+    const dt = opts.docTypes[key] ?? LAYER_DEFAULTS[key];
+    const sub = LAYER_TEMPLATE_SUBDIR_LEGACY[key];
+    const templatesPath = dt?.templatesPath?.trim();
     if (!sub || !templatesPath) continue;
     const srcDir = join(opts.bundleRoot, "templates", sub);
     await copyTreeFiles(srcDir, join(opts.projectRoot, templatesPath), (rel) => `${templatesPath}/${rel}`, opts);
@@ -240,6 +247,9 @@ export async function applyDocopsBootstrap(opts: {
     ...Object.values(docTypes)
       .filter((d) => d?.enabled !== false)
       .map((d) => d.templatesPath)
+      .filter((p): p is string => Boolean(p?.trim())),
+    ...[...ALWAYS_BOOTSTRAP_TEMPLATE_LAYERS]
+      .map((key) => docTypes[key]?.templatesPath ?? LAYER_DEFAULTS[key]?.templatesPath)
       .filter((p): p is string => Boolean(p?.trim())),
   ]);
 
