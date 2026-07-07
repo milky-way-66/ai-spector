@@ -165,7 +165,7 @@ export interface CommentsCreateOptions {
 export interface CommentsReplyOptions {
   root?: string;
   threadId: string;
-  filePath: string;
+  filePath?: string;
   body: string;
   entityId?: string;
   screenId?: string;
