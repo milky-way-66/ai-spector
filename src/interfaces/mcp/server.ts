@@ -1631,7 +1631,7 @@ server.registerTool(
   "contract_comments",
   {
     description:
-      "Grouped comment operations via action discriminator. Actions: list, inbox, show, resolve, facets, batch_plan, batch_resolve. Requires comments capability.",
+      "Grouped comment operations via action discriminator. Actions: list, inbox, show, resolve, facets, batch_plan, batch_resolve, create, reply. Requires comments capability.",
     inputSchema: ContractCommentsSchema.shape,
   },
   async (input) => {

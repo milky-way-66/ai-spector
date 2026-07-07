@@ -20,7 +20,11 @@ import {
   getThread,
   listThreads,
   resolveThread,
+  createThread,
+  addReply,
   type ResolveThreadResult,
+  type CreateThreadResult,
+  type AddReplyResult,
 } from "../comments/storage.js";
 import type { AnchorState, CommentType } from "../comments/types.js";
 import type { CommentInbox, CommentResolvePlan } from "../comments/inbox.js";
@@ -140,6 +144,36 @@ export interface CommentsBatchResolveResult {
   count: number;
   dryRun: boolean;
   commitMessageSuggestion: string;
+}
+
+export interface CommentsCreateOptions {
+  root?: string;
+  filePath: string;
+  body: string;
+  entityId?: string;
+  screenId?: string;
+  startLine?: number;
+  endLine?: number;
+  language?: string;
+  originBranch?: string;
+  authorBy?: string;
+  authorUsername?: string;
+  role?: "user" | "client";
+  dryRun?: boolean;
+}
+
+export interface CommentsReplyOptions {
+  root?: string;
+  threadId: string;
+  filePath: string;
+  body: string;
+  entityId?: string;
+  screenId?: string;
+  authorBy?: string;
+  authorUsername?: string;
+  role?: "user" | "client";
+  expectedVersion?: number;
+  dryRun?: boolean;
 }
 
 export interface CommentResolvePlanWithGuidance extends CommentResolvePlan {
@@ -333,4 +367,46 @@ export async function runCommentsBatchResolve(
     dryRun: opts.dryRun === true,
     commitMessageSuggestion,
   };
+}
+
+export async function runCommentsCreate(opts: CommentsCreateOptions): Promise<CreateThreadResult> {
+  const paths = await resolveProjectPaths(opts.root);
+  if (!opts.filePath?.trim() && !opts.entityId && !opts.screenId) {
+    throw new Error("filePath, entityId, or screenId is required");
+  }
+  return createThread({
+    projectRoot: paths.root,
+    logicalPath: opts.filePath,
+    body: opts.body,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
+    startLine: opts.startLine,
+    endLine: opts.endLine,
+    language: opts.language,
+    originBranch: opts.originBranch,
+    authorBy: opts.authorBy,
+    authorUsername: opts.authorUsername,
+    role: opts.role,
+    dryRun: opts.dryRun,
+  });
+}
+
+export async function runCommentsReply(opts: CommentsReplyOptions): Promise<AddReplyResult> {
+  const paths = await resolveProjectPaths(opts.root);
+  if (!opts.filePath?.trim() && !opts.entityId && !opts.screenId) {
+    throw new Error("filePath, entityId, or screenId is required");
+  }
+  return addReply({
+    projectRoot: paths.root,
+    logicalPath: opts.filePath,
+    threadId: opts.threadId,
+    body: opts.body,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
+    authorBy: opts.authorBy,
+    authorUsername: opts.authorUsername,
+    role: opts.role,
+    expectedVersion: opts.expectedVersion,
+    dryRun: opts.dryRun,
+  });
 }

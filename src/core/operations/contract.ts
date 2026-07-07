@@ -25,6 +25,8 @@ import {
   runCommentsBatchResolve,
   runCommentsShow,
   runCommentsResolve,
+  runCommentsCreate,
+  runCommentsReply,
   toCommentListFilters,
 } from "./comments.js";
 import {
@@ -70,11 +72,18 @@ export interface ContractCommentsInput {
   picks?: string[];
   phrase?: string;
   threadId?: string;
+  entityId?: string;
+  screenId?: string;
   by?: string;
   username?: string;
   role?: "user" | "client";
   resolvedBy?: string;
   dryRun?: boolean;
+  body?: string;
+  startLine?: number;
+  endLine?: number;
+  language?: string;
+  expectedVersion?: number;
 }
 
 export interface ContractPrototypeInput {
@@ -299,9 +308,41 @@ export async function dispatchContractComments(input: ContractCommentsInput): Pr
         dryRun: input.dryRun,
       });
 
+    case "create":
+      return runCommentsCreate({
+        root: input.root,
+        filePath: input.filePath!,
+        body: input.body!,
+        entityId: input.entityId,
+        screenId: input.screenId,
+        startLine: input.startLine,
+        endLine: input.endLine,
+        language: input.language,
+        originBranch: input.originBranch,
+        authorBy: input.by ?? input.resolvedBy,
+        authorUsername: input.username,
+        role: input.role,
+        dryRun: input.dryRun,
+      });
+
+    case "reply":
+      return runCommentsReply({
+        root: input.root,
+        threadId: input.threadId!,
+        filePath: input.filePath!,
+        body: input.body!,
+        entityId: input.entityId,
+        screenId: input.screenId,
+        authorBy: input.by ?? input.resolvedBy,
+        authorUsername: input.username,
+        role: input.role,
+        expectedVersion: input.expectedVersion,
+        dryRun: input.dryRun,
+      });
+
     default:
       throw new Error(
-        `contract_comments: unknown action "${action}". Valid actions: list, inbox, show, resolve, facets, batch_plan, batch_resolve`,
+        `contract_comments: unknown action "${action}". Valid actions: list, inbox, show, resolve, facets, batch_plan, batch_resolve, create, reply`,
       );
   }
 }

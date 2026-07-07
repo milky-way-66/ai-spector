@@ -5,7 +5,11 @@ import type {
   CommentsListResult,
 } from "@/core/operations/comments.js";
 import type { CommentInbox, CommentResolvePlan } from "@/core/comments/inbox.js";
-import type { ResolveThreadResult } from "@/core/comments/storage.js";
+import type {
+  ResolveThreadResult,
+  CreateThreadResult,
+  AddReplyResult,
+} from "@/core/comments/storage.js";
 import { formatInboxForChat, formatPlanForChat } from "@/core/comments/inbox.js";
 import { formatThreadListText } from "@/core/comments/storage.js";
 import {
@@ -79,6 +83,35 @@ export function formatCommentsResolve(result: ResolveThreadResult, threadId: str
   } else {
     lines.push(`Updated: comments/${result.thread.filePath}/${threadId}/meta_data.json`);
     lines.push(`Appended: comments/${result.thread.filePath}/${threadId}/events.jsonl`);
+  }
+  return lines.join("\n");
+}
+
+export function formatCommentsCreate(result: CreateThreadResult): string {
+  const prefix = result.dryRun ? "[dry-run] " : "";
+  const lines = [
+    `${prefix}Created thread ${result.thread.threadId} on ${result.thread.filePath}`,
+    `Comment: ${result.comment.body}`,
+    `Suggested commit message: ${result.commitMessageSuggestion}`,
+  ];
+  if (result.dryRun) {
+    lines.push("No files written (--dry-run).");
+  } else {
+    lines.push(`Thread dir: comments/${result.thread.filePath}/${result.thread.threadId}/`);
+  }
+  return lines.join("\n");
+}
+
+export function formatCommentsReply(result: AddReplyResult, threadId: string): string {
+  const prefix = result.dryRun ? "[dry-run] " : "";
+  const lines = [
+    `${prefix}Replied on thread ${threadId} (${result.thread.filePath})`,
+    `Reply: ${result.comment.body}`,
+    `Thread version: v${result.thread.version}`,
+    `Suggested commit message: ${result.commitMessageSuggestion}`,
+  ];
+  if (result.dryRun) {
+    lines.push("No files written (--dry-run).");
   }
   return lines.join("\n");
 }

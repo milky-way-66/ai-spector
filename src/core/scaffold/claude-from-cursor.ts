@@ -361,7 +361,7 @@ ${afterDocEdit}
 | \`context_list\` / \`context_record\` / \`context_resolve\` | Clarification store |
 | \`spec_list\` / \`spec_record\` / \`spec_approve\` / \`spec_reject\` | Extracted-spec review queue |
 | \`contract_review({ action, logicalPath, by? })\` | Document review: check/status/approve/decline/close/reject |
-| \`contract_comments({ action, ... })\` | Comment threads: inbox/show/resolve/batch_plan/batch_resolve |
+| \`contract_comments({ action, ... })\` | Comment threads: inbox/show/create/reply/resolve/batch_plan/batch_resolve |
 | \`contract_translate({ action, ... })\` | Translation queue: list/fail/retry |
 | \`review_begin\` / \`review_check\` / \`review_queue\` / \`review_status\` | Document review workflow (votes + quorum in status) |
 | \`review_session_ack_review\` | Ack review summary written (unlocks approve gate) |

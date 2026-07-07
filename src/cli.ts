@@ -75,6 +75,8 @@ import {
   formatCommentsFacets,
   formatCommentsBatchPlan,
   formatCommentsBatchResolve,
+  formatCommentsCreate,
+  formatCommentsReply,
 } from "./interfaces/cli/format/comments.js";
 import {
   formatSyncClaude,
@@ -100,6 +102,8 @@ import {
   runCommentsPlan,
   runCommentsResolve,
   runCommentsShow,
+  runCommentsCreate,
+  runCommentsReply,
   type CommentFilterOptions,
 } from "./core/operations/comments.js";
 import { runProvenanceLink } from "./core/graph/provenance.js";
@@ -1140,6 +1144,81 @@ comments
     });
     if (opts.json) console.log(JSON.stringify(thread, null, 2));
     else console.log(formatCommentsShow(thread));
+  });
+
+comments
+  .command("create")
+  .description("Create a new document comment thread under comments/")
+  .requiredOption("--body <text>", "Comment body")
+  .option("--file <path>", "Logical file path (e.g. srs/01-overview)")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--start-line <n>", "Anchor start line", (v) => Number(v))
+  .option("--end-line <n>", "Anchor end line", (v) => Number(v))
+  .option("--language <code>", "Anchor language code", "EN")
+  .option("--branch <name>", "originBranch (defaults to current git branch)")
+  .option("--by <email>", "Author email override (default: git user.email)")
+  .option("--username <name>", "Author name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
+  .option("--dry-run", "Preview create without writing files")
+  .option("--json", "JSON output for agents")
+  .action(async (opts, cmd) => {
+    if (!opts.file && !opts.entity) {
+      console.error("Provide --file or --entity");
+      process.exitCode = 1;
+      return;
+    }
+    const result = await runCommentsCreate({
+      root: projectRootOpt(cmd),
+      filePath: opts.file ?? "",
+      entityId: opts.entity,
+      body: opts.body,
+      startLine: opts.startLine,
+      endLine: opts.endLine,
+      language: opts.language,
+      originBranch: opts.branch,
+      authorBy: opts.by,
+      authorUsername: opts.username,
+      role: opts.role,
+      dryRun: opts.dryRun,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsCreate(result));
+  });
+
+comments
+  .command("reply <threadId>")
+  .description("Reply to an open comment thread")
+  .requiredOption("--body <text>", "Reply body")
+  .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--entity <uuid>", "Document registry entityId")
+  .option("--screen-id <id>", "Prototype screenId")
+  .option("--by <email>", "Author email override (default: git user.email)")
+  .option("--username <name>", "Author name override (default: git user.name)")
+  .option("--role <role>", "Actor role: user | client (default: user)")
+  .option("--expected-version <n>", "Optimistic lock on meta_data.json version", (v) => Number(v))
+  .option("--dry-run", "Preview reply without writing files")
+  .option("--json", "JSON output for agents")
+  .action(async (threadId: string, opts, cmd) => {
+    if (!opts.file && !opts.entity && !opts.screenId) {
+      console.error("Provide --entity, --screen-id, or --file");
+      process.exitCode = 1;
+      return;
+    }
+    const result = await runCommentsReply({
+      root: projectRootOpt(cmd),
+      threadId,
+      filePath: opts.file ?? "",
+      entityId: opts.entity,
+      screenId: opts.screenId,
+      body: opts.body,
+      authorBy: opts.by,
+      authorUsername: opts.username,
+      role: opts.role,
+      expectedVersion: opts.expectedVersion,
+      dryRun: opts.dryRun,
+    });
+    if (opts.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(formatCommentsReply(result, threadId));
   });
 
 comments

@@ -11,7 +11,10 @@ import {
   getThread,
   listThreads,
   resolveThread,
+  createThread,
+  addReply,
 } from "@/core/comments/storage.js";
+import { generateTimestampUuid, threadRootCommentId } from "@/core/comments/ids.js";
 import { writeJson } from "@/core/util/fs.js";
 import { withTempProject } from "../helpers/temp-project.js";
 
@@ -131,5 +134,67 @@ describe("comment storage", () => {
         }),
       ).rejects.toThrow(/Stale thread version/);
     });
+  });
+
+  it("creates a document comment thread locally", async () => {
+    await withTempProject(async (root) => {
+      await mkdir(join(root, "docs/srs"), { recursive: true });
+      await writeFile(
+        join(root, "docs/srs/01-overview.md"),
+        "# Overview\n\nThe system shall provide authentication.\n",
+        "utf8",
+      );
+
+      const created = await createThread({
+        projectRoot: root,
+        logicalPath: "srs/01-overview",
+        body: "Please clarify authentication scope.",
+        startLine: 3,
+        endLine: 3,
+        authorBy: "reviewer@example.com",
+        originBranch: "main",
+      });
+
+      expect(created.thread.status).toBe("open");
+      expect(created.thread.version).toBe(1);
+      expect(created.comment.body).toContain("authentication");
+      expect(created.thread.comments).toHaveLength(1);
+
+      const listed = await listThreads({ projectRoot: root, status: "open" });
+      expect(listed).toHaveLength(1);
+      expect(listed[0]?.threadId).toBe(created.thread.threadId);
+    });
+  });
+
+  it("adds a reply to an open thread", async () => {
+    await withTempProject(async (root) => {
+      await seedThread(root);
+
+      const replied = await addReply({
+        projectRoot: root,
+        logicalPath: "srs/01-overview",
+        threadId: SAMPLE_META.threadId,
+        body: "Will update in the next revision.",
+        authorBy: "author@example.com",
+        expectedVersion: 1,
+      });
+
+      expect(replied.thread.version).toBe(2);
+      expect(replied.thread.comments).toHaveLength(2);
+      expect(replied.comment.parentCommentId).toBe(
+        threadRootCommentId(replied.thread.comments),
+      );
+
+      const detail = await getThread(root, "srs/01-overview", SAMPLE_META.threadId);
+      expect(detail?.comments).toHaveLength(2);
+      expect(detail?.events.some((e) => e.type === "reply_added")).toBe(true);
+    });
+  });
+});
+
+describe("comment ids", () => {
+  it("generates timestamp uuid ids", () => {
+    const id = generateTimestampUuid(new Date("2026-05-30T14:30:22.000Z"));
+    expect(id).toMatch(/^20260530T143022Z_[0-9a-f-]{36}$/i);
   });
 });

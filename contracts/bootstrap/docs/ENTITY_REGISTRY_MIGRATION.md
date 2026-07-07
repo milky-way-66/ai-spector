@@ -74,6 +74,7 @@ bash .docops/guide/scripts/migrate-entity-registry.sh
 - Moves `comments/{path}/` → `comments/documents/{entityId}/` or `comments/screens/{screenId}/`
 - Backfills `meta_data.json`: `targetId`, `commentType`; drops redundant `filePath` from storage shape
 - **Requires** registry from step 2a so paths resolve to entity IDs
+- **Detail:** [guides/COMMENTS_ENTITY_MIGRATION.md](guides/COMMENTS_ENTITY_MIGRATION.md)
 
 ### Step 2c — `review-registry migrate`
 

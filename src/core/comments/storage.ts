@@ -35,6 +35,8 @@ import {
   threadCommentType,
 } from "./types.js";
 import { resolveAuditActor } from "../util/audit-actor.js";
+import { generateTimestampUuid, threadRootCommentId } from "./ids.js";
+import { readDocAnchorContext } from "./anchor.js";
 
 const exec = promisify(execFile);
 
@@ -78,6 +80,50 @@ export interface ResolveThreadOptions {
 
 export interface ResolveThreadResult {
   thread: ThreadSummary;
+  commitMessageSuggestion: string;
+  dryRun: boolean;
+}
+
+export interface CreateThreadOptions {
+  projectRoot: string;
+  logicalPath: string;
+  body: string;
+  entityId?: string;
+  screenId?: string;
+  startLine?: number;
+  endLine?: number;
+  language?: string;
+  originBranch?: string;
+  authorBy?: string;
+  authorUsername?: string;
+  role?: "user" | "client";
+  dryRun?: boolean;
+}
+
+export interface CreateThreadResult {
+  thread: ThreadDetail;
+  comment: CommentBody;
+  commitMessageSuggestion: string;
+  dryRun: boolean;
+}
+
+export interface AddReplyOptions {
+  projectRoot: string;
+  logicalPath: string;
+  threadId: string;
+  body: string;
+  entityId?: string;
+  screenId?: string;
+  authorBy?: string;
+  authorUsername?: string;
+  role?: "user" | "client";
+  expectedVersion?: number;
+  dryRun?: boolean;
+}
+
+export interface AddReplyResult {
+  thread: ThreadDetail;
+  comment: CommentBody;
   commitMessageSuggestion: string;
   dryRun: boolean;
 }
@@ -466,6 +512,258 @@ export async function getGitHeadSha(projectRoot: string): Promise<string | null>
   } catch {
     return null;
   }
+}
+
+export async function getGitBranchName(projectRoot: string): Promise<string | null> {
+  try {
+    const { stdout } = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+      cwd: projectRoot,
+      encoding: "utf8",
+    });
+    const branch = stdout.trim();
+    return branch && branch !== "HEAD" ? branch : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createThread(opts: CreateThreadOptions): Promise<CreateThreadResult> {
+  const body = opts.body.trim();
+  if (!body) {
+    throw new Error("Comment body is required.");
+  }
+
+  const location = await resolveCommentListLocation(opts.projectRoot, {
+    filePath: opts.logicalPath,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
+  });
+  if (!location) {
+    throw new Error(
+      `Cannot resolve comment location for: ${opts.logicalPath || opts.entityId || opts.screenId}`,
+    );
+  }
+
+  const config = await loadOrDeriveDocopsConfig(opts.projectRoot);
+  const commentsRoot = config.paths.comments;
+  const anchorFilePath = normalizeLogicalPath(opts.logicalPath);
+  const startLine = Math.max(1, opts.startLine ?? 1);
+  const endLine = Math.max(startLine, opts.endLine ?? startLine);
+  const language = (opts.language ?? "EN").trim() || "EN";
+  const originBranch =
+    opts.originBranch?.trim() || (await getGitBranchName(opts.projectRoot)) || "main";
+  const baseCommitSha = (await getGitHeadSha(opts.projectRoot)) ?? "unknown";
+
+  const anchorContext = await readDocAnchorContext(
+    opts.projectRoot,
+    anchorFilePath,
+    startLine,
+    endLine,
+  );
+  const lineExcerpt =
+    anchorContext?.anchoredText.trim().slice(0, 500) ||
+    `lines ${startLine}-${endLine}`;
+
+  const now = new Date().toISOString();
+  const threadId = generateTimestampUuid(new Date(now));
+  const commentId = generateTimestampUuid(new Date(now));
+  const actor = await resolveAuditActor(opts.projectRoot, {
+    by: opts.authorBy,
+    username: opts.authorUsername,
+    role: opts.role,
+  });
+
+  const anchor = {
+    branchName: originBranch,
+    baseCommitSha,
+    filePath: anchorFilePath,
+    language,
+    startLine,
+    endLine,
+    lineExcerpt,
+    anchorState: "active" as const,
+  };
+
+  const meta: ThreadMeta = {
+    threadId,
+    targetId: location.targetId,
+    filePath: anchorFilePath,
+    commentType: "document",
+    originBranch,
+    status: "open",
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: actor.by,
+    resolvedAt: null,
+    resolvedBy: null,
+    resolvedInCommitSha: null,
+    anchor,
+  };
+
+  const comment: CommentBody = {
+    commentId,
+    threadId,
+    body,
+    authorId: actor.by,
+    createdAt: now,
+    parentCommentId: null,
+    editedAt: null,
+    deletedAt: null,
+  };
+
+  const event: CommentEvent = {
+    at: now,
+    type: "thread_created",
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+  };
+
+  const threadDir = join(
+    opts.projectRoot,
+    threadDirForLocation(location, threadId, commentsRoot),
+  );
+  const metaPath = join(threadDir, "meta_data.json");
+  const commentPath = join(threadDir, commentId);
+  const eventsPath = join(threadDir, "events.jsonl");
+  const commitMessageSuggestion = `comments: create thread ${threadId} on ${anchorFilePath}`;
+
+  if (!opts.dryRun) {
+    await mkdir(threadDir, { recursive: true });
+    await writeJson(metaPath, meta);
+    await writeJson(commentPath, comment);
+    await writeFile(eventsPath, `${JSON.stringify(event)}\n`, "utf8");
+  }
+
+  const summary = toSummary(opts.projectRoot, location, meta, 1, commentsRoot);
+  const detail: ThreadDetail = {
+    ...summary,
+    comments: opts.dryRun ? [comment] : (await getThreadAtLocation(opts.projectRoot, location, threadId))?.comments ?? [comment],
+    events: opts.dryRun ? [event] : (await getThreadAtLocation(opts.projectRoot, location, threadId))?.events ?? [event],
+  };
+
+  return {
+    thread: detail,
+    comment,
+    commitMessageSuggestion,
+    dryRun: opts.dryRun === true,
+  };
+}
+
+export async function addReply(opts: AddReplyOptions): Promise<AddReplyResult> {
+  const body = opts.body.trim();
+  if (!body) {
+    throw new Error("Reply body is required.");
+  }
+
+  const location = await resolveCommentListLocation(opts.projectRoot, {
+    filePath: opts.logicalPath,
+    entityId: opts.entityId,
+    screenId: opts.screenId,
+  });
+  if (!location) {
+    throw new Error(
+      `Cannot resolve comment location for: ${opts.logicalPath || opts.entityId || opts.screenId}`,
+    );
+  }
+
+  const config = await loadOrDeriveDocopsConfig(opts.projectRoot);
+  const commentsRoot = config.paths.comments;
+  const metaPath = join(
+    opts.projectRoot,
+    threadMetaForLocation(location, opts.threadId, commentsRoot),
+  );
+  if (!(await pathExists(metaPath))) {
+    throw new Error(`Thread not found: ${opts.threadId}`);
+  }
+
+  const meta = await readJson<ThreadMeta>(metaPath);
+  if (meta.status === "resolved") {
+    throw new Error(`Thread ${opts.threadId} is resolved — reopen before replying.`);
+  }
+  if (opts.expectedVersion != null && meta.version !== opts.expectedVersion) {
+    throw new Error(
+      `Stale thread version: expected ${opts.expectedVersion}, found ${meta.version}. Re-read meta_data.json and retry.`,
+    );
+  }
+
+  const threadDir = join(
+    opts.projectRoot,
+    threadDirForLocation(location, opts.threadId, commentsRoot),
+  );
+  const existingComments = await loadCommentBodies(threadDir);
+  const rootId = threadRootCommentId(existingComments);
+  if (!rootId) {
+    throw new Error(`Cannot reply on thread ${opts.threadId} with no root comment.`);
+  }
+
+  const now = new Date().toISOString();
+  const commentId = generateTimestampUuid(new Date(now));
+  const actor = await resolveAuditActor(opts.projectRoot, {
+    by: opts.authorBy,
+    username: opts.authorUsername,
+    role: opts.role,
+  });
+
+  const comment: CommentBody = {
+    commentId,
+    threadId: opts.threadId,
+    body,
+    authorId: actor.by,
+    createdAt: now,
+    parentCommentId: rootId,
+    editedAt: null,
+    deletedAt: null,
+  };
+
+  const updatedMeta: ThreadMeta = {
+    ...meta,
+    version: meta.version + 1,
+    updatedAt: now,
+  };
+
+  const event: CommentEvent = {
+    at: now,
+    type: "reply_added",
+    commentId,
+    by: actor.by,
+    username: actor.username,
+    role: actor.role,
+  };
+
+  const commentPath = join(threadDir, commentId);
+  const eventsPath = join(threadDir, "events.jsonl");
+  const commitMessageSuggestion = `comments: reply on thread ${opts.threadId} (${meta.filePath})`;
+
+  if (!opts.dryRun) {
+    await writeJson(metaPath, updatedMeta);
+    await writeJson(commentPath, comment);
+    const line = `${JSON.stringify(event)}\n`;
+    if (await pathExists(eventsPath)) {
+      await writeFile(eventsPath, line, { flag: "a" });
+    } else {
+      await writeFile(eventsPath, line, "utf8");
+    }
+  }
+
+  const replyCount = existingComments.length + 1;
+  const summary = toSummary(opts.projectRoot, location, updatedMeta, replyCount, commentsRoot);
+  const loaded = opts.dryRun
+    ? null
+    : await getThreadAtLocation(opts.projectRoot, location, opts.threadId);
+  const detail: ThreadDetail = loaded ?? {
+    ...summary,
+    comments: [...existingComments, comment],
+    events: [...(await readEvents(eventsPath)), event],
+  };
+
+  return {
+    thread: detail,
+    comment,
+    commitMessageSuggestion,
+    dryRun: opts.dryRun === true,
+  };
 }
 
 /** First non-deleted comment body per thread (for inbox previews). */

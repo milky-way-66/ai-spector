@@ -1132,7 +1132,17 @@ export const ContractReviewSchema = RootSchema.extend({
 
 export const ContractCommentsSchema = RootSchema.extend({
   action: z
-    .enum(["list", "inbox", "show", "resolve", "facets", "batch_plan", "batch_resolve"])
+    .enum([
+      "list",
+      "inbox",
+      "show",
+      "resolve",
+      "facets",
+      "batch_plan",
+      "batch_resolve",
+      "create",
+      "reply",
+    ])
     .describe("Comment operation to perform"),
   filePath: z
     .string()
@@ -1157,7 +1167,19 @@ export const ContractCommentsSchema = RootSchema.extend({
     .boolean()
     .optional()
     .describe("Add B-00N batch rows grouped by prototype screen"),
-  threadId: z.string().optional().describe("Comment thread id (required for show/resolve)"),
+  threadId: z.string().optional().describe("Comment thread id (required for show/resolve/reply)"),
+  entityId: z.string().optional().describe("Document registry entityId"),
+  screenId: z.string().optional().describe("Prototype screenId"),
+  body: z.string().optional().describe("Comment or reply body (required for create/reply)"),
+  startLine: z.number().int().min(1).optional().describe("Document anchor start line (create)"),
+  endLine: z.number().int().min(1).optional().describe("Document anchor end line (create)"),
+  language: z.string().optional().describe("Document anchor language code (create, default EN)"),
+  expectedVersion: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe("Optimistic lock on meta_data.json version (reply)"),
   ...AuditActorOverrideSchema,
   resolvedBy: z.string().optional().describe("Deprecated alias for by"),
   dryRun: z.boolean().optional().describe("Preview resolution without writing"),
