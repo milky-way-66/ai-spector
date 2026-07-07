@@ -10,6 +10,7 @@ import { applyDocopsBootstrap } from "./bootstrap.js";
 import { migrateRootDataSourceToCanonical } from "./data-source-path.js";
 import { bootstrapEntityRegistry } from "./entity-keying.js";
 import { buildDocTypesFromLayers } from "./layer-defaults.js";
+import type { DocopsConfig } from "./types.js";
 
 function parseLanguages(codes?: string[]): Array<{ code: string; label: string; path: string }> {
   const list = (codes?.length ? codes : ["en"]).map((c) => c.trim().toLowerCase()).filter(Boolean);
