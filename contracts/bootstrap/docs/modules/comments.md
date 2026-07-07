@@ -47,13 +47,22 @@ npx ai-spector comments list --entity <uuid> --json
 # Create and reply (document comments)
 npx ai-spector comments create --file srs/01-overview --body "Please clarify" --start-line 12 --end-line 14
 npx ai-spector comments create --entity <uuid> --body "Please clarify" --start-line 12 --end-line 14
+npx ai-spector comments reply <threadId> --body "Updated in next revision"
 npx ai-spector comments reply <threadId> --entity <uuid> --body "Updated in next revision"
 
 # Resolve
 npx ai-spector comments resolve <threadId> --entity <uuid>
 ```
 
+**Reply scope:** `threadId` alone is enough when the thread is unique under `.docops/comments/`. For entity-layout storage (`comments/documents/{entityId}/`), `--file` resolves to the legacy path and may fail — prefer `threadId` only, or pass `--entity <targetId>` from `comments show` / `comments list` (`targetId` field).
+
 **MCP:** `contract_comments({ action: "create" | "reply" | "list" | "inbox" | "show" | "resolve", ... })`
+
+| Action | Required fields | Notes |
+|--------|-----------------|-------|
+| `reply` | `threadId`, `body` | Pass `entityId` from show/list when scope is ambiguous |
+| `create` | `body`, plus `entityId` or `filePath` | Document anchor: `startLine` / `endLine` |
+| `show` | `threadId` | Optional `entityId` / `filePath`; returns `targetId` for reply |
 
 ## Custom adapter
 

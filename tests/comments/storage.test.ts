@@ -190,6 +190,49 @@ describe("comment storage", () => {
       expect(detail?.events.some((e) => e.type === "reply_added")).toBe(true);
     });
   });
+
+  it("replies by threadId only when thread is under documents/{entityId}", async () => {
+    await withTempProject(async (root) => {
+      const entityId = "5472f92a-893a-4bb5-9565-c1230eee8533";
+      const threadId = SAMPLE_META.threadId;
+      const dir = join(root, ".docops/comments/documents", entityId, threadId);
+      await mkdir(dir, { recursive: true });
+      await writeJson(join(dir, "meta_data.json"), {
+        ...SAMPLE_META,
+        targetId: entityId,
+        commentType: "document",
+        filePath: "basic-design/en/screens/SCR-MGR-09-checklist-editor",
+      });
+      await writeJson(join(dir, "20260530T143045Z_e5f67890-abcd-ef12-3456-7890abcdef12"), {
+        commentId: "20260530T143045Z_e5f67890-abcd-ef12-3456-7890abcdef12",
+        threadId,
+        body: "Please clarify this requirement.",
+        authorId: 42,
+        createdAt: "2026-05-30T14:30:45Z",
+        parentCommentId: null,
+        editedAt: null,
+        deletedAt: null,
+      });
+
+      const byIdOnly = await addReply({
+        projectRoot: root,
+        threadId,
+        body: "Reply without scope flags.",
+        authorBy: "long.contact@icloud.com",
+      });
+      expect(byIdOnly.thread.version).toBe(2);
+      expect(byIdOnly.comment.authorId).toBe("long.contact@icloud.com");
+
+      const withWrongFile = await addReply({
+        projectRoot: root,
+        logicalPath: "basic-design/en/screens/SCR-MGR-09-checklist-editor",
+        threadId,
+        body: "Second reply — file path alone is not enough for entity layout.",
+        expectedVersion: 2,
+      });
+      expect(withWrongFile.thread.version).toBe(3);
+    });
+  });
 });
 
 describe("comment ids", () => {

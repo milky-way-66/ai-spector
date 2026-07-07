@@ -1189,7 +1189,7 @@ comments
   .command("reply <threadId>")
   .description("Reply to an open comment thread")
   .requiredOption("--body <text>", "Reply body")
-  .option("--file <path>", "Logical file path when thread id alone is ambiguous")
+  .option("--file <path>", "Logical file path filter (optional when threadId is unique)")
   .option("--entity <uuid>", "Document registry entityId")
   .option("--screen-id <id>", "Prototype screenId")
   .option("--by <email>", "Author email override (default: git user.email)")
@@ -1199,15 +1199,10 @@ comments
   .option("--dry-run", "Preview reply without writing files")
   .option("--json", "JSON output for agents")
   .action(async (threadId: string, opts, cmd) => {
-    if (!opts.file && !opts.entity && !opts.screenId) {
-      console.error("Provide --entity, --screen-id, or --file");
-      process.exitCode = 1;
-      return;
-    }
     const result = await runCommentsReply({
       root: projectRootOpt(cmd),
       threadId,
-      filePath: opts.file ?? "",
+      filePath: opts.file ?? undefined,
       entityId: opts.entity,
       screenId: opts.screenId,
       body: opts.body,

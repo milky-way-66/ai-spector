@@ -393,12 +393,9 @@ export async function runCommentsCreate(opts: CommentsCreateOptions): Promise<Cr
 
 export async function runCommentsReply(opts: CommentsReplyOptions): Promise<AddReplyResult> {
   const paths = await resolveProjectPaths(opts.root);
-  if (!opts.filePath?.trim() && !opts.entityId && !opts.screenId) {
-    throw new Error("filePath, entityId, or screenId is required");
-  }
   return addReply({
     projectRoot: paths.root,
-    logicalPath: opts.filePath,
+    logicalPath: opts.filePath?.trim() || undefined,
     threadId: opts.threadId,
     body: opts.body,
     entityId: opts.entityId,

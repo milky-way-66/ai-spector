@@ -174,7 +174,7 @@ Create/reply resolve storage location via registry: when `entityId` is known, th
 | Warning: `No registry target for thread …` | Doc not in registry (wrong path, missing file) | Add/fix markdown under `docs/`; re-run `registry sync` |
 | Destination exists, thread skipped | Duplicate thread id under target | Inspect both folders; merge manually or remove duplicate |
 | Comments visible in CLI but not Writer | Writer `storage_layout` still `legacy` | Project Settings → Docops → `storage_layout: docops` |
-| Prototype threads not moved | Screen not in registry | Run `registry sync` (imports screen-map) or add `registry/screens/*.json` |
+| Thread not found on reply with `--file` | Entity-layout storage (`documents/{entityId}/`) | Use `comments reply <threadId> --body "..."` only, or `--entity <targetId>` from show/list |
 
 ---
 

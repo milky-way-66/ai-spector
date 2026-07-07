@@ -329,7 +329,7 @@ export async function dispatchContractComments(input: ContractCommentsInput): Pr
       return runCommentsReply({
         root: input.root,
         threadId: input.threadId!,
-        filePath: input.filePath!,
+        filePath: input.filePath,
         body: input.body!,
         entityId: input.entityId,
         screenId: input.screenId,

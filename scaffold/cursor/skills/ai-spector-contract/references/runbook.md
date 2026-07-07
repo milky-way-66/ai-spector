@@ -79,7 +79,12 @@ Storage: git-only (`meta_data.json` + `events.jsonl`). No Writer API.
 |-----------|----------|--------------|
 | Thread inbox | `contract_comments({ action: "inbox" })` | `npx ai-spector comments inbox --json` |
 | Thread plan | `contract_comments({ action: "show", pickId: "C-001" })` | `npx ai-spector comments plan C-001 --json` |
-| Resolve thread | `contract_comments({ action: "resolve", threadId, file, expectedVersion })` | `npx ai-spector comments resolve <threadId> --file <path>` |
+| Show thread | `contract_comments({ action: "show", threadId })` | `npx ai-spector comments show <threadId> --json` |
+| Reply | `contract_comments({ action: "reply", threadId, body })` | `npx ai-spector comments reply <threadId> --body "..." --json` |
+| Create thread | `contract_comments({ action: "create", body, entityId \| filePath, startLine, endLine })` | `npx ai-spector comments create --entity <uuid> --body "..."` |
+| Resolve thread | `contract_comments({ action: "resolve", threadId, entityId, expectedVersion })` | `npx ai-spector comments resolve <threadId> --entity <uuid>` |
+
+**Reply:** `threadId` + `body` is enough when the thread is unique. Entity-layout threads live under `comments/documents/{entityId}/` — use `targetId` from `show`/`list` as `entityId` when needed; do not rely on `--file` alone after migration.
 
 ### Phases
 

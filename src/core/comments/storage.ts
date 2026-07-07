@@ -109,7 +109,8 @@ export interface CreateThreadResult {
 
 export interface AddReplyOptions {
   projectRoot: string;
-  logicalPath: string;
+  /** Optional when threadId is globally unique under comments/. */
+  logicalPath?: string;
   threadId: string;
   body: string;
   entityId?: string;
@@ -651,32 +652,103 @@ export async function createThread(opts: CreateThreadOptions): Promise<CreateThr
   };
 }
 
+interface ResolvedThreadStorage {
+  location: CommentStorageLocation;
+  commentsRoot: string;
+  metaPath: string;
+  threadDir: string;
+}
+
+async function resolveThreadStorageForMutation(
+  projectRoot: string,
+  threadId: string,
+  scope: {
+    logicalPath?: string;
+    entityId?: string;
+    screenId?: string;
+  },
+): Promise<ResolvedThreadStorage> {
+  const config = await loadOrDeriveDocopsConfig(projectRoot);
+  const defaultCommentsRoot = config.paths.comments;
+  const hasScope = Boolean(
+    scope.entityId?.trim() || scope.screenId?.trim() || scope.logicalPath?.trim(),
+  );
+
+  if (hasScope) {
+    const location = await resolveCommentListLocation(projectRoot, {
+      entityId: scope.entityId,
+      screenId: scope.screenId,
+      filePath: scope.logicalPath,
+    });
+    if (location) {
+      const metaPath = join(
+        projectRoot,
+        threadMetaForLocation(location, threadId, defaultCommentsRoot),
+      );
+      if (await pathExists(metaPath)) {
+        return {
+          location,
+          commentsRoot: defaultCommentsRoot,
+          metaPath,
+          threadDir: join(
+            projectRoot,
+            threadDirForLocation(location, threadId, defaultCommentsRoot),
+          ),
+        };
+      }
+    }
+  }
+
+  const discovered = await discoverThreadMetas(projectRoot);
+  const match = discovered.find((d) => d.threadId === threadId);
+  if (match) {
+    return {
+      location: match.location,
+      commentsRoot: match.commentsRoot,
+      metaPath: match.metaPath,
+      threadDir: join(
+        projectRoot,
+        threadDirForLocation(match.location, threadId, match.commentsRoot),
+      ),
+    };
+  }
+
+  if (hasScope) {
+    const location = await resolveCommentListLocation(projectRoot, {
+      entityId: scope.entityId,
+      screenId: scope.screenId,
+      filePath: scope.logicalPath,
+    });
+    const attempted = location
+      ? threadMetaForLocation(location, threadId, defaultCommentsRoot)
+      : scope.logicalPath || scope.entityId || scope.screenId;
+    throw new Error(
+      `Thread not found: ${threadId} (looked under ${attempted}). ` +
+        `Entity-layout threads live under comments/documents/{entityId}/ — pass ` +
+        `--entity <targetId> from comments show/list, or omit scope flags and pass only threadId.`,
+    );
+  }
+
+  throw new Error(
+    `Thread not found: ${threadId}. Run comments show with threadId, or pass --entity <targetId> from list/show.`,
+  );
+}
+
 export async function addReply(opts: AddReplyOptions): Promise<AddReplyResult> {
   const body = opts.body.trim();
   if (!body) {
     throw new Error("Reply body is required.");
   }
 
-  const location = await resolveCommentListLocation(opts.projectRoot, {
-    filePath: opts.logicalPath,
-    entityId: opts.entityId,
-    screenId: opts.screenId,
-  });
-  if (!location) {
-    throw new Error(
-      `Cannot resolve comment location for: ${opts.logicalPath || opts.entityId || opts.screenId}`,
-    );
-  }
-
-  const config = await loadOrDeriveDocopsConfig(opts.projectRoot);
-  const commentsRoot = config.paths.comments;
-  const metaPath = join(
+  const { location, commentsRoot, metaPath, threadDir } = await resolveThreadStorageForMutation(
     opts.projectRoot,
-    threadMetaForLocation(location, opts.threadId, commentsRoot),
+    opts.threadId,
+    {
+      logicalPath: opts.logicalPath,
+      entityId: opts.entityId,
+      screenId: opts.screenId,
+    },
   );
-  if (!(await pathExists(metaPath))) {
-    throw new Error(`Thread not found: ${opts.threadId}`);
-  }
 
   const meta = await readJson<ThreadMeta>(metaPath);
   if (meta.status === "resolved") {
@@ -688,10 +760,6 @@ export async function addReply(opts: AddReplyOptions): Promise<AddReplyResult> {
     );
   }
 
-  const threadDir = join(
-    opts.projectRoot,
-    threadDirForLocation(location, opts.threadId, commentsRoot),
-  );
   const existingComments = await loadCommentBodies(threadDir);
   const rootId = threadRootCommentId(existingComments);
   if (!rootId) {
