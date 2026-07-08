@@ -112,7 +112,7 @@ npx ai-spector upgrade apply --json
 # MCP: upgrade_apply({})
 ```
 
-For each agent checklist item from scan: follow the UPG-* hint. On `engine.json` missing: `npx ai-spector docops migrate --from-docflow` (see Docops section).
+For each agent checklist item from scan: follow the UPG-* hint. On docops/engine gaps: run **`npx ai-spector docops guide --json`** and follow [docops-migrate.md](docops-migrate.md) (not bare `--from-docflow` when config already exists).
 
 ### Phase 6 — Verify
 
@@ -131,37 +131,28 @@ Remind user: Cmd+Shift+P → "Reload MCP Servers" after scaffold sync.
 
 ## Migrate existing project (self-service)
 
-Bring filled-in docs into the Writer contract **without** automated file moves.
+Bring filled-in docs into the Writer `.docops/` contract **without** moving markdown.
 
-**Read first:** `.docops/guide/MIGRATION.md` and `.docops/guide/guides/PROJECT_LAYOUT.md`
+**Agent runbook (user says "migrate"):** [docops-migrate.md](docops-migrate.md) — start with `npx ai-spector docops guide --json`.
 
-**Hard rule:** Prefer editing `docTypes.*.path` in `.docops/docops.config.json` to point at folders that already hold your markdown.
-
-### Phase 0 — Assess
+### Phase 0 — Guide (always first)
 
 ```bash
-npx ai-spector docops status --json
-npx ai-spector docops layout --prompt
-npx ai-spector docops check --prompt
+npx ai-spector docops guide --json
+# alias: npx ai-spector docops migrate --guide --json
 ```
 
-### Phase 1 — Configure paths
+Shows **current** (on disk) vs **expected** (config, scaffold, doc paths, wrong→correct, example JSON). Agent executes `agentTasks` — user does not run steps manually.
 
-Edit `.docops/docops.config.json`:
+### Phase 1 — Automated CLI
 
-- `docTypes.srs.path`, `basicDesign.path`, `detailDesign.path` (repo-root-relative, e.g. `docs/srs`)
-- `languages`, `primaryLanguage`, `internalLanguage`, `clientLanguage`
-- `docTypes.*.templatesPath` under `.docops/templates/`
+Run `cli.primaryCommand` from guide output (`init` | `migrate` | `migrate --from-docflow` | `migrate --repair`).
 
-Customize template markdown under `.docops/templates/{srs,basic-design,detail-design}/` if needed.
+### Phase 2 — Agent gap-fill
 
-### Phase 2 — Repair contract
+If CLI incomplete: merge example config, copy scaffold from bundled ai-spector package (`bootstrapCopyMap`), never overwrite existing files.
 
-```bash
-npx ai-spector docops migrate --repair --json
-npx ai-spector index
-npx ai-spector docops registry sync
-```
+See [docops-migrate.md](docops-migrate.md) for full checklist.
 
 ### Phase 3 — Verify
 
@@ -170,7 +161,42 @@ npx ai-spector docops check --json
 npx ai-spector lifecycle sync --json
 ```
 
-`docops check` → `valid: true` and `writerReady: true` → done.
+`writerReady: true` → done.
+
+**Legacy detail:** `.docops/guide/MIGRATION.md` · `PROJECT_LAYOUT.md` · CLI failed → [cli-failures.md](cli-failures.md)
+
+---
+
+## Migrate existing project (manual reference)
+
+<details>
+<summary>Manual steps (agent should prefer docops-migrate runbook above)</summary>
+
+**Read first:** `.docops/guide/MIGRATION.md` and `.docops/guide/guides/PROJECT_LAYOUT.md`
+
+**Hard rule:** Prefer editing `docTypes.*.path` in `.docops/docops.config.json` to point at folders that already hold your markdown.
+
+### Assess
+
+```bash
+npx ai-spector docops status --json
+npx ai-spector docops layout --prompt
+npx ai-spector docops check --prompt
+```
+
+### Configure paths
+
+Edit `.docops/docops.config.json` — `docTypes.*.path`, `languages`, templates under `.docops/templates/`.
+
+### Repair
+
+```bash
+npx ai-spector docops migrate --repair --json
+npx ai-spector index
+npx ai-spector docops registry sync
+```
+
+</details>
 
 ---
 
