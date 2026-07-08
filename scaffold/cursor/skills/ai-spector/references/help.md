@@ -60,7 +60,7 @@ Use `nextStepId` from Step 1. Cross-check Step 2 findings against the symptom ta
 |-------------------------|--------------|-------------|
 | No git remote / clone fails | `git-connected` | Connect Bitbucket repo in Writer → Project Settings → Git |
 | Missing `.docops/docops.config.json` | `docops-init` | Writer Settings → Docops → Initialize, or `npx ai-spector docops init` |
-| `docops init` / `migrate --repair` CLI fails | `docops-init` | Manual gap-fill: `.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md` (or monorepo bootstrap guide); then `docops status` |
+| `docops init` / `migrate --repair` CLI fails | `docops-init` | Run **`npx ai-spector docops guide --json`** → follow [docops-migrate.md](./docops-migrate.md); gap-fill per guide tasks; then `docops check` |
 | Skills not routing / agent ignores ai-spector | `local-adapter-ready` | Enable all `.cursor/skills/ai-spector*` skills; reload MCP servers |
 | Docs in wrong folder / legacy layout | `legacy-aligned` | Layout transform: [runbook.md — Adopt](runbook.md#adopt). Include comments, review, prototype in adopt plan or copy per MIGRATION.md |
 | Custom / non-standard template | `legacy-aligned` | Pause adopt — guide full gated [template-import](../../ai-spector-generate/references/runbook.md#template-import) workflow, then re-run adopt scan |

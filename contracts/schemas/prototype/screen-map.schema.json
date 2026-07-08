@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/prototype/screen-map.schema.json",
+  "title": "PrototypeScreenMap",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "buildMode", "screens"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "buildMode": {
+      "type": "string",
+      "enum": ["static", "spa"]
+    },
+    "defaultScreenId": { "type": "string" },
+    "defaultScreen": { "$ref": "#/$defs/screenEntry" },
+    "reviewHost": { "type": "string" },
+    "projectId": { "type": "string" },
+    "deployVersion": { "type": "string" },
+    "directReviewUrl": { "type": "boolean" },
+    "screens": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/screenEntry" }
+    }
+  },
+  "$defs": {
+    "screenEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["screenId", "displayName", "screenDocPath", "prototypePath", "route_exists"],
+      "properties": {
+        "screenId": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string" },
+        "screenDocPath": {
+          "type": "string",
+          "description": "Language-neutral screen design doc path (no docs/ prefix)"
+        },
+        "screenDocs": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Per-language repo-relative doc paths"
+        },
+        "prototypePath": { "type": "string" },
+        "route_exists": { "type": "boolean" },
+        "reviewUrl": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

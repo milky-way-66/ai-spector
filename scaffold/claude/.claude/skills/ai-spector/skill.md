@@ -25,9 +25,10 @@ description: >-
 | Help / stuck / where am I / what's next | [references/help.md](references/help.md) |
 | Setup / bootstrap project | [references/runbook.md — Setup](references/runbook.md#setup) |
 | Upgrade ai-spector package | [references/runbook.md — Upgrade](references/runbook.md#upgrade) |
-| Adopt / migrate existing docs | [references/runbook.md — Adopt](references/runbook.md#adopt) |
+| Adopt / migrate existing docs | [references/runbook.md — Adopt](references/runbook.md#migrate-existing-project-self-service) |
+| **Migrate docops / Writer / legacy layout** (*migrate*) | **[references/docops-migrate.md](references/docops-migrate.md)** |
 | Check workspace / clarifications | [references/runbook.md — Check](references/runbook.md#check) |
-| Docops / Writer contract bootstrap | [references/runbook.md — Docops](references/runbook.md#docops) · CLI failed → `.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md` |
+| Docops / Writer contract bootstrap | [references/docops-migrate.md](references/docops-migrate.md) · `npx ai-spector docops guide --json` |
 | Learn / open course | [references/runbook.md — Course](references/runbook.md#course) |
 | Resume / pause / manage work sessions | [references/runbook.md — Work-Sessions](references/runbook.md#work-sessions) |
 

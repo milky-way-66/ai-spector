@@ -1,0 +1,31 @@
+{
+  "version": 3,
+  "documents": {
+    "srs/01-overview": {
+      "logicalPath": "srs/01-overview",
+      "docPath": "docs/srs/en/01-overview.md",
+      "contentHash": "abc123def456ef78",
+      "overallStatus": "pending_internal",
+      "internal": {
+        "status": "pending",
+        "votes": [],
+        "quorumMetAt": null,
+        "closedAt": null,
+        "closedBy": null,
+        "closeReason": null,
+        "reopenedAt": null,
+        "invalidatedAt": null
+      },
+      "client": {
+        "status": "pending",
+        "votes": [],
+        "quorumMetAt": null,
+        "closedAt": null,
+        "closedBy": null,
+        "closeReason": null,
+        "reopenedAt": null
+      },
+      "lastEventAt": "2026-06-15T10:00:00.000Z"
+    }
+  }
+}

@@ -12,17 +12,19 @@ Agents use this when intent is ambiguous. Read the matching skill's runbook befo
 
 4. **Upgrade ai-spector** — *upgrade ai-spector*, *update ai-spector*, *sync after update*, *stale scaffold*, *continue upgrade* → **`ai-spector`** (Upgrade section). Not greenfield setup, not doc migration.
 
-5. **Adopt / migrate existing docs** — *migrate*, *adopt project*, *adopt existing docs*, *wrong folder*, *legacy SRS*, *move docs* → **`ai-spector`** (Adopt section). Not greenfield setup, not empty template import, not full generate.
+5. **Migrate docops / Writer contract** — *migrate*, *migrate to docops*, *migrate writer*, *migrate legacy*, *docops migrate*, *Writer contract*, *fix docops* → **`ai-spector`** → [docops-migrate.md](./ai-spector/references/docops-migrate.md). Not package upgrade alone, not SRS folder adopt.
 
-6. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-generate`** (Resolve-Task section). Not full generate (priority 7).
+6. **Adopt / wrong doc folder** — *adopt project*, *wrong SRS folder*, *move docs to structure* → **`ai-spector`** (Adopt section). Not docops contract migrate.
 
-7. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph*, *generate SRS/basic design/detail design/prototype* → **`ai-spector-generate`** (matching layer section).
+7. **Incremental change (plan-first)** — verbs *add*, *update*, *change*, *modify*, *extend*, or phrases *"I want to"*, *"we need to"*, *create task* → **`ai-spector-generate`** (Resolve-Task section). Not full generate (priority 8).
 
-8. **Graph / search / impact** — *analyze*, *index*, *validate*, *impact*, *visualize*, *sync audit*, *check doc drift*, *find docs about*, *semantic search* → **`ai-spector-graph`** (matching runbook section).
+8. **Full generation** — *generate*, *write chapter*, *DAG wave*, *from graph*, *generate SRS/basic design/detail design/prototype* → **`ai-spector-generate`** (matching layer section).
 
-9. **Comments / translation** — *resolve comments*, *C-001*, *B-001*, *prototype comments*, *resolve translations*, *stale languages*, *translation status* → **`ai-spector-contract`** (Comments or Translation section).
+9. **Graph / search / impact** — *analyze*, *index*, *validate*, *impact*, *visualize*, *sync audit*, *check doc drift*, *find docs about*, *semantic search* → **`ai-spector-graph`** (matching runbook section).
 
-10. **Fallback** — call `workflow_route({ message })` MCP tool; if `askUser`, ask one clarifying question.
+10. **Comments / translation** — *resolve comments*, *C-001*, *B-001*, *prototype comments*, *resolve translations*, *stale languages*, *translation status* → **`ai-spector-contract`** (Comments or Translation section).
+
+11. **Fallback** — call `workflow_route({ message })` MCP tool; if `askUser`, ask one clarifying question.
 
 ## DISAMBIGUATION: "approve" means four different things
 
@@ -64,9 +66,10 @@ Agents use this when intent is ambiguous. Read the matching skill's runbook befo
 | help, I'm stuck, where am I, what's next (setup) | `ai-spector` | `references/help.md` |
 | setup, init, bootstrap, get started | `ai-spector` | `references/runbook.md#setup` |
 | upgrade ai-spector, sync after update | `ai-spector` | `references/runbook.md#upgrade` |
-| migrate project, adopt existing docs, wrong SRS folder | `ai-spector` | `references/runbook.md#adopt` |
+| migrate, migrate docops, migrate writer, fix docops | `ai-spector` | `references/docops-migrate.md` |
+| migrate project, adopt existing docs, wrong SRS folder | `ai-spector` | `references/runbook.md#migrate-existing-project-self-service` |
 | check workspace, "why did pre-commit block" | `ai-spector` | `references/runbook.md#check` |
-| docops init/migrate, Writer contract | `ai-spector` | `references/runbook.md#docops` |
+| docops init/migrate, Writer contract | `ai-spector` | `references/docops-migrate.md` |
 | learn, course, tutorial, open course | `ai-spector` | `references/runbook.md#course` |
 | resume task, active tasks, pause, continue | `ai-spector` | `references/runbook.md#work-sessions` |
 | add feature, update section, "I want to add…" | `ai-spector-generate` | `references/runbook.md#resolve-task` |

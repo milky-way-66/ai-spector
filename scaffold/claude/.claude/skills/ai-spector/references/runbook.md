@@ -258,12 +258,9 @@ Fills missing capability files; patches config gaps (including short `docTypes.*
 
 When init/migrate/repair exits non-zero or bootstrap bundle is missing — **after user approves workaround** per [cli-failures.md](cli-failures.md):
 
-1. Read **`.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md`** in the target repo (committed by Writer setup), or **`kari-writer/contracts/bootstrap/docs/guides/DOCOPS_MANUAL_FALLBACK.md`** in the monorepo.
-2. Patch `docops.config.json` — merge missing `detailDesign` + `otherDocument` (`enabled: false`).
-3. Copy scaffold + templates from bootstrap bundle — **never overwrite** existing files.
-4. Verify with `npx ai-spector docops status --json` when CLI works again.
-
-Same rules as repair; agents finish the task in git when the script cannot.
+1. Run **`npx ai-spector docops guide --prompt`** — target `docTypes` paths + ordered tasks (do not move docs unless user approves).
+2. Read **`.docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md`** for scaffold/template gap-fill (never overwrite existing files).
+3. Verify with `npx ai-spector docops status --json` when CLI works again.
 
 ### Lifecycle sync
 

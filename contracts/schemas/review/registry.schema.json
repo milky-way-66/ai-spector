@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/review/registry.schema.json",
+  "title": "ReviewRegistry",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "documents"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 3
+    },
+    "documents": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/documentEntry" }
+    }
+  },
+  "$defs": {
+    "vote": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["by", "username", "role", "decision", "at"],
+      "properties": {
+        "by": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "client"] },
+        "decision": { "type": "string", "enum": ["approve", "decline"] },
+        "at": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "track": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status", "votes"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected", "needs_review"]
+        },
+        "votes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/vote" }
+        },
+        "quorumMetAt": { "type": ["string", "null"] },
+        "closedAt": { "type": ["string", "null"] },
+        "closedBy": { "type": ["string", "null"] },
+        "closeReason": { "type": ["string", "null"] },
+        "reopenedAt": { "type": ["string", "null"] },
+        "invalidatedAt": { "type": ["string", "null"] }
+      }
+    },
+    "documentEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["logicalPath", "overallStatus", "internal", "client"],
+      "properties": {
+        "logicalPath": { "type": "string", "minLength": 1 },
+        "docPath": { "type": "string" },
+        "contentHash": { "type": "string" },
+        "snapshotRef": { "type": "string" },
+        "overallStatus": {
+          "type": "string",
+          "enum": ["pending_internal", "pending_client", "approved", "rejected"]
+        },
+        "internal": { "$ref": "#/$defs/track" },
+        "client": { "$ref": "#/$defs/track" },
+        "lastEventAt": { "type": "string" }
+      }
+    }
+  }
+}

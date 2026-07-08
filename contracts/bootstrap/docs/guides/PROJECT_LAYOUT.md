@@ -38,6 +38,9 @@ This guide helps you **point Writer at your existing docs** without automated fi
 # 1. See disk vs config (read-only)
 npx ai-spector docops layout --prompt
 
+# 1b. CLI migrate/repair failed — agent fallback
+npx ai-spector docops guide --prompt
+
 # 2. Edit .docops/docops.config.json (paths, languages, templatesPath)
 
 # 3. Fill contract gaps

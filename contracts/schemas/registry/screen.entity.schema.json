@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/registry/screen.entity.schema.json",
+  "title": "DocopsScreenEntity",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "screenId",
+    "kind",
+    "prototypePath",
+    "route_exists"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "screenId": { "type": "string", "minLength": 1 },
+    "kind": { "type": "string", "const": "prototype_screen" },
+    "displayName": { "type": "string" },
+    "documentEntityId": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "prototypePath": { "type": "string", "minLength": 1 },
+    "route_exists": { "type": "boolean" },
+    "reviewUrl": { "type": ["string", "null"] },
+    "updatedAt": { "type": "string" }
+  }
+}

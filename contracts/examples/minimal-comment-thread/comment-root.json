@@ -1,0 +1,10 @@
+{
+  "commentId": "comment-root",
+  "threadId": "thread-001",
+  "body": "Please clarify the login flow requirements.",
+  "authorId": 42,
+  "createdAt": "2026-06-15T10:00:00.000Z",
+  "parentCommentId": null,
+  "editedAt": null,
+  "deletedAt": null
+}

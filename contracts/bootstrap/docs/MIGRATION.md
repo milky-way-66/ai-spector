@@ -31,7 +31,7 @@ Use this section when an agent migrates a repo **without** guessing paths.
 8. Run post-migration checklist (§5).
 ```
 
-### ai-spector CLI (optional)
+**CLI (optional):** Run **`npx ai-spector docops guide --json`** first — shows current vs expected structure, files, and example config for this repo.
 
 ```bash
 npx ai-spector docops migrate --dry-run    # preview legacy → contract
@@ -40,7 +40,7 @@ npx ai-spector docops migrate --repair     # fill gaps when config already exist
 npx ai-spector docops init                 # greenfield scaffold
 ```
 
-**CLI failed or unavailable?** Follow [guides/DOCOPS_MANUAL_FALLBACK.md](guides/DOCOPS_MANUAL_FALLBACK.md) — same gap-fill rules (patch `detailDesign` / `otherDocument`, copy DD templates, no overwrite).
+**CLI failed or unavailable?** Run `npx ai-spector docops guide --prompt` — includes **wrong vs correct** for this repo, a tailored `docops.config.json` example, document paths, and scaffold checklist. Then use this guide for manual gap-fill.
 
 ### Hard rules for agents
 
@@ -459,5 +459,5 @@ Migrate repo to .docops contract:
 - gitkeep: {docTypes.path}/{lang}/.gitkeep for each enabled layer × language
 - Commit; then Writer storage_layout = docops
 - Never overwrite existing files; never use short docTypes.path expecting docs/ prefix
-- CLI failed → guides/DOCOPS_MANUAL_FALLBACK.md
+- CLI failed → `npx ai-spector docops guide --prompt` then guides/DOCOPS_MANUAL_FALLBACK.md
 ```

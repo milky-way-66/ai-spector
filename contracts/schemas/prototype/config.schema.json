@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/prototype/config.schema.json",
+  "title": "PrototypeConfig",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "buildMode"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "version": {
+      "type": "integer",
+      "description": "Legacy alias used by ai-spector CLI"
+    },
+    "buildMode": {
+      "type": "string",
+      "enum": ["static", "spa"]
+    },
+    "techStack": {
+      "type": "string",
+      "enum": ["html", "vue", "react", "nuxt", "next", "svelte", "angular"]
+    },
+    "prototypeDir": {
+      "type": "string",
+      "description": "Repo-relative prototype source folder (default: prototype)"
+    },
+    "srcDir": {
+      "type": "string",
+      "description": "Repo-relative source folder (default: prototype/src)"
+    },
+    "htpasswdFile": {
+      "type": "string",
+      "description": "Repo-relative nginx htpasswd path (default: prototype/.htpasswd)"
+    },
+    "basicAuth": {
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "minLength": 1 },
+        "password": { "type": "string" },
+        "setAt": { "type": "string" }
+      }
+    },
+    "listScreenDoc": { "type": "string" },
+    "screenIndexSection": { "type": "string" },
+    "screenDetailDir": { "type": "string" },
+    "defaultTheme": { "type": "string" },
+    "defaultScreenId": { "type": "string" },
+    "prototypeBypassAuth": { "type": "boolean" },
+    "reviewHost": { "type": "string" },
+    "projectId": { "type": "string" },
+    "deployVersion": { "type": "string" },
+    "directReviewUrl": { "type": "boolean" }
+  }
+}

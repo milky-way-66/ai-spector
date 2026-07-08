@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/registry/manifest.schema.json",
+  "title": "DocopsRegistryManifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "buildMode"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "buildMode": { "type": "string", "enum": ["static", "spa"] },
+    "defaultScreenId": { "type": "string" },
+    "reviewHost": { "type": "string" },
+    "projectId": { "type": "string" },
+    "deployVersion": { "type": "string" },
+    "directReviewUrl": { "type": "boolean" },
+    "themeName": { "type": "string" }
+  }
+}

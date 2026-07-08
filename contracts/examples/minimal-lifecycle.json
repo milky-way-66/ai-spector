@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "intent": "greenfield",
+  "adapter": "ai-spector",
+  "updatedAt": "2026-06-29T10:00:00Z",
+  "updatedBy": "kari-writer",
+  "steps": [
+    { "id": "project-created", "status": "done", "completedAt": "2026-06-29T10:00:00Z" },
+    { "id": "git-connected", "status": "done", "completedAt": "2026-06-29T10:00:00Z" },
+    { "id": "docops-init", "status": "in_progress", "helpRef": "guide/modules/generate.md" },
+    { "id": "local-adapter-ready", "status": "pending", "helpRef": "course/en/02-get-started/01-setup-via-chat" },
+    { "id": "data-source-added", "status": "pending" },
+    { "id": "first-docs-generated", "status": "pending" },
+    { "id": "review-queue-synced", "status": "pending", "helpRef": "guide/modules/review.md" },
+    { "id": "first-push-synced", "status": "pending" }
+  ]
+}

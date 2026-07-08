@@ -31,7 +31,7 @@
       "severity": "required",
       "title": "Migrate from docflow.config.json to engine.json + docops.config.json",
       "detect": { "type": "file-missing", "path": ".ai-spector/engine.json" },
-      "agentGuide": "Run: npx ai-spector docops migrate --from-docflow — then confirm .ai-spector/engine.json and .docops/docops.config.json are present."
+      "agentGuide": "Run: npx ai-spector docops migrate --from-docflow — if it fails (config/docs already exist), run: npx ai-spector docops guide --prompt and follow the agent tasks."
     },
     {
       "id": "UPG-011",
@@ -54,7 +54,7 @@
       "title": "Patch docops.config.json with detailDesign and otherDocument (disabled)",
       "detect": { "type": "docops-optional-doc-types-stale" },
       "apply": { "command": "docops-repair" },
-      "agentGuide": "Run: npx ai-spector docops migrate --repair — adds disabled detailDesign/otherDocument keys and detail-design templates."
+      "agentGuide": "Run: npx ai-spector docops migrate --repair — if CLI fails, run: npx ai-spector docops guide --prompt and gap-fill per .docops/guide/guides/DOCOPS_MANUAL_FALLBACK.md."
     },
     {
       "id": "UPG-020",

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "intent": "migrate",
+  "adapter": "ai-spector",
+  "updatedAt": "2026-06-29T10:00:00Z",
+  "updatedBy": "kari-writer",
+  "steps": [
+    { "id": "project-created", "status": "done", "completedAt": "2026-06-29T10:00:00Z" },
+    { "id": "git-connected", "status": "done", "completedAt": "2026-06-29T10:00:00Z" },
+    { "id": "docops-init", "status": "done", "completedAt": "2026-06-29T10:00:00Z" },
+    { "id": "legacy-aligned", "status": "in_progress", "helpRef": "guide/MIGRATION.md" },
+    { "id": "registry-synced", "status": "pending", "helpRef": "guide/ENTITY_REGISTRY_MIGRATION.md" },
+    { "id": "local-adapter-ready", "status": "pending" },
+    { "id": "first-docs-generated", "status": "pending" },
+    { "id": "review-queue-synced", "status": "pending", "helpRef": "guide/modules/review.md" },
+    { "id": "first-push-synced", "status": "pending" }
+  ]
+}

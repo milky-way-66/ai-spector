@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "jobs": [
+    {
+      "id": "srs/01-overview:internal",
+      "logicalPath": "srs/01-overview",
+      "track": "internal",
+      "reason": "first_review",
+      "queuedAt": "2026-06-15T10:00:00.000Z",
+      "baselineHash": null,
+      "currentHash": "abc123def456ef78"
+    }
+  ]
+}

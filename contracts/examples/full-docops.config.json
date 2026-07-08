@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0",
+  "layout": "docops",
+  "docsRoot": "docs",
+  "languages": [
+    { "code": "en", "label": "English", "path": "en" },
+    { "code": "vi", "label": "Vietnamese", "path": "vi" },
+    { "code": "jp", "label": "Japanese", "path": "jp" }
+  ],
+  "primaryLanguage": "en",
+  "internalLanguage": "vi",
+  "clientLanguage": "jp",
+  "docTypes": {
+    "srs": {
+      "enabled": true,
+      "path": "docs/srs",
+      "label": "SRS",
+      "templatesPath": ".docops/templates/srs"
+    },
+    "basicDesign": {
+      "enabled": true,
+      "path": "docs/basic-design",
+      "label": "Basic Design",
+      "templatesPath": ".docops/templates/basic-design"
+    },
+    "detailDesign": {
+      "enabled": false,
+      "path": "docs/detail-design",
+      "label": "Detail Design",
+      "templatesPath": ".docops/templates/detail-design"
+    },
+    "otherDocument": {
+      "enabled": false,
+      "path": "docs/other",
+      "label": "Other Document"
+    }
+  },
+  "paths": {
+    "registry": ".docops/registry",
+    "comments": ".docops/comments",
+    "reviewConfig": ".docops/review.config.json",
+    "reviewQueue": ".docops/review-queue",
+    "prototypeConfig": ".docops/prototype/config.json",
+    "prototypeScreenMap": ".docops/prototype/screen-map.json"
+  },
+  "capabilities": {
+    "review": true,
+    "comments": true,
+    "prototype": true,
+    "graph": false,
+    "generate": false,
+    "translate": false
+  }
+}

@@ -2,9 +2,11 @@
 
 Use this guide when **`npx ai-spector docops init`**, **`docops migrate`**, or **`docops migrate --repair`** fails (or is unavailable) and the user approves a **bounded workaround** (cli-failures option **2 Workaround** — pause, report, manual gap-fill, verify).
 
+**First:** run **`npx ai-spector docops guide --prompt`** — it prints **wrong vs correct** for this repo, a tailored `docops.config.json` example, expected document paths, scaffold checklist, and **bundled bootstrap paths** inside the installed ai-spector package.
+
 **Goal:** finish the same work the CLI would do — patch `.docops/docops.config.json`, fill missing scaffold files, copy templates — **without overwriting** anything that already exists.
 
-**Related:** [MIGRATION.md](../MIGRATION.md) (full migration) · [examples/full-docops.config.json](../../examples/full-docops.config.json)
+**Related:** [MIGRATION.md](../MIGRATION.md) · [examples/full-docops.config.json](../../../examples/full-docops.config.json)
 
 ---
 
@@ -12,8 +14,8 @@ Use this guide when **`npx ai-spector docops init`**, **`docops migrate`**, or *
 
 | Situation | Action |
 |-----------|--------|
-| `command not found` / npm install blocked | Manual steps below after user approves workaround |
-| `docops bootstrap bundle not found` | Point `DOCOPS_BOOTSTRAP_ROOT` at `kari-writer/contracts/bootstrap` or copy from monorepo |
+| `command not found` | `npm install ai-spector` then use `npx ai-spector` |
+| `docops bootstrap bundle not found` | Reinstall ai-spector — bundle ships at `node_modules/ai-spector/contracts/bootstrap` |
 | `migrate --repair` exits non-zero mid-run | Fix reported path, then **resume manual steps** for remaining gaps only |
 | Writer **Set up repository** returns 409 (config exists) | Manual gap-fill (this guide), not full init |
 
@@ -28,21 +30,22 @@ Use this guide when **`npx ai-spector docops init`**, **`docops migrate`**, or *
 
 ---
 
-## 1. Locate the bootstrap bundle
+## 1. Locate the bootstrap bundle (bundled in ai-spector CLI)
 
-Try paths in order (first directory that contains `docs/README.md` and `templates/srs/`):
+The ai-spector npm package is **standalone** — it ships everything under:
 
 ```text
-kari-writer/contracts/bootstrap/          # monorepo (docs-ops)
-<repo>/node_modules/ai-spector/../../kari-writer/contracts/bootstrap
-$DOCOPS_BOOTSTRAP_ROOT/bootstrap
-$DOCOPS_CONTRACTS_ROOT/bootstrap
+node_modules/ai-spector/contracts/bootstrap/     # templates, config stubs, docs
+node_modules/ai-spector/contracts/schemas/         # JSON schemas
+node_modules/ai-spector/contracts/examples/        # reference configs
 ```
 
-Set env for a one-off shell session if needed:
+`npx ai-spector docops guide --json` prints resolved `targetState.examples.bundle.bootstrapRoot` and `bootstrapCopyMap` for your install.
+
+Optional override (rare):
 
 ```bash
-export DOCOPS_BOOTSTRAP_ROOT=/path/to/kari-writer/contracts
+export DOCOPS_BOOTSTRAP_ROOT=/path/to/custom/bootstrap
 ```
 
 ---
@@ -50,6 +53,8 @@ export DOCOPS_BOOTSTRAP_ROOT=/path/to/kari-writer/contracts
 ## 2. Patch `.docops/docops.config.json`
 
 Read the existing file. **Merge** missing keys only — do not change `enabled` or `path` on layers the project already configured.
+
+Prefer the **example from `docops guide --prompt`** for this repo. Reference shape: [examples/full-docops.config.json](../../../examples/full-docops.config.json).
 
 ### Required optional doc types (if missing)
 
@@ -86,17 +91,16 @@ If `docs/other/` or `docs/detail-design/` already exists on disk, keep `enabled:
 
 ## 3. Copy scaffold files (gap-fill only)
 
-Let `BUNDLE` = bootstrap root from §1. For each row: **copy only if destination does not exist**.
+Let `BUNDLE` = bootstrap root from §1 (or `docops guide --json` → `bundle.bootstrapRoot`). For each row: **copy only if destination does not exist**.
 
 | Source (`BUNDLE/…`) | Destination |
 |---------------------|-------------|
 | `docs/**` | `.docops/guide/**` (prefix: replace `docs/` with `.docops/guide/`) |
 | `../schemas/**` | `.docops/guide/schemas/**` |
 | `../examples/**` | `.docops/guide/examples/**` |
-| `../modules/*.md` | `.docops/guide/modules/` |
 | `config/review.config.json` | `.docops/review.config.json` |
 | `config/review-queue-registry.json` | `.docops/review-queue/registry.json` |
-| `config/review-queue-pending.json` | `.docops/review-queue/pending.json` (`{"version":2,"jobs":[]}`) |
+| `config/review-queue-pending.json` | `.docops/review-queue/pending.json` |
 | `config/prototype.config.json` | `.docops/prototype/config.json` |
 | `config/prototype-screen-map.json` | `.docops/prototype/screen-map.json` |
 
@@ -112,10 +116,10 @@ Create empty dirs when needed: `.docops/comments/`, `.docops/registry/`, `.docop
 | `templates/basic-design/**` | `.docops/templates/basic-design/` | Layer enabled **and** dest has no `*.md` |
 | `templates/detail-design/**` | `.docops/templates/detail-design/` | **Always** if dest has no `*.md` (even when `detailDesign.enabled` is `false`) |
 
-Example (from repo root):
+Example (from repo root; `BUNDLE` from `docops guide --json`):
 
 ```bash
-BUNDLE=kari-writer/contracts/bootstrap
+BUNDLE="$(node -e "const r=require('child_process').execSync('npx ai-spector docops guide --json',{encoding:'utf8'}); console.log(JSON.parse(r).targetState.examples.bundle.bootstrapRoot)")"
 DEST=.docops/templates/detail-design
 test -d "$DEST" && [ "$(find "$DEST" -name '*.md' | wc -l)" -eq 0 ] \
   && mkdir -p "$DEST" && cp -R "$BUNDLE/templates/detail-design/." "$DEST/"
@@ -161,6 +165,7 @@ After git commit + push:
 ## Agent quick checklist
 
 ```text
+[ ] npx ai-spector docops guide --prompt (wrong vs correct + example config)
 [ ] Read existing .docops/docops.config.json
 [ ] Merge detailDesign + otherDocument (enabled: false) if missing
 [ ] Copy BUNDLE → .docops/guide/, review/prototype stubs (skip existing)

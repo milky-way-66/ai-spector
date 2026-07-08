@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/docops.config.schema.json",
+  "title": "DocopsConfig",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "layout": {
+      "type": "string",
+      "enum": ["docops"],
+      "description": "When set to docops, Writer reads comments/review/prototype from .docops/ paths only. Omit for legacy ai-spector layout."
+    },
+    "docsRoot": {
+      "type": "string",
+      "default": "docs",
+      "minLength": 1
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["code", "label"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "primaryLanguage": { "type": "string", "minLength": 1 },
+    "internalLanguage": { "type": "string", "minLength": 1 },
+    "clientLanguage": { "type": "string", "minLength": 1 },
+    "docTypes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["enabled", "path"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "path": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" },
+          "templatesPath": { "type": "string", "minLength": 1 }
+        }
+      },
+      "properties": {
+        "srs": { "$ref": "#/$defs/docType" },
+        "basicDesign": { "$ref": "#/$defs/docType" },
+        "detailDesign": { "$ref": "#/$defs/docType" },
+        "otherDocument": { "$ref": "#/$defs/docType" }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "properties": {
+        "comments": { "type": "string", "minLength": 1 },
+        "reviewConfig": { "type": "string", "minLength": 1 },
+        "reviewQueue": { "type": "string", "minLength": 1 },
+        "registry": { "type": "string", "minLength": 1 },
+        "prototypeConfig": { "type": "string", "minLength": 1 },
+        "prototypeScreenMap": { "type": "string", "minLength": 1 }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" },
+      "properties": {
+        "review": { "type": "boolean" },
+        "comments": { "type": "boolean" },
+        "prototype": { "type": "boolean" },
+        "graph": { "type": "boolean" },
+        "generate": { "type": "boolean" },
+        "translate": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "docType": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["enabled", "path"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "path": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "templatesPath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

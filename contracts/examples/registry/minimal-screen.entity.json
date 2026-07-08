@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "screenId": "SCR-001",
+  "kind": "prototype_screen",
+  "displayName": "Login",
+  "documentEntityId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "prototypePath": "src/login.html",
+  "route_exists": true,
+  "reviewUrl": null,
+  "updatedAt": "2026-06-26T12:00:00.000Z"
+}

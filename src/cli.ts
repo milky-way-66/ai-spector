@@ -10,7 +10,7 @@ import { applyPrimaryLanguageOutputs } from "./core/graph/translation.js";
 import { loadDocflowConfig } from "./core/config/load.js";
 import { validateGraph, formatIssues } from "./core/operations/validate.js";
 import { runInit, type AgentTarget } from "./core/operations/init.js";
-import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus, runDocopsCheck, runDocopsLayout } from "./core/operations/docops.js";
+import { runDocopsInit, runDocopsMigrate, runDocopsCommentsMigrate, runDocopsRegistrySync, runDocopsReviewRegistryMigrate, runDocopsStatus, runDocopsCheck, runDocopsLayout, runDocopsGuide } from "./core/operations/docops.js";
 import { runLifecycleSync } from "./core/operations/lifecycle.js";
 import { runLangAdd, runLangSetClient, runLangSetInternal } from "./core/operations/lang.js";
 import {
@@ -1581,6 +1581,20 @@ docops
   });
 
 docops
+  .command("guide")
+  .description("Agent migration guide: current vs expected structure, files, config — start here when user says migrate")
+  .option("--json", "JSON output for agents")
+  .option("--prompt", "Print only the agent prompt")
+  .action(async (opts, cmd) => {
+    const code = await runDocopsGuide({
+      root: projectRootOpt(cmd),
+      json: opts.json,
+      prompt: opts.prompt,
+    });
+    process.exitCode = code;
+  });
+
+docops
   .command("init")
   .description("Scaffold Writer-ready .docops/ contract")
   .option("--lang <codes>", "Comma-separated language codes", "en")
@@ -1604,7 +1618,19 @@ docops
   .option("--repair", "Fill gaps in existing .docops/ without overwriting")
   .option("--templates-only", "Copy templates only")
   .option("--from-docflow", "Split legacy docflow.config.json into docops.config.json + engine.json")
+  .option("--guide", "Show agent migration guide (current vs expected); alias for docops guide")
+  .option("--json", "JSON output (with --guide)")
+  .option("--prompt", "Agent prompt only (with --guide)")
   .action(async (opts, cmd) => {
+    if (opts.guide) {
+      await runDocopsMigrate({
+        root: projectRootOpt(cmd),
+        guide: true,
+        json: opts.json,
+        prompt: opts.prompt,
+      });
+      return;
+    }
     await runDocopsMigrate({
       root: projectRootOpt(cmd),
       dryRun: opts.dryRun,

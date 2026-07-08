@@ -43,4 +43,27 @@ describe("migrateFromDocflow", () => {
     const docops = await readDocopsConfig(root);
     expect(docops).toBeNull();
   });
+
+  it("writes engine.json only when docops.config already exists", async () => {
+    const root = await mkdtemp(join(tmpdir(), "migrate-partial-"));
+    await cp(FIXTURE, root, { recursive: true });
+    const { writeDocopsConfig } = await import("../../src/core/docops/config.js");
+    const docops = await readDocopsConfig(root);
+    expect(docops).toBeNull();
+
+    await migrateFromDocflow(root, { write: true });
+    const first = await readDocopsConfig(root);
+    expect(first).not.toBeNull();
+
+    const { unlink } = await import("node:fs/promises");
+    await unlink(join(root, ".ai-spector/engine.json"));
+
+    const result = await migrateFromDocflow(root, { write: true });
+    expect(result.migrated).toBe(true);
+    expect(result.actions.some((a) => a.includes("skip") && a.includes("docops.config"))).toBe(true);
+    expect(result.actions.some((a) => a.includes("engine.json"))).toBe(true);
+
+    const engine = await loadEngineConfig(root);
+    expect(engine.scaffoldVersion).toBe("0.8.0");
+  });
 });

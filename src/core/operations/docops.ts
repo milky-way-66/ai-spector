@@ -6,6 +6,7 @@ import { initDocopsContract } from "../docops/init.js";
 import { migrateDocopsLayout, migrateFromDocflow } from "../docops/migrate.js";
 import { syncDocopsRegistry } from "../docops/registry/index.js";
 import { migrateCommentsToTargetIds } from "../comments/migrate.js";
+import { buildDocopsMigrateGuide } from "../docops/guide.js";
 import { WRITER_LIFECYCLE_HANDOFF } from "../docops/lifecycle.js";
 import { lifecycleSyncResult } from "./lifecycle.js";
 
@@ -15,6 +16,9 @@ export interface DocopsMigrateOptions {
   repair?: boolean;
   templatesOnly?: boolean;
   fromDocflow?: boolean;
+  guide?: boolean;
+  json?: boolean;
+  prompt?: boolean;
 }
 
 export async function runDocopsStatus(opts: { root?: string; json?: boolean } = {}): Promise<number> {
@@ -168,7 +172,47 @@ export async function runDocopsInit(opts: {
   }
 }
 
+export async function runDocopsGuide(opts: {
+  root?: string;
+  json?: boolean;
+  prompt?: boolean;
+} = {}): Promise<number> {
+  const projectRoot = resolve(opts.root ?? findProjectRoot());
+  const result = await buildDocopsMigrateGuide(projectRoot);
+
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else if (opts.prompt) {
+    console.log(result.agentPrompt);
+  } else {
+    console.log(`Layout: ${result.layout} | writerReady: ${result.writerReady}`);
+    console.log(`Recommended CLI: ${result.cli.primaryCommand}`);
+    if (result.cli.blockers.length > 0) {
+      console.log("\nCLI blockers:");
+      for (const b of result.cli.blockers) {
+        console.log(`  - ${b}`);
+      }
+    }
+    if (result.targetState.notes.length > 0) {
+      console.log("\nTarget rules:");
+      for (const note of result.targetState.notes) {
+        console.log(`  - ${note}`);
+      }
+    }
+    console.log("\n--- Agent prompt ---\n");
+    console.log(result.agentPrompt);
+  }
+
+  return result.writerReady ? 0 : 2;
+}
+
 export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise<void> {
+  if (opts.guide) {
+    const code = await runDocopsGuide({ root: opts.root, json: opts.json, prompt: opts.prompt });
+    process.exitCode = code;
+    return;
+  }
+
   const projectRoot = resolve(opts.root ?? findProjectRoot());
 
   if (opts.fromDocflow) {
@@ -184,6 +228,7 @@ export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise
     }
     if (!result.migrated) {
       console.log(`\nNo migration performed. ${result.reason ?? ""}`);
+      console.log("\nAgent fallback: npx ai-spector docops guide --prompt");
       return;
     }
     console.log(`\nMigrated docops → ${result.docopsPath}`);
@@ -207,6 +252,10 @@ export async function runDocopsMigrate(opts: DocopsMigrateOptions = {}): Promise
     console.log(`  primaryLanguage: ${result.config.primaryLanguage}`);
   }
   console.log(result.migrated ? `\nMigrated → ${result.configPath}` : `\nNo migration performed.`);
+  if (!result.migrated) {
+    console.log("\nAgent fallback: npx ai-spector docops guide --prompt");
+    process.exitCode = 1;
+  }
 }
 
 export async function runDocopsRegistrySync(opts: {

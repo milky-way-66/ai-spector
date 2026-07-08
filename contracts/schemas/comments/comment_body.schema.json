@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/comments/comment_body.schema.json",
+  "title": "CommentBody",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["commentId", "threadId", "body", "authorId", "createdAt"],
+  "properties": {
+    "commentId": { "type": "string", "minLength": 1 },
+    "threadId": { "type": "string", "minLength": 1 },
+    "body": { "type": "string" },
+    "authorId": { "type": "integer" },
+    "createdAt": { "type": "string" },
+    "parentCommentId": { "type": ["string", "null"] },
+    "editedAt": { "type": ["string", "null"] },
+    "deletedAt": { "type": ["string", "null"] },
+    "anchor": { "type": "object", "additionalProperties": true }
+  }
+}

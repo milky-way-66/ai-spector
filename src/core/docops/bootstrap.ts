@@ -13,10 +13,22 @@ import type { DocopsConfig, DocopsDocTypeConfig } from "./types.js";
 
 const LAYER_TEMPLATE_SUBDIR_LEGACY = LAYER_TEMPLATE_SUBDIR;
 
-/** Writer-owned bootstrap bundle (monorepo or packaged fallback). */
+/** Writer-owned bootstrap bundle (shipped inside the ai-spector npm package). */
+export function packagedBootstrapRoot(): string {
+  return join(packageBundleRoot(), "contracts/bootstrap");
+}
+
+export function packagedContractsRoot(): string {
+  return join(packageBundleRoot(), "contracts");
+}
+
+/** Resolve bootstrap bundle: env override → packaged CLI bundle → monorepo dev fallback. */
 export function resolveBootstrapRoot(): string {
   const env = process.env.DOCOPS_BOOTSTRAP_ROOT?.trim();
   if (env && existsSync(env)) return resolve(env);
+
+  const packaged = packagedBootstrapRoot();
+  if (existsSync(join(packaged, "docs/README.md"))) return packaged;
 
   const monorepo = resolve(packageBundleRoot(), "../kari-writer/contracts/bootstrap");
   if (existsSync(monorepo)) return monorepo;
@@ -24,28 +36,33 @@ export function resolveBootstrapRoot(): string {
   const monorepoLegacy = resolve(packageBundleRoot(), "../../kari-writer/contracts/bootstrap");
   if (existsSync(monorepoLegacy)) return monorepoLegacy;
 
-  const packaged = join(packageBundleRoot(), "contracts/bootstrap");
-  if (existsSync(packaged)) return packaged;
-
   throw new Error(
-    "docops bootstrap bundle not found — set DOCOPS_BOOTSTRAP_ROOT or install kari-writer/contracts/bootstrap",
+    "docops bootstrap bundle not found in ai-spector package (expected contracts/bootstrap) — reinstall ai-spector or set DOCOPS_BOOTSTRAP_ROOT",
   );
 }
 
 export function resolveContractsRoot(bundleRoot: string): string {
   const env = process.env.DOCOPS_CONTRACTS_ROOT?.trim();
   if (env && existsSync(env)) return resolve(env);
+
+  const packaged = packagedContractsRoot();
+  if (existsSync(join(packaged, "schemas"))) return packaged;
+
   const sibling = resolve(bundleRoot, "..");
   if (existsSync(join(sibling, "schemas"))) return sibling;
+
   const bundled = join(bundleRoot, "schemas");
   if (existsSync(bundled)) return bundleRoot;
+
   const monorepo = resolve(packageBundleRoot(), "../kari-writer/contracts");
   if (existsSync(join(monorepo, "schemas"))) return monorepo;
+
   const monorepoLegacy = resolve(packageBundleRoot(), "../../kari-writer/contracts");
   if (existsSync(join(monorepoLegacy, "schemas"))) return monorepoLegacy;
-  const siblingRepo = resolve(packageBundleRoot(), "../kari-writer/contracts");
-  if (existsSync(join(siblingRepo, "schemas"))) return siblingRepo;
-  throw new Error("docops contracts root not found — set DOCOPS_CONTRACTS_ROOT");
+
+  throw new Error(
+    "docops contracts root not found in ai-spector package (expected contracts/schemas) — reinstall ai-spector or set DOCOPS_CONTRACTS_ROOT",
+  );
 }
 
 export function listBootstrapDocDestinations(bundleRoot: string): string[] {

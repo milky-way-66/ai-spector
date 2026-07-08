@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kari-writer.local/contracts/schemas/review/review.config.schema.json",
+  "title": "ReviewConfig",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "extends"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "extends": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Preset id (e.g. kaopiz-default)"
+    },
+    "gate": { "type": "object", "additionalProperties": true },
+    "baseline": { "type": "object", "additionalProperties": true },
+    "rules": { "type": "object", "additionalProperties": true },
+    "overrides": { "type": "object", "additionalProperties": true },
+    "suppressions": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "required_section_paths": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Who last wrote this file (e.g. db, agent, cli)"
+        }
+      }
+    }
+  }
+}

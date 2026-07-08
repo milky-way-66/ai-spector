@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "buildMode": "static",
+  "techStack": "html",
+  "prototypeDir": "prototype",
+  "srcDir": "prototype/src",
+  "defaultTheme": "vercel",
+  "htpasswdFile": "prototype/.htpasswd",
+  "basicAuth": {
+    "username": "reviewer",
+    "password": "change-me",
+    "setAt": "2026-06-15T10:00:00.000Z"
+  },
+  "reviewHost": "https://preview.example.com",
+  "projectId": "my-project",
+  "deployVersion": "1.0.0"
+}

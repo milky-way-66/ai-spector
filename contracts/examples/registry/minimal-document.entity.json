@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "entityId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "kind": "document",
+  "docType": "SRS",
+  "logicalPath": "srs/01-overview.md",
+  "repoDocs": {
+    "en": "docs/srs/en/01-overview.md",
+    "vi": "docs/srs/vi/01-overview.md"
+  },
+  "displayName": "01-overview",
+  "aliases": [],
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "updatedAt": "2026-06-26T12:00:00.000Z"
+}

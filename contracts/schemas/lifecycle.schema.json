@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kari-writer/contracts/schemas/lifecycle.schema.json",
+  "title": "DocopsLifecycle",
+  "type": "object",
+  "required": ["version", "intent", "adapter", "updatedAt", "updatedBy", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "intent": { "enum": ["greenfield", "migrate"] },
+    "adapter": { "enum": ["ai-spector", "custom", "none"] },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "updatedBy": { "type": "string", "minLength": 1 },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "enum": [
+              "project-created",
+              "git-connected",
+              "docops-init",
+              "local-adapter-ready",
+              "legacy-aligned",
+              "registry-synced",
+              "data-source-added",
+              "first-docs-generated",
+              "review-queue-synced",
+              "first-push-synced"
+            ]
+          },
+          "status": { "enum": ["pending", "in_progress", "done", "skipped", "blocked"] },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "helpRef": { "type": "string" },
+          "blockedReason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

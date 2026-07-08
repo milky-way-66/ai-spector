@@ -1,0 +1,22 @@
+{
+  "threadId": "thread-001",
+  "filePath": "srs/01-overview.md",
+  "originBranch": "main",
+  "commentType": "document",
+  "status": "open",
+  "version": 1,
+  "createdAt": "2026-06-15T10:00:00.000Z",
+  "updatedAt": "2026-06-15T10:00:00.000Z",
+  "createdBy": 42,
+  "resolvedAt": null,
+  "resolvedBy": null,
+  "resolvedInCommitSha": null,
+  "anchor": {
+    "branchName": "main",
+    "filePath": "srs/01-overview.md",
+    "anchorState": "active",
+    "startLine": 10,
+    "endLine": 12,
+    "baseCommitSha": "abc123"
+  }
+}

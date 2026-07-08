@@ -357,6 +357,11 @@ export async function migrateFromDocflow(
     return { migrated: false, reason: "docflow.config.json missing", docopsPath, enginePath, actions };
   }
 
+  const docopsConfigPath = join(projectRoot, DOCOPS_CONFIG_REL);
+  const engineConfigPath = join(projectRoot, ".ai-spector/engine.json");
+  const hasDocops = await pathExists(docopsConfigPath);
+  const hasEngine = await pathExists(engineConfigPath);
+
   const { config: docflow } = await loadDocflowConfig(projectRoot);
   const docTypes = buildDocTypesFromLayers(undefined, await inferDocTypesFromTree(projectRoot));
   const docops = docopsConfigFromDocflow(docflow, docTypes);
@@ -367,19 +372,50 @@ export async function migrateFromDocflow(
   if (docflow.paths?.graph) engine.artifacts.graph = docflow.paths.graph;
   if (docflow.paths?.registry) engine.artifacts.registry = docflow.paths.registry;
 
-  await copyLegacyArtifacts(projectRoot, actions, dryRun);
-
-  actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
-  actions.push(`${dryRun ? "would write" : "write"} .ai-spector/engine.json`);
-  if (write) {
-    await writeDocopsConfig(projectRoot, docops);
-    await writeEngineConfig(projectRoot, engine);
+  if (hasDocops && hasEngine) {
+    return {
+      migrated: false,
+      reason: `${DOCOPS_CONFIG_REL} and engine.json already exist — use docops migrate --repair or docops guide --prompt`,
+      docopsPath,
+      enginePath,
+      actions: [`skip — ${DOCOPS_CONFIG_REL} and engine.json already exist`],
+    };
   }
 
-  await bootstrapDocopsContract(projectRoot, docops, docflow, actions, dryRun);
+  await copyLegacyArtifacts(projectRoot, actions, dryRun);
+
+  if (!hasDocops) {
+    actions.push(`${dryRun ? "would write" : "write"} ${DOCOPS_CONFIG_REL}`);
+    if (write) {
+      await writeDocopsConfig(projectRoot, docops);
+    }
+  } else {
+    actions.push(`skip — ${DOCOPS_CONFIG_REL} already exists`);
+  }
+
+  if (!hasEngine) {
+    actions.push(`${dryRun ? "would write" : "write"} .ai-spector/engine.json`);
+    if (write) {
+      await writeEngineConfig(projectRoot, engine);
+    }
+  } else {
+    actions.push("skip — .ai-spector/engine.json already exists");
+  }
+
+  const bootstrapConfig = hasDocops ? (await readDocopsConfig(projectRoot)) ?? docops : docops;
+  if (bootstrapConfig) {
+    await bootstrapDocopsContract(projectRoot, bootstrapConfig, docflow, actions, dryRun);
+  }
 
   if (!dryRun) {
     await bootstrapEntityRegistry(projectRoot, { actions });
+  }
+
+  if (hasDocops && !hasEngine) {
+    const existing = await readDocopsConfig(projectRoot);
+    if (existing) {
+      await repairDocopsGaps(projectRoot, existing, actions, dryRun);
+    }
   }
 
   return { migrated: true, docopsPath, enginePath, actions };
